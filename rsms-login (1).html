@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#030305"/>
+<title>RSMS — Rehoteq School Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--s1:#0a0a12;--s2:#0f0f1a;--s3:#141422;
+  --gold:#c9a84c;--gold2:#e8c96a;--goldl:rgba(201,168,76,0.1);
+  --goldm:rgba(201,168,76,0.2);--goldb:rgba(201,168,76,0.06);
+  --purple:#7c3aed;--purplel:rgba(124,58,237,0.15);
+  --green:#10b981;--greenl:rgba(16,185,129,0.1);
+  --red:#ef4444;--redl:rgba(239,68,68,0.1);
+  --w:#f8f4ff;--m:rgba(248,244,255,0.5);--m2:rgba(248,244,255,0.2);
+  --bd:rgba(201,168,76,0.12);--bd2:rgba(201,168,76,0.25);
+  --serif:'Fraunces',serif;--font:'Outfit',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--w);}
+
+/* ── BG MESH ── */
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 60% at 20% 10%,rgba(124,58,237,0.08),transparent),
+    radial-gradient(ellipse 60% 50% at 80% 90%,rgba(201,168,76,0.07),transparent),
+    radial-gradient(ellipse 40% 40% at 50% 50%,rgba(16,185,129,0.03),transparent);}
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.025;
+  background-image:linear-gradient(rgba(201,168,76,1) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(201,168,76,1) 1px,transparent 1px);
+  background-size:40px 40px;}
+.particles{position:fixed;inset:0;z-index:0;pointer-events:none;}
+.particle{position:absolute;width:2px;height:2px;border-radius:50%;
+  background:var(--gold);opacity:0;animation:float-up linear infinite;}
+@keyframes float-up{
+  0%{transform:translateY(100vh) translateX(0);opacity:0;}
+  10%{opacity:0.6;}
+  90%{opacity:0.2;}
+  100%{transform:translateY(-20px) translateX(var(--dx));opacity:0;}
+}
+
+/* ── MAIN LAYOUT ── */
+.login-wrap{position:relative;z-index:10;height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+
+/* ── CARD ── */
+.card{
+  width:100%;max-width:420px;
+  background:rgba(10,10,18,0.92);
+  border:1px solid var(--bd);
+  border-radius:24px;
+  padding:36px 32px;
+  backdrop-filter:blur(40px);
+  box-shadow:0 40px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(201,168,76,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+  animation:card-in 0.6s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes card-in{from{opacity:0;transform:translateY(30px) scale(.95);}to{opacity:1;transform:none;}}
+
+/* ── LOGO ── */
+.logo-wrap{text-align:center;margin-bottom:28px;}
+.logo-hex{
+  width:72px;height:72px;border-radius:18px;
+  background:linear-gradient(135deg,#1a0a3e,#2d1b6e,#3d2a8a);
+  display:inline-flex;align-items:center;justify-content:center;
+  margin-bottom:14px;
+  box-shadow:0 0 0 1px var(--bd2),0 0 30px rgba(201,168,76,0.2),
+    0 0 60px rgba(124,58,237,0.15);
+  position:relative;overflow:hidden;
+  animation:logo-pulse 3s ease-in-out infinite;
+}
+@keyframes logo-pulse{
+  0%,100%{box-shadow:0 0 0 1px var(--bd2),0 0 30px rgba(201,168,76,0.2),0 0 60px rgba(124,58,237,0.15);}
+  50%{box-shadow:0 0 0 1px var(--bd2),0 0 50px rgba(201,168,76,0.35),0 0 80px rgba(124,58,237,0.25);}
+}
+.logo-hex::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(201,168,76,0.1),transparent);
+  animation:shimmer 3s ease-in-out infinite;}
+@keyframes shimmer{0%,100%{opacity:0;}50%{opacity:1;}}
+.logo-hex svg{position:relative;z-index:2;}
+.app-name{font-family:var(--serif);font-size:1.7rem;font-weight:900;
+  background:linear-gradient(135deg,var(--gold),var(--gold2),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:0.05em;margin-bottom:4px;}
+.app-sub{font-size:0.68rem;color:var(--m);font-weight:600;
+  letter-spacing:0.18em;text-transform:uppercase;}
+.app-by{font-size:0.58rem;color:rgba(201,168,76,0.5);margin-top:3px;
+  letter-spacing:0.12em;text-transform:uppercase;}
+
+/* ── ROLE SELECTOR ── */
+.role-label{font-size:0.6rem;font-weight:700;color:var(--m);
+  text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px;text-align:center;}
+.roles{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:22px;}
+.role-btn{
+  padding:10px 8px;border:1px solid var(--bd);border-radius:12px;
+  background:var(--goldb);cursor:pointer;transition:all .25s;
+  text-align:center;user-select:none;position:relative;overflow:hidden;}
+.role-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--goldm),transparent);
+  opacity:0;transition:opacity .25s;}
+.role-btn:hover::before,.role-btn.active::before{opacity:1;}
+.role-btn.active{border-color:var(--gold);background:var(--goldl);}
+.role-btn:active{transform:scale(.96);}
+.role-icon{font-size:1.3rem;display:block;margin-bottom:4px;}
+.role-name{font-size:0.72rem;font-weight:700;color:var(--m);transition:color .2s;}
+.role-btn.active .role-name{color:var(--gold);}
+.role-badge{position:absolute;top:5px;right:5px;width:6px;height:6px;
+  border-radius:50%;background:var(--gold);opacity:0;transform:scale(0);
+  transition:all .2s;}
+.role-btn.active .role-badge{opacity:1;transform:scale(1);}
+
+/* ── FORM ── */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.fg label{font-size:0.62rem;font-weight:700;color:var(--m);
+  text-transform:uppercase;letter-spacing:0.1em;display:flex;align-items:center;gap:6px;}
+.fi{
+  background:rgba(255,255,255,0.04);border:1px solid var(--bd);
+  border-radius:11px;padding:12px 14px;color:var(--w);
+  font-size:0.88rem;font-family:var(--font);outline:none;width:100%;
+  transition:border-color .2s,box-shadow .2s;}
+.fi:focus{border-color:rgba(201,168,76,0.5);
+  box-shadow:0 0 0 3px rgba(201,168,76,0.08);}
+.fi-wrap{position:relative;}
+.fi-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--m);cursor:pointer;font-size:1rem;padding:2px;}
+
+/* ── BIOMETRIC BUTTON ── */
+.bio-btn{
+  width:100%;padding:11px;border:1px solid var(--bd2);border-radius:11px;
+  background:var(--goldb);color:var(--gold);
+  font-family:var(--font);font-size:0.84rem;font-weight:700;
+  cursor:pointer;transition:all .2s;display:flex;align-items:center;
+  justify-content:center;gap:8px;margin-bottom:10px;}
+.bio-btn:hover{background:var(--goldl);border-color:var(--gold);}
+.bio-btn:active{transform:scale(.97);}
+.bio-icon{font-size:1.1rem;animation:bio-pulse 2s ease-in-out infinite;}
+@keyframes bio-pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
+
+/* ── OR DIVIDER ── */
+.or-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.or-line{flex:1;height:1px;background:var(--bd);}
+.or-text{font-size:0.62rem;color:var(--m2);font-weight:600;letter-spacing:0.1em;}
+
+/* ── SUBMIT BTN ── */
+.submit-btn{
+  width:100%;padding:14px;border:none;border-radius:12px;cursor:pointer;
+  font-family:var(--serif);font-size:1rem;font-weight:700;
+  background:linear-gradient(135deg,#2d1b6e,#4a2d9e,var(--gold));
+  color:#fff;letter-spacing:0.04em;
+  transition:all .25s;position:relative;overflow:hidden;
+  box-shadow:0 4px 24px rgba(201,168,76,0.2);}
+.submit-btn::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent,rgba(255,255,255,0.08),transparent);
+  transform:translateX(-100%);transition:transform .4s;}
+.submit-btn:hover::after{transform:translateX(100%);}
+.submit-btn:hover{box-shadow:0 6px 32px rgba(201,168,76,0.35);transform:translateY(-1px);}
+.submit-btn:active{transform:scale(.97);}
+.submit-btn.loading{pointer-events:none;opacity:.7;}
+
+/* ── LINKS ── */
+.links-row{display:flex;justify-content:space-between;margin-top:16px;}
+.link-btn{background:none;border:none;color:rgba(201,168,76,0.6);
+  font-size:0.72rem;cursor:pointer;font-family:var(--font);transition:color .2s;}
+.link-btn:hover{color:var(--gold);}
+
+/* ── SCHOOL CODE BANNER ── */
+.school-banner{
+  background:var(--purplel);border:1px solid rgba(124,58,237,0.25);
+  border-radius:10px;padding:10px 13px;margin-bottom:16px;
+  font-size:0.76rem;color:rgba(248,244,255,0.7);
+  display:none;align-items:center;gap:8px;}
+.school-banner.show{display:flex;}
+.school-banner strong{color:#a78bfa;}
+
+/* ── ERROR / SUCCESS TOAST ── */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);
+  border-radius:11px;padding:10px 20px;font-size:0.8rem;z-index:999;
+  transition:transform .3s;white-space:nowrap;pointer-events:none;
+  display:flex;align-items:center;gap:8px;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.error{background:#1a0808;border:1px solid rgba(239,68,68,.4);color:#fca5a5;}
+.toast.success{background:#081a0f;border:1px solid rgba(16,185,129,.4);color:#6ee7b7;}
+.toast.info{background:#0a0a18;border:1px solid var(--bd2);color:var(--gold);}
+
+/* ── FOOTER ── */
+.card-footer{text-align:center;margin-top:20px;font-size:0.6rem;color:var(--m2);}
+.card-footer a{color:rgba(201,168,76,0.5);text-decoration:none;}
+.card-footer a:hover{color:var(--gold);}
+
+/* ── LOADING OVERLAY ── */
+.load-overlay{
+  position:fixed;inset:0;z-index:200;background:rgba(3,3,5,0.95);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.load-overlay.show{display:flex;}
+.load-logo{animation:load-spin 2s linear infinite;}
+@keyframes load-spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.load-text{font-family:var(--serif);font-size:1.1rem;color:var(--gold);
+  animation:blink-text 1.5s ease-in-out infinite;}
+@keyframes blink-text{0%,100%{opacity:1;}50%{opacity:.4;}}
+.load-dots{display:flex;gap:6px;}
+.load-dots span{width:8px;height:8px;border-radius:50%;background:var(--gold);
+  animation:dot-bounce .8s ease-in-out infinite;}
+.load-dots span:nth-child(2){animation-delay:.15s;}
+.load-dots span:nth-child(3){animation-delay:.3s;}
+@keyframes dot-bounce{0%,80%,100%{transform:scale(.5);opacity:.3;}40%{transform:scale(1);opacity:1;}}
+
+/* ── REGISTER LINK ── */
+.reg-strip{
+  background:linear-gradient(135deg,rgba(201,168,76,0.06),rgba(124,58,237,0.06));
+  border:1px solid var(--bd);border-radius:12px;padding:12px 16px;
+  margin-top:16px;display:flex;align-items:center;justify-content:space-between;}
+.reg-strip p{font-size:0.72rem;color:var(--m);}
+.reg-strip-btn{background:var(--goldl);border:1px solid var(--bd2);border-radius:8px;
+  padding:6px 14px;font-size:0.7rem;font-weight:700;color:var(--gold);cursor:pointer;
+  font-family:var(--font);transition:all .2s;}
+.reg-strip-btn:hover{background:var(--goldm);}
+
+@media(max-width:480px){
+  .card{padding:28px 20px;border-radius:20px;}
+  .app-name{font-size:1.5rem;}
+  .logo-hex{width:60px;height:60px;}
+}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
+<div class="particles" id="particles"></div>
+
+<!-- LOADING OVERLAY -->
+<div class="load-overlay" id="load-overlay">
+  <svg width="56" height="56" viewBox="0 0 120 120" class="load-logo">
+    <defs><linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#c9a84c"/>
+    </linearGradient></defs>
+    <polygon points="60,4 111,32 111,88 60,116 9,88 9,32" fill="#0d0a1e" stroke="url(#lg)" stroke-width="4"/>
+    <circle cx="60" cy="11" r="4" fill="#c9a84c" opacity="0.9"/>
+    <circle cx="17" cy="35" r="4" fill="#c9a84c" opacity="0.9"/>
+    <circle cx="17" cy="85" r="4" fill="#c9a84c" opacity="0.9"/>
+    <circle cx="60" cy="109" r="4" fill="#c9a84c" opacity="0.9"/>
+    <circle cx="103" cy="85" r="4" fill="#c9a84c" opacity="0.9"/>
+    <circle cx="103" cy="35" r="4" fill="#c9a84c" opacity="0.9"/>
+    <text x="60" y="80" text-anchor="middle" font-family="Georgia,serif" font-size="62" font-weight="bold" fill="#c9a84c">R</text>
+  </svg>
+  <div class="load-text" id="load-text">Signing you in...</div>
+  <div class="load-dots"><span></span><span></span><span></span></div>
+</div>
+
+<div class="login-wrap">
+<div class="card" id="card">
+
+  <!-- LOGO -->
+  <div class="logo-wrap">
+    <div class="logo-hex">
+      <svg width="44" height="44" viewBox="0 0 120 120">
+        <defs><linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#c9a84c"/>
+        </linearGradient></defs>
+        <polygon points="60,4 111,32 111,88 60,116 9,88 9,32" fill="transparent" stroke="url(#hg)" stroke-width="4"/>
+        <circle cx="60" cy="11" r="3.5" fill="#c9a84c" opacity="0.9"/>
+        <circle cx="17" cy="35" r="3.5" fill="#c9a84c" opacity="0.9"/>
+        <circle cx="17" cy="85" r="3.5" fill="#c9a84c" opacity="0.9"/>
+        <circle cx="60" cy="109" r="3.5" fill="#c9a84c" opacity="0.9"/>
+        <circle cx="103" cy="85" r="3.5" fill="#c9a84c" opacity="0.9"/>
+        <circle cx="103" cy="35" r="3.5" fill="#c9a84c" opacity="0.9"/>
+        <text x="60" y="80" text-anchor="middle" font-family="Georgia,serif" font-size="62" font-weight="bold" fill="#c9a84c">R</text>
+      </svg>
+    </div>
+    <div class="app-name">RSMS</div>
+    <div class="app-sub">School Management System</div>
+    <div class="app-by">by Rehoteq Technologies</div>
+  </div>
+
+  <!-- SCHOOL CODE -->
+  <div class="school-banner" id="school-banner">
+    <span>🏫</span>
+    <span>School: <strong id="school-name-disp">—</strong></span>
+  </div>
+
+  <!-- ROLE SELECTOR -->
+  <div class="role-label">Select your role</div>
+  <div class="roles">
+    <div class="role-btn active" data-role="admin" onclick="selectRole(this)">
+      <div class="role-badge"></div>
+      <span class="role-icon">🏫</span>
+      <div class="role-name">Admin</div>
+    </div>
+    <div class="role-btn" data-role="teacher" onclick="selectRole(this)">
+      <div class="role-badge"></div>
+      <span class="role-icon">👨‍🏫</span>
+      <div class="role-name">Teacher</div>
+    </div>
+    <div class="role-btn" data-role="student" onclick="selectRole(this)">
+      <div class="role-badge"></div>
+      <span class="role-icon">👨‍🎓</span>
+      <div class="role-name">Student</div>
+    </div>
+    <div class="role-btn" data-role="parent" onclick="selectRole(this)">
+      <div class="role-badge"></div>
+      <span class="role-icon">👪</span>
+      <div class="role-name">Parent</div>
+    </div>
+  </div>
+
+  <!-- BIOMETRIC -->
+  <button class="bio-btn" id="bio-btn" onclick="biometricLogin()">
+    <span class="bio-icon">👆</span>
+    <span id="bio-label">Sign in with Fingerprint / Face ID</span>
+  </button>
+
+  <!-- OR -->
+  <div class="or-row">
+    <div class="or-line"></div>
+    <div class="or-text">OR USE PASSWORD</div>
+    <div class="or-line"></div>
+  </div>
+
+  <!-- EMAIL & PASSWORD -->
+  <div class="fg">
+    <label>📧 Email / Staff ID / Reg Number</label>
+    <input class="fi" type="email" id="login-email" placeholder="Enter your email or ID"
+      autocomplete="email" oninput="clearErr()"/>
+  </div>
+  <div class="fg">
+    <label>🔒 Password</label>
+    <div class="fi-wrap">
+      <input class="fi" type="password" id="login-pw" placeholder="Enter your password"
+        autocomplete="current-password" oninput="clearErr()"
+        onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:44px;"/>
+      <button class="fi-eye" onclick="togglePW()" id="pw-eye">👁</button>
+    </div>
+  </div>
+
+  <!-- SUBMIT -->
+  <button class="submit-btn" id="login-btn" onclick="doLogin()">
+    Sign In to RSMS →
+  </button>
+
+  <!-- LINKS -->
+  <div class="links-row">
+    <button class="link-btn" onclick="showForgot()">Forgot password?</button>
+    <button class="link-btn" onclick="showSchoolCode()">Enter school code</button>
+  </div>
+
+  <!-- REGISTER STRIP -->
+  <div class="reg-strip">
+    <p>New student? Apply online</p>
+    <button class="reg-strip-btn" onclick="goApply()">Apply Now →</button>
+  </div>
+
+  <div class="card-footer">
+    Rehoteq Technologies &bull; Okitipupa, Nigeria &bull;
+    <a href="https://rehoteq.com" target="_blank">rehoteq.com</a>
+  </div>
+
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── FIREBASE CONFIG ──
+// Using rehoteq-rsms Firebase project
+var FB_CONFIG = {
+  apiKey: "AIzaSyPLACEHOLDER_RSMS",
+  authDomain: "rehoteq-rsms.firebaseapp.com",
+  databaseURL: "https://rehoteq-rsms-default-rtdb.firebaseio.com",
+  projectId: "rehoteq-rsms",
+  storageBucket: "rehoteq-rsms.appspot.com",
+  messagingSenderId: "000000000000",
+  appId: "1:000000000000:web:PLACEHOLDER"
+};
+
+// ── PARTICLES ──
+(function(){
+  var c = document.getElementById('particles');
+  for(var i=0;i<25;i++){
+    var p=document.createElement('div');
+    p.className='particle';
+    var dur = 8 + Math.random()*12;
+    var delay = Math.random()*15;
+    var x = Math.random()*100;
+    var dx = (Math.random()-0.5)*100+'px';
+    p.style.cssText='left:'+x+'%;animation-duration:'+dur+'s;animation-delay:'+delay+'s;--dx:'+dx+';';
+    c.appendChild(p);
+  }
+})();
+
+// ── ROLE SELECTION ──
+var currentRole = 'admin';
+function selectRole(el){
+  document.querySelectorAll('.role-btn').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+  currentRole = el.dataset.role;
+  var labels = {
+    admin:'Sign In as Administrator →',
+    teacher:'Sign In as Teacher →',
+    student:'Sign In as Student →',
+    parent:'Sign In as Parent →'
+  };
+  document.getElementById('login-btn').textContent = labels[currentRole]||'Sign In →';
+  var bio = {
+    admin:'Fingerprint / Face ID — Admin',
+    teacher:'Fingerprint / Face ID — Teacher',
+    student:'Fingerprint / Face ID — Student',
+    parent:'Fingerprint / Face ID — Parent'
+  };
+  document.getElementById('bio-label').textContent = bio[currentRole];
+  // Animate card
+  var card = document.getElementById('card');
+  card.style.transform='scale(.99)';
+  setTimeout(function(){card.style.transform='';},120);
+}
+
+// ── TOAST ──
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.className='toast '+(type||'info')+' show';
+  t.innerHTML=(type==='error'?'⚠️ ':type==='success'?'✅ ':'ℹ️ ')+msg;
+  clearTimeout(t._tid);
+  t._tid=setTimeout(function(){t.classList.remove('show');},4000);
+}
+function clearErr(){
+  var t=document.getElementById('toast');
+  t.classList.remove('show');
+}
+
+// ── TOGGLE PASSWORD ──
+function togglePW(){
+  var inp=document.getElementById('login-pw');
+  var eye=document.getElementById('pw-eye');
+  if(inp.type==='password'){inp.type='text';eye.textContent='🙈';}
+  else{inp.type='password';eye.textContent='👁';}
+}
+
+// ── LOADING OVERLAY ──
+function showLoading(msg){
+  document.getElementById('load-text').textContent=msg||'Please wait...';
+  document.getElementById('load-overlay').classList.add('show');
+}
+function hideLoading(){document.getElementById('load-overlay').classList.remove('show');}
+
+// ── LOGIN ROUTING ──
+function routeUser(role, name){
+  var routes = {
+    admin:'rsms-admin.html',
+    teacher:'rsms-teacher.html',
+    student:'rsms-student.html',
+    parent:'rsms-parent.html',
+    cbt:'rsms-cbt.html'
+  };
+  showLoading('Welcome, '+name+'! Loading your portal...');
+  setTimeout(function(){
+    var dest = routes[role]||'rsms-admin.html';
+    window.location.href = dest;
+  }, 1800);
+}
+
+// ── MAIN LOGIN ──
+function doLogin(){
+  var email = document.getElementById('login-email').value.trim();
+  var pw = document.getElementById('login-pw').value;
+  if(!email){toast('Please enter your email or ID','error');return;}
+  if(!pw){toast('Please enter your password','error');return;}
+
+  var btn = document.getElementById('login-btn');
+  btn.classList.add('loading');
+  btn.textContent = 'Signing in...';
+  showLoading('Verifying credentials...');
+
+  // Demo mode — role-based routing without actual Firebase
+  // Will be replaced with real Firebase Auth when project is set up
+  setTimeout(function(){
+    // Store role and demo user in session
+    sessionStorage.setItem('rsms_role', currentRole);
+    sessionStorage.setItem('rsms_user', JSON.stringify({
+      name: email.split('@')[0],
+      email: email,
+      role: currentRole
+    }));
+    routeUser(currentRole, email.split('@')[0]);
+  }, 1200);
+}
+
+// ── BIOMETRIC LOGIN ──
+async function biometricLogin(){
+  if(!window.PublicKeyCredential){
+    toast('Biometric login not available on this device','error');
+    return;
+  }
+  try{
+    var available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    if(!available){toast('No biometric sensor found. Use password instead.','error');return;}
+
+    toast('Scanning fingerprint / face...','info');
+    var challenge = new Uint8Array(32);
+    crypto.getRandomValues(challenge);
+
+    var cred = await navigator.credentials.get({
+      publicKey:{
+        challenge:challenge,
+        rpId:window.location.hostname||'localhost',
+        allowCredentials:[],
+        userVerification:'required',
+        timeout:30000
+      }
+    });
+
+    if(cred){
+      sessionStorage.setItem('rsms_role',currentRole);
+      sessionStorage.setItem('rsms_bio','true');
+      showLoading('Biometric verified! Loading portal...');
+      setTimeout(function(){
+        routeUser(currentRole,'User');
+      },1200);
+    }
+  }catch(e){
+    if(e.name==='NotAllowedError'){toast('Biometric cancelled','error');}
+    else if(e.name==='InvalidStateError'){toast('Register your biometric first via Settings','error');}
+    else{toast('Biometric error: '+e.message,'error');}
+  }
+}
+
+// ── SCHOOL CODE ──
+function showSchoolCode(){
+  var code = prompt('Enter your school code (provided by your school admin):');
+  if(code && code.trim()){
+    var schoolCode = code.trim().toUpperCase();
+    document.getElementById('school-name-disp').textContent = schoolCode;
+    document.getElementById('school-banner').classList.add('show');
+    sessionStorage.setItem('rsms_school_code', schoolCode);
+    toast('School code set: '+schoolCode,'success');
+  }
+}
+
+// ── FORGOT PASSWORD ──
+function showForgot(){
+  var email = document.getElementById('login-email').value.trim();
+  if(!email){
+    toast('Enter your email first, then tap Forgot password','info');
+    document.getElementById('login-email').focus();
+    return;
+  }
+  toast('Password reset link sent to '+email,'success');
+}
+
+// ── APPLY / REGISTER ──
+function goApply(){
+  window.location.href = 'rsms-apply.html';
+}
+
+// ── INIT ──
+window.addEventListener('load',function(){
+  // Check if already logged in
+  var role = sessionStorage.getItem('rsms_role');
+  if(role && sessionStorage.getItem('rsms_user')){
+    var user = JSON.parse(sessionStorage.getItem('rsms_user'));
+    var routes={admin:'rsms-admin.html',teacher:'rsms-teacher.html',student:'rsms-student.html',parent:'rsms-parent.html'};
+    // Uncomment below to auto-redirect if already logged in
+    // window.location.href = routes[role]||'rsms-admin.html';
+  }
+});
+</script>
+</body>
+</html>
