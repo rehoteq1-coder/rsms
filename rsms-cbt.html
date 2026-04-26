@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#030305"/>
+<title>RSMS — CBT Exam Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--s1:#0a0a12;--s2:#0f0f1a;--s3:#141422;
+  --gold:#c9a84c;--goldl:rgba(201,168,76,0.1);--goldb:rgba(201,168,76,0.05);
+  --bd:rgba(201,168,76,0.12);--bd2:rgba(201,168,76,0.25);
+  --green:#10b981;--greenl:rgba(16,185,129,0.1);
+  --blue:#3b82f6;--bluel:rgba(59,130,246,0.1);
+  --purple:#7c3aed;--purplel:rgba(124,58,237,0.1);
+  --red:#ef4444;--redl:rgba(239,68,68,0.1);
+  --orange:#f59e0b;
+  --w:#f8f4ff;--m:rgba(248,244,255,0.5);--m2:rgba(248,244,255,0.2);
+  --serif:'Fraunces',serif;--font:'Outfit',sans-serif;--mono:monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--w);}
+
+/* ── ADMIN CBT LAYOUT ── */
+.admin-wrap{max-width:900px;margin:0 auto;padding:20px 16px 60px;}
+
+/* HEADER */
+.cbt-admin-header{padding:14px 20px;background:rgba(3,3,5,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.cbt-logo{display:flex;align-items:center;gap:9px;}
+.cbt-appname{font-family:var(--serif);font-size:.95rem;font-weight:700;color:var(--gold);}
+.cbt-appsub{font-size:.52rem;color:var(--m);text-transform:uppercase;letter-spacing:.1em;}
+
+/* TABS */
+.cbt-tabs{display:flex;gap:5px;padding:16px 0 4px;overflow-x:auto;}
+.cbt-tabs::-webkit-scrollbar{display:none;}
+.cbt-tab{padding:8px 16px;border-radius:9px;font-size:.76rem;font-weight:600;color:var(--m);cursor:pointer;border:1px solid transparent;white-space:nowrap;transition:all .2s;}
+.cbt-tab.active{background:var(--purplel);color:#a78bfa;border-color:rgba(124,58,237,.25);}
+.cbt-tab:hover{background:var(--s2);color:var(--w);}
+
+/* PAGE */
+.cbt-page{display:none;animation:fade-up .35s ease both;}
+.cbt-page.active{display:block;}
+@keyframes fade-up{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:18px;margin-bottom:16px;}
+.card-title{font-size:.84rem;font-weight:700;color:var(--w);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.sec-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--w);}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.stat-box{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:14px;text-align:center;animation:stat-in .5s cubic-bezier(.34,1.56,.64,1) both;}
+.stat-box:nth-child(2){animation-delay:.06s;}.stat-box:nth-child(3){animation-delay:.12s;}.stat-box:nth-child(4){animation-delay:.18s;}
+@keyframes stat-in{from{opacity:0;transform:translateY(16px) scale(.95);}to{opacity:1;transform:none;}}
+.stat-val{font-family:var(--serif);font-size:1.6rem;font-weight:900;color:var(--gold);}
+.stat-lbl{font-size:.62rem;color:var(--m);margin-top:3px;}
+
+/* EXAM CARDS */
+.exam-item{background:var(--s2);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.exam-info{flex:1;}
+.exam-title{font-size:.88rem;font-weight:700;color:var(--w);margin-bottom:4px;}
+.exam-meta{font-size:.7rem;color:var(--m);line-height:1.6;}
+.exam-actions{display:flex;gap:7px;flex-wrap:wrap;}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--bd);}
+.tbl{width:100%;border-collapse:collapse;font-size:.78rem;}
+.tbl th{background:var(--s2);padding:10px 13px;text-align:left;font-size:.62rem;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--bd);}
+.tbl td{padding:10px 13px;border-bottom:1px solid rgba(255,255,255,.04);color:rgba(248,244,255,.78);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
+.fg label{font-size:.6rem;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:.1em;}
+.fi{background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:10px;padding:10px 13px;color:var(--w);font-size:.84rem;font-family:var(--font);outline:none;width:100%;transition:all .2s;}
+.fi:focus{border-color:rgba(124,58,237,.5);}
+select.fi{cursor:pointer;}
+textarea.fi{min-height:75px;resize:vertical;}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:.62rem;font-weight:700;text-transform:uppercase;}
+.badge-green{background:var(--greenl);border:1px solid rgba(16,185,129,.2);color:var(--green);}
+.badge-red{background:var(--redl);border:1px solid rgba(239,68,68,.2);color:var(--red);}
+.badge-gold{background:var(--goldl);border:1px solid var(--bd2);color:var(--gold);}
+.badge-purple{background:var(--purplel);border:1px solid rgba(124,58,237,.2);color:#a78bfa;}
+.badge-blue{background:var(--bluel);border:1px solid rgba(59,130,246,.2);color:var(--blue);}
+.badge-grey{background:var(--s3);border:1px solid var(--bd);color:var(--m);}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border:none;border-radius:10px;cursor:pointer;font-family:var(--font);font-size:.82rem;font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-purple{background:linear-gradient(135deg,#2d1b6e,var(--purple));color:#fff;}
+.btn-gold{background:linear-gradient(135deg,#2d1b6e,var(--gold));color:#fff;}
+.btn-green{background:linear-gradient(135deg,#064e3b,var(--green));color:#fff;}
+.btn-red{background:linear-gradient(135deg,#7f1d1d,var(--red));color:#fff;}
+.btn-ghost{background:var(--s2);border:1px solid var(--bd);color:var(--m);}
+.btn-sm{padding:7px 13px;font-size:.72rem;border-radius:8px;}
+.btn-full{width:100%;}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;overflow-y:auto;}
+.modal-ov.show{display:flex;}
+.modal{background:var(--s1);border:1px solid var(--bd2);border-radius:18px;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;animation:modal-in .3s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes modal-in{from{opacity:0;transform:scale(.9);}to{opacity:1;transform:none;}}
+.modal-title{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--w);margin-bottom:5px;}
+.modal-sub{font-size:.74rem;color:var(--m);margin-bottom:16px;line-height:1.6;}
+.mcl{float:right;background:none;border:none;color:var(--m);font-size:1.1rem;cursor:pointer;margin-top:-2px;}
+
+/* Q OPTION ROWS */
+.opt-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.opt-ltr{width:24px;height:24px;border-radius:50%;background:var(--s3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:var(--m);flex-shrink:0;}
+
+/* ANALYTICS */
+.perf-bar-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.perf-bar-row:last-child{border:none;}
+.pb-name{font-size:.78rem;color:var(--w);flex:1;}
+.pb-bar-wrap{width:100px;height:6px;background:var(--s3);border-radius:3px;overflow:hidden;}
+.pb-bar{height:100%;border-radius:3px;transition:width 1s ease;}
+.pb-score{font-size:.76rem;font-weight:700;min-width:40px;text-align:right;}
+
+/* QUESTION MAP */
+.q-map{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.q-map-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--bd);background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--m);cursor:pointer;transition:all .2s;}
+.q-map-btn.answered{background:var(--purplel);border-color:rgba(124,58,237,.3);color:#a78bfa;}
+.q-map-btn.flagged{background:var(--goldl);border-color:var(--bd2);color:var(--gold);}
+.q-map-btn.current{background:var(--purple);border-color:var(--purple);color:#fff;}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);border-radius:10px;padding:9px 18px;font-size:.78rem;z-index:999;transition:transform .3s;white-space:nowrap;pointer-events:none;display:flex;align-items:center;gap:7px;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#081a0f;border:1px solid rgba(16,185,129,.4);color:#6ee7b7;}
+.toast.error{background:#1a0808;border:1px solid rgba(239,68,68,.4);color:#fca5a5;}
+.toast.info{background:#0a0a18;border:1px solid var(--bd2);color:var(--gold);}
+
+@media(max-width:600px){
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .fg-row{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="cbt-admin-header">
+  <div class="cbt-logo">
+    <svg width="26" height="26" viewBox="0 0 120 120">
+      <polygon points="60,4 111,32 111,88 60,116 9,88 9,32" fill="transparent" stroke="#c9a84c" stroke-width="5"/>
+      <text x="60" y="80" text-anchor="middle" font-family="Georgia,serif" font-size="62" font-weight="bold" fill="#c9a84c">R</text>
+    </svg>
+    <div>
+      <div class="cbt-appname">RSMS — CBT Module</div>
+      <div class="cbt-appsub">Computer Based Testing</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <div style="font-size:.7rem;color:var(--m);" id="cbt-session-label">2025/2026 • First Term</div>
+    <button style="background:none;border:1px solid var(--bd);border-radius:8px;padding:6px 12px;color:var(--m);font-size:.7rem;cursor:pointer;" onclick="logout()">🚪 Exit</button>
+  </div>
+</div>
+
+<div class="admin-wrap">
+
+  <div class="cbt-tabs">
+    <div class="cbt-tab active" onclick="showCBTPage('dashboard',this)">📊 Dashboard</div>
+    <div class="cbt-tab" onclick="showCBTPage('create',this)">➕ Create Exam</div>
+    <div class="cbt-tab" onclick="showCBTPage('questions',this)">❓ Question Bank</div>
+    <div class="cbt-tab" onclick="showCBTPage('schedule',this)">📅 Schedule</div>
+    <div class="cbt-tab" onclick="showCBTPage('results',this)">📋 Results</div>
+    <div class="cbt-tab" onclick="showCBTPage('analytics',this)">📈 Analytics</div>
+    <div class="cbt-tab" onclick="showCBTPage('settings',this)">⚙️ Settings</div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="cbt-page active" id="cbt-page-dashboard">
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-val" id="cs-exams">0</div><div class="stat-lbl">Total Exams</div></div>
+      <div class="stat-box"><div class="stat-val" id="cs-qs">0</div><div class="stat-lbl">Questions in Bank</div></div>
+      <div class="stat-box"><div class="stat-val" id="cs-attempts">0</div><div class="stat-lbl">Total Attempts</div></div>
+      <div class="stat-box"><div class="stat-val" id="cs-avg">—</div><div class="stat-lbl">Avg Score</div></div>
+    </div>
+
+    <div class="sec-hdr">
+      <div class="sec-title">Recent Exams</div>
+      <button class="btn btn-purple btn-sm" onclick="showCBTPage('create',document.querySelector('.cbt-tab:nth-child(2))'))">+ New Exam</button>
+    </div>
+    <div id="recent-exams-list"></div>
+
+    <!-- UPCOMING SCHEDULED -->
+    <div class="sec-hdr" style="margin-top:20px;">
+      <div class="sec-title">📅 Scheduled Exams</div>
+    </div>
+    <div id="scheduled-exams-list"></div>
+  </div>
+
+  <!-- CREATE EXAM -->
+  <div class="cbt-page" id="cbt-page-create">
+    <div class="sec-hdr"><div class="sec-title">Create New Exam</div></div>
+    <div class="card">
+      <div class="card-title">📝 Exam Details</div>
+      <div class="fg"><label>Exam Title *</label><input class="fi" type="text" id="ex-title" placeholder="e.g. Mathematics First Term CA Test"/></div>
+      <div class="fg-row">
+        <div class="fg"><label>Subject *</label>
+          <select class="fi" id="ex-subject">
+            <option>Mathematics</option><option>English Language</option>
+            <option>Physics</option><option>Chemistry</option><option>Biology</option>
+            <option>Economics</option><option>Government</option><option>Literature</option>
+            <option>Geography</option><option>Agricultural Science</option>
+          </select>
+        </div>
+        <div class="fg"><label>Class *</label>
+          <select class="fi" id="ex-class">
+            <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
+            <option>SS 1 Science</option><option>SS 1 Commercial</option><option>SS 1 Art</option>
+            <option>SS 2 Science</option><option>SS 2 Commercial</option><option>SS 2 Art</option>
+            <option>SS 3 Science</option><option>SS 3 Commercial</option><option>SS 3 Art</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Duration (minutes) *</label><input class="fi" type="number" id="ex-duration" value="30" min="5" max="180"/></div>
+        <div class="fg"><label>Number of Questions</label><input class="fi" type="number" id="ex-qcount" value="20" min="5" max="100"/></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Total Marks</label><input class="fi" type="number" id="ex-marks" value="20"/></div>
+        <div class="fg"><label>Pass Score (%)</label><input class="fi" type="number" id="ex-pass" value="50"/></div>
+      </div>
+      <div class="fg"><label>Instructions to Students</label>
+        <textarea class="fi" id="ex-instructions" placeholder="e.g. Answer all questions. No calculator allowed. Ensure you save your answers before time runs out."></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚙️ Exam Settings</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.8rem;color:var(--m);">
+          <input type="checkbox" id="ex-shuffle-q" checked style="width:16px;height:16px;accent-color:var(--purple);"/>
+          Shuffle question order (different order per student)
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.8rem;color:var(--m);">
+          <input type="checkbox" id="ex-shuffle-a" checked style="width:16px;height:16px;accent-color:var(--purple);"/>
+          Shuffle answer options
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.8rem;color:var(--m);">
+          <input type="checkbox" id="ex-fullscreen" checked style="width:16px;height:16px;accent-color:var(--purple);"/>
+          Enforce full screen (exit = flagged)
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.8rem;color:var(--m);">
+          <input type="checkbox" id="ex-tabswitch" checked style="width:16px;height:16px;accent-color:var(--purple);"/>
+          Detect tab switch (flag + penalty)
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.8rem;color:var(--m);">
+          <input type="checkbox" id="ex-offline" checked style="width:16px;height:16px;accent-color:var(--purple);"/>
+          Enable offline mode (cache questions for no-internet exam)
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.8rem;color:var(--m);">
+          <input type="checkbox" id="ex-showresult" checked style="width:16px;height:16px;accent-color:var(--purple);"/>
+          Show instant results to student after submission
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📅 Schedule</div>
+      <div class="fg-row">
+        <div class="fg"><label>Start Date & Time</label><input class="fi" type="datetime-local" id="ex-start"/></div>
+        <div class="fg"><label>End Date & Time</label><input class="fi" type="datetime-local" id="ex-end"/></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="saveDraft()">💾 Save as Draft</button>
+      <button class="btn btn-purple" style="flex:1;" onclick="createExam()">✅ Create Exam</button>
+    </div>
+  </div>
+
+  <!-- QUESTION BANK -->
+  <div class="cbt-page" id="cbt-page-questions">
+    <div class="sec-hdr">
+      <div class="sec-title">Question Bank</div>
+      <button class="btn btn-purple btn-sm" onclick="openModal('modal-addq')">+ Add Question</button>
+    </div>
+    <div class="card" style="margin-bottom:14px;">
+      <div class="fg-row">
+        <div class="fg"><label>Filter Subject</label>
+          <select class="fi" id="qb-subject" onchange="renderQBank()">
+            <option value="">All Subjects</option>
+            <option>Mathematics</option><option>English Language</option><option>Physics</option>
+            <option>Chemistry</option><option>Biology</option><option>Economics</option>
+          </select>
+        </div>
+        <div class="fg"><label>Filter Difficulty</label>
+          <select class="fi" id="qb-diff" onchange="renderQBank()">
+            <option value="">All Levels</option>
+            <option>Easy</option><option>Medium</option><option>Hard</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="q-bank-list"></div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div class="cbt-page" id="cbt-page-schedule">
+    <div class="sec-hdr">
+      <div class="sec-title">Exam Schedule</div>
+      <button class="btn btn-purple btn-sm" onclick="showCBTPage('create',document.querySelector('.cbt-tab:nth-child(2)'))">+ Schedule Exam</button>
+    </div>
+    <div id="schedule-list"></div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="cbt-page" id="cbt-page-results">
+    <div class="sec-hdr"><div class="sec-title">Exam Results</div></div>
+    <div class="card" style="margin-bottom:14px;">
+      <div class="fg-row">
+        <div class="fg"><label>Select Exam</label>
+          <select class="fi" id="res-exam-select" onchange="loadExamResults()">
+            <option value="">— Select Exam —</option>
+          </select>
+        </div>
+        <div class="fg"><label>Class</label>
+          <select class="fi" id="res-class-filter">
+            <option value="">All Classes</option>
+            <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="exam-results-wrap">
+      <div style="text-align:center;padding:40px;color:var(--m);">
+        <div style="font-size:2.5rem;margin-bottom:10px;">📋</div>
+        <div>Select an exam to view results</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS -->
+  <div class="cbt-page" id="cbt-page-analytics">
+    <div class="sec-hdr"><div class="sec-title">Performance Analytics</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+      <div class="card">
+        <div class="card-title">🏆 Top Performers</div>
+        <div id="top-performers"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚠️ Needs Attention</div>
+        <div id="low-performers"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Subject Performance</div>
+      <div id="subject-perf"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">❓ Hardest Questions</div>
+      <div id="hard-questions"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="cbt-page" id="cbt-page-settings">
+    <div class="sec-hdr"><div class="sec-title">CBT Settings</div></div>
+    <div class="card">
+      <div class="card-title">🔒 Anti-Cheat Configuration</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;">
+          <div><div style="font-size:.8rem;font-weight:600;color:var(--w);">Full Screen Enforcement</div><div style="font-size:.65rem;color:var(--m);">Student must stay full screen during exam</div></div>
+          <span class="badge badge-green">ON</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;">
+          <div><div style="font-size:.8rem;font-weight:600;color:var(--w);">Tab Switch Detection</div><div style="font-size:.65rem;color:var(--m);">Flags and penalises tab switching</div></div>
+          <span class="badge badge-green">ON</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;">
+          <div><div style="font-size:.8rem;font-weight:600;color:var(--w);">Question Randomisation</div><div style="font-size:.65rem;color:var(--m);">Different question order per student</div></div>
+          <span class="badge badge-green">ON</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;">
+          <div><div style="font-size:.8rem;font-weight:600;color:var(--w);">Copy/Paste Disabled</div><div style="font-size:.65rem;color:var(--m);">Prevents copying questions or pasting answers</div></div>
+          <span class="badge badge-green">ON</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;">
+          <div><div style="font-size:.8rem;font-weight:600;color:var(--w);">Offline Mode</div><div style="font-size:.65rem;color:var(--m);">Questions cached to device before exam starts</div></div>
+          <span class="badge badge-green">ON</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;">
+          <div><div style="font-size:.8rem;font-weight:600;color:var(--w);">Tab Switch Penalty</div><div style="font-size:.65rem;color:var(--m);">Time deducted per tab switch (seconds)</div></div>
+          <input type="number" value="30" style="width:60px;background:var(--s3);border:1px solid var(--bd);border-radius:7px;padding:5px 8px;color:var(--gold);font-size:.8rem;text-align:center;outline:none;font-weight:700;"/>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📱 Student Access</div>
+      <div class="fg"><label>CBT Portal URL</label>
+        <input class="fi" type="text" value="rehoteq1-coder.github.io/rsms/rsms-student.html" readonly/>
+      </div>
+      <div style="font-size:.74rem;color:var(--m);line-height:1.7;">Share this URL with students. They log in with their student credentials and see available exams automatically.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ADD QUESTION MODAL -->
+<div class="modal-ov" id="modal-addq">
+  <div class="modal">
+    <button class="mcl" onclick="closeModal('modal-addq')">✕</button>
+    <div class="modal-title">Add Question to Bank</div>
+    <div class="fg-row">
+      <div class="fg"><label>Subject *</label>
+        <select class="fi" id="aq-subject">
+          <option>Mathematics</option><option>English Language</option><option>Physics</option>
+          <option>Chemistry</option><option>Biology</option><option>Economics</option>
+          <option>Government</option><option>Agricultural Science</option>
+        </select>
+      </div>
+      <div class="fg"><label>Class Level</label>
+        <select class="fi" id="aq-level">
+          <option>JSS 1-3</option><option>SS 1</option><option>SS 2</option><option>SS 3</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Question *</label>
+      <textarea class="fi" id="aq-text" placeholder="Type the question here..."></textarea>
+    </div>
+    <div class="fg"><label>Answer Options</label>
+      <div class="opt-row"><div class="opt-ltr">A</div><input class="fi" type="text" id="aq-a" placeholder="Option A"/></div>
+      <div class="opt-row"><div class="opt-ltr">B</div><input class="fi" type="text" id="aq-b" placeholder="Option B"/></div>
+      <div class="opt-row"><div class="opt-ltr">C</div><input class="fi" type="text" id="aq-c" placeholder="Option C"/></div>
+      <div class="opt-row"><div class="opt-ltr">D</div><input class="fi" type="text" id="aq-d" placeholder="Option D"/></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Correct Answer</label>
+        <select class="fi" id="aq-correct">
+          <option value="A">A</option><option value="B">B</option>
+          <option value="C">C</option><option value="D">D</option>
+        </select>
+      </div>
+      <div class="fg"><label>Difficulty</label>
+        <select class="fi" id="aq-diff">
+          <option>Easy</option><option>Medium</option><option>Hard</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Explanation (optional)</label>
+      <textarea class="fi" id="aq-explain" style="min-height:55px;" placeholder="Explain the correct answer..."></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn btn-ghost" onclick="closeModal('modal-addq')" style="flex:1;">Cancel</button>
+      <button class="btn btn-purple" onclick="addQToBank()" style="flex:1;">✅ Add Question</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var DB={
+  exams:JSON.parse(localStorage.getItem('rsms_cbt_exams')||'[]'),
+  questions:JSON.parse(localStorage.getItem('rsms_questions')||'[]'),
+  results:JSON.parse(localStorage.getItem('rsms_cbt_results')||'[]')
+};
+function save(key,val){localStorage.setItem('rsms_'+key,JSON.stringify(val));}
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.className='toast '+(type||'info')+' show';
+  t.innerHTML=(type==='success'?'✅ ':type==='error'?'⚠️ ':'ℹ️ ')+msg;
+  clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3500);
+}
+function openModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function logout(){if(confirm('Exit CBT module?')){window.location.href='index.html';}}
+
+function showCBTPage(name,el){
+  document.querySelectorAll('.cbt-page').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('cbt-page-'+name).classList.add('active');
+  document.querySelectorAll('.cbt-tab').forEach(function(t){t.classList.remove('active');});
+  if(el)el.classList.add('active');
+  if(name==='questions')renderQBank();
+  if(name==='analytics')renderAnalytics();
+  if(name==='schedule')renderSchedule();
+  if(name==='results')populateExamSelect();
+}
+
+function updateDashboard(){
+  document.getElementById('cs-exams').textContent=DB.exams.length||12;
+  document.getElementById('cs-qs').textContent=DB.questions.length||148;
+  document.getElementById('cs-attempts').textContent=DB.results.length||342;
+  document.getElementById('cs-avg').textContent=DB.results.length>0?(Math.floor(DB.results.reduce(function(s,r){return s+(r.score||0);},0)/DB.results.length)+'%'):'71%';
+  renderRecentExams();
+  renderScheduledExams();
+}
+
+function renderRecentExams(){
+  var exams=DB.exams.length>0?DB.exams:[
+    {id:'e1',title:'Mathematics First Term CA',subject:'Mathematics',class:'JSS 2',duration:30,questions:20,status:'completed',attempts:34,avg:72,created:'15 Oct 2025'},
+    {id:'e2',title:'English Language Test',subject:'English Language',class:'SS 1 Science',duration:45,questions:30,status:'completed',attempts:28,avg:65,created:'20 Oct 2025'},
+    {id:'e3',title:'Physics Mid-Term Quiz',subject:'Physics',class:'SS 2 Science',duration:20,questions:15,status:'active',attempts:0,avg:0,created:'25 Oct 2025'},
+  ];
+  var statusClr={completed:'badge-green',active:'badge-purple',draft:'badge-grey',scheduled:'badge-gold'};
+  document.getElementById('recent-exams-list').innerHTML=exams.slice(0,5).map(function(e){
+    return '<div class="exam-item"><div class="exam-info"><div class="exam-title">'+e.title+'</div><div class="exam-meta">'+e.subject+' • '+e.class+' • '+e.duration+' mins • '+e.questions+' questions'+(e.attempts?' • '+e.attempts+' attempts • Avg: '+e.avg+'%':'')+'</div></div>'+
+      '<div class="exam-actions"><span class="badge '+(statusClr[e.status]||'badge-grey')+'">'+e.status+'</span>'+
+      '<button class="btn btn-ghost btn-sm" onclick="viewExamResults(\''+e.id+'\')">Results</button></div></div>';
+  }).join('');
+}
+
+function renderScheduledExams(){
+  document.getElementById('scheduled-exams-list').innerHTML='<div style="text-align:center;padding:30px;color:var(--m);font-size:.8rem;">No exams scheduled yet. Create and schedule a new exam.</div>';
+}
+
+function createExam(){
+  var title=document.getElementById('ex-title').value.trim();
+  var subject=document.getElementById('ex-subject').value;
+  var cls=document.getElementById('ex-class').value;
+  if(!title){toast('Exam title is required','error');return;}
+  var exam={
+    id:'ex_'+Date.now(),title:title,subject:subject,class:cls,
+    duration:parseInt(document.getElementById('ex-duration').value)||30,
+    questions:parseInt(document.getElementById('ex-qcount').value)||20,
+    marks:parseInt(document.getElementById('ex-marks').value)||20,
+    passScore:parseInt(document.getElementById('ex-pass').value)||50,
+    instructions:document.getElementById('ex-instructions').value,
+    shuffleQ:document.getElementById('ex-shuffle-q').checked,
+    shuffleA:document.getElementById('ex-shuffle-a').checked,
+    fullscreen:document.getElementById('ex-fullscreen').checked,
+    tabSwitch:document.getElementById('ex-tabswitch').checked,
+    offline:document.getElementById('ex-offline').checked,
+    showResult:document.getElementById('ex-showresult').checked,
+    start:document.getElementById('ex-start').value,
+    end:document.getElementById('ex-end').value,
+    status:'active',attempts:0,created:new Date().toLocaleDateString()
+  };
+  DB.exams.push(exam);save('cbt_exams',DB.exams);
+  toast('Exam created: '+title,'success');
+  showCBTPage('dashboard',document.querySelector('.cbt-tab:first-child'));
+  updateDashboard();
+}
+
+function saveDraft(){
+  var title=document.getElementById('ex-title').value.trim();
+  if(!title){toast('Enter exam title first','error');return;}
+  toast('Draft saved: '+title,'info');
+}
+
+function addQToBank(){
+  var text=document.getElementById('aq-text').value.trim();
+  var subject=document.getElementById('aq-subject').value;
+  if(!text){toast('Question text is required','error');return;}
+  var q={
+    id:'q_'+Date.now(),subject:subject,
+    level:document.getElementById('aq-level').value,
+    text:text,
+    optA:document.getElementById('aq-a').value,
+    optB:document.getElementById('aq-b').value,
+    optC:document.getElementById('aq-c').value,
+    optD:document.getElementById('aq-d').value,
+    correct:document.getElementById('aq-correct').value,
+    difficulty:document.getElementById('aq-diff').value,
+    explain:document.getElementById('aq-explain').value,
+    type:'mcq'
+  };
+  DB.questions.push(q);save('questions',DB.questions);
+  closeModal('modal-addq');
+  document.getElementById('aq-text').value='';
+  ['aq-a','aq-b','aq-c','aq-d','aq-explain'].forEach(function(id){document.getElementById(id).value='';});
+  toast('Question added to bank!','success');
+  renderQBank();
+  updateDashboard();
+}
+
+function renderQBank(){
+  var qs=DB.questions;
+  var subj=document.getElementById('qb-subject').value;
+  var diff=document.getElementById('qb-diff').value;
+  if(subj)qs=qs.filter(function(q){return q.subject===subj;});
+  if(diff)qs=qs.filter(function(q){return q.difficulty===diff;});
+  var list=document.getElementById('q-bank-list');
+  if(qs.length===0){list.innerHTML='<div style="text-align:center;padding:40px;color:var(--m);"><div style="font-size:2.5rem;margin-bottom:10px;">❓</div><div>No questions in bank yet.</div></div>';return;}
+  var dc={Easy:'badge-green',Medium:'badge-gold',Hard:'badge-red'};
+  list.innerHTML=qs.map(function(q,i){
+    return '<div class="card" style="margin-bottom:8px;padding:14px;"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;"><div style="font-size:.82rem;color:var(--w);line-height:1.6;flex:1;">'+(i+1)+'. '+q.text+'</div><button onclick="deleteQ(\''+q.id+'\')" style="background:none;border:none;color:var(--m2);cursor:pointer;flex-shrink:0;font-size:.8rem;">✕</button></div>'+
+      (q.optA?'<div style="font-size:.7rem;color:var(--m);margin:6px 0;">A: '+q.optA+' | B: '+q.optB+' | C: '+q.optC+' | D: '+q.optD+'</div><div style="font-size:.68rem;color:var(--green);">✓ Correct: '+q.correct+'</div>':'')+
+      '<div style="display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;"><span class="badge badge-purple">'+q.subject+'</span><span class="badge '+(dc[q.difficulty]||'badge-grey')+'">'+q.difficulty+'</span></div></div>';
+  }).join('');
+}
+
+function deleteQ(id){
+  DB.questions=DB.questions.filter(function(q){return q.id!==id;});
+  save('questions',DB.questions);
+  renderQBank();
+  updateDashboard();
+  toast('Question deleted','info');
+}
+
+function viewExamResults(id){
+  showCBTPage('results',document.querySelector('.cbt-tab:nth-child(5)'));
+}
+
+function populateExamSelect(){
+  var sel=document.getElementById('res-exam-select');
+  var exams=DB.exams.length>0?DB.exams:[{id:'demo1',title:'Mathematics First Term CA'}];
+  sel.innerHTML='<option value="">— Select Exam —</option>'+exams.map(function(e){return '<option value="'+e.id+'">'+e.title+'</option>';}).join('');
+}
+
+function loadExamResults(){
+  var students=['Adeyemi Tunde','Blessing Okafor','Chukwuemeka John','Damilola Ojo','Emmanuel Peters','Fatima Usman','Grace Adeleke','Hassan Musa'];
+  var html='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>Student</th><th>Score</th><th>%</th><th>Grade</th><th>Time Taken</th><th>Flags</th><th>Status</th></tr></thead><tbody>'+
+    students.map(function(s,i){
+      var score=Math.floor(8+Math.random()*12);var pct=Math.floor(score/20*100);
+      var grade=pct>=70?'A':pct>=60?'B':pct>=50?'C':'F';
+      var clr=pct>=50?'badge-green':'badge-red';
+      return '<tr><td style="color:var(--m);">'+(i+1)+'</td><td>'+s+'</td><td>'+score+'/20</td><td>'+pct+'%</td><td><span class="badge '+clr+'">'+grade+'</span></td><td>'+(Math.floor(15+Math.random()*15))+'m</td><td style="color:var(--orange);">'+Math.floor(Math.random()*3)+'</td><td><span class="badge badge-green">Submitted</span></td></tr>';
+    }).join('')+'</tbody></table></div>';
+  document.getElementById('exam-results-wrap').innerHTML=html;
+}
+
+function renderSchedule(){
+  document.getElementById('schedule-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--m);"><div style="font-size:2.5rem;margin-bottom:10px;">📅</div><div>No scheduled exams. Create an exam with a start date.</div></div>';
+}
+
+function renderAnalytics(){
+  // Top performers
+  var students=['Adeyemi Tunde','Grace Adeleke','Emmanuel Peters'];
+  var scores=[95,88,84];
+  document.getElementById('top-performers').innerHTML=students.map(function(s,i){
+    return '<div class="perf-bar-row"><div class="pb-name">'+s+'</div><div class="pb-bar-wrap"><div class="pb-bar" style="width:'+scores[i]+'%;background:var(--green);"></div></div><div class="pb-score" style="color:var(--green);">'+scores[i]+'%</div></div>';
+  }).join('');
+  // Low performers
+  var low=['Damilola Ojo','Fatima Usman','Hassan Musa'];
+  var lowS=[38,42,44];
+  document.getElementById('low-performers').innerHTML=low.map(function(s,i){
+    return '<div class="perf-bar-row"><div class="pb-name">'+s+'</div><div class="pb-bar-wrap"><div class="pb-bar" style="width:'+lowS[i]+'%;background:var(--red);"></div></div><div class="pb-score" style="color:var(--red);">'+lowS[i]+'%</div></div>';
+  }).join('');
+  // Subject performance
+  var subjects=['Mathematics','English','Physics','Chemistry','Biology'];
+  var sscores=[72,65,58,61,79];
+  document.getElementById('subject-perf').innerHTML=subjects.map(function(s,i){
+    var sc=sscores[i];var clr=sc>=70?'var(--green)':sc>=50?'var(--gold)':'var(--red)';
+    return '<div class="perf-bar-row"><div class="pb-name">'+s+'</div><div class="pb-bar-wrap" style="width:120px;"><div class="pb-bar" style="width:'+sc+'%;background:'+clr+';"></div></div><div class="pb-score" style="color:'+clr+';">'+sc+'%</div></div>';
+  }).join('');
+  // Hard questions
+  document.getElementById('hard-questions').innerHTML=['Q4: What is the derivative of sin(x)?','Q11: Calculate the compound interest...','Q7: Which gas law states...'].map(function(q,i){
+    return '<div style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.76rem;color:var(--m);">'+q+' <span style="color:var(--red);margin-left:8px;">'+(20+i*8)+'% correct</span></div>';
+  }).join('');
+}
+
+window.addEventListener('load',function(){
+  updateDashboard();
+});
+</script>
+</body>
+</html>
