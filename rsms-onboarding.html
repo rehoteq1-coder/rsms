@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#030305"/>
+<title>RSMS — School Onboarding</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--s1:#0a0a12;--s2:#0f0f1a;--s3:#141422;
+  --gold:#c9a84c;--gold2:#e8c96a;--goldl:rgba(201,168,76,0.1);--goldm:rgba(201,168,76,0.18);
+  --goldb:rgba(201,168,76,0.05);--bd:rgba(201,168,76,0.12);--bd2:rgba(201,168,76,0.25);
+  --green:#10b981;--greenl:rgba(16,185,129,0.1);
+  --blue:#3b82f6;--bluel:rgba(59,130,246,0.1);
+  --purple:#7c3aed;--purplel:rgba(124,58,237,0.1);
+  --red:#ef4444;--redl:rgba(239,68,68,0.1);
+  --w:#f8f4ff;--m:rgba(248,244,255,0.5);--m2:rgba(248,244,255,0.2);
+  --serif:'Fraunces',serif;--font:'Outfit',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:var(--font);background:var(--bg);color:var(--w);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 60% 40% at 10% 0%,rgba(124,58,237,0.07),transparent),
+    radial-gradient(ellipse 50% 50% at 90% 100%,rgba(201,168,76,0.06),transparent);}
+
+header{position:sticky;top:0;z-index:100;background:rgba(3,3,5,.96);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--bd);padding:14px 20px;
+  display:flex;align-items:center;justify-content:space-between;}
+.hdr-logo{display:flex;align-items:center;gap:10px;}
+.hdr-hex{width:36px;height:36px;border-radius:9px;
+  background:linear-gradient(135deg,#1a0a3e,#2d1b6e);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 16px rgba(201,168,76,.2);}
+.hdr-name{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--gold);}
+.hdr-sub{font-size:.52rem;color:var(--m);text-transform:uppercase;letter-spacing:.1em;}
+
+/* PROGRESS */
+.progress-wrap{max-width:720px;margin:0 auto;padding:20px 16px 0;}
+.prog-steps{display:flex;gap:0;overflow-x:auto;}
+.prog-steps::-webkit-scrollbar{display:none;}
+.prog-step{flex:1;min-width:70px;text-align:center;position:relative;padding-bottom:12px;}
+.prog-step::after{content:'';position:absolute;bottom:5px;left:50%;right:-50%;height:2px;background:var(--bd);}
+.prog-step:last-child::after{display:none;}
+.prog-step.done::after,.prog-step.active::after{background:var(--gold);}
+.ps-num{width:28px;height:28px;border-radius:50%;background:var(--s2);border:2px solid var(--bd);
+  display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;
+  color:var(--m);margin:0 auto 4px;position:relative;z-index:1;transition:all .3s;}
+.prog-step.done .ps-num{background:var(--gold);border-color:var(--gold);color:#000;}
+.prog-step.active .ps-num{background:linear-gradient(135deg,#2d1b6e,var(--gold));border-color:var(--gold);color:#fff;}
+.ps-lbl{font-size:.58rem;color:var(--m2);}
+.prog-step.active .ps-lbl{color:var(--gold);}
+
+main{max-width:720px;margin:0 auto;padding:24px 16px 60px;position:relative;z-index:1;}
+
+/* STEPS */
+.step{display:none;}
+.step.active{display:block;animation:fade-up .4s ease both;}
+@keyframes fade-up{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+
+.step-hdr{margin-bottom:22px;}
+.step-hdr h2{font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--w);margin-bottom:5px;}
+.step-hdr p{font-size:.8rem;color:var(--m);line-height:1.65;}
+
+/* ID DISPLAY */
+.school-id-display{
+  background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(201,168,76,.08));
+  border:1px solid var(--bd2);border-radius:16px;padding:20px;
+  text-align:center;margin-bottom:20px;}
+.sid-label{font-size:.6rem;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;}
+.sid-value{font-family:var(--serif);font-size:2rem;font-weight:900;color:var(--gold);
+  letter-spacing:.08em;margin-bottom:6px;}
+.sid-sub{font-size:.68rem;color:var(--m);line-height:1.6;}
+.sid-copy{background:var(--goldl);border:1px solid var(--bd2);border-radius:8px;
+  padding:6px 14px;font-size:.7rem;font-weight:700;color:var(--gold);cursor:pointer;
+  font-family:var(--font);transition:all .2s;margin-top:10px;display:inline-block;}
+.sid-copy:hover{background:var(--goldm);}
+
+/* PLAN CARDS */
+.plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.plan-card{background:var(--s1);border:2px solid var(--bd);border-radius:14px;padding:16px;cursor:pointer;transition:all .25s;}
+.plan-card:hover,.plan-card.selected{border-color:var(--gold);background:var(--goldl);}
+.plan-card.selected .plan-name{color:var(--gold);}
+.plan-name{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--w);margin-bottom:4px;}
+.plan-price{font-size:.8rem;color:var(--gold);font-weight:700;margin-bottom:8px;}
+.plan-features{list-style:none;padding:0;}
+.plan-features li{font-size:.7rem;color:var(--m);padding:3px 0;display:flex;align-items:center;gap:6px;}
+.plan-features li::before{content:'✓';color:var(--green);font-size:.65rem;}
+
+/* BRANDING */
+.logo-upload{border:2px dashed var(--bd2);border-radius:14px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--goldb);margin-bottom:12px;}
+.logo-upload:hover{border-color:var(--gold);background:var(--goldl);}
+.logo-preview{max-width:100px;max-height:80px;object-fit:contain;display:none;margin:0 auto 8px;}
+.color-row{display:flex;gap:10px;align-items:center;margin-bottom:12px;}
+.color-swatch{width:36px;height:36px;border-radius:8px;border:2px solid var(--bd);cursor:pointer;transition:all .2s;}
+.color-swatch:hover{transform:scale(1.1);}
+
+/* FORM */
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:20px;margin-bottom:16px;}
+.card-title{font-size:.84rem;font-weight:700;color:var(--w);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.sec-label{font-size:.6rem;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--bd);}
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
+.fg label{font-size:.6rem;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:.1em;}
+.fg label .req{color:var(--red);}
+.fg label .reserved{color:var(--purple);font-size:.55rem;font-weight:600;background:var(--purplel);border:1px solid rgba(124,58,237,.2);border-radius:4px;padding:1px 6px;margin-left:5px;}
+.fg label .opt{color:var(--m2);font-size:.55rem;font-weight:500;margin-left:4px;}
+.fi{background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:10px;padding:10px 13px;color:var(--w);font-size:.84rem;font-family:var(--font);outline:none;width:100%;transition:all .2s;}
+.fi:focus{border-color:rgba(201,168,76,.5);box-shadow:0 0 0 3px rgba(201,168,76,.07);}
+.fi:disabled{opacity:.5;cursor:not-allowed;}
+.fi.reserved-field{border-color:rgba(124,58,237,.25);background:rgba(124,58,237,.03);}
+select.fi{cursor:pointer;}
+textarea.fi{min-height:75px;resize:vertical;}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fg-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.fi-hint{font-size:.6rem;color:var(--m2);margin-top:3px;line-height:1.5;}
+.fi-hint.govt{color:rgba(124,58,237,.7);}
+
+/* MOU */
+.mou-box{background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:16px;
+  font-size:.76rem;color:var(--m);line-height:1.9;max-height:280px;overflow-y:auto;margin-bottom:14px;}
+.mou-box::-webkit-scrollbar{width:3px;}
+.mou-box::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);}
+.mou-box h4{color:var(--gold);font-family:var(--serif);margin-bottom:8px;font-size:.88rem;}
+.mou-box ol{padding-left:16px;}
+.mou-box ol li{margin-bottom:6px;}
+
+/* SIGNATURE */
+.sig-pad{border:2px solid var(--bd);border-radius:12px;background:rgba(255,255,255,.02);cursor:crosshair;display:block;touch-action:none;}
+.sig-btns{display:flex;gap:8px;margin-top:8px;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:12px 20px;border:none;border-radius:11px;cursor:pointer;font-family:var(--font);font-size:.86rem;font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-gold{background:linear-gradient(135deg,#2d1b6e,#4a2d9e,var(--gold));color:#fff;box-shadow:0 4px 20px rgba(201,168,76,.2);}
+.btn-gold:hover{box-shadow:0 6px 28px rgba(201,168,76,.35);transform:translateY(-1px);}
+.btn-ghost{background:var(--s2);border:1px solid var(--bd);color:var(--m);}
+.btn-green{background:linear-gradient(135deg,#064e3b,var(--green));color:#fff;}
+.btn-row{display:flex;gap:10px;margin-top:20px;}
+
+/* SUCCESS */
+#success-screen{display:none;text-align:center;padding:40px 20px;}
+.success-icon{font-size:4rem;margin-bottom:20px;animation:bounce-in .6s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes bounce-in{from{opacity:0;transform:scale(.3);}to{opacity:1;transform:scale(1);}}
+.success-title{font-family:var(--serif);font-size:1.8rem;font-weight:900;color:var(--gold);margin-bottom:10px;}
+.success-sub{font-size:.84rem;color:var(--m);line-height:1.75;max-width:440px;margin:0 auto 24px;}
+.credentials-box{background:var(--s1);border:1px solid var(--bd2);border-radius:16px;padding:20px;text-align:left;margin-bottom:20px;}
+.cred-title{font-size:.7rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;}
+.cred-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.78rem;}
+.cred-row:last-child{border:none;}
+.cred-label{color:var(--m);}
+.cred-val{color:var(--w);font-family:monospace;font-weight:600;font-size:.82rem;}
+.cred-copy{background:none;border:none;color:var(--gold);cursor:pointer;font-size:.7rem;padding:2px 6px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);border-radius:10px;padding:9px 18px;font-size:.78rem;z-index:999;transition:transform .3s;white-space:nowrap;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#081a0f;border:1px solid rgba(16,185,129,.4);color:#6ee7b7;}
+.toast.error{background:#1a0808;border:1px solid rgba(239,68,68,.4);color:#fca5a5;}
+.toast.info{background:#0a0a18;border:1px solid var(--bd2);color:var(--gold);}
+
+@media(max-width:600px){
+  .plan-grid{grid-template-columns:1fr;}
+  .fg-row,.fg-row3{grid-template-columns:1fr;}
+  main{padding:16px 14px 50px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-logo">
+    <div class="hdr-hex">
+      <svg width="22" height="22" viewBox="0 0 120 120">
+        <polygon points="60,4 111,32 111,88 60,116 9,88 9,32" fill="transparent" stroke="#c9a84c" stroke-width="5"/>
+        <text x="60" y="80" text-anchor="middle" font-family="Georgia,serif" font-size="62" font-weight="bold" fill="#c9a84c">R</text>
+      </svg>
+    </div>
+    <div>
+      <div class="hdr-name">RSMS School Onboarding</div>
+      <div class="hdr-sub">Rehoteq Technologies • Okitipupa, Nigeria</div>
+    </div>
+  </div>
+  <div style="font-size:.68rem;color:var(--m);">07036302585 • rehoteq@gmail.com</div>
+</header>
+
+<div class="progress-wrap">
+  <div class="prog-steps" id="prog-steps">
+    <div class="prog-step active" id="ps-1"><div class="ps-num">1</div><div class="ps-lbl">School Info</div></div>
+    <div class="prog-step" id="ps-2"><div class="ps-num">2</div><div class="ps-lbl">Branding</div></div>
+    <div class="prog-step" id="ps-3"><div class="ps-num">3</div><div class="ps-lbl">Plan</div></div>
+    <div class="prog-step" id="ps-4"><div class="ps-num">4</div><div class="ps-lbl">Structure</div></div>
+    <div class="prog-step" id="ps-5"><div class="ps-num">5</div><div class="ps-lbl">ID & Access</div></div>
+    <div class="prog-step" id="ps-6"><div class="ps-num">6</div><div class="ps-lbl">MOU</div></div>
+    <div class="prog-step" id="ps-7"><div class="ps-num">✓</div><div class="ps-lbl">Done</div></div>
+  </div>
+</div>
+
+<main>
+
+<!-- STEP 1: SCHOOL INFO -->
+<div class="step active" id="step-1">
+  <div class="step-hdr">
+    <h2>🏫 School Information</h2>
+    <p>Tell us about your school. This information will appear on result cards, certificates and all official documents.</p>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Basic Information</div>
+    <div class="fg"><label>School Full Name <span class="req">*</span></label>
+      <input class="fi" type="text" id="s-name" placeholder="e.g. Government Technical College, Okitipupa" oninput="generateSchoolID()"/>
+    </div>
+    <div class="fg"><label>School Short Name / Acronym</label>
+      <input class="fi" type="text" id="s-short" placeholder="e.g. GTC Okitipupa"/>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>School Type <span class="req">*</span></label>
+        <select class="fi" id="s-type" onchange="generateSchoolID()">
+          <option value="SEC">Secondary School</option>
+          <option value="PRI">Primary School</option>
+          <option value="COM">Combined (Primary + Secondary)</option>
+          <option value="INT">International School</option>
+          <option value="TEC">Technical/Vocational</option>
+        </select>
+      </div>
+      <div class="fg"><label>Ownership</label>
+        <select class="fi" id="s-ownership">
+          <option>Private</option><option>Public (Government)</option>
+          <option>Mission/Faith-based</option><option>Community</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Gender Policy</label>
+        <select class="fi" id="s-gender">
+          <option>Co-educational (Mixed)</option>
+          <option>Boys Only</option><option>Girls Only</option>
+        </select>
+      </div>
+      <div class="fg"><label>Boarding Type</label>
+        <select class="fi" id="s-boarding">
+          <option>Day School</option><option>Day and Boarding</option><option>Full Boarding</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Location</div>
+    <div class="fg-row">
+      <div class="fg"><label>State <span class="req">*</span></label>
+        <select class="fi" id="s-state" onchange="generateSchoolID();updatePricingTier()">
+          <option value="">— Select State —</option>
+          <option value="AB">Abia</option><option value="AD">Adamawa</option>
+          <option value="AK">Akwa Ibom</option><option value="AN">Anambra</option>
+          <option value="BA">Bauchi</option><option value="BY">Bayelsa</option>
+          <option value="BE">Benue</option><option value="BO">Borno</option>
+          <option value="CR">Cross River</option><option value="DE">Delta</option>
+          <option value="EB">Ebonyi</option><option value="ED">Edo</option>
+          <option value="EK">Ekiti</option><option value="EN">Enugu</option>
+          <option value="FC">FCT Abuja</option><option value="GO">Gombe</option>
+          <option value="IM">Imo</option><option value="JI">Jigawa</option>
+          <option value="KD">Kaduna</option><option value="KN">Kano</option>
+          <option value="KT">Katsina</option><option value="KE">Kebbi</option>
+          <option value="KO">Kogi</option><option value="KW">Kwara</option>
+          <option value="LA">Lagos</option><option value="NA">Nasarawa</option>
+          <option value="NI">Niger</option><option value="OG">Ogun</option>
+          <option value="OD">Ondo</option><option value="OS">Osun</option>
+          <option value="OY">Oyo</option><option value="PL">Plateau</option>
+          <option value="RI">Rivers</option><option value="SO">Sokoto</option>
+          <option value="TA">Taraba</option><option value="YO">Yobe</option>
+          <option value="ZA">Zamfara</option>
+        </select>
+      </div>
+      <div class="fg"><label>LGA <span class="req">*</span></label>
+        <input class="fi" type="text" id="s-lga" placeholder="Local Government Area"/>
+      </div>
+    </div>
+    <div class="fg"><label>City / Town</label>
+      <input class="fi" type="text" id="s-city" placeholder="e.g. Okitipupa"/>
+    </div>
+    <div class="fg"><label>Full Address <span class="req">*</span></label>
+      <textarea class="fi" id="s-address" placeholder="School full address..."></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Contacts</div>
+    <div class="fg-row">
+      <div class="fg"><label>Principal / Head Teacher <span class="req">*</span></label>
+        <input class="fi" type="text" id="s-principal" placeholder="Full name"/>
+      </div>
+      <div class="fg"><label>Principal's Qualification</label>
+        <input class="fi" type="text" id="s-principal-qual" placeholder="e.g. B.Ed, M.Ed, PGDE"/>
+      </div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>School Phone <span class="req">*</span></label>
+        <input class="fi" type="tel" id="s-phone" placeholder="080XXXXXXXX"/>
+      </div>
+      <div class="fg"><label>WhatsApp Number</label>
+        <input class="fi" type="tel" id="s-wa" placeholder="Same or different"/>
+      </div>
+    </div>
+    <div class="fg"><label>School Email</label>
+      <input class="fi" type="email" id="s-email" placeholder="school@email.com"/>
+    </div>
+    <div class="fg"><label>School Website (if any)</label>
+      <input class="fi" type="url" id="s-website" placeholder="https://www.schoolname.edu.ng"/>
+    </div>
+    <div class="fg"><label>School Motto</label>
+      <input class="fi" type="text" id="s-motto" placeholder="e.g. Excellence and Integrity"/>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Year Founded</label>
+        <input class="fi" type="number" id="s-founded" placeholder="e.g. 1985" min="1800" max="2026"/>
+      </div>
+      <div class="fg"><label>Approximate Student Population</label>
+        <select class="fi" id="s-population">
+          <option>Under 100</option><option>100–200</option><option>200–500</option>
+          <option>500–1,000</option><option>1,000–1,500</option><option>Over 1,500</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Government Registration <span style="font-size:.58rem;color:var(--m);font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px;">(for official integration)</span></div>
+    <div class="fg">
+      <label>DNEMIS School Code <span class="reserved">FG Reserved</span></label>
+      <input class="fi reserved-field" type="text" id="s-dnemis" placeholder="10-digit FG school code (if assigned)"/>
+      <div class="fi-hint govt">🏛 This is your school's Federal Government 10-digit identification number from the Digitized National Education Management Information System (DNEMIS). Leave blank if not yet assigned.</div>
+    </div>
+    <div class="fg">
+      <label>State Ministry Registration Number <span class="opt">(optional)</span></label>
+      <input class="fi" type="text" id="s-state-reg" placeholder="State education ministry reg. no."/>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-gold" onclick="nextStep(1)" style="flex:1;">Next: School Branding →</button>
+  </div>
+</div>
+
+<!-- STEP 2: BRANDING -->
+<div class="step" id="step-2">
+  <div class="step-hdr">
+    <h2>🎨 School Branding</h2>
+    <p>Upload your school logo and set your school colours. These will appear on all reports, certificates and the student/parent portal.</p>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">School Logo</div>
+    <div class="logo-upload" onclick="document.getElementById('logo-file').click()" id="logo-zone">
+      <img id="logo-preview" class="logo-preview" src="" alt=""/>
+      <div id="logo-placeholder">
+        <div style="font-size:2.5rem;margin-bottom:8px;">🏫</div>
+        <div style="font-size:.8rem;font-weight:600;color:var(--m);">Tap to upload school logo</div>
+        <div style="font-size:.65rem;color:var(--m2);margin-top:4px;">PNG or JPG • Max 2MB • Square preferred • White/transparent background</div>
+      </div>
+    </div>
+    <input type="file" id="logo-file" accept="image/*" style="display:none;" onchange="previewLogo(this)"/>
+
+    <div style="margin-top:12px;">
+      <div class="sec-label">Principal's Signature <span class="opt" style="font-size:.55rem;color:var(--m2);font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px;">(appears on result cards)</span></div>
+      <div class="logo-upload" onclick="document.getElementById('sig-file').click()">
+        <div style="font-size:1.5rem;margin-bottom:6px;">✍️</div>
+        <div style="font-size:.76rem;color:var(--m);">Upload principal's signature image</div>
+        <div id="sig-preview-name" style="font-size:.65rem;color:var(--green);margin-top:4px;display:none;"></div>
+      </div>
+      <input type="file" id="sig-file" accept="image/*" style="display:none;" onchange="markUpload(this,'sig-preview-name')"/>
+    </div>
+
+    <div style="margin-top:12px;">
+      <div class="sec-label">School Stamp/Seal <span class="opt" style="font-size:.55rem;color:var(--m2);font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px;">(optional)</span></div>
+      <div class="logo-upload" onclick="document.getElementById('stamp-file').click()">
+        <div style="font-size:1.5rem;margin-bottom:6px;">🔏</div>
+        <div style="font-size:.76rem;color:var(--m);">Upload school stamp or seal</div>
+        <div id="stamp-preview-name" style="font-size:.65rem;color:var(--green);margin-top:4px;display:none;"></div>
+      </div>
+      <input type="file" id="stamp-file" accept="image/*" style="display:none;" onchange="markUpload(this,'stamp-preview-name')"/>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">School Colours</div>
+    <div class="fg">
+      <label>Primary Colour</label>
+      <div class="color-row">
+        <input type="color" id="color-primary" value="#c9a84c" style="width:50px;height:36px;border-radius:8px;border:1px solid var(--bd);cursor:pointer;padding:2px;" oninput="updateColorPreview()"/>
+        <input class="fi" type="text" id="color-primary-hex" value="#c9a84c" placeholder="#c9a84c" style="width:110px;" oninput="syncColorPicker('primary')"/>
+        <span style="font-size:.72rem;color:var(--m);">Used in portal header, buttons and accents</span>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Secondary Colour</label>
+      <div class="color-row">
+        <input type="color" id="color-secondary" value="#030305" style="width:50px;height:36px;border-radius:8px;border:1px solid var(--bd);cursor:pointer;padding:2px;" oninput="updateColorPreview()"/>
+        <input class="fi" type="text" id="color-secondary-hex" value="#030305" placeholder="#030305" style="width:110px;" oninput="syncColorPicker('secondary')"/>
+        <span style="font-size:.72rem;color:var(--m);">Used for backgrounds and sidebar</span>
+      </div>
+    </div>
+
+    <!-- COLOUR PREVIEW -->
+    <div id="color-preview" style="border-radius:12px;overflow:hidden;border:1px solid var(--bd);margin-top:8px;">
+      <div id="prev-header" style="padding:12px 16px;display:flex;align-items:center;gap:10px;background:#c9a84c;">
+        <div style="width:28px;height:28px;border-radius:7px;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#fff;">R</div>
+        <div style="font-size:.82rem;font-weight:700;color:#000;" id="prev-school-name">School Name</div>
+        <div style="margin-left:auto;font-size:.62rem;background:rgba(0,0,0,.15);border-radius:5px;padding:3px 8px;color:#000;">RSMS</div>
+      </div>
+      <div style="padding:14px;background:#030305;" id="prev-body">
+        <div style="font-size:.72rem;color:rgba(255,255,255,.5);">Preview of your school portal</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="prevStep(2)">← Back</button>
+    <button class="btn btn-gold" onclick="nextStep(2)" style="flex:1;">Next: Choose Plan →</button>
+  </div>
+</div>
+
+<!-- STEP 3: PLAN -->
+<div class="step" id="step-3">
+  <div class="step-hdr">
+    <h2>⭐ Choose Your Plan</h2>
+    <p id="tier-notice">Pricing based on your school's location.</p>
+  </div>
+
+  <div class="plan-grid" id="plan-grid"></div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title">✅ All Plans Include</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.74rem;color:var(--m);">
+      <div>✓ Free setup & configuration</div>
+      <div>✓ Free staff training</div>
+      <div>✓ Free data migration</div>
+      <div>✓ Free WhatsApp support</div>
+      <div>✓ All 5 portals included</div>
+      <div>✓ Free software updates</div>
+      <div>✓ Biometric login</div>
+      <div>✓ QR code attendance</div>
+      <div>✓ LIN & NIN field ready</div>
+      <div>✓ DNEMIS integration ready</div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="prevStep(3)">← Back</button>
+    <button class="btn btn-gold" onclick="nextStep(3)" style="flex:1;">Next: School Structure →</button>
+  </div>
+</div>
+
+<!-- STEP 4: SCHOOL STRUCTURE -->
+<div class="step" id="step-4">
+  <div class="step-hdr">
+    <h2>🏫 School Structure</h2>
+    <p>Configure your academic calendar, classes, subjects and fee amounts.</p>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Academic Calendar</div>
+    <div class="fg-row">
+      <div class="fg"><label>Current Session <span class="req">*</span></label>
+        <select class="fi" id="st-session">
+          <option>2025/2026</option><option>2026/2027</option>
+        </select>
+      </div>
+      <div class="fg"><label>Current Term <span class="req">*</span></label>
+        <select class="fi" id="st-term">
+          <option>First Term</option><option>Second Term</option><option>Third Term</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Term Start Date</label><input class="fi" type="date" id="st-start"/></div>
+      <div class="fg"><label>Term End Date</label><input class="fi" type="date" id="st-end"/></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Classes Available</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;" id="classes-check">
+      <!-- Generated by JS -->
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Subjects Offered</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;" id="subjects-check"></div>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Fee Structure</div>
+    <div id="fee-structure">
+      <div class="fg-row">
+        <div class="fg"><label>JSS 1–3 School Fees (₦/term)</label><input class="fi" type="number" id="fee-jss" placeholder="e.g. 35000"/></div>
+        <div class="fg"><label>SS 1–3 School Fees (₦/term)</label><input class="fi" type="number" id="fee-ss" placeholder="e.g. 45000"/></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Acceptance Fee (₦, one-time)</label><input class="fi" type="number" id="fee-accept" placeholder="e.g. 10000"/></div>
+        <div class="fg"><label>Exam Fee (₦/term)</label><input class="fi" type="number" id="fee-exam" placeholder="e.g. 5000"/></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Grading System</div>
+    <div class="fg"><label>Grading Scale</label>
+      <select class="fi" id="st-grade">
+        <option>A(70-100), B(60-69), C(50-59), D(40-49), F(0-39) — WAEC/NECO Standard</option>
+        <option>A(80-100), B(65-79), C(50-64), D(40-49), F(0-39) — Strict Scale</option>
+        <option>A(75-100), B(60-74), C(45-59), D(35-44), F(0-34) — Custom</option>
+      </select>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>CA Score Weight (%)</label><input class="fi" type="number" id="st-ca" value="40" min="0" max="100"/></div>
+      <div class="fg"><label>Exam Score Weight (%)</label><input class="fi" type="number" id="st-exam" value="60" min="0" max="100"/></div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="prevStep(4)">← Back</button>
+    <button class="btn btn-gold" onclick="nextStep(4)" style="flex:1;">Next: ID & Access →</button>
+  </div>
+</div>
+
+<!-- STEP 5: ID & ACCESS -->
+<div class="step" id="step-5">
+  <div class="step-hdr">
+    <h2>🔑 School ID & Access Credentials</h2>
+    <p>Your unique school ID has been generated. Keep these credentials safe — they are how your school accesses RSMS.</p>
+  </div>
+
+  <!-- GENERATED SCHOOL ID -->
+  <div class="school-id-display">
+    <div class="sid-label">Your RSMS School ID</div>
+    <div class="sid-value" id="generated-school-id">OND-SEC-0001</div>
+    <div class="sid-sub">This is your permanent school identifier. It appears on all student records, result cards and certificates.</div>
+    <div class="sid-copy" onclick="copySchoolID()">📋 Copy School ID</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔐 Admin Login Credentials</div>
+    <div style="font-size:.76rem;color:var(--m);margin-bottom:12px;line-height:1.7;">
+      These credentials will be sent to you via WhatsApp after onboarding is complete. Keep them private.
+    </div>
+    <div class="fg"><label>Admin Email <span class="req">*</span></label>
+      <input class="fi" type="email" id="admin-email" placeholder="admin@yourschool.com"/>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Admin Password <span class="req">*</span></label>
+        <input class="fi" type="password" id="admin-pw" placeholder="Create strong password" minlength="8"/>
+      </div>
+      <div class="fg"><label>Confirm Password</label>
+        <input class="fi" type="password" id="admin-pw2" placeholder="Repeat password"/>
+      </div>
+    </div>
+    <div class="fg"><label>Admin Phone (for WhatsApp delivery)</label>
+      <input class="fi" type="tel" id="admin-phone" placeholder="080XXXXXXXX"/>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🌐 Your School Portal URL</div>
+    <div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:.64rem;color:var(--m);margin-bottom:5px;">Your portal will be accessible at:</div>
+      <div style="font-family:monospace;font-size:.85rem;color:var(--gold);" id="portal-url">rehoteq1-coder.github.io/rsms</div>
+    </div>
+    <div style="font-size:.7rem;color:var(--m);line-height:1.7;">
+      Share this URL with your teachers, students and parents. They log in with their school-provided credentials and the portal automatically routes them to their correct portal.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📱 Access Codes</div>
+    <div class="fg-row">
+      <div class="fg"><label>Teacher Self-Registration Code</label>
+        <input class="fi" type="text" id="teacher-code" readonly/>
+        <div class="fi-hint">Share with teachers to self-register</div>
+      </div>
+      <div class="fg"><label>Student Enrollment Code</label>
+        <input class="fi" type="text" id="student-code" readonly/>
+        <div class="fi-hint">Share on application form</div>
+      </div>
+    </div>
+    <div class="fg"><label>Parent Portal Access Code</label>
+      <input class="fi" type="text" id="parent-code" readonly/>
+      <div class="fi-hint">Share with parents after student enrollment</div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="prevStep(5)">← Back</button>
+    <button class="btn btn-gold" onclick="nextStep(5)" style="flex:1;">Next: Agreement →</button>
+  </div>
+</div>
+
+<!-- STEP 6: MOU -->
+<div class="step" id="step-6">
+  <div class="step-hdr">
+    <h2>📄 Service Agreement</h2>
+    <p>Please read and sign the Memorandum of Understanding before we activate your RSMS account.</p>
+  </div>
+
+  <div class="mou-box">
+    <h4>MEMORANDUM OF UNDERSTANDING</h4>
+    <p><strong>Between:</strong> Rehoteq Technologies, Okitipupa, Ondo State, Nigeria ("Service Provider")</p>
+    <p><strong>And:</strong> <span id="mou-school-name">[School Name]</span>, <span id="mou-school-addr">[School Address]</span> ("School")</p>
+    <br/>
+    <p><strong>1. SERVICE DESCRIPTION</strong></p>
+    <p>Rehoteq Technologies agrees to provide the School with access to the Rehoteq School Management System (RSMS), a cloud-based school administration platform hosted on Firebase infrastructure.</p>
+    <br/>
+    <ol>
+      <li><strong>DATA OWNERSHIP:</strong> All student, staff and academic data entered into RSMS belongs exclusively to the School. Rehoteq Technologies will not access, share or sell school data without explicit written consent.</li>
+      <li><strong>DATA PRIVACY:</strong> All student NIN and personal information will be stored securely in encrypted form. The LIN field is reserved for Federal Government integration as per DNEMIS requirements.</li>
+      <li><strong>SERVICE UPTIME:</strong> Rehoteq Technologies will make reasonable effort to maintain system availability of at least 95% uptime during each school term.</li>
+      <li><strong>PAYMENT TERMS:</strong> The School agrees to pay the agreed subscription fee before each term begins. Failure to pay within 14 days of term commencement may result in read-only access until payment is made.</li>
+      <li><strong>ONBOARDING FEE:</strong> A one-time onboarding fee is payable upon signing this agreement. This covers setup, training, data migration and customisation.</li>
+      <li><strong>SUPPORT:</strong> Rehoteq Technologies will provide WhatsApp and phone support during business hours (8am–6pm Monday–Saturday). Emergency support is available 24/7 via WhatsApp.</li>
+      <li><strong>TERMINATION:</strong> Either party may terminate this agreement with 30 days written notice. Upon termination, the School's data will be exported and provided to them in CSV format within 7 working days.</li>
+      <li><strong>UPDATES:</strong> Software updates are provided free of charge throughout the subscription period.</li>
+      <li><strong>ACCEPTABLE USE:</strong> The School agrees not to use RSMS for any unlawful purpose, and to ensure all data entered is accurate and truthful.</li>
+      <li><strong>INTELLECTUAL PROPERTY:</strong> RSMS software, code and design remain the exclusive property of Rehoteq Technologies. The School is granted a non-exclusive licence to use the system during their subscription period.</li>
+      <li><strong>GOVERNMENT COMPLIANCE:</strong> The School agrees to provide DNEMIS school codes and student LINs as required by the Federal Ministry of Education, and to keep such records updated within RSMS.</li>
+      <li><strong>CONTACT:</strong> Rehoteq Technologies, Okitipupa, Ondo State. Phone: 07036302585 / 08166519177. Email: rehoteq@gmail.com</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <div class="card-title">✍️ Digital Signature</div>
+    <div style="font-size:.76rem;color:var(--m);margin-bottom:10px;">Sign below to confirm you have read and agreed to the terms above.</div>
+    <canvas class="sig-pad" id="sig-canvas" width="100%" height="120"></canvas>
+    <div class="sig-btns">
+      <button class="btn btn-ghost btn-sm" onclick="clearSig()">🗑 Clear</button>
+      <div style="flex:1;text-align:right;font-size:.65rem;color:var(--m2);padding-top:8px;">Authorised signature of <span id="mou-principal">[Principal Name]</span></div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <div class="fg-row">
+        <div class="fg"><label>Signatory Full Name <span class="req">*</span></label>
+          <input class="fi" type="text" id="sig-name" placeholder="Name of person signing"/>
+        </div>
+        <div class="fg"><label>Position / Title</label>
+          <input class="fi" type="text" id="sig-title" placeholder="e.g. Principal, Proprietor"/>
+        </div>
+      </div>
+      <div class="fg"><label>Date</label>
+        <input class="fi" type="date" id="sig-date"/>
+      </div>
+    </div>
+
+    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.78rem;color:var(--m);margin-top:8px;">
+      <input type="checkbox" id="mou-agree" style="width:16px;height:16px;accent-color:var(--gold);margin-top:2px;flex-shrink:0;cursor:pointer;"/>
+      I confirm I am authorised to sign on behalf of <span id="mou-school-confirm" style="color:var(--w);margin:0 4px;">[School Name]</span> and I agree to all terms of this Memorandum of Understanding.
+    </label>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="prevStep(6)">← Back</button>
+    <button class="btn btn-green" onclick="submitOnboarding()" style="flex:1;">🎓 Submit & Activate RSMS</button>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="success-screen">
+  <div class="success-icon">🎉</div>
+  <div class="success-title">School Onboarded Successfully!</div>
+  <div class="success-sub">Your RSMS account is being set up. You will receive your login credentials and portal link via WhatsApp within 24 hours.</div>
+
+  <div class="credentials-box">
+    <div class="cred-title">Your School Credentials</div>
+    <div class="cred-row">
+      <span class="cred-label">School ID</span>
+      <span class="cred-val" id="final-school-id">OND-SEC-0001</span>
+      <button class="cred-copy" onclick="copyText('final-school-id')">Copy</button>
+    </div>
+    <div class="cred-row">
+      <span class="cred-label">Portal URL</span>
+      <span class="cred-val" style="font-size:.72rem;" id="final-url">rehoteq1-coder.github.io/rsms</span>
+      <button class="cred-copy" onclick="copyText('final-url')">Copy</button>
+    </div>
+    <div class="cred-row">
+      <span class="cred-label">Admin Email</span>
+      <span class="cred-val" id="final-email">—</span>
+    </div>
+    <div class="cred-row">
+      <span class="cred-label">Reference</span>
+      <span class="cred-val" id="final-ref">RSMS-0000000</span>
+    </div>
+  </div>
+
+  <div style="background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:16px;text-align:left;margin-bottom:20px;">
+    <div style="font-size:.7rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;">Next Steps</div>
+    <div style="font-size:.76rem;color:var(--m);line-height:1.8;">
+      <div>1. Rehoteq will contact you within 24 hours via WhatsApp</div>
+      <div>2. Pay onboarding fee to activate your account</div>
+      <div>3. Receive login credentials and start adding students</div>
+      <div>4. Training session scheduled with your staff</div>
+    </div>
+  </div>
+
+  <button class="btn btn-gold" style="width:100%;max-width:300px;" onclick="window.open('https://wa.me/2347036302585?text=I just completed RSMS onboarding. My school ID is '+document.getElementById('final-school-id').textContent,'_blank')">
+    📱 Confirm on WhatsApp
+  </button>
+</div>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+var currentStep = 1;
+var formData = {};
+var sigCanvas, sigCtx, sigDrawing = false;
+
+// School ID counter (in real app this comes from Firebase)
+var schoolCount = parseInt(localStorage.getItem('rsms_school_count') || '0') + 1;
+
+// Nigerian state to pricing tier
+var TIER_A = ['LA','FC','RI'];
+var TIER_B = ['KN','KD','OY','OG','AN','EN','IM','ED','DE','AK','CR','BE','PL','KW','OS','EK'];
+// Everything else is Tier C
+
+// Pricing data
+var PRICING = {
+  A: {name:'Tier A (Lagos/Abuja/PH)',plans:[
+    {name:'Starter',students:'Up to 200',term:'₦22,500',year:'₦67,500',onboard:'₦10,000'},
+    {name:'Standard',students:'Up to 500',term:'₦45,000',year:'₦135,000',onboard:'₦25,000'},
+    {name:'Premium',students:'Up to 1,500',term:'₦90,000',year:'₦270,000',onboard:'₦50,000'},
+    {name:'Enterprise',students:'Unlimited + Multi-branch',term:'—',year:'₦475,000',onboard:'₦100,000'},
+  ]},
+  B: {name:'Tier B (State Capitals)',plans:[
+    {name:'Starter',students:'Up to 200',term:'₦15,000',year:'₦45,000',onboard:'₦10,000'},
+    {name:'Standard',students:'Up to 500',term:'₦32,500',year:'₦97,500',onboard:'₦25,000'},
+    {name:'Premium',students:'Up to 1,500',term:'₦60,000',year:'₦180,000',onboard:'₦50,000'},
+    {name:'Enterprise',students:'Unlimited + Multi-branch',term:'—',year:'₦325,000',onboard:'₦100,000'},
+  ]},
+  C: {name:'Tier C (Other States)',plans:[
+    {name:'Starter',students:'Up to 200',term:'₦7,500',year:'₦22,500',onboard:'₦10,000'},
+    {name:'Standard',students:'Up to 500',term:'₦17,500',year:'₦52,500',onboard:'₦25,000'},
+    {name:'Premium',students:'Up to 1,500',term:'₦35,000',year:'₦105,000',onboard:'₦50,000'},
+    {name:'Enterprise',students:'Unlimited + Multi-branch',term:'—',year:'₦190,000',onboard:'₦100,000'},
+  ]}
+};
+
+var selectedPlan = 0;
+var selectedTier = 'C';
+
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.className='toast '+(type||'info')+' show';
+  t.innerHTML=msg;
+  clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3500);
+}
+
+// ── ID GENERATOR ──
+function generateSchoolID(){
+  var state = document.getElementById('s-state').value || 'OND';
+  var type = document.getElementById('s-type').value || 'SEC';
+  var num = String(schoolCount).padStart(4,'0');
+  var id = state+'-'+type+'-'+num;
+  document.getElementById('generated-school-id').textContent = id;
+  document.getElementById('final-school-id').textContent = id;
+  // Generate access codes
+  var tc = 'TCH-'+id+'-'+Math.floor(1000+Math.random()*9000);
+  var sc = 'STU-'+id+'-'+Math.floor(1000+Math.random()*9000);
+  var pc = 'PAR-'+id+'-'+Math.floor(1000+Math.random()*9000);
+  if(document.getElementById('teacher-code')) document.getElementById('teacher-code').value = tc;
+  if(document.getElementById('student-code')) document.getElementById('student-code').value = sc;
+  if(document.getElementById('parent-code')) document.getElementById('parent-code').value = pc;
+  return id;
+}
+
+function updatePricingTier(){
+  var state = document.getElementById('s-state').value;
+  if(TIER_A.includes(state)) selectedTier = 'A';
+  else if(TIER_B.includes(state)) selectedTier = 'B';
+  else selectedTier = 'C';
+  renderPlans();
+}
+
+// ── STEP NAV ──
+function nextStep(from){
+  if(!validateStep(from)) return;
+  collectStep(from);
+  document.getElementById('step-'+from).classList.remove('active');
+  document.getElementById('ps-'+from).className='prog-step done';
+  currentStep = from + 1;
+  if(currentStep <= 6){
+    document.getElementById('step-'+currentStep).classList.add('active');
+    document.getElementById('ps-'+currentStep).className='prog-step active';
+    window.scrollTo({top:0,behavior:'smooth'});
+    if(currentStep === 3) renderPlans();
+    if(currentStep === 4) renderStructure();
+    if(currentStep === 5) generateSchoolID();
+    if(currentStep === 6) prepMOU();
+  }
+}
+
+function prevStep(from){
+  document.getElementById('step-'+from).classList.remove('active');
+  document.getElementById('ps-'+from).className='prog-step';
+  currentStep = from - 1;
+  document.getElementById('step-'+currentStep).classList.add('active');
+  document.getElementById('ps-'+currentStep).className='prog-step active';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function validateStep(step){
+  var req = {
+    1:[
+      {id:'s-name',label:'School full name'},
+      {id:'s-state',label:'State'},
+      {id:'s-lga',label:'LGA'},
+      {id:'s-address',label:'School address'},
+      {id:'s-principal',label:'Principal name'},
+      {id:'s-phone',label:'School phone'},
+    ],
+    2:[],
+    3:[],
+    4:[],
+    5:[
+      {id:'admin-email',label:'Admin email'},
+      {id:'admin-pw',label:'Admin password'},
+    ],
+    6:[]
+  };
+  var fields = req[step] || [];
+  for(var i=0;i<fields.length;i++){
+    var el = document.getElementById(fields[i].id);
+    if(!el || !el.value.trim()){
+      toast('⚠️ '+fields[i].label+' is required', 'error');
+      if(el) el.focus();
+      return false;
+    }
+  }
+  if(step === 5){
+    var pw = document.getElementById('admin-pw').value;
+    var pw2 = document.getElementById('admin-pw2').value;
+    if(pw.length < 8){ toast('⚠️ Password must be at least 8 characters','error'); return false; }
+    if(pw !== pw2){ toast('⚠️ Passwords do not match','error'); return false; }
+  }
+  if(step === 6){
+    if(!document.getElementById('mou-agree').checked){
+      toast('⚠️ Please accept the agreement to continue','error');
+      return false;
+    }
+    if(!document.getElementById('sig-name').value.trim()){
+      toast('⚠️ Signatory name is required','error');
+      return false;
+    }
+  }
+  return true;
+}
+
+function collectStep(step){
+  var inputs = document.querySelectorAll('#step-'+step+' .fi');
+  inputs.forEach(function(inp){
+    if(inp.id) formData[inp.id] = inp.value;
+  });
+}
+
+// ── PLANS ──
+function renderPlans(){
+  var tier = PRICING[selectedTier];
+  document.getElementById('tier-notice').textContent = 'Pricing: '+tier.name+' • 50% cheaper than all competitors';
+  document.getElementById('plan-grid').innerHTML = tier.plans.map(function(p,i){
+    var feats = ['All 5 portals','Biometric login','QR attendance','Results & reports','WhatsApp alerts'];
+    if(i >= 1) feats.push('Offline CBT');
+    if(i >= 2) feats.push('Facial recognition','AI at-risk alerts');
+    if(i >= 3) feats.push('Multi-branch','Bus tracking');
+    return '<div class="plan-card'+(selectedPlan===i?' selected':'')+'" onclick="selectPlan('+i+')">'+
+      '<div class="plan-name">'+p.name+'</div>'+
+      '<div class="plan-price">'+p.term+'/term &nbsp;•&nbsp; Onboarding: '+p.onboard+'</div>'+
+      '<div style="font-size:.65rem;color:var(--m);margin-bottom:8px;">'+p.students+'</div>'+
+      '<ul class="plan-features">'+feats.map(function(f){return '<li>'+f+'</li>';}).join('')+'</ul></div>';
+  }).join('');
+}
+
+function selectPlan(idx){
+  selectedPlan = idx;
+  document.querySelectorAll('.plan-card').forEach(function(c,i){
+    c.classList.toggle('selected', i === idx);
+  });
+  formData.plan = PRICING[selectedTier].plans[idx].name;
+}
+
+// ── STRUCTURE ──
+function renderStructure(){
+  var classes=['JSS 1','JSS 2','JSS 3','SS 1 Science','SS 1 Commercial','SS 1 Art','SS 2 Science','SS 2 Commercial','SS 2 Art','SS 3 Science','SS 3 Commercial','SS 3 Art','Primary 1','Primary 2','Primary 3','Primary 4','Primary 5','Primary 6'];
+  document.getElementById('classes-check').innerHTML = classes.map(function(c){
+    var def = c.startsWith('JSS') || c.startsWith('SS');
+    return '<label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.75rem;color:var(--m);"><input type="checkbox" '+(def?'checked':'')+' value="'+c+'" style="accent-color:var(--gold);"/> '+c+'</label>';
+  }).join('');
+
+  var subjects=['Mathematics','English Language','Physics','Chemistry','Biology','Agricultural Science','Economics','Government','Literature in English','Geography','Civic Education','Further Mathematics','Technical Drawing','Computer Science','Home Economics','Yoruba','French','Physical Education'];
+  document.getElementById('subjects-check').innerHTML = subjects.map(function(s){
+    var def = ['Mathematics','English Language','Physics','Chemistry','Biology','Economics','Government','Civic Education'].includes(s);
+    return '<label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.75rem;color:var(--m);"><input type="checkbox" '+(def?'checked':'')+' value="'+s+'" style="accent-color:var(--gold);"/> '+s+'</label>';
+  }).join('');
+}
+
+// ── BRANDING ──
+function previewLogo(inp){
+  var file = inp.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var prev = document.getElementById('logo-preview');
+    prev.src = e.target.result;
+    prev.style.display = 'block';
+    document.getElementById('logo-placeholder').style.display = 'none';
+    document.getElementById('logo-zone').classList.add('has-logo');
+    formData.logoBase64 = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function markUpload(inp,previewId){
+  if(inp.files[0]){
+    var el = document.getElementById(previewId);
+    el.textContent = '✅ '+inp.files[0].name;
+    el.style.display = 'block';
+  }
+}
+
+function updateColorPreview(){
+  var c1 = document.getElementById('color-primary').value;
+  var c2 = document.getElementById('color-secondary').value;
+  document.getElementById('color-primary-hex').value = c1;
+  document.getElementById('color-secondary-hex').value = c2;
+  document.getElementById('prev-header').style.background = c1;
+  document.getElementById('prev-body').style.background = c2;
+  var schoolName = document.getElementById('s-name').value || 'School Name';
+  document.getElementById('prev-school-name').textContent = schoolName.split(',')[0];
+  formData.colorPrimary = c1;
+  formData.colorSecondary = c2;
+}
+
+function syncColorPicker(which){
+  var hex = document.getElementById('color-'+which+'-hex').value;
+  if(/^#[0-9A-Fa-f]{6}$/.test(hex)){
+    document.getElementById('color-'+which).value = hex;
+    updateColorPreview();
+  }
+}
+
+// ── MOU PREP ──
+function prepMOU(){
+  var schoolName = document.getElementById('s-name').value || '[School Name]';
+  var addr = document.getElementById('s-address').value || '[Address]';
+  var principal = document.getElementById('s-principal').value || '[Principal]';
+  document.getElementById('mou-school-name').textContent = schoolName;
+  document.getElementById('mou-school-addr').textContent = addr;
+  document.getElementById('mou-principal').textContent = principal;
+  document.getElementById('mou-school-confirm').textContent = schoolName;
+  document.getElementById('sig-name').value = principal;
+  document.getElementById('sig-date').value = new Date().toISOString().split('T')[0];
+
+  // Init signature canvas
+  sigCanvas = document.getElementById('sig-canvas');
+  sigCanvas.width = sigCanvas.offsetWidth || 600;
+  sigCanvas.height = 120;
+  sigCtx = sigCanvas.getContext('2d');
+  sigCtx.strokeStyle = '#c9a84c';
+  sigCtx.lineWidth = 2;
+  sigCtx.lineCap = 'round';
+
+  sigCanvas.addEventListener('mousedown', startSig);
+  sigCanvas.addEventListener('mousemove', drawSig);
+  sigCanvas.addEventListener('mouseup', endSig);
+  sigCanvas.addEventListener('touchstart', function(e){ e.preventDefault(); startSig(e.touches[0]); }, {passive:false});
+  sigCanvas.addEventListener('touchmove', function(e){ e.preventDefault(); drawSig(e.touches[0]); }, {passive:false});
+  sigCanvas.addEventListener('touchend', endSig);
+}
+
+function startSig(e){ sigDrawing=true; var r=sigCanvas.getBoundingClientRect(); sigCtx.beginPath(); sigCtx.moveTo(e.clientX-r.left,e.clientY-r.top); }
+function drawSig(e){ if(!sigDrawing)return; var r=sigCanvas.getBoundingClientRect(); sigCtx.lineTo(e.clientX-r.left,e.clientY-r.top); sigCtx.stroke(); }
+function endSig(){ sigDrawing=false; }
+function clearSig(){ sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height); }
+
+// ── SCHOOL ID ──
+function copySchoolID(){
+  var id = document.getElementById('generated-school-id').textContent;
+  navigator.clipboard.writeText(id).then(function(){ toast('✅ School ID copied: '+id,'success'); });
+}
+
+function copyText(id){
+  var el = document.getElementById(id);
+  navigator.clipboard.writeText(el.textContent).then(function(){ toast('✅ Copied!','success'); });
+}
+
+// ── SUBMIT ──
+function submitOnboarding(){
+  collectStep(6);
+
+  var schoolName = document.getElementById('s-name').value;
+  var ref = 'RSMS-'+Date.now().toString().slice(-7);
+  var schoolID = document.getElementById('generated-school-id').textContent;
+
+  formData.ref = ref;
+  formData.schoolID = schoolID;
+  formData.submittedAt = new Date().toISOString();
+  formData.status = 'pending';
+
+  // Save locally
+  localStorage.setItem('rsms_onboarding_'+ref, JSON.stringify(formData));
+  localStorage.setItem('rsms_school_count', String(schoolCount));
+
+  // Update success screen
+  document.getElementById('final-ref').textContent = ref;
+  document.getElementById('final-email').textContent = formData['admin-email'] || '—';
+  document.getElementById('final-school-id').textContent = schoolID;
+
+  // Hide steps, show success
+  document.getElementById('step-6').classList.remove('active');
+  document.getElementById('ps-6').className = 'prog-step done';
+  document.getElementById('ps-7').className = 'prog-step active';
+  document.getElementById('success-screen').style.display = 'block';
+  window.scrollTo({top:0,behavior:'smooth'});
+
+  // TODO: POST to Google Apps Script
+  toast('🎉 Onboarding submitted successfully!','success');
+}
+
+// ── INIT ──
+window.addEventListener('load', function(){
+  generateSchoolID();
+  document.getElementById('sig-date').value = new Date().toISOString().split('T')[0];
+  renderPlans();
+  // Set today for term dates
+  var today = new Date().toISOString().split('T')[0];
+  if(document.getElementById('st-start')) document.getElementById('st-start').value = today;
+});
+</script>
+</body>
+</html>
