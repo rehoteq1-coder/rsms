@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#030305"/>
+<title>RSMS — Student Application & Registration</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--s1:#0a0a12;--s2:#0f0f1a;--s3:#141422;
+  --gold:#c9a84c;--gold2:#e8c96a;--goldl:rgba(201,168,76,0.1);
+  --goldm:rgba(201,168,76,0.2);--goldb:rgba(201,168,76,0.05);
+  --green:#10b981;--greenl:rgba(16,185,129,0.1);
+  --blue:#3b82f6;--bluel:rgba(59,130,246,0.1);
+  --purple:#7c3aed;
+  --red:#ef4444;--redl:rgba(239,68,68,0.1);
+  --w:#f8f4ff;--m:rgba(248,244,255,0.5);--m2:rgba(248,244,255,0.2);
+  --bd:rgba(201,168,76,0.12);--bd2:rgba(201,168,76,0.25);
+  --serif:'Fraunces',serif;--font:'Outfit',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:var(--font);background:var(--bg);color:var(--w);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 60% 40% at 10% 0%,rgba(124,58,237,0.07),transparent),
+    radial-gradient(ellipse 50% 50% at 90% 100%,rgba(201,168,76,0.06),transparent);}
+
+/* ── HEADER ── */
+header{position:sticky;top:0;z-index:100;
+  background:rgba(3,3,5,0.95);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--bd);
+  padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
+.hdr-logo{display:flex;align-items:center;gap:10px;}
+.hdr-hex{width:36px;height:36px;border-radius:9px;
+  background:linear-gradient(135deg,#1a0a3e,#2d1b6e);
+  display:flex;align-items:center;justify-content:center;}
+.hdr-name{font-family:var(--serif);font-size:0.95rem;font-weight:700;color:var(--gold);}
+.hdr-sub{font-size:0.52rem;color:var(--m);text-transform:uppercase;letter-spacing:0.1em;}
+.back-btn{background:var(--goldb);border:1px solid var(--bd);border-radius:9px;
+  padding:7px 14px;font-size:0.76rem;font-weight:600;color:var(--m);
+  cursor:pointer;font-family:var(--font);transition:all .2s;}
+.back-btn:hover{color:var(--gold);border-color:var(--bd2);}
+
+/* ── PROGRESS BAR ── */
+.progress-wrap{padding:20px 20px 0;max-width:680px;margin:0 auto;}
+.prog-steps{display:flex;gap:0;margin-bottom:8px;}
+.prog-step{flex:1;text-align:center;position:relative;}
+.prog-step::after{content:'';position:absolute;top:13px;left:50%;right:-50%;
+  height:2px;background:var(--bd);z-index:0;}
+.prog-step:last-child::after{display:none;}
+.prog-step.done::after,.prog-step.active::after{background:var(--gold);}
+.ps-num{width:26px;height:26px;border-radius:50%;border:2px solid var(--bd);
+  background:var(--s2);display:flex;align-items:center;justify-content:center;
+  font-size:0.65rem;font-weight:700;color:var(--m);margin:0 auto 4px;
+  position:relative;z-index:1;transition:all .3s;}
+.prog-step.done .ps-num{background:var(--gold);border-color:var(--gold);color:#000;}
+.prog-step.active .ps-num{background:linear-gradient(135deg,#2d1b6e,var(--gold));border-color:var(--gold);color:#fff;}
+.ps-label{font-size:0.58rem;color:var(--m2);}
+.prog-step.active .ps-label{color:var(--gold);}
+
+/* ── MAIN ── */
+main{max-width:680px;margin:0 auto;padding:24px 16px 60px;position:relative;z-index:1;}
+
+/* ── SECTION HEADER ── */
+.sec-hdr{margin-bottom:20px;}
+.sec-hdr h2{font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--w);margin-bottom:5px;}
+.sec-hdr p{font-size:0.8rem;color:var(--m);line-height:1.6;}
+
+/* ── CARD ── */
+.form-card{background:rgba(10,10,18,0.8);border:1px solid var(--bd);
+  border-radius:18px;padding:22px;margin-bottom:16px;
+  animation:fade-up .4s ease both;}
+@keyframes fade-up{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+
+/* ── FORM ELEMENTS ── */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.fg label{font-size:0.62rem;font-weight:700;color:var(--m);
+  text-transform:uppercase;letter-spacing:0.1em;}
+.fg label span.req{color:var(--red);}
+.fi{background:rgba(255,255,255,0.04);border:1px solid var(--bd);
+  border-radius:10px;padding:11px 13px;color:var(--w);
+  font-size:0.86rem;font-family:var(--font);outline:none;width:100%;transition:all .2s;}
+.fi:focus{border-color:rgba(201,168,76,0.5);box-shadow:0 0 0 3px rgba(201,168,76,0.07);}
+.fi.err{border-color:rgba(239,68,68,.5);}
+select.fi{cursor:pointer;}
+textarea.fi{min-height:80px;resize:vertical;line-height:1.6;}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fg-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.fi-hint{font-size:0.6rem;color:var(--m2);margin-top:3px;}
+
+/* ── PHOTO UPLOAD ── */
+.photo-upload{
+  border:2px dashed var(--bd2);border-radius:14px;padding:24px;
+  text-align:center;cursor:pointer;transition:all .2s;background:var(--goldb);}
+.photo-upload:hover{border-color:var(--gold);background:var(--goldl);}
+.photo-upload.has-photo{border-style:solid;border-color:var(--green);}
+.photo-preview{width:90px;height:90px;border-radius:50%;object-fit:cover;
+  margin:0 auto 8px;display:none;border:2px solid var(--gold);}
+.photo-preview.show{display:block;}
+.photo-placeholder{font-size:2.5rem;margin-bottom:8px;}
+.photo-text{font-size:0.76rem;color:var(--m);}
+.photo-hint{font-size:0.63rem;color:var(--m2);margin-top:4px;}
+input[type=file]{display:none;}
+
+/* ── SECTION LABEL ── */
+.sec-label{font-size:0.6rem;font-weight:800;color:var(--gold);
+  text-transform:uppercase;letter-spacing:0.14em;
+  display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--bd);}
+
+/* ── BUTTONS ── */
+.btn-row{display:flex;gap:10px;margin-top:20px;}
+.btn{flex:1;padding:13px;border:none;border-radius:11px;cursor:pointer;
+  font-family:var(--font);font-size:0.9rem;font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-prev{background:var(--s2);border:1px solid var(--bd);color:var(--m);}
+.btn-prev:hover{color:var(--w);border-color:var(--bd2);}
+.btn-next{background:linear-gradient(135deg,#2d1b6e,#4a2d9e,var(--gold));color:#fff;
+  box-shadow:0 4px 20px rgba(201,168,76,0.2);}
+.btn-next:hover{box-shadow:0 6px 28px rgba(201,168,76,0.35);transform:translateY(-1px);}
+.btn-submit{background:linear-gradient(135deg,#0a3d1a,#10b981);color:#fff;
+  box-shadow:0 4px 20px rgba(16,185,129,0.2);}
+.btn-submit:hover{box-shadow:0 6px 28px rgba(16,185,129,0.35);transform:translateY(-1px);}
+
+/* ── SUCCESS SCREEN ── */
+#success-screen{display:none;text-align:center;padding:40px 20px;}
+.success-icon{font-size:4rem;margin-bottom:20px;animation:bounce-in .6s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes bounce-in{from{opacity:0;transform:scale(.3);}to{opacity:1;transform:scale(1);}}
+.success-title{font-family:var(--serif);font-size:1.8rem;font-weight:900;color:var(--gold);margin-bottom:10px;}
+.success-sub{font-size:0.88rem;color:var(--m);line-height:1.7;max-width:380px;margin:0 auto 24px;}
+.ref-card{background:var(--goldl);border:1px solid var(--bd2);border-radius:14px;
+  padding:16px;margin-bottom:24px;display:inline-block;}
+.ref-label{font-size:0.6rem;color:var(--m);text-transform:uppercase;letter-spacing:0.1em;}
+.ref-num{font-family:var(--serif);font-size:1.6rem;font-weight:900;color:var(--gold);}
+.next-steps{background:var(--s1);border:1px solid var(--bd);border-radius:14px;
+  padding:16px;text-align:left;margin-bottom:20px;}
+.ns-title{font-size:0.7rem;font-weight:700;color:var(--gold);
+  text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;}
+.ns-item{display:flex;align-items:flex-start;gap:8px;font-size:0.78rem;
+  color:var(--m);padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.ns-item:last-child{border:none;}
+.ns-num{width:20px;height:20px;border-radius:50%;background:var(--goldl);
+  border:1px solid var(--bd2);display:flex;align-items:center;justify-content:center;
+  font-size:0.6rem;font-weight:700;color:var(--gold);flex-shrink:0;margin-top:1px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);
+  border-radius:11px;padding:10px 18px;font-size:0.78rem;z-index:999;
+  transition:transform .3s;white-space:nowrap;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.error{background:#1a0808;border:1px solid rgba(239,68,68,.4);color:#fca5a5;}
+.toast.success{background:#081a0f;border:1px solid rgba(16,185,129,.4);color:#6ee7b7;}
+.toast.info{background:#0a0a18;border:1px solid var(--bd2);color:var(--gold);}
+
+@media(max-width:480px){
+  .fg-row,.fg-row3{grid-template-columns:1fr;}
+  main{padding:16px 14px 50px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-logo">
+    <div class="hdr-hex">
+      <svg width="22" height="22" viewBox="0 0 120 120">
+        <polygon points="60,4 111,32 111,88 60,116 9,88 9,32" fill="#0d0a1e" stroke="#c9a84c" stroke-width="5"/>
+        <text x="60" y="80" text-anchor="middle" font-family="Georgia,serif" font-size="62" font-weight="bold" fill="#c9a84c">R</text>
+      </svg>
+    </div>
+    <div>
+      <div class="hdr-name">RSMS Application</div>
+      <div class="hdr-sub">Student Registration Portal</div>
+    </div>
+  </div>
+  <button class="back-btn" onclick="history.back()">← Back to Login</button>
+</header>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="prog-steps" id="prog-steps">
+    <div class="prog-step active" id="ps-1">
+      <div class="ps-num">1</div>
+      <div class="ps-label">School</div>
+    </div>
+    <div class="prog-step" id="ps-2">
+      <div class="ps-num">2</div>
+      <div class="ps-label">Personal</div>
+    </div>
+    <div class="prog-step" id="ps-3">
+      <div class="ps-num">3</div>
+      <div class="ps-label">Academic</div>
+    </div>
+    <div class="prog-step" id="ps-4">
+      <div class="ps-num">4</div>
+      <div class="ps-label">Parent</div>
+    </div>
+    <div class="prog-step" id="ps-5">
+      <div class="ps-num">5</div>
+      <div class="ps-label">Documents</div>
+    </div>
+    <div class="prog-step" id="ps-6">
+      <div class="ps-num">✓</div>
+      <div class="ps-label">Submit</div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+<!-- STEP 1: SCHOOL INFO -->
+<div id="step-1">
+  <div class="sec-hdr">
+    <h2>🏫 School Information</h2>
+    <p>Enter the school code provided by the school or search for your school below.</p>
+  </div>
+  <div class="form-card">
+    <div class="sec-label">Find Your School</div>
+    <div class="fg">
+      <label>School Code <span class="req">*</span></label>
+      <input class="fi" type="text" id="school-code" placeholder="Enter school code e.g. GTC-001"
+        oninput="this.value=this.value.toUpperCase()"/>
+      <div class="fi-hint">The school code is provided by the school administration</div>
+    </div>
+    <div class="fg">
+      <label>Or Search School Name</label>
+      <input class="fi" type="text" id="school-search" placeholder="Type school name to search..."/>
+    </div>
+
+    <!-- School Preview Card -->
+    <div id="school-preview" style="display:none;background:var(--goldl);border:1px solid var(--bd2);border-radius:12px;padding:14px;margin-top:4px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="font-size:2rem;">🏫</div>
+        <div>
+          <div style="font-weight:700;color:var(--w);" id="sp-name">Government Technical College</div>
+          <div style="font-size:0.72rem;color:var(--m);" id="sp-addr">Okitipupa, Ondo State</div>
+          <div style="font-size:0.65rem;color:var(--gold);margin-top:3px;" id="sp-type">Secondary School • Co-educational</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fg" style="margin-top:14px;">
+      <label>Academic Session <span class="req">*</span></label>
+      <select class="fi" id="session">
+        <option>2025/2026</option>
+        <option>2026/2027</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Class Applying For <span class="req">*</span></label>
+      <select class="fi" id="class-apply">
+        <option value="">— Select Class —</option>
+        <optgroup label="Junior Secondary">
+          <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
+        </optgroup>
+        <optgroup label="Senior Secondary">
+          <option>SS 1 Science</option><option>SS 1 Commercial</option><option>SS 1 Art</option>
+          <option>SS 2 Science</option><option>SS 2 Commercial</option><option>SS 2 Art</option>
+          <option>SS 3 Science</option><option>SS 3 Commercial</option><option>SS 3 Art</option>
+        </optgroup>
+        <optgroup label="Primary (if applicable)">
+          <option>Primary 1</option><option>Primary 2</option><option>Primary 3</option>
+          <option>Primary 4</option><option>Primary 5</option><option>Primary 6</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Type of Admission</label>
+      <select class="fi" id="admission-type">
+        <option>Fresh Admission (New Student)</option>
+        <option>Transfer (From Another School)</option>
+        <option>Re-Admission (Former Student)</option>
+      </select>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-next" onclick="nextStep(1)">Next: Personal Information →</button>
+  </div>
+</div>
+
+<!-- STEP 2: PERSONAL INFO -->
+<div id="step-2" style="display:none;">
+  <div class="sec-hdr">
+    <h2>👤 Personal Information</h2>
+    <p>Provide accurate personal details of the student applying.</p>
+  </div>
+  <div class="form-card">
+    <!-- Photo Upload -->
+    <div class="sec-label">Passport Photograph</div>
+    <div class="photo-upload" id="photo-zone" onclick="document.getElementById('photo-file').click()">
+      <img class="photo-preview" id="photo-prev" src="" alt=""/>
+      <div class="photo-placeholder" id="photo-ph">📸</div>
+      <div class="photo-text">Tap to upload passport photo</div>
+      <div class="photo-hint">Clear front-facing photo, white background preferred • JPG/PNG • Max 2MB</div>
+    </div>
+    <input type="file" id="photo-file" accept="image/*" onchange="previewPhoto(this)"/>
+
+    <div style="height:18px;"></div>
+    <div class="sec-label">Student Details</div>
+
+    <div class="fg-row">
+      <div class="fg">
+        <label>Surname <span class="req">*</span></label>
+        <input class="fi" type="text" id="surname" placeholder="Surname"/>
+      </div>
+      <div class="fg">
+        <label>First Name <span class="req">*</span></label>
+        <input class="fi" type="text" id="firstname" placeholder="First name"/>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Middle Name</label>
+      <input class="fi" type="text" id="middlename" placeholder="Middle name (optional)"/>
+    </div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>Date of Birth <span class="req">*</span></label>
+        <input class="fi" type="date" id="dob"/>
+      </div>
+      <div class="fg">
+        <label>Gender <span class="req">*</span></label>
+        <select class="fi" id="gender">
+          <option value="">— Select —</option>
+          <option>Male</option><option>Female</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>State of Origin <span class="req">*</span></label>
+        <select class="fi" id="state-origin">
+          <option value="">— Select State —</option>
+          <option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option>
+          <option>Anambra</option><option>Bauchi</option><option>Bayelsa</option>
+          <option>Benue</option><option>Borno</option><option>Cross River</option>
+          <option>Delta</option><option>Ebonyi</option><option>Edo</option>
+          <option>Ekiti</option><option>Enugu</option><option>FCT Abuja</option>
+          <option>Gombe</option><option>Imo</option><option>Jigawa</option>
+          <option>Kaduna</option><option>Kano</option><option>Katsina</option>
+          <option>Kebbi</option><option>Kogi</option><option>Kwara</option>
+          <option>Lagos</option><option>Nasarawa</option><option>Niger</option>
+          <option>Ogun</option><option>Ondo</option><option>Osun</option>
+          <option>Oyo</option><option>Plateau</option><option>Rivers</option>
+          <option>Sokoto</option><option>Taraba</option><option>Yobe</option><option>Zamfara</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>LGA</label>
+        <input class="fi" type="text" id="lga" placeholder="Local Govt Area"/>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Religion</label>
+      <select class="fi" id="religion">
+        <option value="">— Select —</option>
+        <option>Christianity</option><option>Islam</option><option>Traditional</option><option>Other</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Home Address <span class="req">*</span></label>
+      <textarea class="fi" id="address" placeholder="Full residential address..."></textarea>
+    </div>
+    <div class="fg">
+      <label>Phone Number (Student's own, if any)</label>
+      <input class="fi" type="tel" id="student-phone" placeholder="080XXXXXXXX"/>
+    </div>
+    <div class="fg">
+      <label>Email Address (Student's own, if any)</label>
+      <input class="fi" type="email" id="student-email" placeholder="student@email.com"/>
+    </div>
+    <div class="fg">
+      <label>Any Medical Condition / Disability?</label>
+      <textarea class="fi" id="medical" placeholder="None / describe if any..."></textarea>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-prev" onclick="prevStep(2)">← Back</button>
+    <button class="btn btn-next" onclick="nextStep(2)">Next: Academic History →</button>
+  </div>
+</div>
+
+<!-- STEP 3: ACADEMIC INFO -->
+<div id="step-3" style="display:none;">
+  <div class="sec-hdr">
+    <h2>📚 Academic History</h2>
+    <p>Previous school records and academic background.</p>
+  </div>
+  <div class="form-card">
+    <div class="sec-label">Previous School</div>
+    <div class="fg">
+      <label>Name of Previous School</label>
+      <input class="fi" type="text" id="prev-school" placeholder="Previous school name"/>
+    </div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>Last Class Attended</label>
+        <input class="fi" type="text" id="last-class" placeholder="e.g. JSS 2"/>
+      </div>
+      <div class="fg">
+        <label>Year Left</label>
+        <input class="fi" type="text" id="year-left" placeholder="e.g. 2024"/>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Reason for Leaving</label>
+      <input class="fi" type="text" id="leave-reason" placeholder="e.g. Graduated, Family relocation..."/>
+    </div>
+
+    <div class="sec-label" style="margin-top:16px;">Qualifications & Certificates</div>
+    <div class="fg">
+      <label>Certificates Obtained (if any)</label>
+      <select class="fi" id="certs">
+        <option>None (Fresh Admission)</option>
+        <option>First School Leaving Certificate (FSLC)</option>
+        <option>Junior WAEC (BECE)</option>
+        <option>WAEC/NECO (SSCE)</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Subjects of Interest / Strength</label>
+      <input class="fi" type="text" id="subjects" placeholder="e.g. Mathematics, Physics, Economics"/>
+    </div>
+    <div class="fg">
+      <label>Extra-Curricular Activities</label>
+      <textarea class="fi" id="extra" style="min-height:60px;" placeholder="Sports, music, debate, etc. (optional)"></textarea>
+    </div>
+
+    <div class="sec-label" style="margin-top:16px;">Hostel & Boarding</div>
+    <div class="fg">
+      <label>Boarding Preference</label>
+      <select class="fi" id="boarding">
+        <option>Day Student (Non-Boarding)</option>
+        <option>Full Boarder</option>
+        <option>Half Boarder</option>
+      </select>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-prev" onclick="prevStep(3)">← Back</button>
+    <button class="btn btn-next" onclick="nextStep(3)">Next: Parent/Guardian →</button>
+  </div>
+</div>
+
+<!-- STEP 4: PARENT/GUARDIAN -->
+<div id="step-4" style="display:none;">
+  <div class="sec-hdr">
+    <h2>👪 Parent / Guardian Information</h2>
+    <p>Contact details of parent or legal guardian.</p>
+  </div>
+  <div class="form-card">
+    <div class="sec-label">Primary Contact (Father / Guardian)</div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>Full Name <span class="req">*</span></label>
+        <input class="fi" type="text" id="p1-name" placeholder="Parent/Guardian full name"/>
+      </div>
+      <div class="fg">
+        <label>Relationship <span class="req">*</span></label>
+        <select class="fi" id="p1-rel">
+          <option>Father</option><option>Mother</option><option>Guardian</option>
+          <option>Uncle</option><option>Aunt</option><option>Grandparent</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>Phone Number <span class="req">*</span></label>
+        <input class="fi" type="tel" id="p1-phone" placeholder="080XXXXXXXX"/>
+      </div>
+      <div class="fg">
+        <label>WhatsApp Number</label>
+        <input class="fi" type="tel" id="p1-wa" placeholder="Same or different"/>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Email Address</label>
+      <input class="fi" type="email" id="p1-email" placeholder="parent@email.com"/>
+    </div>
+    <div class="fg">
+      <label>Occupation</label>
+      <input class="fi" type="text" id="p1-occ" placeholder="Occupation"/>
+    </div>
+    <div class="fg">
+      <label>Home Address</label>
+      <textarea class="fi" id="p1-addr" style="min-height:60px;" placeholder="If different from student's address..."></textarea>
+    </div>
+
+    <div class="sec-label" style="margin-top:16px;">Secondary Contact (Mother / Second Guardian)</div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>Full Name</label>
+        <input class="fi" type="text" id="p2-name" placeholder="Optional"/>
+      </div>
+      <div class="fg">
+        <label>Phone Number</label>
+        <input class="fi" type="tel" id="p2-phone" placeholder="080XXXXXXXX"/>
+      </div>
+    </div>
+    <div class="fg">
+      <label>WhatsApp Number</label>
+      <input class="fi" type="tel" id="p2-wa" placeholder="Optional"/>
+    </div>
+
+    <div class="sec-label" style="margin-top:16px;">Emergency Contact</div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>Emergency Contact Name <span class="req">*</span></label>
+        <input class="fi" type="text" id="em-name" placeholder="Emergency contact"/>
+      </div>
+      <div class="fg">
+        <label>Emergency Phone <span class="req">*</span></label>
+        <input class="fi" type="tel" id="em-phone" placeholder="080XXXXXXXX"/>
+      </div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-prev" onclick="prevStep(4)">← Back</button>
+    <button class="btn btn-next" onclick="nextStep(4)">Next: Documents →</button>
+  </div>
+</div>
+
+<!-- STEP 5: DOCUMENTS -->
+<div id="step-5" style="display:none;">
+  <div class="sec-hdr">
+    <h2>📎 Documents Upload</h2>
+    <p>Upload required documents. Ensure all documents are clear and readable.</p>
+  </div>
+  <div class="form-card">
+    <div class="sec-label">Required Documents</div>
+
+    <!-- Birth Certificate -->
+    <div class="fg" id="doc-birth-fg">
+      <label>Birth Certificate / Age Declaration <span class="req">*</span></label>
+      <div class="photo-upload" style="padding:14px;" onclick="document.getElementById('doc-birth').click()">
+        <div id="doc-birth-txt">📄 Tap to upload Birth Certificate (PDF/Image)</div>
+      </div>
+      <input type="file" id="doc-birth" accept="image/*,.pdf" onchange="markDoc(this,'doc-birth-txt','doc-birth-fg')"/>
+    </div>
+
+    <!-- FSLC/Last Result -->
+    <div class="fg" id="doc-result-fg">
+      <label>Last School Result / Certificate</label>
+      <div class="photo-upload" style="padding:14px;" onclick="document.getElementById('doc-result').click()">
+        <div id="doc-result-txt">📄 Tap to upload Last Result/Certificate (PDF/Image)</div>
+      </div>
+      <input type="file" id="doc-result" accept="image/*,.pdf" onchange="markDoc(this,'doc-result-txt','doc-result-fg')"/>
+    </div>
+
+    <!-- Transfer Letter -->
+    <div class="fg" id="doc-transfer-fg">
+      <label>Transfer Certificate (if transferring)</label>
+      <div class="photo-upload" style="padding:14px;" onclick="document.getElementById('doc-transfer').click()">
+        <div id="doc-transfer-txt">📄 Tap to upload Transfer Certificate (optional)</div>
+      </div>
+      <input type="file" id="doc-transfer" accept="image/*,.pdf" onchange="markDoc(this,'doc-transfer-txt','doc-transfer-fg')"/>
+    </div>
+
+    <!-- Parent ID -->
+    <div class="fg" id="doc-parentid-fg">
+      <label>Parent/Guardian ID <span class="req">*</span></label>
+      <div class="photo-upload" style="padding:14px;" onclick="document.getElementById('doc-parentid').click()">
+        <div id="doc-parentid-txt">📄 Tap to upload Parent ID (NIN, Driver License, Voter Card)</div>
+      </div>
+      <input type="file" id="doc-parentid" accept="image/*,.pdf" onchange="markDoc(this,'doc-parentid-txt','doc-parentid-fg')"/>
+    </div>
+
+    <div class="sec-label" style="margin-top:18px;">Declaration</div>
+    <div style="background:var(--s2);border:1px solid var(--bd);border-radius:11px;padding:14px;margin-bottom:14px;font-size:0.78rem;color:var(--m);line-height:1.7;">
+      I/We hereby declare that all information provided in this application form is true and accurate to the best of my/our knowledge. I/We understand that any false information may result in cancellation of admission.
+    </div>
+    <div class="fg" style="flex-direction:row;align-items:center;gap:10px;margin-bottom:0;">
+      <input type="checkbox" id="declaration" style="width:18px;height:18px;accent-color:var(--gold);flex-shrink:0;cursor:pointer;"/>
+      <label for="declaration" style="font-size:0.78rem;color:var(--m);text-transform:none;letter-spacing:0;cursor:pointer;">
+        I agree to the above declaration and RSMS Privacy Policy
+      </label>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-prev" onclick="prevStep(5)">← Back</button>
+    <button class="btn btn-submit" onclick="submitApplication()">
+      🎓 Submit Application
+    </button>
+  </div>
+</div>
+
+<!-- SUCCESS SCREEN -->
+<div id="success-screen">
+  <div class="success-icon">🎉</div>
+  <div class="success-title">Application Submitted!</div>
+  <div class="success-sub">Your application has been successfully submitted. The school administration will review and contact you within 3-5 working days.</div>
+
+  <div class="ref-card">
+    <div class="ref-label">Application Reference Number</div>
+    <div class="ref-num" id="ref-number">RSMS-2025-000000</div>
+  </div>
+
+  <div class="next-steps">
+    <div class="ns-title">What Happens Next</div>
+    <div class="ns-item">
+      <div class="ns-num">1</div>
+      <div>School admin reviews your application and documents</div>
+    </div>
+    <div class="ns-item">
+      <div class="ns-num">2</div>
+      <div>You will receive a WhatsApp/SMS notification on approval</div>
+    </div>
+    <div class="ns-item">
+      <div class="ns-num">3</div>
+      <div>Report to school with original documents for verification</div>
+    </div>
+    <div class="ns-item">
+      <div class="ns-num">4</div>
+      <div>Pay acceptance fee and receive your student login credentials</div>
+    </div>
+    <div class="ns-item">
+      <div class="ns-num">5</div>
+      <div>Access your RSMS student portal with your credentials</div>
+    </div>
+  </div>
+
+  <button class="btn btn-next" onclick="window.location.href='rsms-login.html'" style="max-width:300px;margin:0 auto;">
+    ← Back to Login
+  </button>
+</div>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+var currentStep = 1;
+var totalSteps = 5;
+var formData = {};
+
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.className='toast '+(type||'info')+' show';
+  t.textContent=msg;
+  clearTimeout(t._t);
+  t._t=setTimeout(function(){t.classList.remove('show');},4000);
+}
+
+function updateProgress(step){
+  for(var i=1;i<=6;i++){
+    var ps=document.getElementById('ps-'+i);
+    if(!ps)continue;
+    ps.className='prog-step';
+    if(i<step)ps.classList.add('done');
+    else if(i===step)ps.classList.add('active');
+  }
+}
+
+function nextStep(from){
+  if(!validateStep(from))return;
+  collectStep(from);
+  document.getElementById('step-'+from).style.display='none';
+  currentStep=from+1;
+  if(currentStep<=totalSteps){
+    document.getElementById('step-'+currentStep).style.display='block';
+    updateProgress(currentStep);
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+}
+
+function prevStep(from){
+  document.getElementById('step-'+from).style.display='none';
+  currentStep=from-1;
+  document.getElementById('step-'+currentStep).style.display='block';
+  updateProgress(currentStep);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function validateStep(step){
+  var req={
+    1:[{id:'class-apply',label:'Class applying for'}],
+    2:[{id:'surname',label:'Surname'},{id:'firstname',label:'First name'},
+       {id:'dob',label:'Date of birth'},{id:'gender',label:'Gender'},
+       {id:'state-origin',label:'State of origin'},{id:'address',label:'Home address'}],
+    3:[],
+    4:[{id:'p1-name',label:'Parent/Guardian name'},{id:'p1-phone',label:'Parent phone'},
+       {id:'em-name',label:'Emergency contact name'},{id:'em-phone',label:'Emergency phone'}],
+    5:[]
+  };
+
+  var fields=req[step]||[];
+  for(var i=0;i<fields.length;i++){
+    var el=document.getElementById(fields[i].id);
+    if(!el||!el.value.trim()){
+      el.classList.add('err');
+      toast(fields[i].label+' is required','error');
+      el.focus();
+      setTimeout(function(){document.querySelectorAll('.fi.err').forEach(function(f){f.classList.remove('err');});},2000);
+      return false;
+    }
+  }
+
+  if(step===5){
+    if(!document.getElementById('declaration').checked){
+      toast('Please accept the declaration to continue','error');
+      return false;
+    }
+  }
+  return true;
+}
+
+function collectStep(step){
+  var inputs=document.querySelectorAll('#step-'+step+' .fi');
+  inputs.forEach(function(inp){
+    if(inp.id)formData[inp.id]=inp.value;
+  });
+}
+
+function previewPhoto(inp){
+  var file=inp.files[0];
+  if(!file)return;
+  if(file.size>2*1024*1024){toast('Photo too large. Max 2MB','error');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var prev=document.getElementById('photo-prev');
+    prev.src=e.target.result;
+    prev.classList.add('show');
+    document.getElementById('photo-ph').style.display='none';
+    document.getElementById('photo-zone').classList.add('has-photo');
+    formData.photoBase64=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function markDoc(inp,txtId,fgId){
+  if(inp.files[0]){
+    document.getElementById(txtId).textContent='✅ '+inp.files[0].name+' — uploaded';
+    document.getElementById(fgId).querySelector('.photo-upload').style.borderColor='var(--green)';
+  }
+}
+
+// Auto-show school preview on code input
+document.getElementById('school-code').addEventListener('input',function(){
+  var code=this.value.trim();
+  if(code.length>=3){
+    document.getElementById('school-preview').style.display='block';
+    document.getElementById('sp-name').textContent='School: '+code;
+    document.getElementById('sp-addr').textContent='Searching...';
+    // TODO: Firebase lookup by school code
+  }
+});
+
+function submitApplication(){
+  if(!validateStep(5))return;
+  collectStep(5);
+
+  // Generate reference number
+  var ref='RSMS-'+new Date().getFullYear()+'-'+Math.floor(100000+Math.random()*900000);
+  document.getElementById('ref-number').textContent=ref;
+
+  formData.ref=ref;
+  formData.submittedAt=new Date().toISOString();
+  formData.status='pending';
+
+  // TODO: Save to Firebase when project is connected
+  // firebase.database().ref('applications/'+ref).set(formData);
+
+  // Save locally for now
+  localStorage.setItem('rsms_application_'+ref, JSON.stringify(formData));
+
+  // Show success
+  document.getElementById('step-5').style.display='none';
+  document.getElementById('success-screen').style.display='block';
+  updateProgress(6);
+  window.scrollTo({top:0,behavior:'smooth'});
+
+  toast('Application submitted! Ref: '+ref,'success');
+}
+</script>
+</body>
+</html>
