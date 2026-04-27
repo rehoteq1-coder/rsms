@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#0d0f1a"/>
+<link rel="manifest" href="manifest.json"/>
+<title>RSMS — School Onboarding</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--panel:#0d0f1a;--card:#111420;--card2:#161929;
+  --line:rgba(255,255,255,0.07);--line2:rgba(255,255,255,0.13);
+  --gold:#d4a843;--goldl:rgba(212,168,67,0.1);--goldm:rgba(212,168,67,0.18);
+  --success:#22c55e;--successl:rgba(34,197,94,0.1);
+  --danger:#f43f5e;--dangerl:rgba(244,63,94,0.1);
+  --purple:#8b5cf6;--purplel:rgba(139,92,246,0.1);
+  --t1:#f0f2ff;--t2:rgba(240,242,255,0.6);--t3:rgba(240,242,255,0.3);--t4:rgba(240,242,255,0.12);
+  --r:14px;--r2:9px;--serif:'Fraunces',serif;--sans:'Outfit',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;padding:0 0 60px;}
+
+/* HEADER */
+.top-bar{background:var(--panel);border-bottom:1px solid var(--line);padding:16px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.top-logo{width:36px;height:36px;}
+.top-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--gold);}
+.top-sub{font-size:.58rem;color:var(--t4);text-transform:uppercase;letter-spacing:.1em;}
+.top-badge{margin-left:auto;background:var(--successl);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:4px 12px;font-size:.65rem;font-weight:700;color:var(--success);}
+
+/* PROGRESS */
+.progress-track{background:var(--panel);border-bottom:1px solid var(--line);padding:16px 24px;}
+.prog-steps{display:flex;gap:0;margin-bottom:10px;}
+.prog-step{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;}
+.prog-step:not(:last-child)::after{content:'';position:absolute;top:14px;left:calc(50% + 14px);right:calc(-50% + 14px);height:2px;background:var(--line2);}
+.prog-step.done:not(:last-child)::after{background:var(--gold);}
+.prog-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--line2);background:var(--card);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--t3);transition:all .3s;position:relative;z-index:1;}
+.prog-step.done .prog-dot{border-color:var(--gold);background:var(--goldl);color:var(--gold);}
+.prog-step.active .prog-dot{border-color:var(--gold);background:var(--gold);color:#000;box-shadow:0 0 12px rgba(212,168,67,.4);}
+.prog-label{font-size:.55rem;font-weight:600;color:var(--t4);text-align:center;text-transform:uppercase;letter-spacing:.06em;}
+.prog-step.active .prog-label{color:var(--gold);}
+.prog-step.done .prog-label{color:var(--t3);}
+.prog-bar-track{height:3px;background:var(--line2);border-radius:2px;overflow:hidden;}
+.prog-bar-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--gold));border-radius:2px;transition:width .4s ease;}
+
+/* CONTENT */
+.container{max-width:680px;margin:0 auto;padding:28px 20px;}
+
+/* STEPS */
+.step{display:none;}
+.step.active{display:block;animation:step-in .3s ease;}
+@keyframes step-in{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.step-header{margin-bottom:24px;}
+.step-num{font-size:.65rem;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;}
+.step-title{font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--t1);margin-bottom:5px;}
+.step-sub{font-size:.78rem;color:var(--t3);line-height:1.6;}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.fg label{font-size:.63rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;display:flex;align-items:center;gap:6px;}
+.req{color:var(--danger);font-size:.7rem;}
+.fi{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:11px 14px;color:var(--t1);font-size:.88rem;font-family:var(--sans);outline:none;width:100%;transition:all .2s;}
+.fi:focus{border-color:rgba(212,168,67,.4);box-shadow:0 0 0 3px rgba(212,168,67,.07);}
+select.fi{cursor:pointer;}
+textarea.fi{min-height:80px;resize:vertical;}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+
+/* LOGO UPLOAD */
+.logo-zone{
+  border:2px dashed rgba(212,168,67,.25);border-radius:var(--r);
+  padding:32px 20px;text-align:center;cursor:pointer;
+  background:rgba(212,168,67,.03);transition:all .25s;
+  position:relative;overflow:hidden;
+}
+.logo-zone:hover,.logo-zone.drag-over{
+  border-color:var(--gold);background:var(--goldl);
+  box-shadow:0 0 0 3px rgba(212,168,67,.1);
+}
+.logo-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.logo-zone-icon{font-size:2.5rem;margin-bottom:10px;display:block;}
+.logo-zone-title{font-size:.9rem;font-weight:700;color:var(--t1);margin-bottom:5px;}
+.logo-zone-sub{font-size:.72rem;color:var(--t3);}
+.logo-preview{display:none;flex-direction:column;align-items:center;gap:10px;}
+.logo-preview img{width:90px;height:90px;border-radius:12px;object-fit:contain;border:1px solid var(--line2);background:var(--card);}
+.logo-preview-name{font-size:.72rem;color:var(--t3);}
+.logo-remove{background:none;border:1px solid var(--dangerl);border-radius:6px;color:var(--danger);font-size:.68rem;padding:4px 10px;cursor:pointer;font-family:var(--sans);}
+
+/* SCHOOL TYPE SELECTOR */
+.type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;}
+.type-card{background:var(--card2);border:1px solid var(--line);border-radius:var(--r2);padding:12px 8px;text-align:center;cursor:pointer;transition:all .2s;user-select:none;}
+.type-card:hover{background:var(--card);border-color:var(--line2);}
+.type-card.selected{background:var(--goldl);border-color:rgba(212,168,67,.35);}
+.type-icon{font-size:1.4rem;display:block;margin-bottom:5px;}
+.type-name{font-size:.7rem;font-weight:700;color:var(--t2);}
+.type-age{font-size:.58rem;color:var(--t4);margin-top:2px;}
+.type-card.selected .type-name{color:var(--gold);}
+.type-check{width:16px;height:16px;border-radius:50%;background:var(--goldl);border:1px solid var(--gold);display:none;align-items:center;justify-content:center;font-size:.7rem;margin:4px auto 0;}
+.type-card.selected .type-check{display:flex;}
+
+/* STREAMS CONFIG */
+.streams-config{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px;}
+.sc-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);}
+.sc-row:last-child{border:none;}
+.sc-class-name{font-size:.8rem;font-weight:600;color:var(--t1);flex:1;}
+.sc-label{font-size:.68rem;color:var(--t3);min-width:60px;}
+.sc-select{background:var(--card2);border:1px solid var(--line2);border-radius:6px;padding:5px 9px;color:var(--t1);font-size:.76rem;font-family:var(--sans);outline:none;cursor:pointer;}
+.streams-preview{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;}
+.stream-tag{background:var(--goldl);border:1px solid rgba(212,168,67,.2);border-radius:20px;padding:3px 9px;font-size:.65rem;color:var(--gold);font-weight:600;}
+
+/* PLAN CARDS */
+.plan-grid{display:grid;grid-template-columns:1fr;gap:10px;}
+.plan-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;cursor:pointer;transition:all .2s;position:relative;}
+.plan-card:hover{border-color:var(--line2);}
+.plan-card.selected{border-color:rgba(212,168,67,.4);background:rgba(212,168,67,.04);}
+.plan-card.selected::before{content:'✓';position:absolute;top:14px;right:14px;width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;font-size:.8rem;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.plan-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.plan-name{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--t1);}
+.plan-price{text-align:right;}
+.plan-amt{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--gold);}
+.plan-period{font-size:.6rem;color:var(--t3);}
+.plan-features{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.plan-feat{font-size:.65rem;color:var(--t2);background:rgba(255,255,255,.04);border-radius:20px;padding:2px 8px;}
+.plan-badge{font-size:.58rem;background:var(--successl);color:var(--success);border-radius:20px;padding:2px 7px;font-weight:700;}
+
+/* MOU */
+.mou-box{background:var(--card2);border:1px solid var(--line);border-radius:var(--r);padding:18px;max-height:240px;overflow-y:auto;font-size:.74rem;color:var(--t2);line-height:1.8;margin-bottom:14px;}
+.mou-box::-webkit-scrollbar{width:3px;}
+.mou-box::-webkit-scrollbar-thumb{background:var(--line2);}
+.mou-clause{margin-bottom:10px;}
+.mou-clause strong{color:var(--t1);}
+
+/* SIGNATURE PAD */
+.sig-area{background:rgba(255,255,255,.03);border:1px solid var(--line2);border-radius:var(--r2);overflow:hidden;margin-bottom:10px;position:relative;}
+.sig-canvas{display:block;width:100%;height:120px;cursor:crosshair;}
+.sig-clear{position:absolute;top:8px;right:8px;background:var(--dangerl);border:none;border-radius:5px;color:var(--danger);font-size:.65rem;padding:4px 8px;cursor:pointer;font-family:var(--sans);}
+.sig-hint{text-align:center;font-size:.65rem;color:var(--t4);margin-bottom:14px;}
+
+/* SUCCESS SCREEN */
+.success-screen{text-align:center;padding:40px 20px;}
+.success-icon{font-size:4rem;margin-bottom:16px;animation:bounce .6s ease;}
+@keyframes bounce{0%,100%{transform:scale(1);}50%{transform:scale(1.2);}}
+.success-title{font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--t1);margin-bottom:8px;}
+.success-sub{font-size:.8rem;color:var(--t2);line-height:1.7;max-width:400px;margin:0 auto 20px;}
+.ref-box{background:var(--goldl);border:1px solid rgba(212,168,67,.25);border-radius:var(--r2);padding:12px 18px;margin-bottom:20px;}
+.ref-label{font-size:.62rem;color:var(--t3);text-transform:uppercase;margin-bottom:4px;}
+.ref-val{font-family:monospace;font-size:1.1rem;font-weight:700;color:var(--gold);}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:12px 24px;border:none;border-radius:var(--r2);cursor:pointer;font-family:var(--sans);font-size:.84rem;font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(135deg,#4a2500,var(--gold));color:#000;width:100%;}
+.btn-ghost{background:rgba(255,255,255,.05);border:1px solid var(--line2);color:var(--t2);}
+.btn-ghost:hover{background:rgba(255,255,255,.08);color:var(--t1);}
+
+/* NAV BUTTONS */
+.nav-btns{display:flex;gap:10px;margin-top:20px;}
+.nav-btns .btn-ghost{flex:1;}
+.nav-btns .btn-primary{flex:2;}
+
+/* CHECKBOXES */
+.check-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;cursor:pointer;}
+.check-row input[type=checkbox]{width:17px;height:17px;accent-color:var(--gold);flex-shrink:0;margin-top:2px;cursor:pointer;}
+.check-row label{font-size:.78rem;color:var(--t2);line-height:1.5;cursor:pointer;}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);border-radius:var(--r2);padding:9px 18px;font-size:.78rem;z-index:999;transition:transform .25s;white-space:nowrap;display:flex;align-items:center;gap:7px;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#0a1f12;border:1px solid rgba(34,197,94,.35);color:#4ade80;}
+.toast.error{background:#1f0a12;border:1px solid rgba(244,63,94,.35);color:#fb7185;}
+.toast.info{background:#0f1020;border:1px solid rgba(212,168,67,.3);color:var(--gold);}
+
+@media(max-width:600px){.f2,.f3{grid-template-columns:1fr;}.type-grid{grid-template-columns:repeat(2,1fr);}.plan-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <svg class="top-logo" viewBox="0 0 120 120">
+    <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#d4a843"/></linearGradient></defs>
+    <polygon points="60,6 110,33 110,87 60,114 10,87 10,33" fill="#0d0f1a" stroke="url(#lg)" stroke-width="4"/>
+    <text x="60" y="78" text-anchor="middle" font-family="Georgia,serif" font-size="56" font-weight="bold" fill="#d4a843">R</text>
+  </svg>
+  <div><div class="top-title">RSMS Onboarding</div><div class="top-sub">Rehoteq Technologies</div></div>
+  <div class="top-badge">✅ Free to Start</div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-track">
+  <div class="prog-steps" id="prog-steps">
+    <div class="prog-step active" data-step="1"><div class="prog-dot">1</div><div class="prog-label">School Info</div></div>
+    <div class="prog-step" data-step="2"><div class="prog-dot">2</div><div class="prog-label">Sections</div></div>
+    <div class="prog-step" data-step="3"><div class="prog-dot">3</div><div class="prog-label">Streams</div></div>
+    <div class="prog-step" data-step="4"><div class="prog-dot">4</div><div class="prog-label">Plan</div></div>
+    <div class="prog-step" data-step="5"><div class="prog-dot">5</div><div class="prog-label">Logo & MOU</div></div>
+    <div class="prog-step" data-step="6"><div class="prog-dot">6</div><div class="prog-label">Submit</div></div>
+  </div>
+  <div class="prog-bar-track"><div class="prog-bar-fill" id="prog-bar" style="width:16.6%"></div></div>
+</div>
+
+<div class="container">
+
+<!-- ══ STEP 1: SCHOOL INFO ══ -->
+<div class="step active" id="step-1">
+  <div class="step-header">
+    <div class="step-num">Step 1 of 6</div>
+    <div class="step-title">Tell us about your school</div>
+    <div class="step-sub">Basic information about your school. All fields marked * are required.</div>
+  </div>
+
+  <div class="fg"><label>School Full Name <span class="req">*</span></label>
+    <input class="fi" id="s-name" type="text" placeholder="e.g. Government Technical College, Okitipupa"/></div>
+
+  <div class="f2">
+    <div class="fg"><label>State <span class="req">*</span></label>
+      <select class="fi" id="s-state">
+        <option value="">— Select State —</option>
+        <option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option><option>Anambra</option>
+        <option>Bauchi</option><option>Bayelsa</option><option>Benue</option><option>Borno</option>
+        <option>Cross River</option><option>Delta</option><option>Ebonyi</option><option>Edo</option>
+        <option>Ekiti</option><option>Enugu</option><option>FCT Abuja</option><option>Gombe</option>
+        <option>Imo</option><option>Jigawa</option><option>Kaduna</option><option>Kano</option>
+        <option>Katsina</option><option>Kebbi</option><option>Kogi</option><option>Kwara</option>
+        <option>Lagos</option><option>Nasarawa</option><option>Niger</option><option>Ogun</option>
+        <option>Ondo</option><option>Osun</option><option>Oyo</option><option>Plateau</option>
+        <option>Rivers</option><option>Sokoto</option><option>Taraba</option><option>Yobe</option><option>Zamfara</option>
+      </select>
+    </div>
+    <div class="fg"><label>LGA <span class="req">*</span></label>
+      <input class="fi" id="s-lga" type="text" placeholder="Local Government Area"/></div>
+  </div>
+
+  <div class="fg"><label>School Address <span class="req">*</span></label>
+    <textarea class="fi" id="s-address" rows="2" placeholder="Full address of the school"></textarea></div>
+
+  <div class="f2">
+    <div class="fg"><label>Principal / Head Teacher <span class="req">*</span></label>
+      <input class="fi" id="s-principal" type="text" placeholder="Full name"/></div>
+    <div class="fg"><label>School Phone <span class="req">*</span></label>
+      <input class="fi" id="s-phone" type="tel" placeholder="080XXXXXXXX"/></div>
+  </div>
+
+  <div class="f2">
+    <div class="fg"><label>School Email</label>
+      <input class="fi" id="s-email" type="email" placeholder="school@email.com"/></div>
+    <div class="fg"><label>WhatsApp Number</label>
+      <input class="fi" id="s-wa" type="tel" placeholder="Same or different"/></div>
+  </div>
+
+  <div class="fg"><label>School Motto</label>
+    <input class="fi" id="s-motto" type="text" placeholder="e.g. Excellence and Integrity"/></div>
+
+  <div class="fg"><label>Ownership Type</label>
+    <select class="fi" id="s-ownership">
+      <option>Private</option><option>Public (Government)</option>
+      <option>Mission/Faith-based</option><option>International</option>
+    </select>
+  </div>
+
+  <div class="nav-btns">
+    <button class="btn btn-primary" onclick="goStep(2)">Next — School Sections →</button>
+  </div>
+</div>
+
+<!-- ══ STEP 2: SCHOOL SECTIONS ══ -->
+<div class="step" id="step-2">
+  <div class="step-header">
+    <div class="step-num">Step 2 of 6</div>
+    <div class="step-title">Which sections does your school run?</div>
+    <div class="step-sub">Select all that apply. Many schools run multiple sections under one roof.</div>
+  </div>
+
+  <div class="type-grid">
+    <div class="type-card" data-section="creche" onclick="toggleSection(this)">
+      <div class="type-check">✓</div>
+      <span class="type-icon">👶</span>
+      <div class="type-name">Crèche</div>
+      <div class="type-age">0 – 18 months</div>
+    </div>
+    <div class="type-card" data-section="nursery" onclick="toggleSection(this)">
+      <div class="type-check">✓</div>
+      <span class="type-icon">🌱</span>
+      <div class="type-name">Nursery</div>
+      <div class="type-age">NUR 1 & 2</div>
+    </div>
+    <div class="type-card" data-section="kg" onclick="toggleSection(this)">
+      <div class="type-check">✓</div>
+      <span class="type-icon">🎨</span>
+      <div class="type-name">KG</div>
+      <div class="type-age">KG 1 & 2</div>
+    </div>
+    <div class="type-card" data-section="primary" onclick="toggleSection(this)">
+      <div class="type-check">✓</div>
+      <span class="type-icon">📚</span>
+      <div class="type-name">Primary</div>
+      <div class="type-age">Pry 1 – 6</div>
+    </div>
+    <div class="type-card selected" data-section="junior" onclick="toggleSection(this)">
+      <div class="type-check">✓</div>
+      <span class="type-icon">📖</span>
+      <div class="type-name">Junior Sec.</div>
+      <div class="type-age">JSS 1 – 3</div>
+    </div>
+    <div class="type-card selected" data-section="senior" onclick="toggleSection(this)">
+      <div class="type-check">✓</div>
+      <span class="type-icon">🎓</span>
+      <div class="type-name">Senior Sec.</div>
+      <div class="type-age">SS 1 – 3</div>
+    </div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:14px;font-size:.76rem;color:var(--t2);line-height:1.7;margin-bottom:16px;">
+    💡 <strong style="color:var(--t1);">Report Cards:</strong> Crèche, Nursery and KG use <strong style="color:var(--gold);">Progress Reports</strong> (tick-box based, no scores). Primary, JSS and SS use <strong style="color:var(--gold);">Score-based Reports</strong> with grades.
+  </div>
+
+  <!-- SECTION CLASSES CONFIG -->
+  <div id="section-config"></div>
+
+  <div class="nav-btns">
+    <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+    <button class="btn btn-primary" onclick="goStep(3)">Next — Class Streams →</button>
+  </div>
+</div>
+
+<!-- ══ STEP 3: CLASS STREAMS ══ -->
+<div class="step" id="step-3">
+  <div class="step-header">
+    <div class="step-num">Step 3 of 6</div>
+    <div class="step-title">Configure class streams</div>
+    <div class="step-sub">How many arms / streams does each class run? (e.g. JSS 1A, JSS 1B, JSS 1C)</div>
+  </div>
+
+  <div class="fg"><label>Stream Naming Style</label>
+    <select class="fi" id="stream-style" onchange="rebuildStreams()">
+      <option value="alpha">Letters (A, B, C) — JSS 1A, JSS 1B</option>
+      <option value="num">Numbers (1, 2, 3) — JSS 1 Set 1, JSS 1 Set 2</option>
+      <option value="colour">Colours — JSS 1 Blue, JSS 1 Gold</option>
+      <option value="none">No streams — single class per level</option>
+    </select>
+  </div>
+
+  <div class="streams-config" id="streams-config">
+    <div style="font-size:.68rem;color:var(--t4);text-align:center;padding:10px;">Select sections in Step 2 first</div>
+  </div>
+
+  <div style="margin-bottom:14px;">
+    <div style="font-size:.72rem;font-weight:700;color:var(--t3);margin-bottom:7px;">Preview of generated classes:</div>
+    <div class="streams-preview" id="streams-preview"></div>
+  </div>
+
+  <div class="nav-btns">
+    <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+    <button class="btn btn-primary" onclick="goStep(4)">Next — Choose Plan →</button>
+  </div>
+</div>
+
+<!-- ══ STEP 4: PLAN SELECTION ══ -->
+<div class="step" id="step-4">
+  <div class="step-header">
+    <div class="step-num">Step 4 of 6</div>
+    <div class="step-title">Choose your plan</div>
+    <div class="step-sub" id="plan-tier-note">Pricing based on your location tier.</div>
+  </div>
+
+  <div class="plan-grid" id="plan-grid"></div>
+
+  <div class="nav-btns">
+    <button class="btn btn-ghost" onclick="goStep(3)">← Back</button>
+    <button class="btn btn-primary" onclick="goStep(5)">Next — Logo & Agreement →</button>
+  </div>
+</div>
+
+<!-- ══ STEP 5: LOGO + MOU ══ -->
+<div class="step" id="step-5">
+  <div class="step-header">
+    <div class="step-num">Step 5 of 6</div>
+    <div class="step-title">School logo & agreement</div>
+    <div class="step-sub">Upload your school logo and review the service agreement.</div>
+  </div>
+
+  <!-- LOGO UPLOAD -->
+  <div class="fg">
+    <label>🏫 School Logo</label>
+    <div class="logo-zone" id="logo-zone"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="handleLogoDrop(event)">
+      <input type="file" id="logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onchange="handleLogoFile(this)"/>
+      <div id="logo-placeholder">
+        <span class="logo-zone-icon">🖼️</span>
+        <div class="logo-zone-title">Drop your school logo here</div>
+        <div class="logo-zone-sub">or tap to browse files</div>
+        <div style="font-size:.62rem;color:var(--t4);margin-top:6px;">PNG, JPG, SVG • Max 2MB • Recommended: 512×512px</div>
+      </div>
+      <div class="logo-preview" id="logo-preview">
+        <img id="logo-img" src="" alt="Logo preview"/>
+        <div class="logo-preview-name" id="logo-filename"></div>
+        <button class="logo-remove" onclick="removeLogo(event)">✕ Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOU -->
+  <div class="fg" style="margin-top:20px;">
+    <label>📄 Service Agreement (MOU)</label>
+  </div>
+  <div class="mou-box">
+    <div class="mou-clause"><strong>1. PARTIES</strong><br/>This agreement is between Rehoteq Technologies ("Provider") and the school submitting this form ("School").</div>
+    <div class="mou-clause"><strong>2. SERVICES</strong><br/>The Provider agrees to supply the Rehoteq School Management System (RSMS) which includes student management, results, attendance, fee tracking, CBT exams, and parent portals based on the selected plan.</div>
+    <div class="mou-clause"><strong>3. PAYMENT TERMS</strong><br/>The School agrees to pay the one-time onboarding fee before activation. Term subscription fees are due within 14 days of each new school term. Access becomes read-only after the grace period.</div>
+    <div class="mou-clause"><strong>4. DATA OWNERSHIP</strong><br/>All school data remains the property of the School. Rehoteq Technologies will not share or sell school data to third parties.</div>
+    <div class="mou-clause"><strong>5. CONFIDENTIALITY</strong><br/>Both parties agree to keep login credentials and operational data confidential.</div>
+    <div class="mou-clause"><strong>6. TERMINATION</strong><br/>Either party may terminate with 30 days written notice. The School's data will be available for export for 30 days after termination.</div>
+    <div class="mou-clause"><strong>7. SUPPORT</strong><br/>Technical support is available via WhatsApp (07036302585) and email (rehoteq@gmail.com) on business days.</div>
+    <div class="mou-clause"><strong>8. GOVERNING LAW</strong><br/>This agreement is governed by the laws of the Federal Republic of Nigeria.</div>
+  </div>
+
+  <!-- SIGNATURE -->
+  <div class="fg">
+    <label>✍️ Digital Signature — Sign here</label>
+    <div class="sig-area">
+      <canvas class="sig-canvas" id="sig-canvas"></canvas>
+      <button class="sig-clear" onclick="clearSig()">Clear</button>
+    </div>
+    <div class="sig-hint">Draw your signature with your finger or mouse</div>
+  </div>
+
+  <div class="fg">
+    <label>Signatory Name <span class="req">*</span></label>
+    <input class="fi" id="sig-name" type="text" placeholder="Full name of person signing"/>
+  </div>
+  <div class="fg">
+    <label>Signatory Title</label>
+    <input class="fi" id="sig-title" type="text" placeholder="e.g. Principal, Proprietor, Chairman"/>
+  </div>
+
+  <div class="check-row">
+    <input type="checkbox" id="agree-terms"/>
+    <label for="agree-terms">I have read and agree to the RSMS Service Agreement on behalf of the school</label>
+  </div>
+  <div class="check-row">
+    <input type="checkbox" id="agree-data"/>
+    <label for="agree-data">I confirm that all information provided is accurate and I am authorised to represent this school</label>
+  </div>
+
+  <div class="nav-btns">
+    <button class="btn btn-ghost" onclick="goStep(4)">← Back</button>
+    <button class="btn btn-primary" onclick="goStep(6)">Review & Submit →</button>
+  </div>
+</div>
+
+<!-- ══ STEP 6: REVIEW & SUBMIT ══ -->
+<div class="step" id="step-6">
+  <div class="step-header">
+    <div class="step-num">Step 6 of 6</div>
+    <div class="step-title">Review your submission</div>
+    <div class="step-sub">Please confirm these details before submitting to Rehoteq.</div>
+  </div>
+
+  <div id="review-content" style="background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px;"></div>
+
+  <div style="background:var(--goldl);border:1px solid rgba(212,168,67,.2);border-radius:var(--r2);padding:14px;margin-bottom:16px;font-size:.76rem;color:var(--t2);line-height:1.7;">
+    📱 After submitting, Rehoteq will contact you within <strong style="color:var(--t1);">24 hours</strong> via WhatsApp to confirm your onboarding fee payment and schedule your school activation.
+  </div>
+
+  <div class="nav-btns">
+    <button class="btn btn-ghost" onclick="goStep(5)">← Back</button>
+    <button class="btn btn-primary" id="submit-btn" onclick="submitForm()">🚀 Submit to Rehoteq</button>
+  </div>
+</div>
+
+<!-- ══ SUCCESS ══ -->
+<div class="step" id="step-success">
+  <div class="success-screen">
+    <div class="success-icon">🎉</div>
+    <div class="success-title">Application Submitted!</div>
+    <div class="success-sub">Your school onboarding request has been received. Rehoteq Technologies will contact you within 24 hours via WhatsApp to complete your setup.</div>
+    <div class="ref-box">
+      <div class="ref-label">Your Reference Number</div>
+      <div class="ref-val" id="ref-number">—</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn btn-primary" onclick="shareWA()">📱 Share via WhatsApp</button>
+      <button class="btn btn-ghost" onclick="window.location.href='rsms-app.html'">Return to RSMS Login</button>
+    </div>
+    <div style="margin-top:20px;font-size:.68rem;color:var(--t4);">
+      Support: 07036302585 • rehoteq@gmail.com<br/>Rehoteq Technologies, Okitipupa, Ondo State
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+var currentStep = 1;
+var totalSteps = 6;
+var formData = {
+  school: {}, sections: [], streams: {}, plan: '', logo: null, logoName: '', sig: ''
+};
+var sigCanvas, sigCtx, sigDrawing = false, sigHasContent = false;
+
+// ── TOAST ──
+function toast(msg, type) {
+  var t = document.getElementById('toast');
+  t.className = 'toast ' + (type || 'info') + ' show';
+  t.innerHTML = msg;
+  clearTimeout(t._t);
+  t._t = setTimeout(function() { t.classList.remove('show'); }, 3500);
+}
+
+// ── STEP NAVIGATION ──
+function goStep(n) {
+  if (n > currentStep && !validateStep(currentStep)) return;
+
+  document.getElementById('step-' + currentStep).classList.remove('active');
+  currentStep = n;
+
+  if (n <= totalSteps) {
+    document.getElementById('step-' + n).classList.add('active');
+  } else {
+    document.getElementById('step-success').classList.add('active');
+  }
+
+  // Update progress
+  var pct = (n / totalSteps) * 100;
+  document.getElementById('prog-bar').style.width = Math.min(pct, 100) + '%';
+
+  document.querySelectorAll('.prog-step').forEach(function(s) {
+    var sn = parseInt(s.dataset.step);
+    s.classList.remove('active', 'done');
+    if (sn < n) s.classList.add('done');
+    else if (sn === n) s.classList.add('active');
+  });
+
+  // Step-specific init
+  if (n === 3) buildStreamsConfig();
+  if (n === 4) buildPlanCards();
+  if (n === 6) buildReview();
+  if (n === 5) initSigPad();
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── VALIDATION ──
+function validateStep(n) {
+  if (n === 1) {
+    var name = document.getElementById('s-name').value.trim();
+    var state = document.getElementById('s-state').value;
+    var phone = document.getElementById('s-phone').value.trim();
+    var principal = document.getElementById('s-principal').value.trim();
+    if (!name) { toast('⚠️ Enter your school name', 'error'); return false; }
+    if (!state) { toast('⚠️ Select your state', 'error'); return false; }
+    if (!phone) { toast('⚠️ Enter school phone number', 'error'); return false; }
+    if (!principal) { toast('⚠️ Enter principal name', 'error'); return false; }
+    collectStep1();
+  }
+  if (n === 2) {
+    var selected = document.querySelectorAll('.type-card.selected');
+    if (!selected.length) { toast('⚠️ Select at least one school section', 'error'); return false; }
+    collectSections();
+  }
+  if (n === 3) { collectStreams(); }
+  if (n === 4) {
+    if (!formData.plan) { toast('⚠️ Please select a plan', 'error'); return false; }
+  }
+  if (n === 5) {
+    var sigName = document.getElementById('sig-name').value.trim();
+    var agree1 = document.getElementById('agree-terms').checked;
+    var agree2 = document.getElementById('agree-data').checked;
+    if (!sigName) { toast('⚠️ Enter signatory name', 'error'); return false; }
+    if (!agree1 || !agree2) { toast('⚠️ Please agree to the terms', 'error'); return false; }
+    collectStep5();
+  }
+  return true;
+}
+
+// ── DATA COLLECTION ──
+function collectStep1() {
+  formData.school = {
+    name: document.getElementById('s-name').value.trim(),
+    state: document.getElementById('s-state').value,
+    lga: document.getElementById('s-lga').value.trim(),
+    address: document.getElementById('s-address').value.trim(),
+    principal: document.getElementById('s-principal').value.trim(),
+    phone: document.getElementById('s-phone').value.trim(),
+    email: document.getElementById('s-email').value.trim(),
+    wa: document.getElementById('s-wa').value.trim(),
+    motto: document.getElementById('s-motto').value.trim(),
+    ownership: document.getElementById('s-ownership').value
+  };
+}
+
+function collectSections() {
+  formData.sections = Array.from(document.querySelectorAll('.type-card.selected'))
+    .map(function(c) { return c.dataset.section; });
+}
+
+function collectStreams() {
+  var config = {};
+  document.querySelectorAll('.sc-select').forEach(function(sel) {
+    config[sel.dataset.class] = parseInt(sel.value);
+  });
+  formData.streams = config;
+}
+
+function collectStep5() {
+  formData.sigName = document.getElementById('sig-name').value.trim();
+  formData.sigTitle = document.getElementById('sig-title').value.trim();
+  if (sigCanvas) formData.sig = sigCanvas.toDataURL();
+}
+
+// ── SECTIONS TOGGLE ──
+function toggleSection(el) {
+  el.classList.toggle('selected');
+  collectSections();
+  buildSectionConfig();
+}
+
+function buildSectionConfig() {
+  var sections = Array.from(document.querySelectorAll('.type-card.selected')).map(function(c) { return c.dataset.section; });
+  var html = '';
+  var labels = { creche: 'Crèche', nursery: 'Nursery', kg: 'Kindergarten', primary: 'Primary', junior: 'Junior Secondary', senior: 'Senior Secondary' };
+  if (sections.length) {
+    html = '<div style="font-size:.72rem;color:var(--t3);margin-bottom:8px;">Selected sections: <strong style="color:var(--t1);">' + sections.map(function(s) { return labels[s]; }).join(', ') + '</strong></div>';
+  }
+  document.getElementById('section-config').innerHTML = html;
+}
+
+// ── STREAMS CONFIG ──
+var CLASS_MAP = {
+  junior: ['JSS 1', 'JSS 2', 'JSS 3'],
+  senior: ['SS 1 Science', 'SS 1 Commercial', 'SS 1 Art', 'SS 2 Science', 'SS 2 Commercial', 'SS 2 Art', 'SS 3 Science', 'SS 3 Commercial', 'SS 3 Art'],
+  primary: ['Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6'],
+  kg: ['KG 1', 'KG 2'],
+  nursery: ['Nursery 1', 'Nursery 2'],
+  creche: ['Crèche']
+};
+
+function buildStreamsConfig() {
+  var sections = Array.from(document.querySelectorAll('.type-card.selected')).map(function(c) { return c.dataset.section; });
+  var style = document.getElementById('stream-style').value;
+  var html = '';
+  var classes = [];
+
+  sections.forEach(function(sec) {
+    var cls = CLASS_MAP[sec] || [];
+    cls.forEach(function(c) { classes.push({ cls: c, sec: sec }); });
+  });
+
+  if (!classes.length) {
+    document.getElementById('streams-config').innerHTML = '<div style="font-size:.68rem;color:var(--t4);text-align:center;padding:10px;">Select sections in Step 2 first</div>';
+    return;
+  }
+
+  // Only show stream selection for levels that make sense
+  var streamable = classes.filter(function(c) { return c.sec !== 'creche'; });
+
+  if (style === 'none') {
+    html = '<div style="font-size:.76rem;color:var(--t3);padding:8px 0;">Single class per level — no streams configured.</div>';
+    document.getElementById('streams-config').innerHTML = html;
+    updateStreamPreview(classes, 1, style);
+    return;
+  }
+
+  html = streamable.map(function(c) {
+    var stored = (formData.streams || {})[c.cls] || 1;
+    return '<div class="sc-row">' +
+      '<div class="sc-class-name">' + c.cls + '</div>' +
+      '<div class="sc-label">Streams:</div>' +
+      '<select class="sc-select" data-class="' + c.cls + '" onchange="previewStreams()">' +
+      '<option value="1"' + (stored===1?' selected':'') + '>1</option>' +
+      '<option value="2"' + (stored===2?' selected':'') + '>2</option>' +
+      '<option value="3"' + (stored===3?' selected':'') + '>3</option>' +
+      '<option value="4"' + (stored===4?' selected':'') + '>4</option>' +
+      '<option value="5"' + (stored===5?' selected':'') + '>5</option>' +
+      '</select></div>';
+  }).join('');
+
+  document.getElementById('streams-config').innerHTML = html || '<div style="color:var(--t4);font-size:.76rem;padding:8px;">No configurable sections selected</div>';
+  previewStreams();
+}
+
+function rebuildStreams() {
+  buildStreamsConfig();
+}
+
+function previewStreams() {
+  var style = document.getElementById('stream-style').value;
+  var sections = Array.from(document.querySelectorAll('.type-card.selected')).map(function(c) { return c.dataset.section; });
+  var alphas = ['A','B','C','D','E'];
+  var colours = ['Blue','Gold','Green','Red','White'];
+  var tags = [];
+
+  sections.forEach(function(sec) {
+    var cls = CLASS_MAP[sec] || [];
+    cls.forEach(function(c) {
+      var sel = document.querySelector('.sc-select[data-class="' + c + '"]');
+      var count = sel ? parseInt(sel.value) : 1;
+      if (style === 'none' || count === 1) {
+        tags.push(c);
+      } else {
+        for (var i = 0; i < count; i++) {
+          if (style === 'alpha') tags.push(c + alphas[i]);
+          else if (style === 'num') tags.push(c + ' Set ' + (i+1));
+          else if (style === 'colour') tags.push(c + ' ' + colours[i]);
+        }
+      }
+    });
+  });
+
+  formData.generatedClasses = tags;
+  document.getElementById('streams-preview').innerHTML = tags.slice(0, 20).map(function(t) {
+    return '<span class="stream-tag">' + t + '</span>';
+  }).join('') + (tags.length > 20 ? '<span class="stream-tag">+' + (tags.length-20) + ' more</span>' : '');
+}
+
+function updateStreamPreview(classes, count, style) {
+  var tags = classes.map(function(c) { return c.cls; });
+  formData.generatedClasses = tags;
+  document.getElementById('streams-preview').innerHTML = tags.map(function(t) {
+    return '<span class="stream-tag">' + t + '</span>';
+  }).join('');
+}
+
+// ── PLAN CARDS ──
+var PLANS = {
+  C: [
+    { name: 'Starter', onboard: 10000, term: 7500, students: 300, features: ['Results', 'Attendance', 'Fees', 'Parent Portal'] },
+    { name: 'Standard', onboard: 10000, term: 15000, students: 600, features: ['Everything in Starter', 'CBT Exams', 'QR Attendance', 'WhatsApp Alerts'] },
+    { name: 'Premium', onboard: 20000, term: 25000, students: 1500, features: ['Everything in Standard', 'Progress Reports', 'Staff Clock In/Out', 'Reports Centre'] },
+    { name: 'Enterprise', onboard: 50000, year: 190000, students: 'Unlimited', features: ['Everything in Premium', 'Custom Domain', 'GPS Check-in', 'Dedicated Support'] }
+  ],
+  B: [
+    { name: 'Starter', onboard: 15000, term: 12000, students: 300, features: ['Results', 'Attendance', 'Fees', 'Parent Portal'] },
+    { name: 'Standard', onboard: 15000, term: 22000, students: 600, features: ['Everything in Starter', 'CBT Exams', 'QR Attendance', 'WhatsApp Alerts'] },
+    { name: 'Premium', onboard: 30000, term: 35000, students: 1500, features: ['Everything in Standard', 'Progress Reports', 'Staff Clock In/Out', 'Reports Centre'] },
+    { name: 'Enterprise', onboard: 75000, year: 325000, students: 'Unlimited', features: ['Everything in Premium', 'Custom Domain', 'GPS Check-in', 'Dedicated Support'] }
+  ],
+  A: [
+    { name: 'Starter', onboard: 25000, term: 22500, students: 300, features: ['Results', 'Attendance', 'Fees', 'Parent Portal'] },
+    { name: 'Standard', onboard: 25000, term: 40000, students: 600, features: ['Everything in Starter', 'CBT Exams', 'QR Attendance', 'WhatsApp Alerts'] },
+    { name: 'Premium', onboard: 50000, term: 60000, students: 1500, features: ['Everything in Standard', 'Progress Reports', 'Staff Clock In/Out', 'Reports Centre'] },
+    { name: 'Enterprise', onboard: 100000, year: 475000, students: 'Unlimited', features: ['Everything in Premium', 'Custom Domain', 'GPS Check-in', 'Dedicated Support'] }
+  ]
+};
+
+var TIER_A_STATES = ['Lagos', 'FCT Abuja', 'Rivers'];
+var TIER_B_STATES = ['Kano', 'Kaduna', 'Oyo', 'Ogun', 'Anambra', 'Enugu', 'Imo', 'Edo', 'Ekiti', 'Osun', 'Delta', 'Akwa Ibom'];
+
+function getTier() {
+  var state = formData.school.state || '';
+  if (TIER_A_STATES.indexOf(state) > -1) return 'A';
+  if (TIER_B_STATES.indexOf(state) > -1) return 'B';
+  return 'C';
+}
+
+function buildPlanCards() {
+  var tier = getTier();
+  var tierLabel = { A: 'Tier A (Lagos/Abuja/PH)', B: 'Tier B (State Capital)', C: 'Tier C — Best Value' };
+  document.getElementById('plan-tier-note').innerHTML = 'Pricing for <strong style="color:var(--gold);">' + tierLabel[tier] + '</strong> — 50% cheaper than competitors.';
+  var plans = PLANS[tier];
+  document.getElementById('plan-grid').innerHTML = plans.map(function(p, i) {
+    var popular = i === 2 ? '<span class="plan-badge">Most Popular</span>' : '';
+    var priceLabel = p.year ? '₦' + p.year.toLocaleString() + '/yr' : '₦' + p.term.toLocaleString() + '/term';
+    return '<div class="plan-card' + (formData.plan === p.name ? ' selected' : '') + '" onclick="selectPlan(this,\'' + p.name + '\')">' +
+      '<div class="plan-header"><div><div class="plan-name">' + p.name + ' ' + popular + '</div>' +
+      '<div style="font-size:.65rem;color:var(--t3);margin-top:2px;">Up to ' + (typeof p.students === 'number' ? p.students.toLocaleString() : p.students) + ' students</div></div>' +
+      '<div class="plan-price"><div style="font-size:.6rem;color:var(--t3);">Onboarding fee</div>' +
+      '<div style="font-size:.72rem;color:var(--gold);font-weight:700;">₦' + p.onboard.toLocaleString() + '</div>' +
+      '<div class="plan-amt">' + priceLabel + '</div></div></div>' +
+      '<div class="plan-features">' + p.features.map(function(f) { return '<span class="plan-feat">✓ ' + f + '</span>'; }).join('') + '</div></div>';
+  }).join('');
+}
+
+function selectPlan(el, name) {
+  document.querySelectorAll('.plan-card').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+  formData.plan = name;
+}
+
+// ── LOGO UPLOAD ──
+function handleLogoFile(inp) {
+  var file = inp.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { toast('⚠️ Logo must be under 2MB', 'error'); return; }
+  readLogo(file);
+}
+
+function handleLogoDrop(e) {
+  e.preventDefault();
+  document.getElementById('logo-zone').classList.remove('drag-over');
+  var file = e.dataTransfer.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { toast('⚠️ Please drop an image file', 'error'); return; }
+  if (file.size > 2 * 1024 * 1024) { toast('⚠️ Logo must be under 2MB', 'error'); return; }
+  readLogo(file);
+}
+
+function readLogo(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    formData.logo = e.target.result;
+    formData.logoName = file.name;
+    document.getElementById('logo-img').src = e.target.result;
+    document.getElementById('logo-filename').textContent = file.name + ' (' + Math.round(file.size/1024) + 'KB)';
+    document.getElementById('logo-placeholder').style.display = 'none';
+    document.getElementById('logo-preview').style.display = 'flex';
+    document.getElementById('logo-zone').style.borderStyle = 'solid';
+    toast('✅ Logo uploaded: ' + file.name, 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeLogo(e) {
+  e.stopPropagation();
+  formData.logo = null;
+  formData.logoName = '';
+  document.getElementById('logo-file').value = '';
+  document.getElementById('logo-placeholder').style.display = 'block';
+  document.getElementById('logo-preview').style.display = 'none';
+  document.getElementById('logo-zone').style.borderStyle = 'dashed';
+}
+
+// ── SIGNATURE PAD ──
+function initSigPad() {
+  sigCanvas = document.getElementById('sig-canvas');
+  if (!sigCanvas) return;
+  sigCtx = sigCanvas.getContext('2d');
+
+  // Set canvas size
+  sigCanvas.width = sigCanvas.offsetWidth;
+  sigCanvas.height = 120;
+
+  sigCtx.strokeStyle = '#d4a843';
+  sigCtx.lineWidth = 2.5;
+  sigCtx.lineCap = 'round';
+  sigCtx.lineJoin = 'round';
+
+  function getPos(e) {
+    var rect = sigCanvas.getBoundingClientRect();
+    var src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+  }
+
+  sigCanvas.addEventListener('mousedown', function(e) { sigDrawing = true; var p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); });
+  sigCanvas.addEventListener('mousemove', function(e) { if (!sigDrawing) return; var p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); sigHasContent = true; });
+  sigCanvas.addEventListener('mouseup', function() { sigDrawing = false; });
+  sigCanvas.addEventListener('mouseleave', function() { sigDrawing = false; });
+  sigCanvas.addEventListener('touchstart', function(e) { e.preventDefault(); sigDrawing = true; var p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); }, { passive: false });
+  sigCanvas.addEventListener('touchmove', function(e) { e.preventDefault(); if (!sigDrawing) return; var p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); sigHasContent = true; }, { passive: false });
+  sigCanvas.addEventListener('touchend', function() { sigDrawing = false; });
+}
+
+function clearSig() {
+  if (sigCtx) { sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); sigHasContent = false; }
+}
+
+// ── REVIEW ──
+function buildReview() {
+  var s = formData.school;
+  var sectionLabels = { creche:'Crèche', nursery:'Nursery', kg:'KG', primary:'Primary', junior:'Junior Secondary', senior:'Senior Secondary' };
+  var sections = (formData.sections || []).map(function(s) { return sectionLabels[s]; }).join(', ');
+  var classes = (formData.generatedClasses || []).slice(0, 8).join(', ') + (formData.generatedClasses && formData.generatedClasses.length > 8 ? '...' : '');
+
+  document.getElementById('review-content').innerHTML = [
+    ['🏫 School', s.name],
+    ['📍 Location', s.state + (s.lga ? ', ' + s.lga : '')],
+    ['👨‍💼 Principal', s.principal],
+    ['📱 Phone', s.phone],
+    ['📚 Sections', sections || '—'],
+    ['🏫 Classes', classes || '—'],
+    ['⭐ Plan', formData.plan || '—'],
+    ['🖼️ Logo', formData.logo ? '✅ Uploaded' : 'None'],
+    ['✍️ Signed by', formData.sigName || '—'],
+  ].map(function(row) {
+    return '<div style="display:flex;padding:9px 0;border-bottom:1px solid var(--line);font-size:.78rem;">' +
+      '<div style="width:120px;color:var(--t3);flex-shrink:0;">' + row[0] + '</div>' +
+      '<div style="color:var(--t1);font-weight:600;">' + row[1] + '</div></div>';
+  }).join('') + '<div style="padding-top:9px;font-size:.72rem;color:var(--t3);">Please verify these details. Tap Back to make changes.</div>';
+}
+
+// ── SUBMIT ──
+function submitForm() {
+  collectStep1();
+  collectSections();
+  collectStreams();
+
+  var ref = 'RSMS-' + Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).slice(-4).toUpperCase();
+  var payload = {
+    ref: ref,
+    submittedAt: new Date().toISOString(),
+    school: formData.school,
+    sections: formData.sections,
+    streams: formData.streams,
+    generatedClasses: formData.generatedClasses,
+    plan: formData.plan,
+    logoName: formData.logoName,
+    logo: formData.logo,
+    sigName: formData.sigName,
+    sigTitle: formData.sigTitle,
+    sig: formData.sig,
+    status: 'pending'
+  };
+
+  // Save to localStorage — Super Admin reads this
+  localStorage.setItem('rsms_onboarding_' + ref, JSON.stringify(payload));
+
+  // Show success
+  document.getElementById('step-6').classList.remove('active');
+  document.getElementById('step-success').classList.add('active');
+  document.getElementById('ref-number').textContent = ref;
+  document.getElementById('prog-bar').style.width = '100%';
+
+  // Update badge counts
+  toast('🎉 Application submitted! Ref: ' + ref, 'success');
+
+  // ── RESET for potential next school on same device ──
+  setTimeout(function() {
+    formData = {
+      school: {}, sections: [], streams: {}, plan: '',
+      logo: null, logoName: '', sig: '', sigName: '', sigTitle: '',
+      generatedClasses: []
+    };
+  }, 500);
+}
+
+function shareWA() {
+  var ref = document.getElementById('ref-number').textContent;
+  var name = formData.school.name || 'School';
+  var msg = '🎓 *RSMS Application Submitted*\n\nSchool: *' + name + '*\nPlan: *' + formData.plan + '*\nRef: *' + ref + '*\n\nRehoteq will contact you within 24 hours.\n\n_Powered by Rehoteq Technologies_';
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+// ── INIT ──
+window.addEventListener('load', function() {
+  // ── RESET ALL FORM STATE ── prevents data bleeding between schools
+  formData = {
+    school: {}, sections: [], streams: {}, plan: '',
+    logo: null, logoName: '', sig: '', sigName: '', sigTitle: '',
+    generatedClasses: []
+  };
+  currentStep = 1;
+  sigHasContent = false;
+
+  // Reset all form fields
+  document.querySelectorAll('.fi').forEach(function(f) {
+    if (f.tagName === 'SELECT') f.selectedIndex = 0;
+    else f.value = '';
+  });
+  document.querySelectorAll('.type-card').forEach(function(c) {
+    c.classList.remove('selected');
+  });
+  // Default junior + senior
+  var junior = document.querySelector('[data-section="junior"]');
+  var senior = document.querySelector('[data-section="senior"]');
+  if (junior) junior.classList.add('selected');
+  if (senior) senior.classList.add('selected');
+
+  document.querySelectorAll('input[type=checkbox]').forEach(function(c) { c.checked = false; });
+
+  buildSectionConfig();
+
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function() {});
+  }
+});
+</script>
+</body>
+</html>

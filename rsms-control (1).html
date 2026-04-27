@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0d0f1a"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="RSMS Control"/>
+<link rel="manifest" href="manifest-control.json"/>
+<link rel="apple-touch-icon" href="icon-ctrl-192.png"/>
+<title>RSMS Control Center — Rehoteq</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--panel:#0d0f1a;--card:#111420;--card2:#161929;
+  --line:rgba(255,255,255,0.07);--line2:rgba(255,255,255,0.13);
+  --gold:#d4a843;--gold2:#f0c060;--goldl:rgba(212,168,67,0.12);--goldm:rgba(212,168,67,0.22);
+  --success:#22c55e;--successl:rgba(34,197,94,0.12);
+  --danger:#f43f5e;--dangerl:rgba(244,63,94,0.12);
+  --info:#3b82f6;--infol:rgba(59,130,246,0.12);
+  --warn:#f59e0b;--warnl:rgba(245,158,11,0.12);
+  --purple:#8b5cf6;--purplel:rgba(139,92,246,0.12);
+  --t1:#f0f2ff;--t2:rgba(240,242,255,0.65);--t3:rgba(240,242,255,0.35);--t4:rgba(240,242,255,0.14);
+  --r:14px;--r2:10px;--r3:8px;
+  --serif:'Fraunces',serif;--sans:'Outfit',sans-serif;
+  --safe-top:env(safe-area-inset-top);
+  --safe-bot:env(safe-area-inset-bottom);
+  /* BIGGER BASE SIZES */
+  --fs-xs:.72rem;--fs-sm:.82rem;--fs-base:.92rem;--fs-lg:1.05rem;
+  --pad:18px;--btn-h:52px;--input-h:50px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--t1);overflow:hidden;}
+
+/* ── LOGIN ── */
+.login-screen{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;}
+.login-card{width:100%;max-width:380px;background:var(--panel);border:1px solid rgba(212,168,67,.2);border-radius:22px;padding:36px 28px;text-align:center;}
+.login-hex{width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,#1a0a3e,#2d1b6e);display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 40px rgba(212,168,67,.25);margin-bottom:16px;}
+.login-title{font-family:var(--serif);font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;}
+.login-sub{font-size:var(--fs-sm);color:var(--t3);margin-bottom:8px;}
+.login-warn{font-size:var(--fs-xs);color:var(--danger);background:var(--dangerl);border:1px solid rgba(244,63,94,.2);border-radius:10px;padding:9px 12px;margin-bottom:20px;}
+.login-input{width:100%;background:var(--card);border:1px solid var(--line2);border-radius:var(--r2);padding:0 16px;color:var(--t1);font-size:var(--fs-lg);font-family:var(--sans);outline:none;text-align:center;letter-spacing:.1em;margin-bottom:14px;height:var(--input-h);}
+.login-input:focus{border-color:rgba(212,168,67,.4);}
+.login-btn{width:100%;height:var(--btn-h);background:linear-gradient(135deg,#4a2500,var(--gold));border:none;border-radius:var(--r2);color:#000;font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;cursor:pointer;transition:all .2s;}
+.login-btn:active{transform:scale(.97);}
+
+/* ── APP ── */
+.app{display:flex;flex-direction:column;height:100vh;padding-top:var(--safe-top);}
+
+/* ── STATUS BAR ── */
+.status-bar{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.sb-logo{display:flex;align-items:center;gap:11px;}
+.sb-hex-sm{width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,#1a0a3e,#2d1b6e);display:flex;align-items:center;justify-content:center;}
+.sb-title{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;color:var(--gold);}
+.sb-sub{font-size:.6rem;color:var(--t4);text-transform:uppercase;letter-spacing:.1em;}
+.status-right{display:flex;align-items:center;gap:10px;}
+.online-pill{display:flex;align-items:center;gap:6px;font-size:var(--fs-xs);font-weight:700;color:var(--success);background:var(--successl);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:5px 12px;}
+.online-dot{width:7px;height:7px;border-radius:50%;background:var(--success);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* ── SCROLL ── */
+.scroll-content{flex:1;overflow-y:auto;padding:20px 16px calc(82px + var(--safe-bot));}
+.scroll-content::-webkit-scrollbar{display:none;}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 16px;position:relative;overflow:hidden;cursor:pointer;transition:all .2s;}
+.kpi:active{transform:scale(.97);}
+.kpi::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s;}
+.kpi:hover::before{opacity:1;}
+.kpi.gold::before{background:linear-gradient(135deg,rgba(212,168,67,.07),transparent);}
+.kpi.green::before{background:linear-gradient(135deg,rgba(34,197,94,.07),transparent);}
+.kpi.blue::before{background:linear-gradient(135deg,rgba(59,130,246,.07),transparent);}
+.kpi.red::before{background:linear-gradient(135deg,rgba(244,63,94,.07),transparent);}
+.kpi-label{font-size:var(--fs-xs);font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:9px;}
+.kpi-val{font-family:var(--serif);font-size:2rem;font-weight:900;color:var(--t1);line-height:1;margin-bottom:5px;}
+.kpi-sub{font-size:var(--fs-xs);color:var(--t3);}
+.kpi-ico{position:absolute;top:16px;right:14px;font-size:1.5rem;opacity:.5;}
+
+/* ── SECTION ── */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.sec-title{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;color:var(--t1);}
+.sec-action{font-size:var(--fs-xs);color:var(--gold);cursor:pointer;font-weight:700;}
+
+/* ── QUICK ACTIONS ── */
+.qa-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px;}
+.qa{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:18px 12px;text-align:center;cursor:pointer;transition:all .2s;}
+.qa:active{transform:scale(.96);}
+.qa:hover{border-color:var(--line2);}
+.qa-icon{font-size:1.8rem;display:block;margin-bottom:8px;}
+.qa-label{font-size:var(--fs-sm);font-weight:700;color:var(--t2);}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;}
+.card-sm{padding:14px 16px;}
+.ct{font-size:var(--fs-base);font-weight:700;color:var(--t1);display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+
+/* ── SCHOOL CARD ── */
+.school-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:all .2s;}
+.school-card:active{transform:scale(.98);}
+.school-card:hover{border-color:var(--line2);}
+.school-av{width:48px;height:48px;border-radius:var(--r2);background:linear-gradient(135deg,#1a0a3e,#2d1b6e);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.2rem;font-weight:700;color:var(--gold);flex-shrink:0;}
+.school-name{font-size:var(--fs-base);font-weight:700;color:var(--t1);margin-bottom:3px;}
+.school-meta{font-size:var(--fs-xs);color:var(--t4);}
+
+/* ── ALERT ITEMS ── */
+.alert-item{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:14px;margin-bottom:9px;display:flex;gap:12px;align-items:flex-start;}
+.alert-item.unread{border-color:rgba(212,168,67,.25);}
+.alert-icon{font-size:1.3rem;flex-shrink:0;margin-top:2px;}
+.alert-text{font-size:var(--fs-sm);color:var(--t1);line-height:1.5;margin-bottom:3px;}
+.alert-time{font-size:var(--fs-xs);color:var(--t4);}
+
+/* ── REVENUE BARS ── */
+.rev-bars{display:flex;align-items:flex-end;gap:6px;height:70px;}
+.rev-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.rev-bar{width:100%;border-radius:4px 4px 0 0;min-height:4px;background:linear-gradient(to top,var(--purple),var(--gold));transition:height 1.2s ease;}
+.rev-month{font-size:.6rem;color:var(--t4);}
+
+/* ── FORM ── */
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.fg label{font-size:var(--fs-xs);font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;}
+.fi{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:0 15px;color:var(--t1);font-size:var(--fs-base);font-family:var(--sans);outline:none;width:100%;transition:all .2s;height:var(--input-h);}
+.fi:focus{border-color:rgba(212,168,67,.4);box-shadow:0 0 0 3px rgba(212,168,67,.08);}
+select.fi{cursor:pointer;padding-right:10px;}
+textarea.fi{height:auto;min-height:90px;padding:13px 15px;resize:vertical;}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--btn-h);padding:0 22px;border:none;border-radius:var(--r2);cursor:pointer;font-family:var(--sans);font-size:var(--fs-base);font-weight:700;transition:all .2s;letter-spacing:.02em;width:100%;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(135deg,#4a2500,var(--gold));color:#000;}
+.btn-primary:hover{box-shadow:0 4px 20px rgba(212,168,67,.3);}
+.btn-green{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;}
+.btn-blue{background:linear-gradient(135deg,#1e3a5f,var(--info));color:#fff;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--t2);}
+.btn-ghost:hover{background:rgba(255,255,255,.1);color:var(--t1);}
+.btn-wa{background:linear-gradient(135deg,#14532d,#25d366);color:#fff;}
+.btn-sm{height:42px;padding:0 16px;font-size:var(--fs-sm);border-radius:var(--r3);}
+
+/* ── CRED BOX ── */
+.cred-box{background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(212,168,67,.06));border:1px solid rgba(212,168,67,.2);border-radius:var(--r);padding:18px;margin:14px 0;}
+.cred-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:var(--fs-sm);}
+.cred-row:last-child{border:none;}
+.cred-label{color:var(--t3);}
+.cred-val{font-family:monospace;color:var(--t1);font-weight:700;font-size:var(--fs-base);}
+.cred-copy{background:var(--goldl);border:1px solid rgba(212,168,67,.2);border-radius:5px;color:var(--gold);font-size:var(--fs-xs);padding:4px 10px;cursor:pointer;font-weight:700;font-family:var(--sans);}
+
+/* ── SEND ONBOARDING SECTION ── */
+.wa-send-card{background:linear-gradient(135deg,rgba(37,211,102,.08),rgba(212,168,67,.05));border:1px solid rgba(37,211,102,.2);border-radius:var(--r);padding:20px;margin-bottom:14px;}
+.wa-send-title{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;color:var(--t1);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.wa-send-sub{font-size:var(--fs-sm);color:var(--t2);margin-bottom:16px;line-height:1.6;}
+.phone-input-wrap{display:flex;gap:10px;margin-bottom:12px;}
+.country-code{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:0 14px;color:var(--gold);font-weight:700;font-size:var(--fs-base);height:var(--input-h);display:flex;align-items:center;white-space:nowrap;}
+.link-preview{background:var(--card2);border:1px solid var(--line);border-radius:var(--r2);padding:12px 15px;font-family:monospace;font-size:var(--fs-xs);color:var(--gold);word-break:break-all;margin-bottom:12px;}
+
+/* ── SHARE BUTTONS ── */
+.share-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;}
+.b-ok{background:var(--successl);color:var(--success);}
+.b-err{background:var(--dangerl);color:var(--danger);}
+.b-gold{background:var(--goldl);color:var(--gold);}
+
+/* ── PAGES ── */
+.page{display:none;}
+.page.active{display:block;animation:pg-in .25s ease;}
+@keyframes pg-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+/* ── BOTTOM NAV — BIGGER ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(13,15,26,.98);border-top:1px solid var(--line);display:flex;padding-bottom:var(--safe-bot);box-shadow:0 -4px 20px rgba(0,0,0,.4);}
+.nav-item{flex:1;padding:12px 4px 10px;text-align:center;cursor:pointer;transition:all .18s;}
+.nav-ico{font-size:1.5rem;display:block;margin-bottom:4px;transition:transform .2s;}
+.nav-lbl{font-size:var(--fs-xs);font-weight:700;color:var(--t4);}
+.nav-item.active .nav-ico{transform:scale(1.15);}
+.nav-item.active .nav-lbl{color:var(--gold);}
+.nav-pip{position:absolute;top:8px;right:calc(50% - 16px);width:8px;height:8px;border-radius:50%;background:var(--danger);border:2px solid rgba(13,15,26,.98);}
+
+/* ── INSTALL BANNER ── */
+.install-banner{position:fixed;bottom:0;left:0;right:0;z-index:500;background:var(--panel);border-top:2px solid var(--gold);padding:16px 18px calc(16px + var(--safe-bot));display:none;align-items:center;gap:14px;animation:slide-up .4s ease;}
+.install-banner.show{display:flex;}
+@keyframes slide-up{from{transform:translateY(100%);}to{transform:none;}}
+.ib-icon{font-size:2.5rem;flex-shrink:0;}
+.ib-info{flex:1;}
+.ib-title{font-size:var(--fs-base);font-weight:700;color:var(--t1);margin-bottom:2px;}
+.ib-sub{font-size:var(--fs-xs);color:var(--t3);}
+.ib-install{background:linear-gradient(135deg,#4a2500,var(--gold));border:none;border-radius:var(--r2);color:#000;font-family:var(--sans);font-size:var(--fs-sm);font-weight:700;padding:11px 20px;cursor:pointer;white-space:nowrap;}
+.ib-close{background:none;border:none;color:var(--t4);cursor:pointer;font-size:1.3rem;padding:6px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(60px);border-radius:var(--r2);padding:12px 20px;font-size:var(--fs-sm);z-index:999;transition:transform .25s;white-space:nowrap;pointer-events:none;display:flex;align-items:center;gap:8px;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.error{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.info{background:#0f1020;border:1px solid rgba(212,168,67,.35);color:var(--gold);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-hex">
+      <svg width="48" height="48" viewBox="0 0 120 120">
+        <polygon points="60,6 110,33 110,87 60,114 10,87 10,33" fill="transparent" stroke="#ffc832" stroke-width="5"/>
+        <text x="60" y="52" text-anchor="middle" font-family="Georgia,serif" font-size="38" font-weight="bold" fill="#ffc832">RC</text>
+      </svg>
+    </div>
+    <div class="login-title">Control Center</div>
+    <div class="login-sub">Rehoteq Technologies</div>
+    <div class="login-warn">🔒 Restricted — Rehoteq Staff Only</div>
+    <input class="login-input" type="password" id="ctrl-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="login-btn" onclick="doLogin()">Access Control Center</button>
+    <div style="margin-top:16px;font-size:.72rem;color:var(--t4);">Rehoteq Technologies • Okitipupa, Ondo State</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="main-app" style="display:none;">
+  <div class="status-bar">
+    <div class="sb-logo">
+      <div class="sb-hex-sm">
+        <svg width="22" height="22" viewBox="0 0 120 120">
+          <polygon points="60,6 110,33 110,87 60,114 10,87 10,33" fill="transparent" stroke="#ffc832" stroke-width="6"/>
+          <text x="60" y="82" text-anchor="middle" font-family="Georgia,serif" font-size="56" font-weight="bold" fill="#ffc832">R</text>
+        </svg>
+      </div>
+      <div><div class="sb-title">Control Center</div><div class="sb-sub">Rehoteq Technologies</div></div>
+    </div>
+    <div class="status-right">
+      <div class="online-pill"><div class="online-dot"></div>Live</div>
+      <button style="background:none;border:none;color:var(--t3);font-size:1.1rem;cursor:pointer;" onclick="switchTab('alerts',document.querySelectorAll('.nav-item')[2])">🔔</button>
+    </div>
+  </div>
+
+  <div class="scroll-content">
+
+    <!-- HOME -->
+    <div class="page active" id="page-home">
+      <div style="margin-bottom:20px;">
+        <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--t1);margin-bottom:3px;" id="greet-title">Good morning, Boss T 👋</div>
+        <div style="font-size:var(--fs-sm);color:var(--t3);" id="greet-date">—</div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi gold" onclick="switchTab('schools',document.querySelectorAll('.nav-item')[1])">
+          <div class="kpi-ico">🏫</div>
+          <div class="kpi-label">Schools</div>
+          <div class="kpi-val" id="k-schools">0</div>
+          <div class="kpi-sub">Deployed</div>
+        </div>
+        <div class="kpi green" onclick="switchTab('revenue',document.querySelectorAll('.nav-item')[3])">
+          <div class="kpi-ico">💰</div>
+          <div class="kpi-label">Revenue</div>
+          <div class="kpi-val" id="k-revenue">₦0</div>
+          <div class="kpi-sub">This term</div>
+        </div>
+        <div class="kpi blue">
+          <div class="kpi-ico">👨‍🎓</div>
+          <div class="kpi-label">Students</div>
+          <div class="kpi-val" id="k-students">0</div>
+          <div class="kpi-sub">All schools</div>
+        </div>
+        <div class="kpi red" onclick="switchTab('alerts',document.querySelectorAll('.nav-item')[2])">
+          <div class="kpi-ico">⏳</div>
+          <div class="kpi-label">Pending</div>
+          <div class="kpi-val" id="k-queue">0</div>
+          <div class="kpi-sub">Onboarding</div>
+        </div>
+      </div>
+
+      <div class="sec-hdr"><div class="sec-title">Quick Actions</div></div>
+      <div class="qa-grid" style="margin-bottom:20px;">
+        <div class="qa" onclick="switchTab('send',document.querySelectorAll('.nav-item')[4])">
+          <span class="qa-icon">📲</span><div class="qa-label">Send Onboarding Link</div>
+        </div>
+        <div class="qa" onclick="switchTab('deploy',document.querySelectorAll('.nav-item')[5])">
+          <span class="qa-icon">🚀</span><div class="qa-label">Deploy New School</div>
+        </div>
+        <div class="qa" onclick="window.open('rsms-superadmin.html','_blank')">
+          <span class="qa-icon">🖥</span><div class="qa-label">Full Admin Panel</div>
+        </div>
+        <div class="qa" onclick="openWA()">
+          <span class="qa-icon">📱</span><div class="qa-label">WhatsApp Support</div>
+        </div>
+      </div>
+
+      <div class="sec-hdr">
+        <div class="sec-title">Active Schools</div>
+        <span class="sec-action" onclick="switchTab('schools',document.querySelectorAll('.nav-item')[1])">View all ›</span>
+      </div>
+      <div id="home-schools"></div>
+
+      <div class="sec-hdr" style="margin-top:18px;"><div class="sec-title">Revenue Trend</div></div>
+      <div class="card">
+        <div class="rev-bars" id="rev-bars"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
+          <div style="text-align:center;flex:1;"><div style="font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--gold);" id="rev-total">₦0</div><div style="font-size:var(--fs-xs);color:var(--t4);">All Time</div></div>
+          <div style="text-align:center;flex:1;"><div style="font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--success);" id="rev-term">₦0</div><div style="font-size:var(--fs-xs);color:var(--t4);">This Term</div></div>
+          <div style="text-align:center;flex:1;"><div style="font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--warn);" id="rev-pending">₦0</div><div style="font-size:var(--fs-xs);color:var(--t4);">Pending</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCHOOLS -->
+    <div class="page" id="page-schools">
+      <div style="margin-bottom:14px;">
+        <input class="fi" type="text" id="school-search" placeholder="Search schools..." oninput="renderSchools()"/>
+      </div>
+      <div id="schools-full-list"></div>
+    </div>
+
+    <!-- ALERTS / QUEUE -->
+    <div class="page" id="page-alerts">
+      <div class="sec-hdr"><div class="sec-title">Onboarding Queue</div><span class="sec-action" onclick="loadQueue()">Refresh</span></div>
+      <div id="onboarding-queue"></div>
+      <div class="sec-hdr" style="margin-top:20px;"><div class="sec-title">Recent Alerts</div></div>
+      <div id="alerts-list"></div>
+    </div>
+
+    <!-- REVENUE -->
+    <div class="page" id="page-revenue">
+      <div class="sec-hdr"><div class="sec-title">Revenue & Payments</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+        <div style="background:var(--card);border:1px solid rgba(34,197,94,.15);border-radius:var(--r);padding:18px;text-align:center;">
+          <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--success);" id="rev-full-total">₦0</div>
+          <div style="font-size:var(--fs-xs);color:var(--t4);margin-top:3px;">All Time</div>
+        </div>
+        <div style="background:var(--card);border:1px solid rgba(212,168,67,.15);border-radius:var(--r);padding:18px;text-align:center;">
+          <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);" id="rev-full-term">₦0</div>
+          <div style="font-size:var(--fs-xs);color:var(--t4);margin-top:3px;">This Term</div>
+        </div>
+      </div>
+      <div id="tier-breakdown"></div>
+      <div class="sec-hdr" style="margin-top:16px;"><div class="sec-title">Payment Records</div></div>
+      <div id="payment-list"></div>
+    </div>
+
+    <!-- ═══ SEND ONBOARDING LINK ═══ -->
+    <div class="page" id="page-send">
+      <div style="margin-bottom:18px;">
+        <div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--t1);margin-bottom:4px;">📲 Send Onboarding Link</div>
+        <div style="font-size:var(--fs-sm);color:var(--t3);line-height:1.6;">Send the RSMS onboarding link directly to a school's WhatsApp. They fill the form and their data goes straight to your queue.</div>
+      </div>
+
+      <div class="wa-send-card">
+        <div class="wa-send-title">📱 Send to School WhatsApp</div>
+        <div class="wa-send-sub">Enter the school's details below. A personalised WhatsApp message with the onboarding link will be sent directly to them.</div>
+
+        <div class="fg"><label>School Name</label>
+          <input class="fi" id="send-school-name" type="text" placeholder="e.g. Greenfield Academy, Akure"/>
+        </div>
+        <div class="fg"><label>Principal / Contact Name</label>
+          <input class="fi" id="send-contact" type="text" placeholder="Full name of contact person"/>
+        </div>
+        <div class="fg"><label>WhatsApp Phone Number *</label>
+          <div class="phone-input-wrap">
+            <div class="country-code">🇳🇬 +234</div>
+            <input class="fi" id="send-phone" type="tel" placeholder="0801 234 5678" style="flex:1;"/>
+          </div>
+        </div>
+
+        <div class="fg"><label>Onboarding Link to Send</label>
+          <div class="link-preview" id="onboard-link-preview">Loading...</div>
+        </div>
+
+        <button class="btn btn-wa" onclick="sendOnboardingLink()">
+          <span style="font-size:1.1rem;">📲</span> Send via WhatsApp Now
+        </button>
+      </div>
+
+      <!-- BULK SEND -->
+      <div class="card" style="margin-top:14px;">
+        <div class="ct">📋 Recent Sends</div>
+        <div id="send-history"></div>
+      </div>
+
+      <!-- SHARE LINK TOOLS -->
+      <div class="card" style="margin-top:14px;">
+        <div class="ct">🔗 Share Onboarding Link</div>
+        <div style="font-size:var(--fs-sm);color:var(--t3);margin-bottom:14px;line-height:1.6;">Share the link on any platform for schools to find RSMS themselves.</div>
+        <div class="share-grid">
+          <button class="btn btn-wa btn-sm" onclick="shareLink('wa')">📱 WhatsApp</button>
+          <button class="btn btn-ghost btn-sm" onclick="shareLink('copy')">📋 Copy Link</button>
+          <button class="btn btn-blue btn-sm" onclick="shareLink('facebook')">📘 Facebook</button>
+          <button class="btn btn-ghost btn-sm" onclick="shareLink('twitter')">🐦 Twitter/X</button>
+          <button class="btn btn-ghost btn-sm" onclick="shareLink('linkedin')">💼 LinkedIn</button>
+          <button class="btn btn-ghost btn-sm" onclick="shareLink('native')">↗ More...</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ DEPLOY ═══ -->
+    <div class="page" id="page-deploy">
+      <div style="margin-bottom:18px;">
+        <div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--t1);margin-bottom:4px;">🚀 Deploy New School</div>
+        <div style="font-size:var(--fs-sm);color:var(--t3);">Manually deploy a school that has paid their onboarding fee.</div>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <div class="fg"><label>School Name *</label><input class="fi" id="dep-name" type="text" placeholder="Full school name" oninput="previewDeployID()"/></div>
+        <div class="f2">
+          <div class="fg"><label>State *</label>
+            <select class="fi" id="dep-state" onchange="previewDeployID()">
+              <option value="">—</option>
+              <option value="OD">Ondo</option><option value="LA">Lagos</option>
+              <option value="FC">FCT Abuja</option><option value="RI">Rivers</option>
+              <option value="KN">Kano</option><option value="OY">Oyo</option>
+              <option value="AN">Anambra</option><option value="EN">Enugu</option>
+              <option value="KD">Kaduna</option><option value="ED">Edo</option>
+              <option value="EK">Ekiti</option><option value="OS">Osun</option>
+              <option value="OG">Ogun</option><option value="IM">Imo</option>
+            </select>
+          </div>
+          <div class="fg"><label>Type</label>
+            <select class="fi" id="dep-type" onchange="previewDeployID()">
+              <option value="SEC">Secondary</option><option value="PRI">Primary</option>
+              <option value="COM">Combined</option><option value="INT">International</option>
+            </select>
+          </div>
+        </div>
+        <div class="f2">
+          <div class="fg"><label>Plan</label><select class="fi" id="dep-plan"><option>Starter</option><option>Standard</option><option>Premium</option><option>Enterprise</option></select></div>
+          <div class="fg"><label>Admin Phone *</label><input class="fi" id="dep-phone" type="tel" placeholder="080XXXXXXXX"/></div>
+        </div>
+        <div class="fg"><label>Admin Email</label><input class="fi" id="dep-email" type="email" placeholder="admin@school.com"/></div>
+      </div>
+
+      <div class="cred-box" id="deploy-creds">
+        <div style="font-size:var(--fs-xs);color:var(--t4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">Generated Credentials</div>
+        <div class="cred-row"><span class="cred-label">School ID</span><span class="cred-val" id="gen-id">—</span><button class="cred-copy" onclick="copyVal('gen-id')">Copy</button></div>
+        <div class="cred-row"><span class="cred-label">Admin Pass</span><span class="cred-val" id="gen-pw">—</span><button class="cred-copy" onclick="copyVal('gen-pw')">Copy</button></div>
+        <div class="cred-row"><span class="cred-label">Teacher Code</span><span class="cred-val" id="gen-tc">—</span><button class="cred-copy" onclick="copyVal('gen-tc')">Copy</button></div>
+        <div class="cred-row"><span class="cred-label">Student Code</span><span class="cred-val" id="gen-sc">—</span></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
+        <button class="btn btn-primary" onclick="deploySchool()">🚀 Deploy School</button>
+        <button class="btn btn-wa" onclick="sendDeployWA()">📱 Send WhatsApp Welcome Message</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('home',this)"><span class="nav-ico">⊞</span><div class="nav-lbl">Home</div></div>
+    <div class="nav-item" onclick="switchTab('schools',this)"><span class="nav-ico">🏫</span><div class="nav-lbl">Schools</div></div>
+    <div class="nav-item" onclick="switchTab('alerts',this)"><span class="nav-ico">🔔</span><div class="nav-lbl">Queue</div><div class="nav-pip" id="nav-pip" style="position:absolute;"></div></div>
+    <div class="nav-item" onclick="switchTab('revenue',this)"><span class="nav-ico">💰</span><div class="nav-lbl">Revenue</div></div>
+    <div class="nav-item" onclick="switchTab('send',this)"><span class="nav-ico">📲</span><div class="nav-lbl">Send Link</div></div>
+    <div class="nav-item" onclick="switchTab('deploy',this)"><span class="nav-ico">🚀</span><div class="nav-lbl">Deploy</div></div>
+  </div>
+</div>
+
+<!-- INSTALL BANNER -->
+<div class="install-banner" id="install-banner">
+  <div class="ib-icon">📲</div>
+  <div class="ib-info">
+    <div class="ib-title">Install Control Center App</div>
+    <div class="ib-sub">Add to home screen — works offline, no browser needed</div>
+  </div>
+  <button class="ib-install" onclick="installPWA()">Install</button>
+  <button class="ib-close" onclick="dismissInstall()">✕</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var MASTER_PW = localStorage.getItem('rsms_ctrl_pw') || 'rehoteq@boss2025';
+var DB = {
+  schools: JSON.parse(localStorage.getItem('rsms_super_schools') || '[]'),
+  payments: JSON.parse(localStorage.getItem('rsms_super_payments') || '[]'),
+  schoolCount: parseInt(localStorage.getItem('rsms_school_count') || '0')
+};
+var deferredPrompt = null;
+var sendHistory = JSON.parse(localStorage.getItem('rsms_send_history') || '[]');
+var ONBOARD_URL = '';
+
+function getOnboardURL(){
+  var base = window.location.origin + window.location.pathname.replace('rsms-control.html','');
+  return base + 'rsms-onboarding.html';
+}
+
+// ── LOGIN ──
+function doLogin(){
+  var pw = document.getElementById('ctrl-pw').value;
+  if(pw === MASTER_PW){
+    sessionStorage.setItem('rsms_ctrl_auth','true');
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-app').style.display='flex';
+    initApp();
+  } else {
+    toast('⚠️ Incorrect password','error');
+    document.getElementById('ctrl-pw').value='';
+  }
+}
+document.getElementById('ctrl-pw').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.className='toast '+(type||'info')+' show';
+  t.innerHTML=msg;clearTimeout(t._t);
+  t._t=setTimeout(function(){t.classList.remove('show');},3500);
+}
+
+// ── TABS ──
+function switchTab(name,el){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  if(el)el.classList.add('active');
+  if(name==='schools')renderSchools();
+  if(name==='alerts')loadQueue();
+  if(name==='revenue')renderRevenue();
+  if(name==='deploy')previewDeployID();
+  if(name==='send')initSendPage();
+}
+
+// ── INIT ──
+function initApp(){
+  ONBOARD_URL = getOnboardURL();
+  var hr=new Date().getHours();
+  var greet=hr<12?'Good morning':(hr<17?'Good afternoon':'Good evening');
+  document.getElementById('greet-title').textContent=greet+', Boss T 👋';
+  document.getElementById('greet-date').textContent=new Date().toLocaleDateString('en-NG',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  var schools=DB.schools;
+  var revenue=DB.payments.reduce(function(s,p){return s+parseFloat(p.amount||0);},0);
+  var queue=getQueue().length;
+  countUp('k-schools',schools.length);
+  document.getElementById('k-revenue').textContent='₦'+revenue.toLocaleString();
+  countUp('k-students',schools.length*(Math.floor(100+Math.random()*200)));
+  countUp('k-queue',queue);
+  document.getElementById('nav-pip').style.display=queue?'block':'none';
+  document.getElementById('rev-total').textContent='₦'+revenue.toLocaleString();
+  document.getElementById('rev-term').textContent='₦'+Math.floor(revenue*0.4).toLocaleString();
+  document.getElementById('rev-pending').textContent='₦'+Math.floor(revenue*0.15).toLocaleString();
+  buildRevBars();
+  renderHomeSchools();
+  renderAlerts();
+}
+
+function countUp(id,target){
+  var el=document.getElementById(id);if(!el)return;
+  var step=Math.max(1,Math.ceil(target/30)),curr=0;
+  var iv=setInterval(function(){curr+=step;if(curr>=target){curr=target;clearInterval(iv);}el.textContent=curr.toLocaleString();},30);
+}
+
+function buildRevBars(){
+  var months=['Nov','Dec','Jan','Feb','Mar','Apr'];
+  var vals=[45,67,82,95,110,128];
+  var el=document.getElementById('rev-bars');if(!el)return;
+  el.innerHTML=months.map(function(m,i){
+    return '<div class="rev-col"><div class="rev-bar" style="height:0;" id="rb'+i+'"></div><div class="rev-month">'+m+'</div></div>';
+  }).join('');
+  setTimeout(function(){vals.forEach(function(v,i){var b=document.getElementById('rb'+i);if(b)b.style.height=Math.floor(v/128*60)+'px';});},400);
+}
+
+function renderHomeSchools(){
+  var el=document.getElementById('home-schools');
+  if(!DB.schools.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t4);font-size:var(--fs-sm);">No schools deployed yet</div>';return;}
+  el.innerHTML=DB.schools.slice(0,4).map(function(s){
+    return '<div class="school-card">'+
+      '<div class="school-av">'+s.name.charAt(0)+'</div>'+
+      '<div><div class="school-name">'+s.name+'</div><div class="school-meta">'+s.schoolID+' • '+s.plan+'</div></div>'+
+      '<span class="badge b-ok" style="margin-left:auto;">Active</span></div>';
+  }).join('');
+}
+
+function renderSchools(){
+  var schools=DB.schools;
+  var q=(document.getElementById('school-search')||{value:''}).value.toLowerCase();
+  if(q)schools=schools.filter(function(s){return (s.name+' '+s.schoolID).toLowerCase().includes(q);});
+  var el=document.getElementById('schools-full-list');if(!el)return;
+  if(!schools.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t4);">No schools yet</div>';return;}
+  el.innerHTML=schools.map(function(s){
+    return '<div class="school-card">'+
+      '<div class="school-av">'+s.name.charAt(0)+'</div>'+
+      '<div style="flex:1;"><div class="school-name">'+s.name+'</div><div class="school-meta">'+s.schoolID+' • '+s.plan+' • Tier '+s.tier+'</div></div>'+
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'+
+      '<span class="badge b-ok">Active</span>'+
+      '<button style="background:none;border:1px solid rgba(37,211,102,.25);border-radius:6px;color:var(--success);font-size:var(--fs-xs);padding:4px 10px;cursor:pointer;font-family:var(--sans);" onclick="callSchool(\''+s.adminPhone+'\')">📱 Call</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+function getQueue(){
+  return Object.keys(localStorage).filter(function(k){return k.startsWith('rsms_onboarding_RSMS-');})
+    .map(function(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}).filter(Boolean);
+}
+
+function loadQueue(){
+  var queue=getQueue();
+  var el=document.getElementById('onboarding-queue');if(!el)return;
+  if(!queue.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--t4);font-size:var(--fs-sm);">No pending onboarding</div>';return;}
+  el.innerHTML=queue.map(function(q){
+    var name=q.school&&q.school.name||q['s-name']||'School';
+    var phone=q.school&&q.school.phone||q['s-phone']||'';
+    return '<div style="background:var(--card);border:1px solid rgba(212,168,67,.2);border-radius:var(--r);padding:16px;margin-bottom:12px;">'+
+      '<div style="font-weight:700;color:var(--t1);font-size:var(--fs-base);margin-bottom:4px;">'+name+'</div>'+
+      '<div style="font-size:var(--fs-xs);color:var(--t4);margin-bottom:12px;">Ref: <span style="font-family:monospace;color:var(--gold);">'+(q.ref||'—')+'</span> • Plan: '+(q.plan||'—')+'</div>'+
+      '<div style="display:flex;gap:8px;">'+
+      '<button class="btn btn-green btn-sm" style="flex:1;" data-ref="'+(q.ref||'')+'" onclick="approveSchool(this.dataset.ref)">✅ Approve</button>'+
+      '<button class="btn btn-wa btn-sm" style="flex:1;" onclick="callSchool(\''+phone+'\')">📱 WhatsApp</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+function renderAlerts(){
+  var alerts=[
+    {ico:'📋',txt:'New onboarding from GTC Okitipupa',time:'2 min ago',unread:true},
+    {ico:'💰',txt:'Payment ₦35,000 received from OND-SEC-0001',time:'1h ago',unread:true},
+    {ico:'🔄',txt:'OND-SEC-0002 subscription due in 7 days',time:'3h ago',unread:false},
+  ];
+  var el=document.getElementById('alerts-list');if(!el)return;
+  el.innerHTML=alerts.map(function(a){
+    return '<div class="alert-item'+(a.unread?' unread':'')+'">'+
+      '<div class="alert-icon">'+a.ico+'</div>'+
+      '<div><div class="alert-text">'+a.txt+'</div><div class="alert-time">'+a.time+'</div></div></div>';
+  }).join('');
+}
+
+function approveSchool(ref){
+  localStorage.removeItem('rsms_onboarding_'+ref);
+  toast('✅ Approved!','success');
+  loadQueue();
+  countUp('k-queue',getQueue().length);
+}
+
+// ── SEND ONBOARDING LINK ──
+function initSendPage(){
+  ONBOARD_URL = getOnboardURL();
+  var el=document.getElementById('onboard-link-preview');
+  if(el)el.textContent=ONBOARD_URL;
+  renderSendHistory();
+}
+
+function sendOnboardingLink(){
+  var phone=document.getElementById('send-phone').value.trim().replace(/\D/g,'');
+  var schoolName=document.getElementById('send-school-name').value.trim();
+  var contact=document.getElementById('send-contact').value.trim();
+  if(!phone){toast('⚠️ Enter a phone number','error');return;}
+  if(phone.startsWith('0'))phone='234'+phone.slice(1);
+  if(!phone.startsWith('234'))phone='234'+phone;
+
+  var msg='Hello'+(contact?' '+contact:'')+' 👋\n\n'+
+    'I\'m Toye from *Rehoteq Technologies*. We build the RSMS — a complete school management system.\n\n'+
+    '🏫 School: *'+(schoolName||'Your School')+'*\n\n'+
+    'Please use this link to register your school on RSMS:\n'+
+    '👉 *'+ONBOARD_URL+'*\n\n'+
+    'It takes about 5 minutes to fill. Once submitted, we\'ll contact you within 24 hours to complete your setup.\n\n'+
+    '📞 For enquiries: 07036302585\n'+
+    '_Rehoteq Technologies — Okitipupa, Ondo State_';
+
+  window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg),'_blank');
+
+  // Save to history
+  var entry={phone:phone,school:schoolName||'Unknown',contact:contact||'—',date:new Date().toLocaleDateString(),time:new Date().toLocaleTimeString()};
+  sendHistory.unshift(entry);
+  if(sendHistory.length>20)sendHistory=sendHistory.slice(0,20);
+  localStorage.setItem('rsms_send_history',JSON.stringify(sendHistory));
+
+  toast('📲 Opening WhatsApp to send onboarding link','success');
+  document.getElementById('send-phone').value='';
+  document.getElementById('send-school-name').value='';
+  document.getElementById('send-contact').value='';
+  setTimeout(renderSendHistory, 500);
+}
+
+function renderSendHistory(){
+  var el=document.getElementById('send-history');if(!el)return;
+  if(!sendHistory.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--t4);font-size:var(--fs-sm);">No sends yet</div>';return;}
+  el.innerHTML=sendHistory.slice(0,5).map(function(s){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);">'+
+      '<div style="font-size:1.1rem;">📲</div>'+
+      '<div style="flex:1;"><div style="font-size:var(--fs-sm);font-weight:600;color:var(--t1);">'+(s.school)+'</div>'+
+      '<div style="font-size:var(--fs-xs);color:var(--t4);">'+s.date+' '+s.time+'</div></div>'+
+      '<a href="https://wa.me/'+s.phone+'" target="_blank" style="background:var(--successl);border:1px solid rgba(34,197,94,.2);border-radius:6px;color:var(--success);font-size:var(--fs-xs);padding:4px 10px;text-decoration:none;font-weight:700;">Follow up</a>'+
+      '</div>';
+  }).join('');
+}
+
+function shareLink(platform){
+  ONBOARD_URL = getOnboardURL();
+  var text = 'Join RSMS — the affordable school management system for Nigerian schools. Register your school here: '+ONBOARD_URL+' | Rehoteq Technologies 07036302585';
+  var urls = {
+    wa: 'https://wa.me/?text='+encodeURIComponent(text),
+    copy: null,
+    facebook: 'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(ONBOARD_URL),
+    twitter: 'https://twitter.com/intent/tweet?text='+encodeURIComponent(text),
+    linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url='+encodeURIComponent(ONBOARD_URL),
+    native: null
+  };
+  if(platform==='copy'){
+    navigator.clipboard.writeText(ONBOARD_URL).then(function(){toast('📋 Link copied!','success');});
+    return;
+  }
+  if(platform==='native'){
+    if(navigator.share){
+      navigator.share({title:'Join RSMS',text:text,url:ONBOARD_URL}).catch(function(){});
+    } else {
+      navigator.clipboard.writeText(ONBOARD_URL).then(function(){toast('📋 Link copied (share not supported)','info');});
+    }
+    return;
+  }
+  if(urls[platform])window.open(urls[platform],'_blank');
+}
+
+// ── DEPLOY ──
+function previewDeployID(){
+  var state=document.getElementById('dep-state').value||'OD';
+  var type=document.getElementById('dep-type').value||'SEC';
+  var seq=String(DB.schoolCount+1).padStart(4,'0');
+  var id=state+'-'+type+'-'+seq;
+  var pw=Math.random().toString(36).slice(-8).toUpperCase();
+  document.getElementById('gen-id').textContent=id;
+  document.getElementById('gen-pw').textContent=pw;
+  document.getElementById('gen-tc').textContent='TCH-'+id+'-'+Math.floor(1000+Math.random()*9000);
+  document.getElementById('gen-sc').textContent='STU-'+id+'-'+Math.floor(1000+Math.random()*9000);
+}
+
+function deploySchool(){
+  var name=document.getElementById('dep-name').value.trim();
+  var state=document.getElementById('dep-state').value;
+  var phone=document.getElementById('dep-phone').value.trim();
+  if(!name||!state||!phone){toast('⚠️ Fill all required fields','error');return;}
+  var TIER_A=['LA','FC','RI'];var TIER_B=['KN','KD','OY','OG','AN','EN','IM','ED','EK','OS'];
+  var tier=TIER_A.indexOf(state)>-1?'A':TIER_B.indexOf(state)>-1?'B':'C';
+  var schoolID=document.getElementById('gen-id').textContent;
+  var school={id:'sch'+Date.now(),schoolID:schoolID,name:name,state:state,
+    type:document.getElementById('dep-type').value,tier:tier,
+    plan:document.getElementById('dep-plan').value,adminPhone:phone,
+    adminEmail:document.getElementById('dep-email').value||'',
+    status:'Active',deployedAt:new Date().toISOString()};
+  DB.schools.push(school);DB.schoolCount++;
+  localStorage.setItem('rsms_super_schools',JSON.stringify(DB.schools));
+  localStorage.setItem('rsms_school_count',String(DB.schoolCount));
+  toast('🚀 '+name+' deployed! ID: '+schoolID,'success');
+  countUp('k-schools',DB.schools.length);
+  previewDeployID();
+}
+
+function sendDeployWA(){
+  var phone=document.getElementById('dep-phone').value.replace(/\D/g,'');
+  if(!phone){toast('⚠️ Enter phone number first','error');return;}
+  if(phone.startsWith('0'))phone='234'+phone.slice(1);
+  var name=document.getElementById('dep-name').value||'School';
+  var id=document.getElementById('gen-id').textContent;
+  var pw=document.getElementById('gen-pw').textContent;
+  var tc=document.getElementById('gen-tc').textContent;
+  var sc=document.getElementById('gen-sc').textContent;
+  var msg='🎓 Welcome to *RSMS* — Your school is now live!\n\n'+
+    '🏫 School: *'+name+'*\n'+
+    '🔑 School ID: *'+id+'*\n'+
+    '🔐 Admin Password: *'+pw+'*\n'+
+    '👨‍🏫 Teacher Code: *'+tc+'*\n'+
+    '👨‍🎓 Student Code: *'+sc+'*\n\n'+
+    '🌐 Login at: *rehoteq1-coder.github.io/rsms/rsms-app.html*\n\n'+
+    'For support: 07036302585\n'+
+    '_Powered by Rehoteq Technologies_';
+  window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg),'_blank');
+}
+
+function copyVal(id){
+  var el=document.getElementById(id);if(!el)return;
+  navigator.clipboard.writeText(el.textContent).then(function(){toast('📋 Copied!','success');});
+}
+
+function renderRevenue(){
+  var rev=DB.payments.reduce(function(s,p){return s+parseFloat(p.amount||0);},0);
+  document.getElementById('rev-full-total').textContent='₦'+rev.toLocaleString();
+  document.getElementById('rev-full-term').textContent='₦'+Math.floor(rev*0.4).toLocaleString();
+  var tiers={A:0,B:0,C:0};
+  DB.schools.forEach(function(s){if(tiers[s.tier]!==undefined)tiers[s.tier]++;});
+  document.getElementById('tier-breakdown').innerHTML=
+    '<div style="background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;">'+
+    Object.keys(tiers).map(function(t){
+      var color={A:'var(--danger)',B:'var(--warn)',C:'var(--success)'}[t];
+      var labels={A:'Lagos/Abuja/Rivers',B:'State Capitals',C:'Other States'};
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);">'+
+        '<div><div style="font-size:var(--fs-base);font-weight:700;color:var(--t1);">Tier '+t+'</div>'+
+        '<div style="font-size:var(--fs-xs);color:var(--t4);">'+labels[t]+'</div></div>'+
+        '<div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:'+color+';">'+tiers[t]+'</div></div>';
+    }).join('')+'</div>';
+  var pl=document.getElementById('payment-list');
+  if(!DB.payments.length){pl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t4);">No payments yet</div>';return;}
+  pl.innerHTML=DB.payments.slice().reverse().slice(0,10).map(function(p){
+    return '<div style="background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:14px;margin-bottom:9px;display:flex;align-items:center;justify-content:space-between;">'+
+      '<div><div style="font-size:var(--fs-sm);font-weight:700;color:var(--t1);">'+p.school+'</div>'+
+      '<div style="font-size:var(--fs-xs);color:var(--t4);">'+p.plan+' • '+p.date+'</div></div>'+
+      '<div style="font-family:var(--serif);font-weight:700;color:var(--success);font-size:var(--fs-lg);">₦'+parseFloat(p.amount||0).toLocaleString()+'</div></div>';
+  }).join('');
+}
+
+function callSchool(phone){if(!phone)return;window.open('tel:'+phone);}
+function openWA(){window.open('https://wa.me/2347036302585','_blank');}
+
+// ── PWA INSTALL ──
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();deferredPrompt=e;
+  setTimeout(function(){
+    if(!localStorage.getItem('ctrl_install_dismissed')){
+      document.getElementById('install-banner').classList.add('show');
+    }
+  },3000);
+});
+function installPWA(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(r){
+      if(r.outcome==='accepted')toast('✅ Control Center installed!','success');
+      deferredPrompt=null;
+      document.getElementById('install-banner').classList.remove('show');
+    });
+  }
+}
+function dismissInstall(){
+  document.getElementById('install-banner').classList.remove('show');
+  localStorage.setItem('ctrl_install_dismissed','1');
+}
+
+// ── INIT ──
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
+window.addEventListener('load',function(){
+  var url=new URLSearchParams(window.location.search);
+  var tab=url.get('tab');
+  if(sessionStorage.getItem('rsms_ctrl_auth')==='true'){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-app').style.display='flex';
+    initApp();
+    if(tab){
+      var navItems=document.querySelectorAll('.nav-item');
+      var tabMap={deploy:navItems[5],send:navItems[4],schools:navItems[1]};
+      if(tabMap[tab])switchTab(tab,tabMap[tab]);
+    }
+  }
+});
+</script>
+</body>
+</html>
