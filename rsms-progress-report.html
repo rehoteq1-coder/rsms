@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#0d0f1a"/>
+<link rel="manifest" href="manifest.json"/>
+<title>RSMS — Progress Report (KG/Nursery/Crèche)</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--panel:#0d0f1a;--card:#111420;--card2:#161929;
+  --line:rgba(255,255,255,0.07);--line2:rgba(255,255,255,0.13);
+  --gold:#d4a843;--goldl:rgba(212,168,67,0.1);
+  --success:#22c55e;--successl:rgba(34,197,94,0.1);
+  --danger:#f43f5e;--dangerl:rgba(244,63,94,0.1);
+  --purple:#8b5cf6;--purplel:rgba(139,92,246,0.1);
+  --warn:#f59e0b;--warnl:rgba(245,158,11,0.1);
+  --t1:#f0f2ff;--t2:rgba(240,242,255,0.65);--t3:rgba(240,242,255,0.35);--t4:rgba(240,242,255,0.14);
+  --r:14px;--r2:10px;--r3:7px;--serif:'Fraunces',serif;--sans:'Outfit',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;}
+
+/* TOPBAR */
+.topbar{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.tb-back{background:none;border:1px solid var(--line2);border-radius:var(--r3);color:var(--t3);cursor:pointer;font-size:.82rem;padding:6px 13px;font-family:var(--sans);transition:all .18s;}
+.tb-back:hover{color:var(--t1);border-color:var(--line2);}
+.tb-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--t1);}
+.tb-right{margin-left:auto;display:flex;gap:8px;}
+
+/* CONTAINER */
+.wrap{max-width:900px;margin:0 auto;padding:24px 18px 60px;}
+
+/* SECTION TABS */
+.section-tabs{display:flex;gap:7px;margin-bottom:22px;flex-wrap:wrap;}
+.s-tab{padding:9px 18px;border-radius:20px;font-size:.82rem;font-weight:700;cursor:pointer;border:1px solid var(--line);background:var(--card2);color:var(--t3);transition:all .2s;}
+.s-tab.active{background:var(--purplel);color:var(--purple);border-color:rgba(139,92,246,.3);}
+
+/* CLASS + STUDENT SELECTORS */
+.selectors{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg label{font-size:.63rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;}
+.fi{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:11px 14px;color:var(--t1);font-size:.9rem;font-family:var(--sans);outline:none;width:100%;transition:all .2s;}
+.fi:focus{border-color:rgba(139,92,246,.4);}
+select.fi{cursor:pointer;}
+textarea.fi{min-height:75px;resize:vertical;padding:11px 14px;}
+
+/* PROGRESS REPORT CARD */
+.report-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:20px;}
+.rc-header{background:linear-gradient(135deg,#1a0a3e,#2d1b6e);padding:20px 22px;display:flex;align-items:center;gap:16px;}
+.rc-logo{width:56px;height:56px;border-radius:12px;background:rgba(255,255,255,.1);border:2px solid rgba(212,168,67,.4);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;overflow:hidden;}
+.rc-logo img{width:100%;height:100%;object-fit:contain;}
+.rc-school{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:3px;}
+.rc-subtitle{font-size:.72rem;color:rgba(255,255,255,.6);}
+.rc-type-badge{margin-left:auto;background:rgba(212,168,67,.2);border:1px solid rgba(212,168,67,.4);border-radius:8px;padding:5px 12px;font-size:.68rem;font-weight:700;color:var(--gold);}
+
+.rc-student-info{padding:16px 22px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.rsi-item{display:flex;flex-direction:column;gap:3px;}
+.rsi-label{font-size:.6rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.08em;}
+.rsi-val{font-size:.88rem;font-weight:700;color:var(--t1);}
+
+/* TICK TABLE */
+.tick-table{width:100%;border-collapse:collapse;}
+.tick-table thead{background:var(--card2);}
+.tick-table th{padding:11px 14px;text-align:left;font-size:.62rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;border-bottom:1px solid var(--line);}
+.tick-table th.center{text-align:center;}
+.tick-table td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle;}
+.tick-table tr:last-child td{border:none;}
+.tick-table tbody tr:hover td{background:rgba(255,255,255,.02);}
+.area-name{font-size:.88rem;font-weight:700;color:var(--t1);}
+.area-sub{font-size:.68rem;color:var(--t3);margin-top:2px;}
+
+/* TICK BUTTONS */
+.tick-group{display:flex;gap:6px;justify-content:center;}
+.tick-btn{width:38px;height:38px;border-radius:var(--r3);border:1px solid var(--line2);background:rgba(255,255,255,.03);cursor:pointer;font-size:.9rem;transition:all .18s;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.tick-btn:hover{background:rgba(255,255,255,.07);}
+.tick-btn.selected-E{background:var(--goldl);border-color:rgba(212,168,67,.4);box-shadow:0 0 10px rgba(212,168,67,.2);}
+.tick-btn.selected-G{background:var(--successl);border-color:rgba(34,197,94,.4);}
+.tick-btn.selected-F{background:var(--warnl);border-color:rgba(245,158,11,.3);}
+.tick-btn.selected-N{background:var(--dangerl);border-color:rgba(244,63,94,.3);}
+.tick-legend{display:flex;gap:12px;padding:10px 22px;background:var(--card2);font-size:.68rem;color:var(--t3);border-top:1px solid var(--line);}
+.tl-item{display:flex;align-items:center;gap:5px;}
+.tl-dot{width:10px;height:10px;border-radius:3px;}
+
+/* TEACHER REMARKS */
+.remarks-section{padding:18px 22px;border-top:1px solid var(--line);}
+.remarks-title{font-size:.8rem;font-weight:700;color:var(--t1);margin-bottom:10px;}
+.remarks-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* TRAITS */
+.traits-section{padding:18px 22px;border-top:1px solid var(--line);}
+.traits-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.trait-item{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--t2);cursor:pointer;}
+.trait-item input[type=checkbox]{width:17px;height:17px;accent-color:var(--purple);cursor:pointer;}
+
+/* STUDENTS LIST */
+.students-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:16px;}
+.student-row{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line);cursor:pointer;transition:all .15s;}
+.student-row:last-child{border:none;}
+.student-row:hover{background:rgba(255,255,255,.03);}
+.student-row.active{background:var(--purplel);border-left:3px solid var(--purple);}
+.s-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0;}
+.s-name{font-size:.88rem;font-weight:700;color:var(--t1);}
+.s-meta{font-size:.66rem;color:var(--t4);}
+.s-status{margin-left:auto;font-size:.65rem;}
+.s-status.done{color:var(--success);}
+.s-status.pending{color:var(--warn);}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 20px;border:none;border-radius:var(--r2);cursor:pointer;font-family:var(--sans);font-size:.88rem;font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-purple{background:linear-gradient(135deg,#3b0764,var(--purple));color:#fff;}
+.btn-gold{background:linear-gradient(135deg,#4a2500,var(--gold));color:#000;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--t2);}
+.btn-ghost:hover{background:rgba(255,255,255,.1);color:var(--t1);}
+.btn-ok{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;}
+.btn-sm{padding:8px 15px;font-size:.78rem;}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px;}
+
+/* PRINT STYLES */
+@media print{
+  body{background:#fff;color:#000;}
+  .topbar,.no-print,.section-tabs,.selectors,.students-panel,.btn-row{display:none!important;}
+  .report-card{border:2px solid #000;break-inside:avoid;}
+  .rc-header{background:#1a0a3e!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .tick-btn.selected-E{background:#fef3c7!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .tick-btn.selected-G{background:#dcfce7!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .tick-btn.selected-F{background:#fef9c3!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .tick-btn.selected-N{background:#fee2e2!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .tick-table th,.tick-table td{border:1px solid #ccc!important;color:#000!important;}
+  .area-name,.rsi-val,.rc-school,.remarks-title{color:#000!important;}
+  .area-sub,.rsi-label,.rsi-val{color:#333!important;}
+}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);border-radius:var(--r2);padding:10px 20px;font-size:.82rem;z-index:999;transition:transform .25s;white-space:nowrap;pointer-events:none;display:flex;align-items:center;gap:7px;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.error{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.info{background:#0f1020;border:1px solid rgba(212,168,67,.35);color:var(--gold);}
+
+@media(max-width:680px){.selectors{grid-template-columns:1fr 1fr;}.remarks-grid{grid-template-columns:1fr;}.traits-grid{grid-template-columns:1fr 1fr;}.rc-student-info{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="tb-back" onclick="history.back()">← Back</button>
+  <div class="tb-title">📊 Progress Report — Early Years</div>
+  <div class="tb-right">
+    <button class="btn btn-ghost btn-sm no-print" onclick="printReport()">🖨 Print</button>
+    <button class="btn btn-ok btn-sm no-print" onclick="saveAllReports()">💾 Save All</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- SECTION SELECTOR -->
+  <div class="section-tabs no-print">
+    <div class="s-tab active" data-section="creche" onclick="setSection(this)">👶 Crèche</div>
+    <div class="s-tab" data-section="nursery" onclick="setSection(this)">🌱 Nursery</div>
+    <div class="s-tab" data-section="kg" onclick="setSection(this)">🎨 Kindergarten</div>
+  </div>
+
+  <!-- SELECTORS -->
+  <div class="selectors no-print">
+    <div class="fg"><label>Class</label>
+      <select class="fi" id="cls-select" onchange="loadStudents()">
+        <option>— Select —</option>
+      </select>
+    </div>
+    <div class="fg"><label>Term</label>
+      <select class="fi" id="term-select">
+        <option>First Term</option><option>Second Term</option><option>Third Term</option>
+      </select>
+    </div>
+    <div class="fg"><label>Session</label>
+      <input class="fi" type="text" id="session-input" value="2025/2026"/>
+    </div>
+  </div>
+
+  <!-- STUDENTS LIST + REPORT LAYOUT -->
+  <div style="display:grid;grid-template-columns:240px 1fr;gap:16px;" id="main-layout">
+
+    <!-- STUDENTS PANEL -->
+    <div class="no-print">
+      <div style="font-size:.65rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:9px;">Students</div>
+      <div class="students-panel" id="students-panel">
+        <div style="padding:20px;text-align:center;color:var(--t4);font-size:.82rem;">Select a class to load students</div>
+      </div>
+    </div>
+
+    <!-- REPORT CARD -->
+    <div id="report-area">
+      <div style="padding:40px;text-align:center;color:var(--t4);">
+        <div style="font-size:3rem;margin-bottom:12px;">📊</div>
+        <div style="font-size:.9rem;">Select a class and student to begin</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var DB = {
+  school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School","principal":""}'),
+  students: JSON.parse(localStorage.getItem('rsms_students')||'[]')
+};
+var schoolLogo = localStorage.getItem('rsms_school_logo')||'';
+
+var currentSection = 'creche';
+var currentStudent = null;
+var reportData = {};
+
+// ── LEARNING AREAS BY SECTION ──
+var AREAS = {
+  creche: [
+    {key:'gross_motor', name:'Gross Motor Skills', sub:'Running, jumping, climbing, balancing'},
+    {key:'fine_motor', name:'Fine Motor Skills', sub:'Holding objects, finger coordination'},
+    {key:'communication', name:'Communication', sub:'Babbling, responding to name, gestures'},
+    {key:'social', name:'Social Interaction', sub:'Playing alongside others, eye contact'},
+    {key:'emotional', name:'Emotional Development', sub:'Self-soothing, expressing feelings'},
+    {key:'cognitive', name:'Cognitive Development', sub:'Problem solving, cause and effect'},
+    {key:'self_care', name:'Self Care', sub:'Feeding, toilet training, dressing'},
+    {key:'sensory', name:'Sensory Exploration', sub:'Responding to sights, sounds, textures'},
+  ],
+  nursery: [
+    {key:'language', name:'Language & Literacy', sub:'Listening, speaking, pre-reading skills'},
+    {key:'numeracy', name:'Numeracy & Numbers', sub:'Counting 1-20, shapes, sorting'},
+    {key:'creative', name:'Creative Arts', sub:'Drawing, painting, colouring, crafts'},
+    {key:'physical', name:'Physical Development', sub:'Coordination, outdoor play, games'},
+    {key:'social', name:'Social & Emotional', sub:'Sharing, turn-taking, making friends'},
+    {key:'environmental', name:'Environmental Studies', sub:'Nature, animals, weather awareness'},
+    {key:'religious', name:'Religious & Moral', sub:'Prayer, respect, honesty, kindness'},
+    {key:'music', name:'Music & Rhymes', sub:'Songs, rhythm, rhymes, instruments'},
+    {key:'ict', name:'Basic ICT', sub:'Computer awareness, simple digital skills'},
+  ],
+  kg: [
+    {key:'literacy', name:'Literacy & Communication', sub:'Reading readiness, phonics, writing'},
+    {key:'numeracy', name:'Numeracy & Problem Solving', sub:'Numbers 1-100, addition, shapes'},
+    {key:'creative', name:'Creative Arts', sub:'Drawing, painting, drama, crafts'},
+    {key:'physical', name:'Physical Development', sub:'Sport, coordination, body awareness'},
+    {key:'social', name:'Social & Emotional Dev.', sub:'Cooperation, confidence, empathy'},
+    {key:'science', name:'Basic Science', sub:'Plants, animals, simple experiments'},
+    {key:'religious', name:'Religious & Moral Values', sub:'Prayer, Bible/Quran, good conduct'},
+    {key:'ict', name:'ICT & Technology', sub:'Computer, tablet, typing basics'},
+    {key:'language', name:'2nd Language', sub:'French/Yoruba — basic vocabulary'},
+    {key:'music', name:'Music & Performing Arts', sub:'Songs, dance, drama, instruments'},
+  ]
+};
+
+var CLASSES = {
+  creche: ['Crèche A', 'Crèche B'],
+  nursery: ['Nursery 1', 'Nursery 2'],
+  kg: ['KG 1', 'KG 2']
+};
+
+var GRADE_LABELS = {E:'Excellent',G:'Good',F:'Fair',N:'Needs Improvement'};
+var GRADE_COLORS = {E:'selected-E',G:'selected-G',F:'selected-F',N:'selected-N'};
+var GRADE_EMOJI = {E:'⭐',G:'✓',F:'△','N':'✗'};
+
+function toast(msg,type){
+  var t=document.getElementById('toast');t.className='toast '+(type||'info')+' show';
+  t.innerHTML=msg;clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3500);
+}
+
+// ── SECTION ──
+function setSection(el){
+  document.querySelectorAll('.s-tab').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  currentSection = el.dataset.section;
+  currentStudent = null;
+  buildClassSelect();
+  document.getElementById('students-panel').innerHTML='<div style="padding:20px;text-align:center;color:var(--t4);font-size:.82rem;">Select a class to load students</div>';
+  document.getElementById('report-area').innerHTML='<div style="padding:40px;text-align:center;color:var(--t4);"><div style="font-size:3rem;margin-bottom:12px;">📊</div><div style="font-size:.9rem;">Select a class and student to begin</div></div>';
+}
+
+function buildClassSelect(){
+  var sel = document.getElementById('cls-select');
+  var classes = CLASSES[currentSection] || [];
+  sel.innerHTML = '<option>— Select —</option>' + classes.map(function(c){
+    return '<option>'+c+'</option>';
+  }).join('');
+}
+
+// ── LOAD STUDENTS ──
+function loadStudents(){
+  var cls = document.getElementById('cls-select').value;
+  if(!cls || cls==='— Select —') return;
+
+  var students = DB.students.filter(function(s){return s.class===cls;});
+  // If no students match exactly, show all early years students
+  if(!students.length){
+    var earlyClasses = ['Crèche A','Crèche B','Nursery 1','Nursery 2','KG 1','KG 2'];
+    students = DB.students.filter(function(s){return earlyClasses.indexOf(s.class)>-1;});
+  }
+  // Demo students if none
+  if(!students.length){
+    students = [
+      {id:'d1',surname:'Adeyemi',firstname:'Tunde',class:cls,reg:'REG-001',gender:'Male'},
+      {id:'d2',surname:'Okafor',firstname:'Blessing',class:cls,reg:'REG-002',gender:'Female'},
+      {id:'d3',surname:'Hassan',firstname:'Fatima',class:cls,reg:'REG-003',gender:'Female'},
+      {id:'d4',surname:'Babatunde',firstname:'Emmanuel',class:cls,reg:'REG-004',gender:'Male'},
+    ];
+  }
+
+  var panel = document.getElementById('students-panel');
+  panel.innerHTML = students.map(function(s,i){
+    var name = (s.surname||'') + ' ' + (s.firstname||'');
+    var key = 'prog_'+cls+'_'+(s.id||i);
+    var isDone = !!localStorage.getItem(key);
+    return '<div class="student-row" id="srow-'+i+'" onclick="selectStudent(this,'+i+',\''+cls+'\','+JSON.stringify(s).replace(/'/g,"\\'")+')">'+
+      '<div class="s-av">'+name.charAt(0)+'</div>'+
+      '<div><div class="s-name">'+name+'</div><div class="s-meta">'+s.reg+'</div></div>'+
+      '<div class="s-status '+(isDone?'done':'pending')+'">'+(isDone?'✅':'⏳')+'</div></div>';
+  }).join('');
+}
+
+function selectStudent(el, idx, cls, student){
+  document.querySelectorAll('.student-row').forEach(function(r){r.classList.remove('active');});
+  el.classList.add('active');
+  currentStudent = student;
+  var key = 'prog_'+cls+'_'+student.id;
+  var saved = JSON.parse(localStorage.getItem(key)||'{}');
+  reportData = saved;
+  renderReport(student, cls, saved);
+}
+
+// ── RENDER REPORT ──
+function renderReport(student, cls, saved){
+  var areas = AREAS[currentSection] || [];
+  var name = (student.surname||'') + ' ' + (student.firstname||'');
+  var term = document.getElementById('term-select').value;
+  var session = document.getElementById('session-input').value;
+  var logoSrc = schoolLogo;
+
+  var html = '<div class="report-card" id="the-report">'+
+    // HEADER
+    '<div class="rc-header">'+
+    '<div class="rc-logo">'+(logoSrc?'<img src="'+logoSrc+'" alt="Logo" onerror="this.parentNode.textContent=\'🏫\'"/>':'🏫')+'</div>'+
+    '<div>'+
+    '<div class="rc-school">'+DB.school.name+'</div>'+
+    '<div class="rc-subtitle">Early Years Progress Report — '+term+' '+session+'</div>'+
+    '</div>'+
+    '<div class="rc-type-badge">'+currentSection.toUpperCase()+' REPORT</div></div>'+
+
+    // STUDENT INFO
+    '<div class="rc-student-info">'+
+    '<div class="rsi-item"><div class="rsi-label">Student Name</div><div class="rsi-val">'+name+'</div></div>'+
+    '<div class="rsi-item"><div class="rsi-label">Class</div><div class="rsi-val">'+cls+'</div></div>'+
+    '<div class="rsi-item"><div class="rsi-label">Reg. Number</div><div class="rsi-val">'+(student.reg||'—')+'</div></div>'+
+    '<div class="rsi-item"><div class="rsi-label">Gender</div><div class="rsi-val">'+(student.gender||'—')+'</div></div>'+
+    '<div class="rsi-item"><div class="rsi-label">Term</div><div class="rsi-val">'+term+'</div></div>'+
+    '<div class="rsi-item"><div class="rsi-label">Session</div><div class="rsi-val">'+session+'</div></div>'+
+    '</div>'+
+
+    // TICK TABLE
+    '<table class="tick-table">'+
+    '<thead><tr>'+
+    '<th>Learning Area</th>'+
+    '<th class="center" style="color:var(--gold);">⭐ Excellent</th>'+
+    '<th class="center" style="color:var(--success);">✓ Good</th>'+
+    '<th class="center" style="color:var(--warn);">△ Fair</th>'+
+    '<th class="center" style="color:var(--danger);">✗ Needs Improv.</th>'+
+    '</tr></thead><tbody>'+
+
+    areas.map(function(area){
+      var current = (saved.grades||{})[area.key] || '';
+      return '<tr>'+
+        '<td><div class="area-name">'+area.name+'</div><div class="area-sub">'+area.sub+'</div></td>'+
+        ['E','G','F','N'].map(function(grade){
+          var sel = current===grade ? GRADE_COLORS[grade] : '';
+          return '<td style="text-align:center;"><button class="tick-btn '+sel+'" data-area="'+area.key+'" data-grade="'+grade+'" onclick="setGrade(this,\''+area.key+'\',\''+grade+'\')">'+GRADE_EMOJI[grade]+'</button></td>';
+        }).join('')+
+        '</tr>';
+    }).join('')+
+    '</tbody></table>'+
+
+    // LEGEND
+    '<div class="tick-legend">'+
+    '<div class="tl-item"><div class="tl-dot" style="background:var(--gold);"></div>E = Excellent</div>'+
+    '<div class="tl-item"><div class="tl-dot" style="background:var(--success);"></div>G = Good</div>'+
+    '<div class="tl-item"><div class="tl-dot" style="background:var(--warn);"></div>F = Fair</div>'+
+    '<div class="tl-item"><div class="tl-dot" style="background:var(--danger);"></div>NI = Needs Improvement</div>'+
+    '</div>'+
+
+    // PERSONAL TRAITS
+    '<div class="traits-section">'+
+    '<div style="font-size:.82rem;font-weight:700;color:var(--t1);margin-bottom:12px;">🌟 Personal Traits</div>'+
+    '<div class="traits-grid">'+
+    ['Punctual','Well behaved','Attentive','Friendly','Neat & tidy','Creative',
+     'Confident','Hard working','Respectful','Cheerful','Cooperative','Curious'].map(function(t){
+      var checked = (saved.traits||[]).indexOf(t)>-1;
+      return '<label class="trait-item"><input type="checkbox" onchange="setTrait(this,\''+t+'\')" '+(checked?'checked':'')+'/> '+t+'</label>';
+    }).join('')+
+    '</div></div>'+
+
+    // REMARKS
+    '<div class="remarks-section">'+
+    '<div class="remarks-title">✍️ Teacher\'s Remarks</div>'+
+    '<div class="remarks-grid">'+
+    '<div class="fg"><label>Teacher\'s Comment</label>'+
+    '<textarea class="fi" id="remark-teacher" placeholder="Write your observation about this child\'s progress...">'+((saved.remarkTeacher)||'')+'</textarea></div>'+
+    '<div class="fg"><label>Recommendation for Next Term</label>'+
+    '<textarea class="fi" id="remark-next" placeholder="What should parents/child work on?">'+((saved.remarkNext)||'')+'</textarea></div>'+
+    '</div>'+
+    '<div class="fg" style="margin-top:12px;"><label>Affective Traits Summary</label>'+
+    '<input class="fi" type="text" id="remark-summary" value="'+(saved.summary||'')+'" placeholder="e.g. A bright and cheerful child who loves activities"/>'+
+    '</div></div>'+
+
+    // SIGNATURES
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding:16px 22px;border-top:1px solid var(--line);">'+
+    '<div style="text-align:center;"><div style="height:40px;border-bottom:1px solid var(--line2);margin-bottom:6px;"></div><div style="font-size:.68rem;color:var(--t3);">Class Teacher</div></div>'+
+    '<div style="text-align:center;"><div style="height:40px;border-bottom:1px solid var(--line2);margin-bottom:6px;"></div><div style="font-size:.68rem;color:var(--t3);">Principal</div></div>'+
+    '<div style="text-align:center;"><div style="height:40px;border-bottom:1px solid var(--line2);margin-bottom:6px;"></div><div style="font-size:.68rem;color:var(--t3);">Parent/Guardian</div></div>'+
+    '</div>'+
+    '</div>'+
+
+    // ACTION BUTTONS
+    '<div class="btn-row no-print">'+
+    '<button class="btn btn-purple" onclick="saveReport()">💾 Save Report</button>'+
+    '<button class="btn btn-gold" onclick="printReport()">🖨 Print</button>'+
+    '<button class="btn btn-ghost" onclick="nextStudent()">Next Student →</button>'+
+    '</div>';
+
+  document.getElementById('report-area').innerHTML = html;
+}
+
+// ── GRADE TICKING ──
+function setGrade(btn, area, grade){
+  var row = btn.closest('tr');
+  row.querySelectorAll('.tick-btn').forEach(function(b){
+    b.className = 'tick-btn';
+  });
+  var alreadySelected = !btn.classList.contains('selected-'+grade);
+  if(alreadySelected){
+    btn.classList.add(GRADE_COLORS[grade]);
+    if(!reportData.grades) reportData.grades = {};
+    reportData.grades[area] = grade;
+  } else {
+    if(reportData.grades) delete reportData.grades[area];
+  }
+}
+
+function setTrait(cb, trait){
+  if(!reportData.traits) reportData.traits = [];
+  if(cb.checked){
+    if(reportData.traits.indexOf(trait)===-1) reportData.traits.push(trait);
+  } else {
+    reportData.traits = reportData.traits.filter(function(t){return t!==trait;});
+  }
+}
+
+// ── SAVE ──
+function saveReport(){
+  if(!currentStudent){toast('⚠️ Select a student first','error');return;}
+  var cls = document.getElementById('cls-select').value;
+  var t = document.getElementById('remark-teacher');
+  var n = document.getElementById('remark-next');
+  var s = document.getElementById('remark-summary');
+  reportData.remarkTeacher = t?t.value:'';
+  reportData.remarkNext = n?n.value:'';
+  reportData.summary = s?s.value:'';
+  reportData.savedAt = new Date().toISOString();
+  reportData.student = currentStudent;
+  reportData.class = cls;
+  reportData.term = document.getElementById('term-select').value;
+  reportData.session = document.getElementById('session-input').value;
+  var key = 'prog_'+cls+'_'+currentStudent.id;
+  localStorage.setItem(key, JSON.stringify(reportData));
+  toast('✅ Report saved for '+(currentStudent.surname||''),'success');
+  // Update student list status
+  var activeRow = document.querySelector('.student-row.active');
+  if(activeRow){
+    var statusEl = activeRow.querySelector('.s-status');
+    if(statusEl){statusEl.textContent='✅';statusEl.className='s-status done';}
+  }
+}
+
+function saveAllReports(){
+  saveReport();
+  toast('✅ All reports saved','success');
+}
+
+function printReport(){
+  saveReport();
+  window.print();
+}
+
+function nextStudent(){
+  var rows = document.querySelectorAll('.student-row');
+  var active = document.querySelector('.student-row.active');
+  if(!active||!rows.length) return;
+  var idx = Array.from(rows).indexOf(active);
+  var next = rows[idx+1];
+  if(next) next.click();
+  else toast('✅ Last student reached','info');
+}
+
+// ── INIT ──
+window.addEventListener('load',function(){
+  buildClassSelect();
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
+  // Load school logo
+  var keys = Object.keys(localStorage).filter(function(k){return k.startsWith('rsms_onboarding_RSMS-');});
+  for(var i=0;i<keys.length;i++){
+    try{
+      var d = JSON.parse(localStorage.getItem(keys[i])||'{}');
+      if(d.logo){schoolLogo=d.logo;localStorage.setItem('rsms_school_logo',d.logo);break;}
+    }catch(e){}
+  }
+});
+</script>
+</body>
+</html>

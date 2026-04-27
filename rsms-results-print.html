@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RSMS — Result Sheet & Report Card</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--panel:#0d0f1a;--card:#111420;--card2:#161929;
+  --line:rgba(255,255,255,0.07);--line2:rgba(255,255,255,0.13);
+  --gold:#d4a843;--goldl:rgba(212,168,67,0.1);
+  --success:#22c55e;--danger:#f43f5e;--purple:#8b5cf6;
+  --t1:#f0f2ff;--t2:rgba(240,242,255,0.65);--t3:rgba(240,242,255,0.35);--t4:rgba(240,242,255,0.14);
+  --r:12px;--r2:8px;--serif:'Fraunces',serif;--sans:'Outfit',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;}
+.topbar{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.tb-back{background:none;border:1px solid var(--line2);border-radius:8px;color:var(--t3);cursor:pointer;font-size:.84rem;padding:7px 14px;font-family:var(--sans);}
+.tb-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--t1);}
+.tb-right{margin-left:auto;display:flex;gap:8px;}
+.wrap{max-width:900px;margin:0 auto;padding:22px 18px 60px;}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.fg label{font-size:.62rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;}
+.fi{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:11px 14px;color:var(--t1);font-size:.88rem;font-family:var(--sans);outline:none;width:100%;}
+.fi:focus{border-color:rgba(212,168,67,.4);}
+select.fi{cursor:pointer;}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 20px;border:none;border-radius:var(--r2);cursor:pointer;font-family:var(--sans);font-size:.86rem;font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-gold{background:linear-gradient(135deg,#4a2500,var(--gold));color:#000;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--t2);}
+.btn-ok{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;}
+.btn-purple{background:linear-gradient(135deg,#3b0764,var(--purple));color:#fff;}
+.btn-sm{padding:7px 14px;font-size:.76rem;}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px;}
+
+/* ── REPORT CARD STYLES ── */
+.rcard{background:#fff;color:#000;border:2px solid #000;border-radius:0;font-family:Arial,sans-serif;margin-bottom:20px;page-break-after:always;}
+.rcard:last-child{page-break-after:auto;}
+.rcard-header{background:#1a0a3e;color:#fff;padding:14px 18px;display:flex;align-items:center;gap:14px;}
+.rcard-logo{width:54px;height:54px;border-radius:8px;background:rgba(255,255,255,.1);border:1px solid rgba(212,168,67,.4);display:flex;align-items:center;justify-content:center;font-size:1.4rem;overflow:hidden;flex-shrink:0;}
+.rcard-logo img{width:100%;height:100%;object-fit:contain;}
+.rcard-school{font-size:1rem;font-weight:700;margin-bottom:2px;}
+.rcard-sub{font-size:.72rem;opacity:.7;}
+.rcard-term{margin-left:auto;font-size:.72rem;font-weight:700;color:var(--gold);text-align:right;}
+
+.rcard-student{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:2px solid #000;}
+.rcard-student div{padding:7px 10px;border-right:1px solid #ccc;}
+.rcard-student div:last-child{border:none;}
+.rcard-s-label{font-size:.55rem;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:2px;}
+.rcard-s-val{font-size:.82rem;font-weight:700;color:#000;}
+
+.rcard-table{width:100%;border-collapse:collapse;font-size:.8rem;}
+.rcard-table th{background:#1a0a3e;color:#fff;padding:7px 8px;text-align:center;border:1px solid #333;font-size:.68rem;font-weight:700;}
+.rcard-table th:first-child{text-align:left;}
+.rcard-table td{padding:7px 8px;border:1px solid #ccc;text-align:center;color:#000;}
+.rcard-table td:first-child{text-align:left;font-weight:600;}
+.rcard-table tr:nth-child(even){background:#f9f9f9;}
+.rcard-table tr.total-row{background:#1a0a3e;color:#fff;font-weight:700;}
+.rcard-table tr.total-row td{color:#fff;border-color:#333;}
+
+.rcard-summary{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0;border-top:2px solid #000;}
+.rcard-summary div{padding:9px;text-align:center;border-right:1px solid #ccc;}
+.rcard-summary div:last-child{border:none;}
+.rs-lbl{font-size:.58rem;text-transform:uppercase;color:#666;margin-bottom:3px;}
+.rs-val{font-size:1.1rem;font-weight:700;color:#000;}
+
+.rcard-remarks{padding:10px 12px;border-top:1px solid #ccc;}
+.rcard-r-label{font-size:.62rem;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:4px;}
+.rcard-r-content{font-size:.82rem;color:#000;min-height:22px;border-bottom:1px solid #ccc;padding-bottom:3px;}
+
+.rcard-footer{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-top:2px solid #000;}
+.rcard-footer div{padding:9px 12px;border-right:1px solid #ccc;}
+.rcard-footer div:last-child{border:none;}
+.rf-line{height:22px;border-bottom:1px solid #000;margin-bottom:4px;}
+.rf-label{font-size:.62rem;color:#666;text-transform:uppercase;}
+
+/* SCORE INPUT */
+.score-in{background:var(--card2);border:1px solid var(--line2);border-radius:5px;padding:5px 7px;color:var(--t1);font-size:.84rem;font-family:var(--sans);outline:none;width:56px;text-align:center;}
+.score-in:focus{border-color:rgba(212,168,67,.4);}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:.6rem;font-weight:700;}
+.b-ok{background:rgba(34,197,94,.1);color:#22c55e;}
+.b-err{background:rgba(244,63,94,.1);color:#f43f5e;}
+.b-gold{background:rgba(212,168,67,.1);color:var(--gold);}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);border-radius:var(--r2);padding:10px 20px;font-size:.82rem;z-index:999;transition:transform .25s;pointer-events:none;display:flex;align-items:center;gap:7px;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.error{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.info{background:#0f1020;border:1px solid rgba(212,168,67,.35);color:var(--gold);}
+
+@media print{
+  body{background:#fff;}
+  .topbar,.no-print,.btn-row,.f3{display:none!important;}
+  .rcard{border:2px solid #000;margin:0;page-break-after:always;}
+  .rcard-header{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .rcard-table th{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .rcard-table tr.total-row{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .wrap{padding:0;}
+}
+@media(max-width:680px){.f3{grid-template-columns:1fr 1fr;}.rcard-student{grid-template-columns:1fr 1fr;}.rcard-summary{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="tb-back" onclick="history.back()">← Back</button>
+  <div class="tb-title">📝 Results & Report Cards</div>
+  <div class="tb-right no-print">
+    <button class="btn btn-gold btn-sm" onclick="generateReports()">Generate Reports</button>
+    <button class="btn btn-ok btn-sm" onclick="saveAllScores()">💾 Save All</button>
+    <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print All</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- CONTROLS -->
+  <div class="f3 no-print">
+    <div class="fg"><label>Class *</label>
+      <select class="fi" id="cls-sel" onchange="loadClassStudents()">
+        <option>— Select Class —</option>
+        <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
+        <option>SS 1 Science</option><option>SS 1 Commercial</option><option>SS 1 Art</option>
+        <option>SS 2 Science</option><option>SS 2 Commercial</option><option>SS 2 Art</option>
+        <option>SS 3 Science</option><option>SS 3 Commercial</option><option>SS 3 Art</option>
+        <option>Primary 1</option><option>Primary 2</option><option>Primary 3</option>
+        <option>Primary 4</option><option>Primary 5</option><option>Primary 6</option>
+      </select>
+    </div>
+    <div class="fg"><label>Term</label>
+      <select class="fi" id="term-sel"><option>First Term</option><option>Second Term</option><option>Third Term</option></select>
+    </div>
+    <div class="fg"><label>Session</label>
+      <input class="fi" type="text" id="sess-in" value="2025/2026"/>
+    </div>
+  </div>
+
+  <!-- SCORE ENTRY TABLE -->
+  <div class="no-print" id="score-entry-section" style="display:none;">
+    <div style="font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--t1);margin-bottom:12px;">Enter Scores</div>
+    <div style="overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);margin-bottom:16px;">
+      <table id="score-table" style="width:100%;border-collapse:collapse;font-size:.82rem;min-width:800px;">
+        <thead><tr id="score-head"></tr></thead>
+        <tbody id="score-body"></tbody>
+      </table>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ok" onclick="saveAllScores()">💾 Save All Scores</button>
+      <button class="btn btn-purple" onclick="generateReports()">📄 Generate Report Cards</button>
+    </div>
+  </div>
+
+  <!-- REPORT CARDS OUTPUT -->
+  <div id="reports-output"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var DB={
+  school:JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School","principal":""}'),
+  students:JSON.parse(localStorage.getItem('rsms_students')||'[]')
+};
+var schoolLogo = localStorage.getItem('rsms_school_logo')||'';
+var currentClass='',currentStudents=[],scoresData={};
+
+// Subjects per class type
+var SECONDARY_SUBJECTS=['English Language','Mathematics','Physics','Chemistry','Biology','Economics','Government','Literature in English','Geography','Agricultural Science','Technical Drawing'];
+var PRIMARY_SUBJECTS=['English Language','Mathematics','Basic Science','Social Studies','Civic Education','Creative Arts','Physical Education','Religious Studies','Yoruba Language'];
+
+function toast(msg,type){var t=document.getElementById('toast');t.className='toast '+(type||'info')+' show';t.innerHTML=msg;clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3500);}
+
+function getSubjects(cls){
+  if(cls.startsWith('Primary'))return PRIMARY_SUBJECTS;
+  return SECONDARY_SUBJECTS;
+}
+
+function loadClassStudents(){
+  var cls=document.getElementById('cls-sel').value;
+  if(!cls||cls==='— Select Class —')return;
+  currentClass=cls;
+  currentStudents=DB.students.filter(function(s){return s.class===cls;});
+  if(!currentStudents.length){
+    // Demo
+    currentStudents=[
+      {id:'d1',surname:'Adeyemi',firstname:'Tunde',reg:'REG-001',gender:'Male'},
+      {id:'d2',surname:'Okafor',firstname:'Blessing',reg:'REG-002',gender:'Female'},
+      {id:'d3',surname:'Hassan',firstname:'Fatima',reg:'REG-003',gender:'Female'},
+      {id:'d4',surname:'Babatunde',firstname:'Emmanuel',reg:'REG-004',gender:'Male'},
+      {id:'d5',surname:'Eze',firstname:'Chukwuemeka',reg:'REG-005',gender:'Male'},
+    ];
+  }
+  // Load saved scores
+  var key='scores_'+cls;
+  scoresData=JSON.parse(localStorage.getItem(key)||'{}');
+  buildScoreTable();
+  document.getElementById('score-entry-section').style.display='block';
+  document.getElementById('reports-output').innerHTML='';
+  toast('Loaded '+currentStudents.length+' students for '+cls,'info');
+}
+
+function buildScoreTable(){
+  var subjects=getSubjects(currentClass);
+  // Header
+  var hd=document.getElementById('score-head');
+  hd.innerHTML='<th style="padding:9px 12px;background:var(--card2);border:1px solid var(--line);color:var(--t3);font-size:.65rem;min-width:140px;">Student</th>'+
+    subjects.map(function(s){return '<th style="padding:7px 5px;background:var(--card2);border:1px solid var(--line);color:var(--t3);font-size:.62rem;min-width:70px;text-align:center;">'+s.split(' ')[0]+'</th>';}).join('')+
+    '<th style="padding:7px 5px;background:var(--card2);border:1px solid var(--line);color:var(--gold);font-size:.62rem;min-width:60px;text-align:center;">Total</th>'+
+    '<th style="padding:7px 5px;background:var(--card2);border:1px solid var(--line);color:var(--t3);font-size:.62rem;min-width:50px;text-align:center;">Avg</th>';
+
+  // Body
+  var body=document.getElementById('score-body');
+  body.innerHTML=currentStudents.map(function(s){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    var saved=(scoresData[s.id]||{});
+    var cells=subjects.map(function(sub){
+      var v=saved[sub]||'';
+      return '<td style="padding:5px;border:1px solid var(--line);"><input class="score-in" type="number" min="0" max="100" value="'+v+'" data-student="'+s.id+'" data-subject="'+sub+'" oninput="updateTotal(\''+s.id+'\')" style="width:56px;"/></td>';
+    }).join('');
+    return '<tr>'+
+      '<td style="padding:9px 12px;border:1px solid var(--line);font-weight:600;color:var(--t1);">'+name+'</td>'+
+      cells+
+      '<td style="padding:9px 8px;border:1px solid var(--line);text-align:center;font-family:var(--serif);font-weight:700;color:var(--gold);" id="tot-'+s.id+'">—</td>'+
+      '<td style="padding:9px 8px;border:1px solid var(--line);text-align:center;font-size:.8rem;color:var(--t3);" id="avg-'+s.id+'">—</td>'+
+      '</tr>';
+  }).join('');
+  // Calculate existing totals
+  currentStudents.forEach(function(s){updateTotal(s.id);});
+}
+
+function updateTotal(sid){
+  var subjects=getSubjects(currentClass);
+  var inputs=document.querySelectorAll('input[data-student="'+sid+'"]');
+  var total=0,count=0;
+  inputs.forEach(function(inp){total+=parseInt(inp.value)||0;if(inp.value)count++;});
+  var avg=count?Math.round(total/subjects.length):'—';
+  var totEl=document.getElementById('tot-'+sid);
+  var avgEl=document.getElementById('avg-'+sid);
+  if(totEl)totEl.textContent=total||'—';
+  if(avgEl)avgEl.textContent=avg+(avg!=='—'?'%':'');
+}
+
+function saveAllScores(){
+  var subjects=getSubjects(currentClass);
+  currentStudents.forEach(function(s){
+    var studentScores={};
+    subjects.forEach(function(sub){
+      var inp=document.querySelector('input[data-student="'+s.id+'"][data-subject="'+sub+'"]');
+      if(inp&&inp.value)studentScores[sub]=parseInt(inp.value)||0;
+    });
+    scoresData[s.id]=studentScores;
+  });
+  localStorage.setItem('scores_'+currentClass,JSON.stringify(scoresData));
+  toast('✅ Scores saved for '+currentClass,'success');
+}
+
+function generateReports(){
+  saveAllScores();
+  var subjects=getSubjects(currentClass);
+  var term=document.getElementById('term-sel').value;
+  var session=document.getElementById('sess-in').value;
+  var schoolName=DB.school.name||'School';
+  var principal=DB.school.principal||'Principal';
+
+  // Calculate class statistics for position
+  var classAverages=currentStudents.map(function(s){
+    var scores=scoresData[s.id]||{};
+    var total=subjects.reduce(function(sum,sub){return sum+(scores[sub]||0);},0);
+    return{id:s.id,total:total,avg:Math.round(total/subjects.length)};
+  }).sort(function(a,b){return b.total-a.total;});
+  var positionMap={};
+  classAverages.forEach(function(s,i){positionMap[s.id]=i+1;});
+
+  var cards=currentStudents.map(function(student){
+    var name=(student.surname||'')+' '+(student.firstname||'');
+    var scores=scoresData[student.id]||{};
+    var subjectRows=subjects.map(function(sub){
+      var sc=scores[sub]||0;
+      var grade=sc>=75?'A1':sc>=70?'B2':sc>=65?'B3':sc>=60?'C4':sc>=55?'C5':sc>=50?'C6':sc>=45?'D7':sc>=40?'E8':'F9';
+      var remark=sc>=70?'Excellent':sc>=60?'Very Good':sc>=50?'Good':sc>=40?'Pass':'Fail';
+      return '<tr>'+
+        '<td style="text-align:left;">'+sub+'</td>'+
+        '<td>100</td><td>'+sc+'</td>'+
+        '<td>'+grade+'</td><td>'+remark+'</td></tr>';
+    }).join('');
+    var total=subjects.reduce(function(s,sub){return s+(scores[sub]||0);},0);
+    var avg=Math.round(total/subjects.length);
+    var pos=positionMap[student.id]||'—';
+    var overallGrade=avg>=70?'A':avg>=60?'B':avg>=50?'C':avg>=40?'D':'F';
+
+    return '<div class="rcard">'+
+      // HEADER
+      '<div class="rcard-header">'+
+      '<div class="rcard-logo">'+(schoolLogo?'<img src="'+schoolLogo+'" alt="Logo" onerror="this.parentNode.textContent=\'🏫\'"/>':'🏫')+'</div>'+
+      '<div><div class="rcard-school">'+schoolName+'</div>'+
+      '<div class="rcard-sub">CONTINUOUS ASSESSMENT REPORT CARD</div></div>'+
+      '<div class="rcard-term"><div>'+term+'</div><div>'+session+'</div></div></div>'+
+
+      // STUDENT INFO
+      '<div class="rcard-student">'+
+      '<div><div class="rcard-s-label">Student Name</div><div class="rcard-s-val">'+name+'</div></div>'+
+      '<div><div class="rcard-s-label">Class</div><div class="rcard-s-val">'+currentClass+'</div></div>'+
+      '<div><div class="rcard-s-label">Reg. Number</div><div class="rcard-s-val">'+(student.reg||'—')+'</div></div>'+
+      '<div><div class="rcard-s-label">Gender</div><div class="rcard-s-val">'+(student.gender||'—')+'</div></div>'+
+      '</div>'+
+
+      // SCORES TABLE
+      '<table class="rcard-table">'+
+      '<thead><tr><th style="width:35%;text-align:left;">Subject</th><th>Max Score</th><th>Score Obtained</th><th>Grade</th><th>Remark</th></tr></thead>'+
+      '<tbody>'+subjectRows+
+      '<tr class="total-row"><td>TOTAL</td><td>'+(subjects.length*100)+'</td><td>'+total+'</td><td>'+overallGrade+'</td><td>'+(avg>=50?'PROMOTED':'REPEAT')+'</td></tr>'+
+      '</tbody></table>'+
+
+      // SUMMARY
+      '<div class="rcard-summary">'+
+      '<div><div class="rs-lbl">Total Score</div><div class="rs-val">'+total+'</div></div>'+
+      '<div><div class="rs-lbl">Average</div><div class="rs-val">'+avg+'%</div></div>'+
+      '<div><div class="rs-lbl">Position</div><div class="rs-val">'+pos+'/'+currentStudents.length+'</div></div>'+
+      '<div><div class="rs-lbl">Overall Grade</div><div class="rs-val">'+overallGrade+'</div></div>'+
+      '</div>'+
+
+      // REMARKS
+      '<div class="rcard-remarks">'+
+      '<div class="rcard-r-label">Teacher\'s Remark</div>'+
+      '<div class="rcard-r-content">'+(avg>=70?'Excellent performance. Keep it up!':avg>=60?'Very good performance. Work harder.':avg>=50?'Good performance. More effort needed.':avg>=40?'Fair performance. Serious improvement required.':'Poor performance. Must repeat the class if not improved.')+'</div>'+
+      '<div style="margin-top:8px;"><div class="rcard-r-label">Principal\'s Remark</div>'+
+      '<div class="rcard-r-content"> </div></div>'+
+      '</div>'+
+
+      // FOOTER
+      '<div class="rcard-footer">'+
+      '<div><div class="rf-line"></div><div class="rf-label">Class Teacher\'s Signature</div></div>'+
+      '<div><div class="rf-line"></div><div class="rf-label">Principal: '+principal+'</div></div>'+
+      '<div><div class="rf-line"></div><div class="rf-label">Parent/Guardian\'s Signature</div></div>'+
+      '</div></div>';
+  }).join('');
+
+  document.getElementById('reports-output').innerHTML=cards;
+  toast('📄 '+currentStudents.length+' report cards generated','success');
+  setTimeout(function(){document.getElementById('reports-output').scrollIntoView({behavior:'smooth'});},300);
+}
+
+window.addEventListener('load',function(){
+  var keys=Object.keys(localStorage).filter(function(k){return k.startsWith('rsms_onboarding_RSMS-');});
+  for(var i=0;i<keys.length;i++){
+    try{var d=JSON.parse(localStorage.getItem(keys[i])||'{}');if(d.logo){schoolLogo=d.logo;break;}}catch(e){}
+  }
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
+});
+</script>
+</body>
+</html>
