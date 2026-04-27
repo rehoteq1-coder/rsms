@@ -1,0 +1,63 @@
+{
+  "name": "RSMS — Rehoteq School Management System",
+  "short_name": "RSMS",
+  "description": "Complete school management system by Rehoteq Technologies",
+  "start_url": "/rsms/",
+  "scope": "/rsms/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0d0f1a",
+  "background_color": "#030305",
+  "categories": ["education", "productivity", "business"],
+  "lang": "en-NG",
+  "icons": [
+    {
+      "src": "icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Admin Portal",
+      "short_name": "Admin",
+      "description": "Open Admin Dashboard",
+      "url": "/rsms/rsms-admin.html",
+      "icons": [{"src": "icons/icon-96.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Control Center",
+      "short_name": "Control",
+      "description": "Rehoteq Master Control",
+      "url": "/rsms/rsms-control.html",
+      "icons": [{"src": "icons/icon-96.png", "sizes": "96x96"}]
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
