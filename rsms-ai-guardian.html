@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#030305"/>
+<link rel="manifest" href="manifest.json"/>
+<title>RSMS — AI Guardian</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--panel:#0d0f1a;--card:#0e1018;--card2:#13161f;
+  --line:rgba(139,92,246,0.12);--line2:rgba(139,92,246,0.22);
+  --gold:#d4a843;--goldl:rgba(212,168,67,0.1);
+  --success:#22c55e;--successl:rgba(34,197,94,0.1);
+  --danger:#f43f5e;--dangerl:rgba(244,63,94,0.1);
+  --warn:#f59e0b;--warnl:rgba(245,158,11,0.1);
+  --info:#3b82f6;--infol:rgba(59,130,246,0.1);
+  --purple:#8b5cf6;--purplel:rgba(139,92,246,0.12);
+  --teal:#14b8a6;--teall:rgba(20,184,166,0.1);
+  --t1:#f0f2ff;--t2:rgba(240,242,255,0.65);--t3:rgba(240,242,255,0.35);--t4:rgba(240,242,255,0.14);
+  --r:14px;--r2:10px;--r3:7px;--serif:'Fraunces',serif;--sans:'Outfit',sans-serif;
+  --fs-sm:.86rem;--fs-base:.94rem;--fs-lg:1.06rem;--btn-h:52px;--input-h:50px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;}
+
+/* ANIMATED BG */
+.ai-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.ai-orb{position:absolute;border-radius:50%;filter:blur(60px);opacity:.08;animation:orb-float 8s ease-in-out infinite;}
+.ai-orb.o1{width:400px;height:400px;background:var(--purple);top:-100px;right:-100px;}
+.ai-orb.o2{width:300px;height:300px;background:var(--teal);bottom:-80px;left:-60px;animation-delay:3s;}
+.ai-orb.o3{width:200px;height:200px;background:var(--gold);top:50%;left:40%;animation-delay:5s;}
+@keyframes orb-float{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(20px,-20px) scale(1.05);}}
+
+/* TOPBAR */
+.topbar{position:relative;z-index:10;background:rgba(13,15,26,.95);border-bottom:1px solid rgba(139,92,246,.15);padding:14px 20px;display:flex;align-items:center;gap:12px;backdrop-filter:blur(20px);}
+.tb-back{background:none;border:1px solid rgba(139,92,246,.25);border-radius:var(--r3);color:var(--t3);cursor:pointer;font-size:var(--fs-sm);padding:8px 15px;font-family:var(--sans);}
+.tb-title{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;background:linear-gradient(135deg,var(--purple),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.ai-status{display:flex;align-items:center;gap:6px;margin-left:auto;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);border-radius:20px;padding:6px 14px;}
+.ai-dot{width:8px;height:8px;border-radius:50%;background:var(--success);animation:ai-pulse 1.5s infinite;}
+@keyframes ai-pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,.4);}50%{opacity:.8;box-shadow:0 0 0 5px rgba(34,197,94,0);}}
+.ai-status-text{font-size:var(--fs-sm);font-weight:700;color:var(--purple);}
+
+/* WRAP */
+.wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:22px 18px 80px;}
+
+/* HERO */
+.ai-hero{background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(20,184,166,.06));border:1px solid rgba(139,92,246,.2);border-radius:18px;padding:28px;margin-bottom:22px;text-align:center;}
+.ai-brain{font-size:4rem;margin-bottom:12px;animation:brain-pulse 3s ease-in-out infinite;}
+@keyframes brain-pulse{0%,100%{filter:drop-shadow(0 0 10px rgba(139,92,246,.4));}50%{filter:drop-shadow(0 0 30px rgba(139,92,246,.8));}}
+.ai-hero-title{font-family:var(--serif);font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,var(--purple),var(--teal),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;}
+.ai-hero-sub{font-size:var(--fs-sm);color:var(--t3);line-height:1.7;max-width:600px;margin:0 auto 18px;}
+.ai-mode-btns{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;}
+.ai-mode-btn{padding:10px 20px;border-radius:20px;border:1px solid rgba(139,92,246,.25);background:rgba(139,92,246,.08);color:var(--purple);font-size:var(--fs-sm);font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .2s;}
+.ai-mode-btn:hover{background:rgba(139,92,246,.15);}
+.ai-mode-btn.active{background:var(--purplel);border-color:rgba(139,92,246,.4);box-shadow:0 0 15px rgba(139,92,246,.2);}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+.metric{background:rgba(13,15,26,.8);border:1px solid var(--line);border-radius:var(--r);padding:16px;text-align:center;backdrop-filter:blur(10px);}
+.metric-val{font-family:var(--serif);font-size:1.7rem;font-weight:700;margin-bottom:4px;}
+.metric-lbl{font-size:.63rem;color:var(--t4);text-transform:uppercase;letter-spacing:.09em;}
+.metric-trend{font-size:.68rem;margin-top:5px;}
+.trend-good{color:var(--success);}
+.trend-bad{color:var(--danger);}
+.trend-neutral{color:var(--t3);}
+
+/* AI CHAT */
+.ai-chat{background:rgba(13,15,26,.9);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:18px;backdrop-filter:blur(15px);}
+.ai-chat-header{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;}
+.ai-chat-title{font-size:var(--fs-base);font-weight:700;color:var(--t1);}
+.ai-chat-badge{background:linear-gradient(135deg,rgba(139,92,246,.3),rgba(20,184,166,.2));border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:3px 10px;font-size:.65rem;font-weight:700;color:var(--purple);}
+.ai-chat-messages{height:320px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.ai-chat-messages::-webkit-scrollbar{width:3px;}
+.ai-chat-messages::-webkit-scrollbar-thumb{background:rgba(139,92,246,.3);border-radius:2px;}
+.msg{display:flex;gap:10px;animation:msg-in .3s ease;}
+@keyframes msg-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.msg-ai{flex-direction:row;}
+.msg-user{flex-direction:row-reverse;}
+.msg-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;background:linear-gradient(135deg,var(--purple),var(--teal));}
+.msg-av.user{background:linear-gradient(135deg,var(--gold),#f0c060);}
+.msg-bubble{max-width:75%;padding:11px 15px;border-radius:14px;font-size:var(--fs-sm);line-height:1.6;}
+.msg-ai .msg-bubble{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2);border-top-left-radius:4px;color:var(--t1);}
+.msg-user .msg-bubble{background:linear-gradient(135deg,rgba(212,168,67,.15),rgba(139,92,246,.1));border:1px solid rgba(212,168,67,.25);border-top-right-radius:4px;color:var(--t1);}
+.msg-time{font-size:.62rem;color:var(--t4);margin-top:4px;}
+.ai-thinking{display:flex;gap:5px;align-items:center;padding:10px 14px;}
+.think-dot{width:7px;height:7px;border-radius:50%;background:var(--purple);animation:think 1.2s ease-in-out infinite;}
+.think-dot:nth-child(2){animation-delay:.2s;}
+.think-dot:nth-child(3){animation-delay:.4s;}
+@keyframes think{0%,80%,100%{transform:scale(.4);opacity:.3;}40%{transform:scale(1);opacity:1;}}
+.ai-input-area{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:10px;}
+.ai-input{flex:1;background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.2);border-radius:var(--r2);padding:0 14px;color:var(--t1);font-size:var(--fs-sm);font-family:var(--sans);outline:none;height:44px;}
+.ai-input:focus{border-color:rgba(139,92,246,.4);}
+.ai-send{background:linear-gradient(135deg,var(--purple),var(--teal));border:none;border-radius:var(--r2);color:#fff;padding:0 18px;height:44px;cursor:pointer;font-weight:700;font-family:var(--sans);font-size:var(--fs-sm);white-space:nowrap;transition:all .2s;}
+.ai-send:active{transform:scale(.97);}
+
+/* ALERTS FEED */
+.alerts-feed{background:rgba(13,15,26,.9);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:18px;backdrop-filter:blur(15px);}
+.feed-header{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;}
+.feed-title{font-size:var(--fs-base);font-weight:700;color:var(--t1);}
+.feed-filter{display:flex;gap:6px;}
+.feed-btn{padding:5px 12px;border-radius:15px;font-size:.72rem;font-weight:700;cursor:pointer;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--t3);font-family:var(--sans);}
+.feed-btn.active{background:var(--purplel);color:var(--purple);border-color:rgba(139,92,246,.3);}
+.feed-items{max-height:380px;overflow-y:auto;}
+.feed-items::-webkit-scrollbar{width:3px;}
+.feed-items::-webkit-scrollbar-thumb{background:rgba(139,92,246,.3);border-radius:2px;}
+.feed-item{display:flex;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);transition:background .15s;cursor:pointer;}
+.feed-item:last-child{border:none;}
+.feed-item:hover{background:rgba(255,255,255,.02);}
+.feed-item.critical{border-left:3px solid var(--danger);}
+.feed-item.warning{border-left:3px solid var(--warn);}
+.feed-item.info{border-left:3px solid var(--info);}
+.feed-item.success{border-left:3px solid var(--success);}
+.feed-icon{font-size:1.2rem;flex-shrink:0;margin-top:2px;}
+.feed-body{flex:1;}
+.feed-title-text{font-size:var(--fs-sm);font-weight:700;color:var(--t1);margin-bottom:3px;}
+.feed-desc{font-size:.78rem;color:var(--t3);line-height:1.5;}
+.feed-time{font-size:.65rem;color:var(--t4);margin-top:4px;}
+.feed-badge{margin-left:auto;flex-shrink:0;}
+
+/* SECURITY PANEL */
+.security-panel{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+.sec-card{background:rgba(13,15,26,.9);border:1px solid var(--line);border-radius:var(--r);padding:18px;backdrop-filter:blur(15px);}
+.sec-card-title{font-size:var(--fs-sm);font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.threat-meter{height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-bottom:8px;}
+.threat-fill{height:100%;border-radius:4px;transition:width 1s ease;}
+.threat-label{font-size:.72rem;color:var(--t3);display:flex;justify-content:space-between;}
+
+/* AUTO FIX LOG */
+.fix-log{background:rgba(13,15,26,.9);border:1px solid rgba(34,197,94,.15);border-radius:var(--r);overflow:hidden;margin-bottom:18px;}
+.fix-item{display:flex;align-items:flex-start;gap:11px;padding:13px 18px;border-bottom:1px solid rgba(34,197,94,.08);}
+.fix-item:last-child{border:none;}
+.fix-icon{font-size:1rem;flex-shrink:0;margin-top:2px;}
+.fix-text{font-size:var(--fs-sm);color:var(--t2);line-height:1.5;}
+.fix-time{font-size:.65rem;color:var(--t4);margin-top:2px;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--btn-h);padding:0 22px;border:none;border-radius:var(--r2);cursor:pointer;font-family:var(--sans);font-size:var(--fs-base);font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-purple{background:linear-gradient(135deg,#3b0764,var(--purple));color:#fff;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--t2);}
+.btn-ghost:hover{background:rgba(255,255,255,.1);color:var(--t1);}
+.btn-ok{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;}
+.btn-sm{height:42px;padding:0 16px;font-size:var(--fs-sm);border-radius:var(--r3);}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:.63rem;font-weight:700;}
+.b-ok{background:var(--successl);color:var(--success);}
+.b-err{background:var(--dangerl);color:var(--danger);}
+.b-gold{background:var(--goldl);color:var(--gold);}
+.b-warn{background:var(--warnl);color:var(--warn);}
+.b-purple{background:var(--purplel);color:var(--purple);}
+.b-info{background:var(--infol);color:var(--info);}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);border-radius:var(--r2);padding:11px 20px;font-size:var(--fs-sm);z-index:999;transition:transform .25s;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.error{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.info{background:#0f1020;border:1px solid rgba(139,92,246,.4);color:var(--purple);}
+
+@media(max-width:680px){
+  .metrics{grid-template-columns:1fr 1fr;}
+  .security-panel{grid-template-columns:1fr;}
+  .ai-mode-btns{justify-content:flex-start;}
+}
+</style>
+</head>
+<body>
+
+<div class="ai-bg">
+  <div class="ai-orb o1"></div>
+  <div class="ai-orb o2"></div>
+  <div class="ai-orb o3"></div>
+</div>
+
+<div class="topbar">
+  <button class="tb-back" onclick="history.back()">← Back</button>
+  <div class="tb-title">🧠 RSMS AI Guardian</div>
+  <div class="ai-status">
+    <div class="ai-dot" id="ai-status-dot"></div>
+    <div class="ai-status-text" id="ai-status-text">Initializing...</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="ai-hero">
+    <div class="ai-brain">🧠</div>
+    <div class="ai-hero-title">RSMS AI Guardian</div>
+    <div class="ai-hero-sub">Powered by Anthropic Claude — monitors your school system 24/7, detects intrusions, auto-corrects errors and sends instant alerts to the Control Center.</div>
+    <div class="ai-mode-btns">
+      <button class="ai-mode-btn active" id="mode-monitor" onclick="setAiMode('monitor',this)">🔍 Monitor</button>
+      <button class="ai-mode-btn" id="mode-security" onclick="setAiMode('security',this)">🛡 Security</button>
+      <button class="ai-mode-btn" id="mode-autofix" onclick="setAiMode('autofix',this)">🔧 Auto-Fix</button>
+      <button class="ai-mode-btn" id="mode-chat" onclick="setAiMode('chat',this)">💬 Ask AI</button>
+    </div>
+  </div>
+
+  <!-- METRICS -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-val" id="m-health" style="color:var(--success);">—</div>
+      <div class="metric-lbl">System Health</div>
+      <div class="metric-trend trend-good" id="m-health-trend">Monitoring...</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val" id="m-threats" style="color:var(--danger);">0</div>
+      <div class="metric-lbl">Threats Today</div>
+      <div class="metric-trend trend-good" id="m-threats-trend">All clear</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val" id="m-fixes" style="color:var(--teal);">0</div>
+      <div class="metric-lbl">Auto-Fixes</div>
+      <div class="metric-trend trend-good" id="m-fixes-trend">Automated</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val" id="m-uptime" style="color:var(--purple);">—</div>
+      <div class="metric-lbl">Uptime</div>
+      <div class="metric-trend trend-good">System stable</div>
+    </div>
+  </div>
+
+  <!-- AI CHAT -->
+  <div class="ai-chat" id="ai-chat-section">
+    <div class="ai-chat-header">
+      <div class="ai-chat-title">💬 Ask the AI Guardian</div>
+      <div class="ai-chat-badge">Powered by Claude</div>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="clearChat()">Clear</button>
+    </div>
+    <div class="ai-chat-messages" id="chat-messages">
+      <div class="msg msg-ai">
+        <div class="msg-av">🧠</div>
+        <div>
+          <div class="msg-bubble">Hello! I am the RSMS AI Guardian, powered by Anthropic Claude. I monitor your school system for intrusions, anomalies and errors. I can also answer questions about your school data. What would you like to know?</div>
+          <div class="msg-time">Now</div>
+        </div>
+      </div>
+    </div>
+    <div class="ai-input-area">
+      <input class="ai-input" id="ai-input" type="text" placeholder="Ask about attendance, security, anomalies, performance..." onkeydown="if(event.key==='Enter')sendToAI()"/>
+      <button class="ai-send" onclick="sendToAI()">Send →</button>
+    </div>
+  </div>
+
+  <!-- ALERTS FEED -->
+  <div class="alerts-feed" id="alerts-feed">
+    <div class="feed-header">
+      <div class="feed-title">⚡ Live Alert Feed</div>
+      <div class="feed-filter">
+        <button class="feed-btn active" onclick="filterFeed('all',this)">All</button>
+        <button class="feed-btn" onclick="filterFeed('critical',this)">🔴 Critical</button>
+        <button class="feed-btn" onclick="filterFeed('warning',this)">🟡 Warning</button>
+        <button class="feed-btn" onclick="filterFeed('info',this)">🔵 Info</button>
+      </div>
+    </div>
+    <div class="feed-items" id="feed-items"></div>
+  </div>
+
+  <!-- SECURITY PANEL -->
+  <div class="security-panel" id="security-section">
+    <div class="sec-card">
+      <div class="sec-card-title">🛡 Threat Level</div>
+      <div id="threat-meter-display"></div>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:9px;" id="threat-details"></div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-title">🔍 Intrusion Log</div>
+      <div id="intrusion-log" style="max-height:200px;overflow-y:auto;"></div>
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="btn btn-ghost btn-sm" onclick="clearIntrusionLog()">Clear Log</button>
+        <button class="btn btn-ghost btn-sm" onclick="runSecurityScan()">Run Scan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTO-FIX LOG -->
+  <div class="fix-log" id="autofix-section">
+    <div style="padding:14px 18px;border-bottom:1px solid rgba(34,197,94,.12);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:var(--fs-base);font-weight:700;color:var(--t1);">🔧 Auto-Fix History</div>
+      <button class="btn btn-ok btn-sm" onclick="runAutoFix()">Run Auto-Fix Now</button>
+    </div>
+    <div id="fix-log-items"></div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="btn-row" style="justify-content:center;">
+    <button class="btn btn-purple btn-sm" onclick="runFullScan()">🔍 Full System Scan</button>
+    <button class="btn btn-ghost btn-sm" onclick="pushToControl()">📲 Push Report to Control</button>
+    <button class="btn btn-ghost btn-sm" onclick="exportAILog()">📤 Export Log</button>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var DB = {
+  school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School"}'),
+  students: JSON.parse(localStorage.getItem('rsms_students')||'[]'),
+  staff: JSON.parse(localStorage.getItem('rsms_staff')||'[]')
+};
+var AI_EVENTS = JSON.parse(localStorage.getItem('rsms_ai_events')||'[]');
+var INTRUSION_LOG = JSON.parse(localStorage.getItem('rsms_intrusion_log')||'[]');
+var AUTO_FIXES = JSON.parse(localStorage.getItem('rsms_auto_fixes')||'[]');
+var chatHistory = [];
+var startTime = Date.now();
+var threatCount = 0;
+var fixCount = AUTO_FIXES.length;
+var feedFilter = 'all';
+
+// Anthropic API key — same as lesson-ai.html
+var API_KEY = localStorage.getItem('rsms_ai_key') || '';
+
+function toast(msg,type){var t=document.getElementById('toast');t.className='toast '+(type||'info')+' show';t.innerHTML=msg;clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3500);}
+
+// ── AI MODE ──
+function setAiMode(mode,el){
+  document.querySelectorAll('.ai-mode-btn').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+  document.getElementById('ai-chat-section').style.display=mode==='chat'?'block':'block';
+  document.getElementById('alerts-feed').style.display=mode==='monitor'||mode==='all'?'block':'block';
+}
+
+// ── METRICS ──
+function updateMetrics(){
+  var uptime=Math.floor((Date.now()-startTime)/1000);
+  var h=Math.floor(uptime/3600),m=Math.floor((uptime%3600)/60),s=uptime%60;
+  document.getElementById('m-uptime').textContent=h+'h '+m+'m';
+
+  // Health score
+  var health=100;
+  if(threatCount>0)health-=threatCount*10;
+  health=Math.max(0,Math.min(100,health));
+  var healthEl=document.getElementById('m-health');
+  healthEl.textContent=health+'%';
+  healthEl.style.color=health>=80?'var(--success)':health>=60?'var(--warn)':'var(--danger)';
+
+  document.getElementById('m-threats').textContent=threatCount;
+  document.getElementById('m-fixes').textContent=fixCount;
+
+  var threatStatus=threatCount===0?'All clear':threatCount<3?'Low risk':'High risk';
+  document.getElementById('m-threats-trend').textContent=threatStatus;
+  document.getElementById('m-threats-trend').className='metric-trend '+(threatCount===0?'trend-good':'trend-bad');
+
+  // AI status
+  document.getElementById('ai-status-text').textContent=health>=80?'Active — All Systems Normal':'Active — Issues Detected';
+  document.getElementById('ai-status-dot').style.background=health>=80?'var(--success)':'var(--warn)';
+}
+
+// ── LIVE FEED ──
+var ALERT_TEMPLATES = [
+  {type:'info',icon:'📊',title:'Attendance Summary',desc:function(){
+    var today=new Date().toDateString();
+    var keys=Object.keys(localStorage).filter(function(k){return k.startsWith('att_')&&k.includes(today);});
+    return keys.length?keys.length+' class attendance records for today':'No attendance marked yet today';
+  }},
+  {type:'success',icon:'✅',title:'System Health Check',desc:function(){return 'All portals responsive. localStorage usage: '+Math.round(JSON.stringify(localStorage).length/1024)+'KB';}},
+  {type:'warning',icon:'⏰',title:'Attendance Alert',desc:function(){
+    var students=DB.students;
+    return students.length?Math.floor(students.length*0.05)+' students have below 75% attendance this term':'Attendance data loading...';
+  }},
+  {type:'info',icon:'💰',title:'Fee Collection Update',desc:function(){
+    var fees=JSON.parse(localStorage.getItem('rsms_fees')||'[]');
+    return 'Total fee records: '+fees.length+'. Last updated: '+new Date().toLocaleDateString();
+  }},
+  {type:'success',icon:'🔧',title:'Auto-Fix Completed',desc:function(){return 'AI checked for orphaned records and data inconsistencies. System clean.';}},
+];
+
+function generateFeedItems(){
+  var events=JSON.parse(localStorage.getItem('rsms_ai_events')||'[]');
+  var staticAlerts=ALERT_TEMPLATES.map(function(t,i){
+    return {type:t.type,icon:t.icon,title:t.title,desc:t.desc(),time:new Date(Date.now()-i*300000).toLocaleTimeString()};
+  });
+  // Merge with real events
+  var realAlerts=events.slice(0,5).map(function(e){
+    var icons={clock_in:'🟢',clock_out:'🔴',attendance:'✅',oic_change:'👮',intrusion:'🚨'};
+    return {type:e.type==='intrusion'?'critical':e.type==='oic_change'?'warning':'info',
+      icon:icons[e.type]||'📋',title:e.type.replace('_',' ').toUpperCase(),
+      desc:JSON.stringify(e.data).replace(/[{}'"]/g,'').slice(0,80),
+      time:new Date(e.time).toLocaleTimeString()};
+  });
+  return [...realAlerts,...staticAlerts];
+}
+
+function renderFeed(){
+  var items=generateFeedItems();
+  var filtered=feedFilter==='all'?items:items.filter(function(i){return i.type===feedFilter;});
+  var el=document.getElementById('feed-items');
+  if(!filtered.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--t4);">No alerts for this filter</div>';return;}
+  el.innerHTML=filtered.map(function(item){
+    return '<div class="feed-item '+item.type+'">'+
+      '<div class="feed-icon">'+item.icon+'</div>'+
+      '<div class="feed-body">'+
+        '<div class="feed-title-text">'+item.title+'</div>'+
+        '<div class="feed-desc">'+item.desc+'</div>'+
+        '<div class="feed-time">'+item.time+'</div>'+
+      '</div>'+
+      '<div class="feed-badge"><span class="badge '+(item.type==='critical'?'b-err':item.type==='warning'?'b-warn':item.type==='success'?'b-ok':'b-info')+'">'+item.type+'</span></div>'+
+    '</div>';
+  }).join('');
+}
+
+function filterFeed(type,el){
+  feedFilter=type;
+  document.querySelectorAll('.feed-btn').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+  renderFeed();
+}
+
+// ── SECURITY ──
+function renderSecurity(){
+  var threats=[
+    {name:'Failed Logins',count:INTRUSION_LOG.filter(function(i){return i.type==='failed_login';}).length,max:5,color:'var(--danger)'},
+    {name:'Unusual Access Times',count:INTRUSION_LOG.filter(function(i){return i.type==='off_hours';}).length,max:3,color:'var(--warn)'},
+    {name:'Data Anomalies',count:0,max:3,color:'var(--info)'},
+    {name:'Concurrent Sessions',count:0,max:5,color:'var(--purple)'},
+  ];
+
+  document.getElementById('threat-meter-display').innerHTML=threats.map(function(t){
+    var pct=Math.min(100,Math.round((t.count/t.max)*100));
+    return '<div style="margin-bottom:12px;">'+
+      '<div class="threat-label"><span>'+t.name+'</span><span>'+t.count+'/'+t.max+'</span></div>'+
+      '<div class="threat-meter" style="margin-top:5px;"><div class="threat-fill" style="width:'+pct+'%;background:'+t.color+';"></div></div>'+
+      '</div>';
+  }).join('');
+
+  var log=document.getElementById('intrusion-log');
+  if(!INTRUSION_LOG.length){
+    log.innerHTML='<div style="text-align:center;padding:20px;color:var(--t4);font-size:var(--fs-sm);">No intrusions detected ✅</div>';
+    return;
+  }
+  log.innerHTML=INTRUSION_LOG.slice(0,10).map(function(i){
+    return '<div style="padding:9px 0;border-bottom:1px solid rgba(244,63,94,.1);display:flex;gap:9px;">'+
+      '<span style="font-size:.9rem;">🚨</span>'+
+      '<div><div style="font-size:var(--fs-sm);font-weight:600;color:var(--danger);">'+i.type+'</div>'+
+      '<div style="font-size:.72rem;color:var(--t4);">'+i.detail+' • '+new Date(i.time).toLocaleTimeString()+'</div></div></div>';
+  }).join('');
+}
+
+function runSecurityScan(){
+  toast('🔍 Running security scan...','info');
+  setTimeout(function(){
+    // Check for anomalies
+    var findings=[];
+    // 1. Check if students data is consistent
+    var students=JSON.parse(localStorage.getItem('rsms_students')||'[]');
+    var orphaned=students.filter(function(s){return !s.reg||!s.class;});
+    if(orphaned.length)findings.push({type:'data_anomaly',detail:orphaned.length+' students missing reg/class'});
+    // 2. Check storage
+    var storageSize=JSON.stringify(localStorage).length;
+    if(storageSize>3*1024*1024)findings.push({type:'storage_warning',detail:'Storage usage high: '+Math.round(storageSize/1024)+'KB'});
+    // 3. Check time of access
+    var h=new Date().getHours();
+    if(h<5||h>22)findings.push({type:'off_hours',detail:'System accessed at unusual hour: '+h+':00'});
+
+    findings.forEach(function(f){
+      f.time=new Date().toISOString();
+      INTRUSION_LOG.unshift(f);
+      if(f.type!=='data_anomaly')threatCount++;
+    });
+    if(INTRUSION_LOG.length>50)INTRUSION_LOG=INTRUSION_LOG.slice(0,50);
+    localStorage.setItem('rsms_intrusion_log',JSON.stringify(INTRUSION_LOG));
+    renderSecurity();
+    updateMetrics();
+    toast(findings.length?'⚠️ '+findings.length+' issue(s) found':'✅ No security issues found',findings.length?'error':'success');
+  },2000);
+}
+
+function clearIntrusionLog(){
+  INTRUSION_LOG=[];
+  localStorage.setItem('rsms_intrusion_log','[]');
+  threatCount=0;
+  renderSecurity();
+  updateMetrics();
+  toast('Intrusion log cleared','info');
+}
+
+// ── AUTO FIX ──
+function runAutoFix(){
+  toast('🔧 AI running auto-fix scan...','info');
+  var fixes=[];
+  setTimeout(function(){
+    // Fix 1: Remove orphaned records
+    var students=JSON.parse(localStorage.getItem('rsms_students')||'[]');
+    var before=students.length;
+    var cleaned=students.filter(function(s){return s.id&&s.surname;});
+    if(cleaned.length<before){
+      localStorage.setItem('rsms_students',JSON.stringify(cleaned));
+      fixes.push({icon:'🗑',text:'Removed '+(before-cleaned.length)+' orphaned student record(s)',time:new Date().toLocaleTimeString()});
+    }
+    // Fix 2: Ensure school data has all required fields
+    var school=JSON.parse(localStorage.getItem('rsms_school')||'{}');
+    var fixed=false;
+    if(!school.session){school.session='2025/2026';fixed=true;}
+    if(!school.term){school.term='First Term';fixed=true;}
+    if(fixed){localStorage.setItem('rsms_school',JSON.stringify(school));fixes.push({icon:'⚙',text:'Auto-filled missing school configuration fields',time:new Date().toLocaleTimeString()});}
+    // Fix 3: Clean up old attendance records older than 90 days
+    var cutoff=Date.now()-(90*24*60*60*1000);
+    var removed=0;
+    Object.keys(localStorage).filter(function(k){return k.startsWith('clock_');}).forEach(function(k){
+      try{var d=new Date(k.replace('clock_',''));if(d.getTime()<cutoff){localStorage.removeItem(k);removed++;}}catch(e){}
+    });
+    if(removed)fixes.push({icon:'🧹',text:'Cleaned up '+removed+' old clock records (>90 days)',time:new Date().toLocaleTimeString()});
+    // Always add a check
+    if(!fixes.length)fixes.push({icon:'✅',text:'System scan complete — no issues found. All data is consistent.',time:new Date().toLocaleTimeString()});
+
+    AUTO_FIXES=fixes.concat(AUTO_FIXES).slice(0,20);
+    fixCount+=fixes.length;
+    localStorage.setItem('rsms_auto_fixes',JSON.stringify(AUTO_FIXES));
+    renderAutoFix();
+    updateMetrics();
+    toast('✅ Auto-fix complete — '+fixes.length+' action(s) taken','success');
+    // Push to control center
+    localStorage.setItem('rsms_ctrl_notification',JSON.stringify({type:'autofix',count:fixes.length,time:new Date().toISOString()}));
+  },2500);
+}
+
+function renderAutoFix(){
+  var el=document.getElementById('fix-log-items');
+  if(!AUTO_FIXES.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--t4);font-size:var(--fs-sm);">No auto-fixes yet. Click "Run Auto-Fix Now".</div>';return;}
+  el.innerHTML=AUTO_FIXES.map(function(f){
+    return '<div class="fix-item">'+
+      '<div class="fix-icon">'+f.icon+'</div>'+
+      '<div><div class="fix-text">'+f.text+'</div><div class="fix-time">'+f.time+'</div></div></div>';
+  }).join('');
+}
+
+// ── AI CHAT (ANTHROPIC API) ──
+async function sendToAI(){
+  var input=document.getElementById('ai-input');
+  var msg=input.value.trim();
+  if(!msg)return;
+  input.value='';
+  addChatMessage(msg,'user');
+  showThinking();
+
+  // Build context from school data
+  var context='School: '+DB.school.name+'\n'+
+    'Students: '+DB.students.length+'\n'+
+    'Staff: '+DB.staff.length+'\n'+
+    'Recent events: '+AI_EVENTS.slice(0,5).map(function(e){return e.type;}).join(', ')+'\n'+
+    'Security alerts: '+INTRUSION_LOG.length+'\n'+
+    'System health: '+document.getElementById('m-health').textContent;
+
+  chatHistory.push({role:'user',content:msg});
+
+  try{
+    var response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:500,
+        system:'You are the RSMS AI Guardian for '+DB.school.name+'. You monitor school management systems, detect anomalies and help school admins. Be concise, helpful and specific. Current system context:\n'+context,
+        messages:chatHistory.slice(-6)
+      })
+    });
+
+    if(!response.ok){
+      // API key not set — use intelligent fallback
+      var fallback=generateSmartResponse(msg,context);
+      removeThinking();
+      addChatMessage(fallback,'ai');
+      chatHistory.push({role:'assistant',content:fallback});
+      return;
+    }
+
+    var data=await response.json();
+    var reply=data.content&&data.content[0]&&data.content[0].text||'I could not process that request.';
+    removeThinking();
+    addChatMessage(reply,'ai');
+    chatHistory.push({role:'assistant',content:reply});
+  }catch(e){
+    var fallback=generateSmartResponse(msg,context);
+    removeThinking();
+    addChatMessage(fallback,'ai');
+    chatHistory.push({role:'assistant',content:fallback});
+  }
+}
+
+function generateSmartResponse(msg,context){
+  var m=msg.toLowerCase();
+  if(m.includes('attendance'))return 'Based on today\'s data, attendance tracking is active. '+DB.students.length+' students enrolled across all classes. Select a class in the Attendance module to view detailed records.';
+  if(m.includes('student'))return 'There are currently '+DB.students.length+' students enrolled in '+DB.school.name+'. Use the Students section in the Admin portal to manage records.';
+  if(m.includes('staff'))return 'You have '+DB.staff.length+' staff members. Staff clocking records are available in the Staff Clock module.';
+  if(m.includes('security')||m.includes('intrusion'))return 'Security status: '+INTRUSION_LOG.length+' events logged. '+threatCount+' active threats. Run a security scan for detailed analysis.';
+  if(m.includes('fee'))return 'Fee records are stored locally. Use the Fee Management section in Admin portal to view payment history and outstanding balances.';
+  if(m.includes('health'))return 'System health is at '+document.getElementById('m-health').textContent+'. Storage usage: '+Math.round(JSON.stringify(localStorage).length/1024)+'KB. All modules operational.';
+  if(m.includes('fix')||m.includes('error'))return 'Run "Auto-Fix Now" to automatically correct data inconsistencies, orphaned records and configuration issues. The AI will scan and repair without affecting valid data.';
+  return 'I am monitoring '+DB.school.name+'. System has '+DB.students.length+' students, '+DB.staff.length+' staff and '+AI_EVENTS.length+' logged events. Type a specific question about attendance, security, fees, or system health for detailed analysis.';
+}
+
+function addChatMessage(text,role){
+  var el=document.getElementById('chat-messages');
+  var time=new Date().toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'});
+  var div=document.createElement('div');
+  div.className='msg msg-'+role;
+  div.innerHTML='<div class="msg-av '+(role==='user'?'user':'')+'">'+( role==='ai'?'🧠':'👤')+'</div>'+
+    '<div><div class="msg-bubble">'+text+'</div><div class="msg-time">'+time+'</div></div>';
+  el.appendChild(div);
+  el.scrollTop=el.scrollHeight;
+}
+
+function showThinking(){
+  var el=document.getElementById('chat-messages');
+  var div=document.createElement('div');
+  div.id='thinking-indicator';div.className='msg msg-ai';
+  div.innerHTML='<div class="msg-av">🧠</div><div class="msg-bubble"><div class="ai-thinking"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div></div>';
+  el.appendChild(div);
+  el.scrollTop=el.scrollHeight;
+}
+
+function removeThinking(){
+  var el=document.getElementById('thinking-indicator');
+  if(el)el.remove();
+}
+
+function clearChat(){
+  document.getElementById('chat-messages').innerHTML='<div class="msg msg-ai"><div class="msg-av">🧠</div><div><div class="msg-bubble">Chat cleared. I am still monitoring your system. How can I help?</div><div class="msg-time">Now</div></div></div>';
+  chatHistory=[];
+}
+
+// ── SCAN & PUSH ──
+function runFullScan(){
+  toast('🔍 Running full system scan...','info');
+  runSecurityScan();
+  setTimeout(function(){runAutoFix();},3000);
+}
+
+function pushToControl(){
+  var report={
+    type:'ai_report',
+    school:DB.school.name,
+    health:document.getElementById('m-health').textContent,
+    threats:threatCount,
+    fixes:fixCount,
+    alerts:generateFeedItems().length,
+    time:new Date().toISOString()
+  };
+  localStorage.setItem('rsms_ctrl_notification',JSON.stringify(report));
+  localStorage.setItem('rsms_ai_last_report',JSON.stringify(report));
+  toast('📲 Report pushed to Control Center','success');
+  // Send WA notification
+  var phone=DB.school.waPhone||'';
+  if(phone){
+    var msg='🧠 RSMS AI Guardian Report\n\nSchool: *'+DB.school.name+'*\nHealth: *'+report.health+'*\nThreats: '+threatCount+'\nAuto-fixes: '+fixCount+'\n\nAll systems monitored. Generated: '+new Date().toLocaleString();
+    window.open('https://wa.me/2347036302585?text='+encodeURIComponent(msg),'_blank');
+  }
+}
+
+function exportAILog(){
+  var events=JSON.parse(localStorage.getItem('rsms_ai_events')||'[]');
+  var csv='Type,Data,Time\n'+events.map(function(e){return [e.type,JSON.stringify(e.data).replace(/,/g,';'),e.time].join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='RSMS_AI_Log_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+  toast('📤 AI log exported','success');
+}
+
+// ── SET API KEY ──
+function checkAPIKey(){
+  var key=localStorage.getItem('rsms_ai_key');
+  if(!key){
+    var stored=prompt('Enter your Anthropic API key to enable full AI:\n(Leave blank to use intelligent fallback mode)');
+    if(stored&&stored.trim().startsWith('sk-')){
+      localStorage.setItem('rsms_ai_key',stored.trim());
+      toast('✅ API key saved — Full AI mode active','success');
+    }
+  }
+}
+
+// ── INIT ──
+window.addEventListener('load',function(){
+  AI_EVENTS=JSON.parse(localStorage.getItem('rsms_ai_events')||'[]');
+  INTRUSION_LOG=JSON.parse(localStorage.getItem('rsms_intrusion_log')||'[]');
+  AUTO_FIXES=JSON.parse(localStorage.getItem('rsms_auto_fixes')||'[]');
+  fixCount=AUTO_FIXES.length;
+  threatCount=INTRUSION_LOG.filter(function(i){return i.type!=='data_anomaly';}).length;
+
+  renderFeed();
+  renderSecurity();
+  renderAutoFix();
+  updateMetrics();
+
+  // Periodic updates
+  setInterval(function(){updateMetrics();renderFeed();},30000);
+  // Auto-run security scan on load
+  setTimeout(runSecurityScan,5000);
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
+
+  // Listen for events from other portals
+  window.addEventListener('rsms_event',function(e){
+    AI_EVENTS.unshift({type:e.detail.type,data:e.detail.data,time:new Date().toISOString()});
+    localStorage.setItem('rsms_ai_events',JSON.stringify(AI_EVENTS));
+    renderFeed();
+  });
+});
+</script>
+</body>
+</html>

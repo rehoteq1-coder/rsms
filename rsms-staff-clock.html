@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0d0f1a"/>
+<link rel="manifest" href="manifest.json"/>
+<title>RSMS — Staff Clock In/Out</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--panel:#0d0f1a;--card:#111420;--card2:#161929;
+  --line:rgba(255,255,255,0.07);--line2:rgba(255,255,255,0.13);
+  --gold:#d4a843;--goldl:rgba(212,168,67,0.1);
+  --success:#22c55e;--successl:rgba(34,197,94,0.1);
+  --danger:#f43f5e;--dangerl:rgba(244,63,94,0.1);
+  --warn:#f59e0b;--warnl:rgba(245,158,11,0.1);
+  --info:#3b82f6;--infol:rgba(59,130,246,0.1);
+  --purple:#8b5cf6;--purplel:rgba(139,92,246,0.1);
+  --teal:#14b8a6;--teall:rgba(20,184,166,0.1);
+  --t1:#f0f2ff;--t2:rgba(240,242,255,0.65);--t3:rgba(240,242,255,0.35);--t4:rgba(240,242,255,0.14);
+  --r:14px;--r2:10px;--r3:7px;--serif:'Fraunces',serif;--sans:'Outfit',sans-serif;
+  --fs-sm:.86rem;--fs-base:.94rem;--fs-lg:1.06rem;--btn-h:52px;--input-h:50px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;}
+.topbar{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.tb-back{background:none;border:1px solid var(--line2);border-radius:var(--r3);color:var(--t3);cursor:pointer;font-size:var(--fs-sm);padding:8px 15px;font-family:var(--sans);}
+.tb-title{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;color:var(--t1);}
+.tb-right{margin-left:auto;display:flex;gap:9px;}
+.wrap{max-width:900px;margin:0 auto;padding:22px 18px 80px;}
+
+/* LIVE CLOCK */
+.live-clock{background:linear-gradient(135deg,#1a0a3e,#0a1a3e);border:1px solid rgba(212,168,67,.2);border-radius:var(--r);padding:22px;text-align:center;margin-bottom:20px;}
+.lc-time{font-family:var(--serif);font-size:3.2rem;font-weight:900;color:var(--gold);line-height:1;margin-bottom:4px;letter-spacing:.04em;}
+.lc-date{font-size:var(--fs-sm);color:rgba(255,255,255,.5);}
+.lc-day{font-size:var(--fs-lg);font-weight:700;color:rgba(255,255,255,.8);margin-bottom:3px;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:14px;text-align:center;}
+.stat-val{font-family:var(--serif);font-size:1.6rem;font-weight:700;margin-bottom:3px;}
+.stat-lbl{font-size:.63rem;color:var(--t4);text-transform:uppercase;letter-spacing:.08em;}
+
+/* TABS */
+.tabs{display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap;}
+.tab{padding:10px 18px;border-radius:20px;font-size:var(--fs-sm);font-weight:700;cursor:pointer;border:1px solid var(--line);background:var(--card2);color:var(--t3);transition:all .2s;font-family:var(--sans);}
+.tab.active{background:var(--goldl);color:var(--gold);border-color:rgba(212,168,67,.3);}
+
+/* OFFICER IN CHARGE BANNER */
+.oic-banner{background:linear-gradient(135deg,rgba(212,168,67,.1),rgba(139,92,246,.08));border:1px solid rgba(212,168,67,.25);border-radius:var(--r);padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;}
+.oic-badge{background:var(--gold);color:#000;font-size:.68rem;font-weight:800;padding:4px 10px;border-radius:5px;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;}
+.oic-name{font-size:var(--fs-lg);font-weight:700;color:var(--t1);}
+.oic-role{font-size:var(--fs-sm);color:var(--t3);}
+.oic-since{font-size:.72rem;color:var(--t4);margin-left:auto;}
+.oic-change{background:none;border:1px solid rgba(212,168,67,.25);border-radius:var(--r3);color:var(--gold);font-size:.78rem;padding:7px 14px;cursor:pointer;font-family:var(--sans);font-weight:700;transition:all .18s;}
+.oic-change:hover{background:var(--goldl);}
+
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;animation:pg-in .25s ease;}
+@keyframes pg-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+/* STAFF CARD */
+.staff-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:0;overflow:hidden;margin-bottom:10px;transition:all .2s;}
+.staff-card:hover{border-color:var(--line2);}
+.staff-card-inner{display:flex;align-items:center;gap:14px;padding:16px 18px;}
+.staff-av{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.2rem;font-weight:700;color:#fff;flex-shrink:0;}
+.staff-info{flex:1;min-width:0;}
+.staff-name{font-size:var(--fs-base);font-weight:700;color:var(--t1);margin-bottom:2px;}
+.staff-role{font-size:var(--fs-sm);color:var(--t3);}
+.staff-times{display:flex;gap:14px;font-size:.72rem;margin-top:5px;flex-wrap:wrap;}
+.time-in{color:var(--success);}
+.time-out{color:var(--danger);}
+.time-duration{color:var(--warn);}
+.staff-actions{display:flex;gap:8px;align-items:center;flex-shrink:0;}
+
+/* CLOCK BUTTONS */
+.clock-in-btn{padding:10px 16px;background:linear-gradient(135deg,#052e16,var(--success));border:none;border-radius:var(--r2);color:#fff;font-family:var(--sans);font-size:var(--fs-sm);font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.clock-in-btn:active{transform:scale(.96);}
+.clock-out-btn{padding:10px 16px;background:linear-gradient(135deg,#4c0519,var(--danger));border:none;border-radius:var(--r2);color:#fff;font-family:var(--sans);font-size:var(--fs-sm);font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.clock-out-btn:active{transform:scale(.96);}
+.clocked-done{padding:10px 14px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:var(--r2);color:var(--t4);font-size:var(--fs-sm);font-weight:700;text-align:center;}
+
+/* QR CLOCK */
+.qr-clock-area{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;}
+.qr-header{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;}
+.qr-camera-area{position:relative;background:#000;min-height:280px;display:flex;align-items:center;justify-content:center;}
+.qr-video{width:100%;max-height:320px;object-fit:cover;display:none;}
+.qr-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;display:none;}
+.qr-frame{width:200px;height:200px;border:3px solid var(--gold);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);}
+.qr-scan-line{position:absolute;top:0;left:10%;right:10%;height:2px;background:var(--gold);box-shadow:0 0 8px var(--gold);animation:scanline 2s ease-in-out infinite;}
+@keyframes scanline{0%,100%{top:10%;}50%{top:88%;}}
+.qr-placeholder{text-align:center;padding:40px 20px;}
+
+/* HISTORY TABLE */
+.hist-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--line);}
+.hist-table{width:100%;border-collapse:collapse;font-size:var(--fs-sm);}
+.hist-table thead{background:var(--card2);}
+.hist-table th{padding:11px 14px;text-align:left;font-size:.63rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;border-bottom:1px solid var(--line);}
+.hist-table td{padding:12px 14px;border-bottom:1px solid var(--line);color:var(--t2);vertical-align:middle;}
+.hist-table tr:last-child td{border:none;}
+.hist-table tbody tr:hover td{background:rgba(255,255,255,.02);color:var(--t1);}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.fg label{font-size:.63rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;}
+.fi{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:0 14px;color:var(--t1);font-size:var(--fs-base);font-family:var(--sans);outline:none;width:100%;height:var(--input-h);transition:all .2s;}
+.fi:focus{border-color:rgba(212,168,67,.4);}
+select.fi{cursor:pointer;}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--btn-h);padding:0 22px;border:none;border-radius:var(--r2);cursor:pointer;font-family:var(--sans);font-size:var(--fs-base);font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-gold{background:linear-gradient(135deg,#4a2500,var(--gold));color:#000;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--t2);}
+.btn-ghost:hover{background:rgba(255,255,255,.1);color:var(--t1);}
+.btn-ok{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;}
+.btn-sm{height:42px;padding:0 16px;font-size:var(--fs-sm);border-radius:var(--r3);}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:.63rem;font-weight:700;}
+.b-ok{background:var(--successl);color:var(--success);}
+.b-err{background:var(--dangerl);color:var(--danger);}
+.b-gold{background:var(--goldl);color:var(--gold);}
+.b-warn{background:var(--warnl);color:var(--warn);}
+.b-purple{background:var(--purplel);color:var(--purple);}
+.b-teal{background:var(--teall);color:var(--teal);}
+.b-mute{background:rgba(255,255,255,.05);color:var(--t3);}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-ov.show{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--line2);border-radius:18px;padding:24px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;animation:m-in .25s cubic-bezier(.34,1.56,.64,1);}
+@keyframes m-in{from{opacity:0;transform:scale(.92);}to{opacity:1;transform:none;}}
+.m-title{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--t1);margin-bottom:4px;}
+.m-sub{font-size:var(--fs-sm);color:var(--t2);margin-bottom:16px;}
+.m-close{float:right;background:none;border:none;color:var(--t3);font-size:1.2rem;cursor:pointer;padding:2px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);border-radius:var(--r2);padding:11px 20px;font-size:var(--fs-sm);z-index:999;transition:transform .25s;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.error{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.info{background:#0f1020;border:1px solid rgba(212,168,67,.35);color:var(--gold);}
+
+@media(max-width:680px){
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .staff-card-inner{flex-wrap:wrap;gap:10px;}
+  .staff-actions{width:100%;justify-content:flex-end;}
+  .f2{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="tb-back" onclick="history.back()">← Back</button>
+  <div class="tb-title">🕐 Staff Clock In / Out</div>
+  <div class="tb-right">
+    <button class="btn btn-ghost btn-sm" onclick="exportRecords()">📤 Export</button>
+    <button class="btn btn-gold btn-sm" onclick="openM('m-oic')">👮 Set OIC</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- LIVE CLOCK -->
+  <div class="live-clock">
+    <div class="lc-day" id="lc-day">—</div>
+    <div class="lc-time" id="lc-time">00:00:00</div>
+    <div class="lc-date" id="lc-date">—</div>
+  </div>
+
+  <!-- OIC BANNER -->
+  <div class="oic-banner" id="oic-banner">
+    <div class="oic-badge">Officer In Charge</div>
+    <div>
+      <div class="oic-name" id="oic-name">Not assigned</div>
+      <div class="oic-role" id="oic-role">Click "Set OIC" to assign</div>
+    </div>
+    <div class="oic-since" id="oic-since"></div>
+    <button class="oic-change" onclick="openM('m-oic')">Change OIC</button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat">
+      <div class="stat-val" id="stat-in" style="color:var(--success);">0</div>
+      <div class="stat-lbl">Clocked In</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-out" style="color:var(--danger);">0</div>
+      <div class="stat-lbl">Not Yet In</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-done" style="color:var(--teal);">0</div>
+      <div class="stat-lbl">Clocked Out</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-late" style="color:var(--warn);">0</div>
+      <div class="stat-lbl">Late Arrival</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('manual',this)">✍️ Manual Clock</div>
+    <div class="tab" onclick="showTab('qr',this)">📷 QR Clock</div>
+    <div class="tab" onclick="showTab('history',this)">📋 History</div>
+    <div class="tab" onclick="showTab('report',this)">📊 Monthly Report</div>
+  </div>
+
+  <!-- ── MANUAL CLOCK ── -->
+  <div class="page active" id="tab-manual">
+    <div id="staff-list"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="openM('m-add-staff')">+ Add Staff Member</button>
+      <button class="btn btn-ok" onclick="saveAllClock()">💾 Save Today's Records</button>
+    </div>
+  </div>
+
+  <!-- ── QR CLOCK ── -->
+  <div class="page" id="tab-qr">
+    <div class="qr-clock-area">
+      <div class="qr-header">
+        <div style="font-size:var(--fs-lg);font-weight:700;color:var(--t1);">📷 QR Staff Clock</div>
+        <div style="display:flex;gap:8px;">
+          <select class="fi" id="qr-clock-type" style="height:42px;width:150px;">
+            <option value="in">Clock IN</option>
+            <option value="out">Clock OUT</option>
+          </select>
+          <button class="btn btn-gold btn-sm" id="qr-cl-start" onclick="startClockQR()">▶ Start</button>
+          <button class="btn btn-ghost btn-sm" id="qr-cl-stop" style="display:none;" onclick="stopClockQR()">⏹ Stop</button>
+        </div>
+      </div>
+      <div class="qr-camera-area" id="cl-camera-area">
+        <video id="cl-video" class="qr-video" playsinline autoplay muted></video>
+        <canvas id="cl-canvas" style="display:none;"></canvas>
+        <div id="cl-overlay" class="qr-overlay">
+          <div style="position:relative;">
+            <div class="qr-frame"></div>
+            <div class="qr-scan-line"></div>
+          </div>
+        </div>
+        <div class="qr-placeholder" id="cl-placeholder">
+          <div style="font-size:3rem;margin-bottom:12px;">📷</div>
+          <div style="font-size:var(--fs-lg);font-weight:700;color:var(--t1);margin-bottom:6px;">QR Staff Clock</div>
+          <div style="font-size:var(--fs-sm);color:var(--t3);margin-bottom:16px;">Staff scan their personal QR code to clock in or out automatically</div>
+          <button class="btn btn-gold btn-sm" onclick="startClockQR()">▶ Start Camera</button>
+        </div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--line);min-height:56px;display:flex;align-items:center;gap:12px;" id="cl-result">
+        <div style="font-size:1.3rem;">👁</div>
+        <div>
+          <div style="font-size:var(--fs-base);font-weight:600;color:var(--t1);">Waiting for QR scan...</div>
+          <div style="font-size:var(--fs-sm);color:var(--t3);">Point camera at staff QR code</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HISTORY ── -->
+  <div class="page" id="tab-history">
+    <div class="fg" style="margin-bottom:16px;">
+      <label>Select Date</label>
+      <input class="fi" type="date" id="hist-date" onchange="loadHistory()"/>
+    </div>
+    <div class="hist-wrap">
+      <table class="hist-table">
+        <thead>
+          <tr><th>Staff</th><th>Role</th><th>Clock In</th><th>Clock Out</th><th>Duration</th><th>Status</th></tr>
+        </thead>
+        <tbody id="hist-tbody">
+          <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--t4);">Select a date to view records</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" onclick="exportRecords()">📤 Export CSV</button>
+    </div>
+  </div>
+
+  <!-- ── MONTHLY REPORT ── -->
+  <div class="page" id="tab-report">
+    <div class="f2" style="margin-bottom:18px;">
+      <div class="fg"><label>Month</label>
+        <select class="fi" id="rpt-month">
+          <option value="0">January</option><option value="1">February</option>
+          <option value="2">March</option><option value="3">April</option>
+          <option value="4">May</option><option value="5">June</option>
+          <option value="6">July</option><option value="7">August</option>
+          <option value="8">September</option><option value="9">October</option>
+          <option value="10">November</option><option value="11">December</option>
+        </select>
+      </div>
+      <div class="fg"><label>Year</label>
+        <input class="fi" type="number" id="rpt-year" value="2025"/>
+      </div>
+    </div>
+    <button class="btn btn-gold btn-sm" onclick="generateMonthlyReport()" style="margin-bottom:16px;">Generate Report</button>
+    <div id="monthly-report"></div>
+  </div>
+
+</div>
+
+<!-- SET OIC MODAL -->
+<div class="modal-ov" id="m-oic">
+  <div class="modal">
+    <button class="m-close" onclick="closeM('m-oic')">✕</button>
+    <div class="m-title">👮 Set Officer In Charge</div>
+    <div class="m-sub">The OIC is responsible for school operations in the Principal's absence.</div>
+    <div class="fg"><label>Select Staff Member *</label>
+      <select class="fi" id="oic-select">
+        <option value="">— Select Staff —</option>
+      </select>
+    </div>
+    <div class="fg"><label>OIC Designation</label>
+      <input class="fi" id="oic-designation" type="text" placeholder="e.g. Acting Principal, Deputy Head"/>
+    </div>
+    <div class="fg"><label>From Date</label>
+      <input class="fi" id="oic-from" type="date"/>
+    </div>
+    <div class="fg"><label>To Date (optional)</label>
+      <input class="fi" id="oic-to" type="date"/>
+    </div>
+    <div class="fg"><label>Reason / Notes</label>
+      <textarea class="fi" style="height:auto;min-height:70px;padding:11px 14px;" id="oic-notes" placeholder="e.g. Principal on leave, medical appointment..."></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeM('m-oic')" style="flex:1;">Cancel</button>
+      <button class="btn btn-gold" onclick="setOIC()" style="flex:2;">✅ Set Officer In Charge</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD STAFF MODAL -->
+<div class="modal-ov" id="m-add-staff">
+  <div class="modal">
+    <button class="m-close" onclick="closeM('m-add-staff')">✕</button>
+    <div class="m-title">Add Staff Member</div>
+    <div class="fg"><label>Full Name *</label><input class="fi" id="ns-name" type="text" placeholder="Full name"/></div>
+    <div class="f2">
+      <div class="fg"><label>Role *</label>
+        <select class="fi" id="ns-role">
+          <option>Teacher</option><option>Vice Principal</option><option>Bursar</option>
+          <option>Admin Staff</option><option>Security</option><option>Cleaner</option>
+          <option>Librarian</option><option>Lab Technician</option>
+        </select>
+      </div>
+      <div class="fg"><label>Department</label>
+        <input class="fi" id="ns-dept" type="text" placeholder="e.g. Sciences"/>
+      </div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Staff ID</label><input class="fi" id="ns-sid" type="text" placeholder="Auto-generated"/></div>
+      <div class="fg"><label>Phone</label><input class="fi" id="ns-phone" type="tel" placeholder="080XXXXXXXX"/></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeM('m-add-staff')" style="flex:1;">Cancel</button>
+      <button class="btn btn-gold" onclick="addStaff()" style="flex:2;">✅ Add Staff</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
+<script>
+var DB={
+  school:JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School"}'),
+  staff:JSON.parse(localStorage.getItem('rsms_staff')||'[]')
+};
+var todayKey='clock_'+new Date().toDateString();
+var clockRecords=JSON.parse(localStorage.getItem(todayKey)||'{}');
+var OIC=JSON.parse(localStorage.getItem('rsms_oic')||'null');
+var LATE_THRESHOLD='07:45'; // After this time = late
+
+// Ensure we have sample staff if empty
+if(!DB.staff.length){
+  DB.staff=[
+    {id:'st1',name:'Mr. Adeyemi James',role:'Teacher',dept:'Mathematics',staffId:'TCH-001',phone:'08012345678'},
+    {id:'st2',name:'Mrs. Okafor Blessing',role:'Teacher',dept:'English',staffId:'TCH-002',phone:'08023456789'},
+    {id:'st3',name:'Mr. Hassan Musa',role:'Vice Principal',dept:'Administration',staffId:'ADM-001',phone:'08034567890'},
+    {id:'st4',name:'Mrs. Babatunde Grace',role:'Bursar',dept:'Finance',staffId:'BUR-001',phone:'08045678901'},
+    {id:'st5',name:'Mr. Eze Emmanuel',role:'Teacher',dept:'Sciences',staffId:'TCH-003',phone:'08056789012'},
+    {id:'st6',name:'Mrs. Akinola Fatima',role:'Librarian',dept:'Library',staffId:'LIB-001',phone:'08067890123'},
+  ];
+}
+
+function toast(msg,type){var t=document.getElementById('toast');t.className='toast '+(type||'info')+' show';t.innerHTML=msg;clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3500);}
+function openM(id){document.getElementById(id).classList.add('show');if(id==='m-oic')populateOICSelect();}
+function closeM(id){document.getElementById(id).classList.remove('show');}
+
+// ── LIVE CLOCK ──
+function updateClock(){
+  var now=new Date();
+  document.getElementById('lc-time').textContent=now.toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('lc-day').textContent=now.toLocaleDateString('en-NG',{weekday:'long'});
+  document.getElementById('lc-date').textContent=now.toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'});
+}
+setInterval(updateClock,1000);updateClock();
+
+// ── TABS ──
+function showTab(name,el){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  if(name==='history'){
+    document.getElementById('hist-date').value=new Date().toISOString().split('T')[0];
+    loadHistory();
+  }
+}
+
+// ── OIC ──
+function loadOIC(){
+  OIC=JSON.parse(localStorage.getItem('rsms_oic')||'null');
+  if(OIC){
+    document.getElementById('oic-name').textContent=OIC.name;
+    document.getElementById('oic-role').textContent=OIC.designation||OIC.role||'Officer In Charge';
+    document.getElementById('oic-since').textContent='Since '+OIC.from;
+  }
+}
+
+function populateOICSelect(){
+  var sel=document.getElementById('oic-select');
+  sel.innerHTML='<option value="">— Select Staff —</option>'+
+    DB.staff.map(function(s){return '<option value="'+s.id+'">'+s.name+' ('+s.role+')</option>';}).join('');
+  if(OIC)sel.value=OIC.id;
+  var fromEl=document.getElementById('oic-from');
+  if(!fromEl.value)fromEl.value=new Date().toISOString().split('T')[0];
+}
+
+function setOIC(){
+  var id=document.getElementById('oic-select').value;
+  var desig=document.getElementById('oic-designation').value.trim();
+  var from=document.getElementById('oic-from').value;
+  var to=document.getElementById('oic-to').value;
+  var notes=document.getElementById('oic-notes').value;
+  if(!id){toast('⚠️ Select a staff member','error');return;}
+  var staff=DB.staff.find(function(s){return s.id===id;});
+  if(!staff)return;
+  OIC={id:id,name:staff.name,role:staff.role,designation:desig||'Acting Principal',from:from,to:to,notes:notes,setAt:new Date().toISOString()};
+  localStorage.setItem('rsms_oic',JSON.stringify(OIC));
+  loadOIC();
+  closeM('m-oic');
+  toast('✅ '+staff.name+' set as OIC','success');
+  // Log to AI monitor
+  logEvent('oic_change',{name:staff.name,designation:OIC.designation,from:from});
+}
+
+// ── STAFF LIST ──
+function renderStaffList(){
+  var inCount=0,outCount=0,doneCount=0,lateCount=0;
+  var html=DB.staff.map(function(s){
+    var rec=clockRecords[s.id]||{};
+    var inTime=rec.in||'';var outTime=rec.out||'';
+    var isOIC=OIC&&OIC.id===s.id;
+    var status='out';
+    if(inTime&&!outTime)status='in';
+    else if(inTime&&outTime)status='done';
+    if(status==='in')inCount++;
+    else if(status==='done')doneCount++;
+    else outCount++;
+    var isLate=inTime&&inTime>LATE_THRESHOLD;
+    if(isLate)lateCount++;
+
+    var duration='';
+    if(inTime&&outTime){
+      var inParts=inTime.split(':');var outParts=outTime.split(':');
+      var mins=(parseInt(outParts[0])*60+parseInt(outParts[1]))-(parseInt(inParts[0])*60+parseInt(inParts[1]));
+      if(mins>0)duration=Math.floor(mins/60)+'h '+(mins%60)+'m';
+    }
+
+    // Avatar color based on role
+    var avatarColors={Teacher:'linear-gradient(135deg,#0a3d38,#14b8a6)',
+      'Vice Principal':'linear-gradient(135deg,#1a0a3e,#8b5cf6)',
+      Bursar:'linear-gradient(135deg,#4a2500,#d4a843)',
+      'Admin Staff':'linear-gradient(135deg,#1e3a5f,#3b82f6)',
+      Security:'linear-gradient(135deg,#4c0519,#f43f5e)',
+      Librarian:'linear-gradient(135deg,#052e16,#22c55e)'};
+    var color=avatarColors[s.role]||'linear-gradient(135deg,#1a0a3e,#8b5cf6)';
+    var initials=s.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+
+    return '<div class="staff-card" id="scard-'+s.id+'">'+
+      '<div class="staff-card-inner">'+
+        '<div class="staff-av" style="background:'+color+';">'+initials+'</div>'+
+        '<div class="staff-info">'+
+          '<div class="staff-name">'+s.name+(isOIC?'<span class="badge b-gold" style="margin-left:8px;font-size:.58rem;">OIC</span>':'')+
+          (isLate?'<span class="badge b-warn" style="margin-left:6px;font-size:.58rem;">Late</span>':'')+'</div>'+
+          '<div class="staff-role">'+s.role+(s.dept?' • '+s.dept:'')+'</div>'+
+          '<div class="staff-times">'+
+            (inTime?'<span class="time-in">🟢 In: '+inTime+'</span>':'')+
+            (outTime?'<span class="time-out">🔴 Out: '+outTime+'</span>':'')+
+            (duration?'<span class="time-duration">⏱ '+duration+'</span>':'')+
+          '</div>'+
+        '</div>'+
+        '<div class="staff-actions">'+
+          (status==='out'?
+            '<button class="clock-in-btn" data-id="'+s.id+'" onclick="clockIn(\''+s.id+'\')">🟢 Clock In</button>':
+            status==='in'?
+            '<button class="clock-out-btn" data-id="'+s.id+'" onclick="clockOut(\''+s.id+'\')">🔴 Clock Out</button>':
+            '<div class="clocked-done">✅ Done</div>'
+          )+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  document.getElementById('staff-list').innerHTML=html||'<div style="text-align:center;padding:30px;color:var(--t4);">No staff added yet. Click "+ Add Staff Member"</div>';
+  document.getElementById('stat-in').textContent=inCount;
+  document.getElementById('stat-out').textContent=outCount;
+  document.getElementById('stat-done').textContent=doneCount;
+  document.getElementById('stat-late').textContent=lateCount;
+}
+
+// ── CLOCK IN/OUT ──
+function clockIn(id){
+  var staff=DB.staff.find(function(s){return s.id===id;});if(!staff)return;
+  var now=new Date();
+  var time=now.toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'});
+  var time24=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  if(!clockRecords[id])clockRecords[id]={};
+  clockRecords[id].in=time;
+  clockRecords[id].in24=time24;
+  clockRecords[id].name=staff.name;
+  clockRecords[id].role=staff.role;
+  clockRecords[id].late=time24>LATE_THRESHOLD;
+  saveClockRecords();
+  renderStaffList();
+  toast('🟢 '+staff.name+' clocked IN at '+time+(clockRecords[id].late?' — Late':''),'success');
+  logEvent('clock_in',{name:staff.name,time:time,late:clockRecords[id].late});
+}
+
+function clockOut(id){
+  var staff=DB.staff.find(function(s){return s.id===id;});if(!staff)return;
+  var now=new Date();
+  var time=now.toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'});
+  if(!clockRecords[id])clockRecords[id]={};
+  clockRecords[id].out=time;
+  var inTime=clockRecords[id].in||'';
+  clockRecords[id].name=staff.name;
+  clockRecords[id].role=staff.role;
+  saveClockRecords();
+  renderStaffList();
+  toast('🔴 '+staff.name+' clocked OUT at '+time,'info');
+  logEvent('clock_out',{name:staff.name,time:time});
+  // WhatsApp notification to admin
+  if(confirm('Send WhatsApp notification to admin that '+staff.name+' clocked out?')){
+    var adminPhone=DB.school.waPhone||'2347036302585';
+    var msg='🔴 Staff Clock Out\n*'+staff.name+'* ('+staff.role+')\nClocked out at *'+time+'*\nDate: '+new Date().toDateString()+'\n\n_'+DB.school.name+'_';
+    window.open('https://wa.me/'+adminPhone+'?text='+encodeURIComponent(msg),'_blank');
+  }
+}
+
+function saveAllClock(){
+  saveClockRecords();
+  toast('✅ All clock records saved','success');
+}
+
+function saveClockRecords(){
+  localStorage.setItem(todayKey,JSON.stringify(clockRecords));
+  // Also push to AI monitor
+  logEvent('clock_save',{count:Object.keys(clockRecords).length});
+}
+
+// ── QR CLOCK ──
+var clStream=null,clScanInterval=null;
+function startClockQR(){
+  var video=document.getElementById('cl-video');
+  var canvas=document.getElementById('cl-canvas');
+  document.getElementById('cl-placeholder').style.display='none';
+  document.getElementById('cl-overlay').style.display='flex';
+  document.getElementById('qr-cl-start').style.display='none';
+  document.getElementById('qr-cl-stop').style.display='inline-flex';
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
+    .then(function(stream){
+      clStream=stream;video.srcObject=stream;video.style.display='block';video.play();
+      var ctx=canvas.getContext('2d');
+      video.onloadedmetadata=function(){
+        canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+        clScanInterval=setInterval(function(){
+          if(video.readyState===video.HAVE_ENOUGH_DATA){
+            ctx.drawImage(video,0,0,canvas.width,canvas.height);
+            var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+            var code=jsQR(imageData.data,imageData.width,imageData.height);
+            if(code)handleClockQR(code.data);
+          }
+        },400);
+      };
+      toast('📷 QR Clock scanner started','info');
+    })
+    .catch(function(e){
+      toast('⚠️ Camera error: '+e.message,'error');
+      stopClockQR();
+    });
+}
+
+var lastClockScan='';
+function handleClockQR(data){
+  if(data===lastClockScan)return;
+  lastClockScan=data;
+  setTimeout(function(){lastClockScan='';},3000);
+  try{
+    var info=JSON.parse(data);
+    var staffId=info.staffId||info.id||data;
+    var staff=DB.staff.find(function(s){return s.id===staffId||s.staffId===staffId;});
+    if(staff){
+      var type=document.getElementById('qr-clock-type').value;
+      if(type==='in')clockIn(staff.id);
+      else clockOut(staff.id);
+      document.getElementById('cl-result').innerHTML='<div style="font-size:1.3rem;">'+(type==='in'?'🟢':'🔴')+'</div>'+
+        '<div><div style="font-size:var(--fs-base);font-weight:700;color:var(--t1);">'+staff.name+' — Clocked '+(type==='in'?'IN':'OUT')+'</div>'+
+        '<div style="font-size:var(--fs-sm);color:var(--t3);">'+new Date().toLocaleTimeString()+'</div></div>'+
+        '<span class="badge '+(type==='in'?'b-ok':'b-err')+'" style="margin-left:auto;">'+(type==='in'?'IN ✓':'OUT ✓')+'</span>';
+    } else {
+      document.getElementById('cl-result').innerHTML='<div style="font-size:1.3rem;">⚠️</div><div><div style="font-size:var(--fs-base);color:var(--warn);">Staff not found</div><div style="font-size:var(--fs-sm);color:var(--t4);">'+data+'</div></div>';
+    }
+  }catch(e){
+    var staff=DB.staff.find(function(s){return s.id===data||s.staffId===data;});
+    if(staff){
+      var type=document.getElementById('qr-clock-type').value;
+      if(type==='in')clockIn(staff.id);else clockOut(staff.id);
+    }
+  }
+}
+
+function stopClockQR(){
+  if(clStream){clStream.getTracks().forEach(function(t){t.stop();});clStream=null;}
+  if(clScanInterval){clearInterval(clScanInterval);clScanInterval=null;}
+  document.getElementById('cl-video').style.display='none';
+  document.getElementById('cl-overlay').style.display='none';
+  document.getElementById('cl-placeholder').style.display='block';
+  document.getElementById('qr-cl-start').style.display='inline-flex';
+  document.getElementById('qr-cl-stop').style.display='none';
+}
+
+// ── HISTORY ──
+function loadHistory(){
+  var date=document.getElementById('hist-date').value;
+  var key='clock_'+new Date(date).toDateString();
+  var records=JSON.parse(localStorage.getItem(key)||'{}');
+  var tbody=document.getElementById('hist-tbody');
+  if(!Object.keys(records).length){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--t4);">No records for this date</td></tr>';
+    return;
+  }
+  tbody.innerHTML=Object.values(records).map(function(r){
+    var duration='—';
+    if(r.in&&r.out){
+      var toMins=function(t){var p=t.split(':');return parseInt(p[0])*60+parseInt(p[1]);};
+      var mins=toMins(r.out)-toMins(r.in);
+      if(mins>0)duration=Math.floor(mins/60)+'h '+(mins%60)+'m';
+    }
+    return '<tr>'+
+      '<td style="font-weight:700;color:var(--t1);">'+(r.name||'—')+'</td>'+
+      '<td><span class="badge b-mute">'+(r.role||'—')+'</span></td>'+
+      '<td style="color:var(--success);font-family:monospace;">'+(r.in||'—')+'</td>'+
+      '<td style="color:var(--danger);font-family:monospace;">'+(r.out||'—')+'</td>'+
+      '<td>'+(duration)+'</td>'+
+      '<td><span class="badge '+(r.in&&r.out?'b-teal':r.in?'b-ok':'b-err')+'">'+(r.in&&r.out?'Complete':r.in?'In Only':'Absent')+'</span>'+(r.late?'<span class="badge b-warn" style="margin-left:4px;">Late</span>':'')+'</td>'+
+      '</tr>';
+  }).join('');
+}
+
+// ── MONTHLY REPORT ──
+function generateMonthlyReport(){
+  var month=parseInt(document.getElementById('rpt-month').value);
+  var year=parseInt(document.getElementById('rpt-year').value);
+  var daysInMonth=new Date(year,month+1,0).getDate();
+  var staffSummary={};
+  DB.staff.forEach(function(s){
+    staffSummary[s.id]={name:s.name,role:s.role,days:0,late:0,absent:0};
+  });
+  for(var day=1;day<=daysInMonth;day++){
+    var d=new Date(year,month,day);
+    if(d.getDay()===0||d.getDay()===6)continue; // Skip weekends
+    var key='clock_'+d.toDateString();
+    var recs=JSON.parse(localStorage.getItem(key)||'{}');
+    DB.staff.forEach(function(s){
+      var r=recs[s.id];
+      if(r&&r.in){staffSummary[s.id].days++;if(r.late)staffSummary[s.id].late++;}
+      else{staffSummary[s.id].absent++;}
+    });
+  }
+  var totalWorkDays=Array.from({length:daysInMonth},function(_,i){
+    var d=new Date(year,month,i+1);return d.getDay()!==0&&d.getDay()!==6;
+  }).filter(Boolean).length;
+
+  var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var html='<div style="font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--t1);margin-bottom:14px;">'+
+    months[month]+' '+year+' Attendance Summary</div>'+
+    '<div class="hist-wrap"><table class="hist-table">'+
+    '<thead><tr><th>Staff</th><th>Role</th><th>Days Present</th><th>Late</th><th>Absent</th><th>Rate</th></tr></thead><tbody>'+
+    Object.values(staffSummary).map(function(s){
+      var rate=totalWorkDays?Math.round((s.days/totalWorkDays)*100):0;
+      return '<tr>'+
+        '<td style="font-weight:700;color:var(--t1);">'+s.name+'</td>'+
+        '<td><span class="badge b-mute">'+s.role+'</span></td>'+
+        '<td style="color:var(--success);font-weight:700;">'+s.days+'/'+totalWorkDays+'</td>'+
+        '<td style="color:var(--warn);">'+s.late+'</td>'+
+        '<td style="color:var(--danger);">'+s.absent+'</td>'+
+        '<td><span class="badge '+(rate>=80?'b-ok':rate>=60?'b-warn':'b-err')+'">'+rate+'%</span></td></tr>';
+    }).join('')+'</tbody></table></div>'+
+    '<div class="btn-row"><button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print Report</button>'+
+    '<button class="btn btn-ghost btn-sm" onclick="exportMonthly('+month+','+year+')">📤 Export CSV</button></div>';
+  document.getElementById('monthly-report').innerHTML=html;
+}
+
+function exportRecords(){
+  var date=document.getElementById('hist-date')&&document.getElementById('hist-date').value||new Date().toISOString().split('T')[0];
+  var key='clock_'+new Date(date).toDateString();
+  var records=JSON.parse(localStorage.getItem(key)||'{}');
+  if(!Object.keys(records).length){toast('No records to export for this date','error');return;}
+  var rows=Object.values(records).map(function(r){
+    return [r.name||'—',r.role||'—',r.in||'—',r.out||'—',r.late?'Late':'On Time',date].join(',');
+  });
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['Name,Role,Clock In,Clock Out,Punctuality,Date\n'+rows.join('\n')],{type:'text/csv'}));
+  a.download='StaffClock_'+date+'.csv';a.click();
+  toast('📤 Exported','success');
+}
+
+function exportMonthly(month,year){
+  toast('📤 Monthly export — generating...','info');
+}
+
+// ── ADD STAFF ──
+function addStaff(){
+  var name=document.getElementById('ns-name').value.trim();
+  var role=document.getElementById('ns-role').value;
+  if(!name){toast('⚠️ Enter staff name','error');return;}
+  var sid='SID-'+Date.now().toString().slice(-5);
+  var staff={id:'st'+Date.now(),name:name,role:role,dept:document.getElementById('ns-dept').value,staffId:document.getElementById('ns-sid').value||sid,phone:document.getElementById('ns-phone').value,status:'Active'};
+  DB.staff.push(staff);
+  localStorage.setItem('rsms_staff',JSON.stringify(DB.staff));
+  closeM('m-add-staff');
+  ['ns-name','ns-dept','ns-sid','ns-phone'].forEach(function(id){document.getElementById(id).value='';});
+  renderStaffList();
+  toast('✅ '+name+' added','success');
+}
+
+// ── AI EVENT LOG ──
+function logEvent(type,data){
+  var events=JSON.parse(localStorage.getItem('rsms_ai_events')||'[]');
+  events.unshift({type:type,data:data,time:new Date().toISOString(),school:DB.school.name});
+  if(events.length>200)events=events.slice(0,200);
+  localStorage.setItem('rsms_ai_events',JSON.stringify(events));
+  // Trigger AI monitor check
+  window.dispatchEvent(new CustomEvent('rsms_event',{detail:{type:type,data:data}}));
+}
+
+// ── INIT ──
+window.addEventListener('load',function(){
+  loadOIC();renderStaffList();
+  document.getElementById('rpt-month').value=new Date().getMonth();
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
+});
+</script>
+</body>
+</html>
