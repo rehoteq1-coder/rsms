@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RSMS — Manage Access Links</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#030305;--panel:#0d0f1a;--card:#111420;--card2:#161929;--line:rgba(255,255,255,0.07);--line2:rgba(255,255,255,0.13);--gold:#d4a843;--goldl:rgba(212,168,67,0.1);--success:#22c55e;--successl:rgba(34,197,94,0.1);--danger:#f43f5e;--dangerl:rgba(244,63,94,0.1);--warn:#f59e0b;--warnl:rgba(245,158,11,0.1);--t1:#f0f2ff;--t2:rgba(240,242,255,0.65);--t3:rgba(240,242,255,0.35);--t4:rgba(240,242,255,0.14);--r:14px;--r2:10px;--r3:7px;--serif:'Fraunces',serif;--sans:'Outfit',sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;}
+.topbar{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.tb-back{background:none;border:1px solid var(--line2);border-radius:var(--r3);color:var(--t3);cursor:pointer;font-size:.88rem;padding:9px 16px;font-family:var(--sans);}
+.tb-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--t1);}
+.wrap{max-width:900px;margin:0 auto;padding:24px 18px 60px;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px;}
+.ct{font-size:.96rem;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.fg label{font-size:.65rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;}
+.fi{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:0 14px;color:var(--t1);font-size:.94rem;font-family:var(--sans);outline:none;width:100%;height:50px;}
+.fi:focus{border-color:rgba(212,168,67,.4);}
+select.fi{cursor:pointer;}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:50px;padding:0 22px;border:none;border-radius:var(--r2);cursor:pointer;font-family:var(--sans);font-size:.94rem;font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(135deg,#4a2500,var(--gold));color:#000;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--t2);}
+.btn-ok{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;}
+.btn-err{background:linear-gradient(135deg,#4c0519,var(--danger));color:#fff;}
+.btn-sm{height:40px;padding:0 14px;font-size:.82rem;border-radius:var(--r3);}
+.btn-xs{height:32px;padding:0 10px;font-size:.74rem;border-radius:var(--r3);}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:.63rem;font-weight:700;}
+.b-ok{background:var(--successl);color:var(--success);}
+.b-err{background:var(--dangerl);color:var(--danger);}
+.b-gold{background:var(--goldl);color:var(--gold);}
+.b-mute{background:rgba(255,255,255,.05);color:var(--t3);}
+.link-box{background:var(--card2);border:1px solid rgba(212,168,67,.2);border-radius:var(--r2);padding:12px 14px;font-family:monospace;font-size:.78rem;color:var(--gold);word-break:break-all;margin:10px 0;}
+.token-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:14px;margin-bottom:9px;}
+.tc-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.tc-name{font-size:.9rem;font-weight:700;color:var(--t1);}
+.tc-meta{font-size:.72rem;color:var(--t4);margin-top:2px;}
+.tc-actions{display:flex;gap:6px;flex-shrink:0;}
+.tc-link{font-family:monospace;font-size:.72rem;color:var(--gold);background:var(--card2);border-radius:5px;padding:6px 10px;word-break:break-all;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);border-radius:var(--r2);padding:11px 20px;font-size:.88rem;z-index:999;transition:transform .25s;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.error{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.info{background:#0f1020;border:1px solid rgba(212,168,67,.35);color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="tb-back" onclick="history.back()">← Back</button>
+  <div class="tb-title">🔗 Manage Access Links</div>
+</div>
+<div class="wrap">
+  <div class="card">
+    <div class="ct">🔗 Generate Unique Access Link</div>
+    <div style="font-size:.85rem;color:var(--t3);margin-bottom:16px;line-height:1.7;">
+      Generate a private link for any student or parent. The link opens <strong style="color:var(--t1);">only their portal</strong> — no other role's gateway is visible. You can activate or deactivate any link at any time.
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Role</label>
+        <select class="fi" id="gen-role">
+          <option value="student">Student</option>
+          <option value="parent">Parent</option>
+          <option value="teacher">Teacher</option>
+        </select>
+      </div>
+      <div class="fg"><label>Select Person</label>
+        <select class="fi" id="gen-person"><option value="">— Select —</option></select>
+      </div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Expiry Date (optional)</label>
+        <input class="fi" type="date" id="gen-expiry"/>
+      </div>
+      <div class="fg"><label>Note</label>
+        <input class="fi" type="text" id="gen-note" placeholder="e.g. First term access"/>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="generateLink()" style="width:100%;">🔗 Generate Access Link</button>
+    <div id="gen-result" style="margin-top:14px;display:none;">
+      <div style="font-size:.7rem;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px;">✅ Link Generated</div>
+      <div class="link-box" id="gen-link-text"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="copyGenLink()" style="flex:1;">📋 Copy</button>
+        <button class="btn btn-ghost btn-sm" onclick="sendGenLink()" style="flex:1;">📱 WhatsApp</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('gen-result').style.display='none'" style="flex:1;">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">📋 All Access Links
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="renderTokens()">🔄 Refresh</button>
+    </div>
+    <div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap;">
+      <select class="fi" id="filter-role" onchange="renderTokens()" style="height:38px;max-width:160px;font-size:.82rem;">
+        <option value="">All Roles</option>
+        <option value="student">Students</option>
+        <option value="parent">Parents</option>
+        <option value="teacher">Teachers</option>
+      </select>
+      <select class="fi" id="filter-status" onchange="renderTokens()" style="height:38px;max-width:160px;font-size:.82rem;">
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Deactivated</option>
+      </select>
+    </div>
+    <div id="tokens-list"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+var DB={students:JSON.parse(localStorage.getItem('rsms_students')||'[]'),staff:JSON.parse(localStorage.getItem('rsms_staff')||'[]')};
+var lastGenLink='',lastGenPhone='';
+
+function toast(msg,type){var t=document.getElementById('toast');t.className='toast '+(type||'info')+' show';t.innerHTML=msg;clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3500);}
+
+window.addEventListener('load',function(){
+  document.getElementById('gen-role').addEventListener('change',populatePersonSelect);
+  populatePersonSelect();renderTokens();
+});
+
+function populatePersonSelect(){
+  var role=document.getElementById('gen-role').value;
+  var sel=document.getElementById('gen-person');
+  if(role==='student'||role==='parent'){
+    sel.innerHTML='<option value="">— Select Student —</option>'+DB.students.map(function(s){
+      var name=(s.surname||'')+' '+(s.firstname||'');
+      return '<option value="'+s.id+'" data-phone="'+(s.wa||s.phone||'')+'" data-name="'+name+'">'+name+' — '+(s.class||'')+'</option>';
+    }).join('');
+  } else {
+    sel.innerHTML='<option value="">— Select Staff —</option>'+DB.staff.map(function(s){
+      return '<option value="'+s.id+'" data-name="'+s.name+'">'+s.name+' — '+s.role+'</option>';
+    }).join('');
+  }
+}
+
+function generateLink(){
+  var role=document.getElementById('gen-role').value;
+  var personSel=document.getElementById('gen-person');
+  var personId=personSel.value;
+  var personOption=personSel.options[personSel.selectedIndex];
+  var personName=personOption&&personOption.dataset.name||'User';
+  var phone=personOption&&personOption.dataset.phone||'';
+  if(!personId){toast('⚠️ Select a person','error');return;}
+  var expiry=document.getElementById('gen-expiry').value;
+  var note=document.getElementById('gen-note').value;
+  var token=Math.random().toString(36).slice(2)+Date.now().toString(36);
+  var PORTAL={student:'rsms-student.html',parent:'rsms-parent.html',teacher:'rsms-teacher.html'};
+  var tokens=JSON.parse(localStorage.getItem('rsms_access_tokens')||'{}');
+  tokens[token]={role:role,user:{name:personName,id:personId,role:role},
+    active:true,created:new Date().toISOString(),expires:expiry||null,
+    note:note,personId:personId,personName:personName,phone:phone};
+  localStorage.setItem('rsms_access_tokens',JSON.stringify(tokens));
+  var base=window.location.origin+window.location.pathname.replace('rsms-links.html','');
+  var link=base+(PORTAL[role]||'rsms-app.html')+'?token='+token;
+  lastGenLink=link;lastGenPhone=phone;
+  document.getElementById('gen-link-text').textContent=link;
+  document.getElementById('gen-result').style.display='block';
+  renderTokens();
+  toast('✅ Link generated for '+personName,'success');
+}
+
+function copyGenLink(){navigator.clipboard.writeText(lastGenLink).then(function(){toast('📋 Link copied!','success');});}
+function sendGenLink(){
+  if(!lastGenPhone){var p=prompt('Enter WhatsApp number:');if(p)lastGenPhone=p;}
+  var phone=lastGenPhone.replace(/\D/g,'');
+  if(phone.startsWith('0'))phone='234'+phone.slice(1);
+  var msg='Hello! Your RSMS school portal link:\n👉 *'+lastGenLink+'*\n\nTap the link to access your portal directly.\n_Rehoteq School Management System_';
+  window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg),'_blank');
+}
+
+function renderTokens(){
+  var tokens=JSON.parse(localStorage.getItem('rsms_access_tokens')||'{}');
+  var roleFilter=document.getElementById('filter-role').value;
+  var statusFilter=document.getElementById('filter-status').value;
+  var entries=Object.entries(tokens).filter(function(e){
+    var t=e[1];
+    if(roleFilter&&t.role!==roleFilter)return false;
+    if(statusFilter==='active'&&!t.active)return false;
+    if(statusFilter==='inactive'&&t.active)return false;
+    return true;
+  }).reverse();
+  var el=document.getElementById('tokens-list');
+  if(!entries.length){
+    el.innerHTML='<div style="text-align:center;padding:24px;color:var(--t4);font-size:.88rem;">No links generated yet</div>';return;
+  }
+  var PORTAL={student:'rsms-student.html',parent:'rsms-parent.html',teacher:'rsms-teacher.html'};
+  el.innerHTML=entries.map(function(e){
+    var tk=e[0],t=e[1];
+    var base=window.location.origin+window.location.pathname.replace('rsms-links.html','');
+    var link=base+(PORTAL[t.role]||'rsms-app.html')+'?token='+tk;
+    return '<div class="token-card">'+
+      '<div class="tc-top">'+
+        '<div>'+
+          '<div class="tc-name">'+t.personName+' <span class="badge b-gold">'+t.role+'</span>'+
+          (!t.active?'<span class="badge b-err" style="margin-left:5px;">Deactivated</span>':'<span class="badge b-ok" style="margin-left:5px;">Active</span>')+
+          '</div>'+
+          '<div class="tc-meta">Created: '+new Date(t.created).toLocaleDateString()+(t.expires?' · Expires: '+t.expires:'')+(t.note?' · '+t.note:'')+'</div>'+
+        '</div>'+
+        '<div class="tc-actions">'+
+          (t.active?
+            '<button class="btn btn-err btn-xs" onclick="deactivate(\''+tk+'\')">🔴 Deactivate</button>':
+            '<button class="btn btn-ok btn-xs" onclick="activate(\''+tk+'\')">🟢 Activate</button>'
+          )+
+          '<button class="btn btn-ghost btn-xs" onclick="copyLink(\''+link+'\')">📋</button>'+
+          '<button class="btn btn-ghost btn-xs" onclick="sendLink(\''+link+'\',\''+t.phone+'\')">📱</button>'+
+          '<button class="btn btn-err btn-xs" onclick="deleteToken(\''+tk+'\')">🗑</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="tc-link"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+link+'</span></div>'+
+    '</div>';
+  }).join('');
+}
+
+function deactivate(tk){
+  var tokens=JSON.parse(localStorage.getItem('rsms_access_tokens')||'{}');
+  if(tokens[tk])tokens[tk].active=false;
+  localStorage.setItem('rsms_access_tokens',JSON.stringify(tokens));
+  renderTokens();toast('🔴 Link deactivated','info');
+}
+function activate(tk){
+  var tokens=JSON.parse(localStorage.getItem('rsms_access_tokens')||'{}');
+  if(tokens[tk])tokens[tk].active=true;
+  localStorage.setItem('rsms_access_tokens',JSON.stringify(tokens));
+  renderTokens();toast('🟢 Link activated','success');
+}
+function deleteToken(tk){
+  if(!confirm('Delete this link permanently?'))return;
+  var tokens=JSON.parse(localStorage.getItem('rsms_access_tokens')||'{}');
+  delete tokens[tk];
+  localStorage.setItem('rsms_access_tokens',JSON.stringify(tokens));
+  renderTokens();toast('🗑 Link deleted','info');
+}
+function copyLink(link){navigator.clipboard.writeText(link).then(function(){toast('📋 Copied!','success');});}
+function sendLink(link,phone){
+  if(!phone){var p=prompt('WhatsApp number:');if(p)phone=p;else return;}
+  phone=phone.replace(/\D/g,'');
+  if(phone.startsWith('0'))phone='234'+phone.slice(1);
+  window.open('https://wa.me/'+phone+'?text='+encodeURIComponent('Your RSMS portal link:\n👉 *'+link+'*\n\nTap to access your school portal.'),'_blank');
+}
+</script>
+</body>
+</html>

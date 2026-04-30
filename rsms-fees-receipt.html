@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RSMS — Fee Management & Receipts</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--panel:#0d0f1a;--card:#111420;--card2:#161929;
+  --line:rgba(255,255,255,0.07);--line2:rgba(255,255,255,0.13);
+  --gold:#d4a843;--goldl:rgba(212,168,67,0.1);
+  --success:#22c55e;--successl:rgba(34,197,94,0.1);
+  --danger:#f43f5e;--dangerl:rgba(244,63,94,0.1);
+  --warn:#f59e0b;--warnl:rgba(245,158,11,0.1);
+  --t1:#f0f2ff;--t2:rgba(240,242,255,0.65);--t3:rgba(240,242,255,0.35);--t4:rgba(240,242,255,0.14);
+  --r:14px;--r2:10px;--r3:7px;--serif:'Fraunces',serif;--sans:'Outfit',sans-serif;
+  --fs-sm:.88rem;--fs-base:.96rem;--fs-lg:1.08rem;--btn-h:52px;--input-h:50px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;}
+
+/* TOPBAR */
+.topbar{background:var(--panel);border-bottom:1px solid var(--line);
+  padding:14px 22px;display:flex;align-items:center;gap:12px;
+  position:sticky;top:0;z-index:50;}
+.tb-back{background:none;border:1px solid var(--line2);border-radius:var(--r3);
+  color:var(--t3);cursor:pointer;font-size:var(--fs-sm);padding:9px 16px;font-family:var(--sans);}
+.tb-title{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;color:var(--t1);}
+.tb-right{margin-left:auto;display:flex;gap:9px;}
+
+/* LAYOUT */
+.wrap{max-width:1100px;margin:0 auto;padding:24px 18px 60px;}
+.main-grid{display:grid;grid-template-columns:1fr 380px;gap:20px;}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr;}}
+
+/* TABS */
+.tabs{display:flex;gap:7px;margin-bottom:20px;flex-wrap:wrap;}
+.tab{padding:10px 20px;border-radius:20px;font-size:var(--fs-sm);font-weight:700;
+  cursor:pointer;border:1px solid var(--line);background:var(--card2);color:var(--t3);
+  transition:all .2s;font-family:var(--sans);}
+.tab.active{background:var(--goldl);color:var(--gold);border-color:rgba(212,168,67,.3);}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;}
+.ct{font-size:var(--fs-base);font-weight:700;color:var(--t1);
+  display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+
+/* STATS */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);
+  padding:16px;text-align:center;}
+.stat-val{font-family:var(--serif);font-size:1.6rem;font-weight:700;margin-bottom:4px;}
+.stat-lbl{font-size:.65rem;color:var(--t4);text-transform:uppercase;letter-spacing:.08em;}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--line);}
+.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-sm);}
+.tbl thead{background:var(--card2);}
+.tbl th{padding:11px 14px;text-align:left;font-size:.65rem;font-weight:800;color:var(--t3);
+  text-transform:uppercase;letter-spacing:.09em;border-bottom:1px solid var(--line);white-space:nowrap;}
+.tbl td{padding:12px 14px;border-bottom:1px solid var(--line);color:var(--t2);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tbody tr:hover td{background:rgba(255,255,255,.02);color:var(--t1);}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.fg label{font-size:.65rem;font-weight:800;color:var(--t3);
+  text-transform:uppercase;letter-spacing:.09em;}
+.fi{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);
+  padding:0 14px;color:var(--t1);font-size:var(--fs-base);font-family:var(--sans);
+  outline:none;width:100%;height:var(--input-h);transition:all .2s;}
+.fi:focus{border-color:rgba(212,168,67,.4);box-shadow:0 0 0 3px rgba(212,168,67,.08);}
+select.fi{cursor:pointer;}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:600px){.f2{grid-template-columns:1fr;}}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:var(--btn-h);padding:0 22px;border:none;border-radius:var(--r2);cursor:pointer;
+  font-family:var(--sans);font-size:var(--fs-base);font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(135deg,#4a2500,var(--gold));color:#000;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--t2);}
+.btn-ghost:hover{background:rgba(255,255,255,.1);color:var(--t1);}
+.btn-ok{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;}
+.btn-sm{height:42px;padding:0 16px;font-size:var(--fs-sm);border-radius:var(--r3);}
+.btn-xs{height:34px;padding:0 10px;font-size:.75rem;border-radius:var(--r3);}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:.65rem;font-weight:700;}
+.b-ok{background:var(--successl);color:var(--success);}
+.b-err{background:var(--dangerl);color:var(--danger);}
+.b-gold{background:var(--goldl);color:var(--gold);}
+.b-warn{background:var(--warnl);color:var(--warn);}
+
+/* ════ RECEIPT PREVIEW ════ */
+.receipt-preview{
+  background:#fff;color:#000;border-radius:var(--r2);
+  overflow:hidden;font-family:Arial,Helvetica,sans-serif;}
+.rp-header{background:#1a0a3e;color:#fff;padding:18px 20px;
+  display:flex;align-items:center;gap:14px;}
+.rp-logo{width:50px;height:50px;border-radius:9px;background:rgba(255,255,255,.1);
+  border:1px solid rgba(212,168,67,.4);display:flex;align-items:center;
+  justify-content:center;font-size:1.4rem;overflow:hidden;flex-shrink:0;}
+.rp-logo img{width:100%;height:100%;object-fit:contain;}
+.rp-school{font-size:1rem;font-weight:700;margin-bottom:2px;}
+.rp-school-sub{font-size:.72rem;opacity:.65;}
+.rp-badge{margin-left:auto;background:rgba(212,168,67,.2);border:1px solid rgba(212,168,67,.4);
+  border-radius:6px;padding:4px 10px;font-size:.68rem;font-weight:700;color:var(--gold);}
+
+.rp-receipt-no{background:#f8f9fa;border-bottom:2px solid #e0e0e0;
+  padding:10px 20px;display:flex;justify-content:space-between;
+  font-size:.8rem;color:#555;}
+.rp-receipt-no strong{color:#000;font-size:.9rem;}
+
+.rp-student{padding:16px 20px;border-bottom:1px solid #eee;
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.rp-field{display:flex;flex-direction:column;}
+.rp-field-label{font-size:.6rem;font-weight:700;text-transform:uppercase;
+  color:#888;letter-spacing:.08em;margin-bottom:2px;}
+.rp-field-val{font-size:.88rem;font-weight:700;color:#000;}
+
+.rp-items{padding:16px 20px;}
+.rp-items-title{font-size:.72rem;font-weight:700;text-transform:uppercase;
+  color:#888;letter-spacing:.08em;margin-bottom:10px;}
+.rp-item{display:flex;justify-content:space-between;padding:8px 0;
+  border-bottom:1px solid #f0f0f0;font-size:.88rem;}
+.rp-item:last-child{border:none;}
+.rp-item-name{color:#333;}
+.rp-item-amt{font-weight:700;color:#000;}
+.rp-total-row{background:#1a0a3e;color:#fff;padding:12px 20px;
+  display:flex;justify-content:space-between;align-items:center;}
+.rp-total-label{font-size:.88rem;font-weight:700;}
+.rp-total-amt{font-family:'Fraunces',serif;font-size:1.3rem;font-weight:700;color:var(--gold);}
+
+.rp-footer{padding:12px 20px;background:#f8f9fa;display:flex;
+  align-items:center;justify-content:space-between;border-top:1px solid #eee;}
+.rp-cashier{font-size:.75rem;color:#666;}
+.rp-stamp{width:60px;height:60px;border-radius:50%;border:3px solid #1a0a3e;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;}
+.rp-stamp-text{font-size:.5rem;font-weight:700;color:#1a0a3e;text-transform:uppercase;line-height:1.3;}
+.rp-barcode{font-family:monospace;font-size:.65rem;color:#aaa;
+  text-align:center;padding:8px 20px;background:#fff;}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);
+  border-radius:var(--r2);padding:11px 20px;font-size:var(--fs-sm);z-index:999;
+  transition:transform .25s;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.error{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.info{background:#0f1020;border:1px solid rgba(212,168,67,.35);color:var(--gold);}
+
+/* PRINT */
+@media print{
+  body{background:#fff;}
+  .topbar,.tabs,.no-print,.main-grid>div:first-child{display:none!important;}
+  .receipt-preview{width:100%;max-width:380px;margin:0 auto;
+    border:1px solid #000;}
+  .rp-header,.rp-total-row{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="tb-back" onclick="history.back()">← Back</button>
+  <div class="tb-title">💰 Fee Management & Receipts</div>
+  <div class="tb-right">
+    <button class="btn btn-ghost btn-sm" onclick="exportFees()">📤 Export</button>
+    <button class="btn btn-primary btn-sm" onclick="showRecordForm()">➕ Record Payment</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- STATS -->
+  <div class="stat-row">
+    <div class="stat">
+      <div class="stat-val" id="st-collected" style="color:var(--success);">₦0</div>
+      <div class="stat-lbl">Total Collected</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="st-outstanding" style="color:var(--danger);">₦0</div>
+      <div class="stat-lbl">Outstanding</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="st-rate" style="color:var(--gold);">0%</div>
+      <div class="stat-lbl">Collection Rate</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs no-print">
+    <div class="tab active" onclick="showTab('record',this)">📝 Record Payment</div>
+    <div class="tab" onclick="showTab('history',this)">📋 Payment History</div>
+    <div class="tab" onclick="showTab('outstanding',this)">⏳ Outstanding</div>
+    <div class="tab" onclick="showTab('schedule',this)">📅 Fee Schedule</div>
+  </div>
+
+  <div class="main-grid">
+    <div>
+
+      <!-- ── RECORD PAYMENT ── -->
+      <div id="tab-record">
+        <div class="card">
+          <div class="ct">💳 Record New Payment</div>
+          <div class="fg"><label>Student *</label>
+            <select class="fi" id="fee-student" onchange="fillStudentDetails()">
+              <option value="">— Select Student —</option>
+            </select>
+          </div>
+          <!-- Student details auto-fill -->
+          <div id="student-info-strip" style="display:none;background:var(--goldl);border:1px solid rgba(212,168,67,.2);border-radius:var(--r3);padding:11px 14px;margin-bottom:12px;font-size:var(--fs-sm);">
+            <span id="si-name" style="font-weight:700;color:var(--t1);"></span>
+            <span id="si-class" style="color:var(--t3);margin-left:8px;"></span>
+          </div>
+
+          <div class="f2">
+            <div class="fg"><label>Fee Type *</label>
+              <select class="fi" id="fee-type" onchange="fillFeeAmount()">
+                <option value="">— Select Type —</option>
+                <option value="Tuition">School Fees (Tuition)</option>
+                <option value="Boarding">Boarding Fees</option>
+                <option value="Books">Textbooks & Stationery</option>
+                <option value="Uniform">School Uniform</option>
+                <option value="Exam">Exam Levy</option>
+                <option value="Transport">Transport Fees</option>
+                <option value="Development">Development Levy</option>
+                <option value="ICT">ICT Levy</option>
+                <option value="PTA">PTA Dues</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="fg"><label>Term</label>
+              <select class="fi" id="fee-term">
+                <option>First Term</option><option>Second Term</option><option>Third Term</option>
+              </select>
+            </div>
+          </div>
+          <div class="f2">
+            <div class="fg"><label>Amount (₦) *</label>
+              <input class="fi" id="fee-amount" type="number" placeholder="e.g. 35000"/>
+            </div>
+            <div class="fg"><label>Payment Method</label>
+              <select class="fi" id="fee-method">
+                <option>Cash</option><option>Bank Transfer</option>
+                <option>POS</option><option>Flutterwave</option>
+                <option>Cheque</option><option>Mobile Money</option>
+              </select>
+            </div>
+          </div>
+          <div class="f2">
+            <div class="fg"><label>Date *</label>
+              <input class="fi" type="date" id="fee-date"/>
+            </div>
+            <div class="fg"><label>Session</label>
+              <input class="fi" type="text" id="fee-session" value="2025/2026"/>
+            </div>
+          </div>
+          <div class="fg"><label>Received By (Cashier)</label>
+            <input class="fi" type="text" id="fee-cashier" placeholder="Name of cashier/bursar"/>
+          </div>
+          <div class="fg"><label>Notes (optional)</label>
+            <input class="fi" type="text" id="fee-notes" placeholder="Any additional notes..."/>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-ok" onclick="recordAndPreview()" style="flex:2;">
+              ✅ Record & Generate Receipt
+            </button>
+            <button class="btn btn-ghost" onclick="clearForm()" style="flex:1;">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PAYMENT HISTORY ── -->
+      <div id="tab-history" style="display:none;">
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;">
+            <div class="ct" style="margin:0;flex:1;">📋 All Payments</div>
+            <input class="fi" id="hist-search" type="text" placeholder="Search..." oninput="filterHistory()"
+              style="max-width:200px;height:38px;font-size:var(--fs-sm);"/>
+          </div>
+          <div class="tbl-wrap" style="border:none;border-radius:0;">
+            <table class="tbl">
+              <thead><tr><th>Receipt</th><th>Student</th><th>Class</th><th>Type</th><th>Amount</th><th>Method</th><th>Date</th><th>Action</th></tr></thead>
+              <tbody id="hist-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── OUTSTANDING ── -->
+      <div id="tab-outstanding" style="display:none;">
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--line);">
+            <div class="ct" style="margin:0;">⏳ Outstanding Fees</div>
+          </div>
+          <div class="tbl-wrap" style="border:none;border-radius:0;">
+            <table class="tbl">
+              <thead><tr><th>Student</th><th>Class</th><th>Expected</th><th>Paid</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="outstanding-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── FEE SCHEDULE ── -->
+      <div id="tab-schedule" style="display:none;">
+        <div class="card">
+          <div class="ct">📅 Fee Schedule</div>
+          <div id="schedule-list"></div>
+          <div class="btn-row">
+            <button class="btn btn-primary btn-sm" onclick="saveSchedule()">💾 Save Schedule</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RECEIPT PANEL -->
+    <div>
+      <div class="card" style="margin-bottom:14px;padding:14px;">
+        <div class="ct">🧾 Receipt Preview</div>
+        <div id="receipt-panel">
+          <div style="text-align:center;padding:30px;color:var(--t4);">
+            <div style="font-size:3rem;margin-bottom:10px;">🧾</div>
+            <div style="font-size:var(--fs-sm);">Record a payment to generate receipt</div>
+          </div>
+        </div>
+        <div class="btn-row" id="receipt-actions" style="display:none;">
+          <button class="btn btn-primary btn-sm" onclick="printReceipt()" style="flex:1;">🖨 Print</button>
+          <button class="btn btn-ghost btn-sm" onclick="shareReceipt()" style="flex:1;">📱 WhatsApp</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var DB = {
+  school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School","principal":""}'),
+  students: JSON.parse(localStorage.getItem('rsms_students')||'[]'),
+  fees: JSON.parse(localStorage.getItem('rsms_fees')||'[]')
+};
+var schoolLogo = localStorage.getItem('rsms_school_logo')||'';
+var lastReceipt = null;
+
+// Fee schedule
+var FEE_SCHEDULE = JSON.parse(localStorage.getItem('rsms_fee_schedule')||'{}');
+var FEE_DEFAULTS = {
+  'Tuition': 35000, 'Boarding': 45000, 'Books': 5000,
+  'Uniform': 8000, 'Exam': 3000, 'Transport': 12000,
+  'Development': 2000, 'ICT': 1500, 'PTA': 1000
+};
+
+function toast(msg,type){var t=document.getElementById('toast');t.className='toast '+(type||'info')+' show';t.innerHTML=msg;clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3500);}
+
+// ── TABS ──
+function showTab(name,el){
+  ['record','history','outstanding','schedule'].forEach(function(t){
+    var el2=document.getElementById('tab-'+t);if(el2)el2.style.display='none';
+  });
+  document.getElementById('tab-'+name).style.display='block';
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  if(el)el.classList.add('active');
+  if(name==='history')renderHistory();
+  if(name==='outstanding')renderOutstanding();
+  if(name==='schedule')renderSchedule();
+}
+function showRecordForm(){showTab('record',document.querySelector('.tab'));}
+
+// ── POPULATE ──
+function populateStudents(){
+  var sel=document.getElementById('fee-student');
+  sel.innerHTML='<option value="">— Select Student —</option>'+
+    DB.students.map(function(s){
+      var name=(s.surname||'')+' '+(s.firstname||'');
+      return '<option value="'+s.id+'">'+name+' — '+(s.class||'')+'</option>';
+    }).join('');
+  if(!DB.students.length){
+    sel.innerHTML='<option value="">No students in database</option>';
+  }
+}
+
+function fillStudentDetails(){
+  var sid=document.getElementById('fee-student').value;
+  var strip=document.getElementById('student-info-strip');
+  if(!sid){strip.style.display='none';return;}
+  var s=DB.students.find(function(x){return x.id===sid;});
+  if(s){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    document.getElementById('si-name').textContent=name;
+    document.getElementById('si-class').textContent='Class: '+(s.class||'—');
+    strip.style.display='flex';
+  }
+}
+
+function fillFeeAmount(){
+  var type=document.getElementById('fee-type').value;
+  if(type&&FEE_DEFAULTS[type]){
+    document.getElementById('fee-amount').value=FEE_SCHEDULE[type]||FEE_DEFAULTS[type];
+  }
+}
+
+// ── RECORD & RECEIPT ──
+function recordAndPreview(){
+  var sid=document.getElementById('fee-student').value;
+  var type=document.getElementById('fee-type').value;
+  var amount=document.getElementById('fee-amount').value;
+  if(!sid){toast('⚠️ Select a student','error');return;}
+  if(!type){toast('⚠️ Select fee type','error');return;}
+  if(!amount||parseFloat(amount)<=0){toast('⚠️ Enter a valid amount','error');return;}
+
+  var student=DB.students.find(function(s){return s.id===sid;});
+  var receipt={
+    id:'f'+Date.now(),
+    receiptNo:'RCP-'+new Date().getFullYear()+'-'+String(DB.fees.length+1).padStart(4,'0'),
+    stuId:sid,
+    student:student?(student.surname||'')+' '+(student.firstname||''):'Unknown',
+    class:student&&student.class||'—',
+    reg:student&&student.reg||'—',
+    type:type,term:document.getElementById('fee-term').value,
+    amount:parseFloat(amount),
+    method:document.getElementById('fee-method').value,
+    date:document.getElementById('fee-date').value,
+    session:document.getElementById('fee-session').value,
+    cashier:document.getElementById('fee-cashier').value||'Bursar',
+    notes:document.getElementById('fee-notes').value,
+    school:DB.school.name,
+    createdAt:new Date().toISOString()
+  };
+
+  DB.fees.push(receipt);
+  localStorage.setItem('rsms_fees',JSON.stringify(DB.fees));
+  updateStats();
+  lastReceipt=receipt;
+  renderReceiptPreview(receipt);
+  document.getElementById('receipt-actions').style.display='flex';
+  toast('✅ Payment recorded — Receipt '+receipt.receiptNo,'success');
+}
+
+function renderReceiptPreview(r){
+  var logoHtml=schoolLogo?'<img src="'+schoolLogo+'" alt="Logo" style="width:100%;height:100%;object-fit:contain;" onerror="this.parentNode.textContent=\'🏫\'"/>':'🏫';
+  var dateStr=r.date?new Date(r.date).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}):new Date().toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'});
+  var barcode=r.receiptNo.replace(/-/g,'')+Date.now().toString().slice(-4);
+
+  document.getElementById('receipt-panel').innerHTML=
+    '<div class="receipt-preview" id="receipt-printable">'+
+    '<div class="rp-header">'+
+      '<div class="rp-logo">'+logoHtml+'</div>'+
+      '<div>'+
+        '<div class="rp-school">'+r.school+'</div>'+
+        '<div class="rp-school-sub">School Fee Receipt</div>'+
+      '</div>'+
+      '<div class="rp-badge">PAID</div>'+
+    '</div>'+
+    '<div class="rp-receipt-no">'+
+      '<span>Receipt No: <strong>'+r.receiptNo+'</strong></span>'+
+      '<span>Date: '+dateStr+'</span>'+
+    '</div>'+
+    '<div class="rp-student">'+
+      '<div class="rp-field"><div class="rp-field-label">Student Name</div><div class="rp-field-val">'+r.student+'</div></div>'+
+      '<div class="rp-field"><div class="rp-field-label">Class</div><div class="rp-field-val">'+r.class+'</div></div>'+
+      '<div class="rp-field"><div class="rp-field-label">Reg. Number</div><div class="rp-field-val">'+r.reg+'</div></div>'+
+      '<div class="rp-field"><div class="rp-field-label">Session / Term</div><div class="rp-field-val">'+r.session+' / '+r.term+'</div></div>'+
+    '</div>'+
+    '<div class="rp-items">'+
+      '<div class="rp-items-title">Payment Details</div>'+
+      '<div class="rp-item"><div class="rp-item-name">'+r.type+'</div><div class="rp-item-amt">₦'+r.amount.toLocaleString()+'</div></div>'+
+      (r.notes?'<div class="rp-item" style="color:#888;font-size:.8rem;"><div>Note: '+r.notes+'</div></div>':'')+
+    '</div>'+
+    '<div class="rp-total-row">'+
+      '<div class="rp-total-label">Amount Paid</div>'+
+      '<div class="rp-total-amt">₦'+r.amount.toLocaleString()+'</div>'+
+    '</div>'+
+    '<div class="rp-footer">'+
+      '<div class="rp-cashier">'+
+        '<div style="font-weight:700;color:#000;font-size:.82rem;">Payment Method: '+r.method+'</div>'+
+        '<div style="color:#666;font-size:.75rem;margin-top:2px;">Received by: '+r.cashier+'</div>'+
+        '<div style="color:#aaa;font-size:.68rem;margin-top:6px;border-top:1px solid #eee;padding-top:5px;">'+r.school+'</div>'+
+      '</div>'+
+      '<div class="rp-stamp">'+
+        '<div class="rp-stamp-text">OFFICIAL<br/>RECEIPT<br/>✓</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="rp-barcode">'+barcode+'</div>'+
+    '</div>';
+}
+
+function printReceipt(){
+  if(!lastReceipt){toast('No receipt to print','error');return;}
+  window.print();
+}
+
+function shareReceipt(){
+  if(!lastReceipt){return;}
+  var r=lastReceipt;
+  var school=DB.school;
+  var phone=(r.stuId&&DB.students.find(function(s){return s.id===r.stuId;}))||{};
+  var parentPhone=(phone.wa||phone.phone||'').replace(/\D/g,'');
+  if(parentPhone.startsWith('0'))parentPhone='234'+parentPhone.slice(1);
+  var msg='🧾 *PAYMENT RECEIPT*\n\n'+
+    '*'+r.school+'*\n'+
+    '━━━━━━━━━━━━━━━━━━\n'+
+    '📋 Receipt No: *'+r.receiptNo+'*\n'+
+    '👤 Student: *'+r.student+'*\n'+
+    '🏫 Class: '+r.class+'\n'+
+    '📚 Payment: *'+r.type+'*\n'+
+    '📅 Term: '+r.term+' | '+r.session+'\n'+
+    '💰 Amount: *₦'+r.amount.toLocaleString()+'*\n'+
+    '💳 Method: '+r.method+'\n'+
+    '📆 Date: '+new Date(r.date).toDateString()+'\n'+
+    '━━━━━━━━━━━━━━━━━━\n'+
+    '_Official receipt from '+r.school+'_';
+  if(parentPhone){
+    window.open('https://wa.me/'+parentPhone+'?text='+encodeURIComponent(msg),'_blank');
+  } else {
+    window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  }
+  toast('📱 Opening WhatsApp...','success');
+}
+
+// ── HISTORY ──
+function renderHistory(){
+  var fees=DB.fees.slice().reverse();
+  var q=(document.getElementById('hist-search')||{value:''}).value.toLowerCase();
+  if(q)fees=fees.filter(function(f){return (f.student+f.receiptNo+f.type).toLowerCase().includes(q);});
+  var tbody=document.getElementById('hist-tbody');
+  if(!fees.length){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--t4);">No payments recorded yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML=fees.map(function(f){
+    return '<tr>'+
+      '<td style="font-family:monospace;font-size:.75rem;color:var(--gold);">'+(f.receiptNo||'—')+'</td>'+
+      '<td style="font-weight:700;color:var(--t1);">'+(f.student||'—')+'</td>'+
+      '<td><span class="badge b-gold" style="font-size:.62rem;">'+(f.class||'—')+'</span></td>'+
+      '<td><span class="badge b-gold">'+(f.type||'—')+'</span></td>'+
+      '<td style="font-family:var(--serif);font-weight:700;color:var(--success);">₦'+parseFloat(f.amount||0).toLocaleString()+'</td>'+
+      '<td style="color:var(--t3);">'+(f.method||'—')+'</td>'+
+      '<td style="color:var(--t3);font-size:.8rem;">'+(f.date||'—')+'</td>'+
+      '<td>'+
+        '<button class="btn btn-ghost btn-xs" onclick="viewReceipt('+JSON.stringify(f).replace(/'/g,"\\'")+')">🧾</button>'+
+        '<button class="btn btn-ghost btn-xs" style="margin-left:4px;" onclick="sendReceiptWA('+JSON.stringify(f).replace(/'/g,"\\'")+')">📱</button>'+
+      '</td></tr>';
+  }).join('');
+}
+function filterHistory(){renderHistory();}
+
+function viewReceipt(f){
+  lastReceipt=f;
+  renderReceiptPreview(f);
+  document.getElementById('receipt-actions').style.display='flex';
+  showTab('record',document.querySelector('.tab'));
+}
+
+function sendReceiptWA(f){lastReceipt=f;shareReceipt();}
+
+// ── OUTSTANDING ──
+function renderOutstanding(){
+  var tbody=document.getElementById('outstanding-tbody');
+  var schedule=JSON.parse(localStorage.getItem('rsms_fee_schedule')||'{}');
+  var defaultExpected=schedule.tuition||35000;
+
+  if(!DB.students.length){
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--t4);">No students in database</td></tr>';
+    return;
+  }
+
+  var rows=DB.students.map(function(s){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    var paid=DB.fees.filter(function(f){return f.stuId===s.id&&f.type==='Tuition';})
+      .reduce(function(sum,f){return sum+parseFloat(f.amount||0);},0);
+    var expected=defaultExpected;
+    var outstanding=Math.max(0,expected-paid);
+    var status=outstanding<=0?'Paid':paid>0?'Partial':'Unpaid';
+    return {name:name,class:s.class||'—',expected:expected,paid:paid,outstanding:outstanding,status:status,sid:s.id,s:s};
+  }).filter(function(r){return r.outstanding>0;});
+
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--success);">🎉 All students have paid their fees!</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML=rows.map(function(r){
+    var statusClass=r.status==='Paid'?'b-ok':r.status==='Partial'?'b-warn':'b-err';
+    return '<tr>'+
+      '<td style="font-weight:700;color:var(--t1);">'+r.name+'</td>'+
+      '<td><span class="badge b-gold" style="font-size:.62rem;">'+r.class+'</span></td>'+
+      '<td style="color:var(--t3);">₦'+r.expected.toLocaleString()+'</td>'+
+      '<td style="color:var(--success);">₦'+r.paid.toLocaleString()+'</td>'+
+      '<td style="font-weight:700;color:var(--danger);">₦'+r.outstanding.toLocaleString()+'</td>'+
+      '<td><span class="badge '+statusClass+'">'+r.status+'</span></td>'+
+      '<td>'+
+        '<button class="btn btn-ghost btn-xs" onclick="sendReminderWA(\''+r.s.wa||r.s.phone||''+'\',\''+r.name+'\','+r.outstanding+')">📱 Remind</button>'+
+      '</td></tr>';
+  }).join('');
+}
+
+function sendReminderWA(phone,name,amount){
+  if(!phone){toast('No phone number for this parent','error');return;}
+  phone=phone.replace(/\D/g,'');
+  if(phone.startsWith('0'))phone='234'+phone.slice(1);
+  var msg='Dear Parent,\n\nThis is a friendly reminder that *'+name+'* has an outstanding school fee balance of *₦'+amount.toLocaleString()+'* for '+DB.school.name+'.\n\nPlease make payment at your earliest convenience.\n\nThank you.\n_'+DB.school.name+'_';
+  window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg),'_blank');
+}
+
+// ── FEE SCHEDULE ──
+function renderSchedule(){
+  var fees=['Tuition','Boarding','Books','Uniform','Exam','Transport','Development','ICT','PTA'];
+  document.getElementById('schedule-list').innerHTML=
+    '<div style="font-size:var(--fs-sm);color:var(--t3);margin-bottom:14px;">Set default fee amounts per payment type. These auto-fill when recording payments.</div>'+
+    fees.map(function(f){
+      var val=FEE_SCHEDULE[f]||FEE_DEFAULTS[f]||0;
+      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);">'+
+        '<div style="flex:1;font-size:var(--fs-sm);font-weight:600;color:var(--t1);">'+f+'</div>'+
+        '<div style="display:flex;align-items:center;gap:6px;">'+
+          '<span style="color:var(--t3);font-size:var(--fs-sm);">₦</span>'+
+          '<input class="fi" type="number" data-fee="'+f+'" value="'+val+'" style="width:120px;height:38px;font-size:var(--fs-sm);" onchange="FEE_SCHEDULE[this.dataset.fee]=parseInt(this.value)||0"/>'+
+        '</div></div>';
+    }).join('');
+}
+
+function saveSchedule(){
+  localStorage.setItem('rsms_fee_schedule',JSON.stringify(FEE_SCHEDULE));
+  toast('✅ Fee schedule saved','success');
+}
+
+// ── STATS ──
+function updateStats(){
+  var total=DB.fees.reduce(function(s,f){return s+parseFloat(f.amount||0);},0);
+  var schedule=JSON.parse(localStorage.getItem('rsms_fee_schedule')||'{}');
+  var expected=DB.students.length*(schedule.Tuition||FEE_DEFAULTS['Tuition']||35000);
+  var outstanding=Math.max(0,expected-total);
+  var rate=expected?Math.min(100,Math.round((total/expected)*100)):0;
+  document.getElementById('st-collected').textContent='₦'+total.toLocaleString();
+  document.getElementById('st-outstanding').textContent='₦'+outstanding.toLocaleString();
+  document.getElementById('st-rate').textContent=rate+'%';
+}
+
+function exportFees(){
+  var rows=DB.fees.map(function(f){
+    return [f.receiptNo||'',f.student||'',f.class||'',f.type||'',f.amount||0,f.method||'',f.date||'',f.term||'',f.session||''].join(',');
+  });
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['Receipt,Student,Class,Type,Amount,Method,Date,Term,Session\n'+rows.join('\n')],{type:'text/csv'}));
+  a.download='Fees_'+DB.school.name+'_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+  toast('📤 Fees exported','success');
+}
+
+function clearForm(){
+  ['fee-student','fee-type','fee-amount','fee-cashier','fee-notes'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.value='';
+  });
+  document.getElementById('student-info-strip').style.display='none';
+}
+
+// ── INIT ──
+window.addEventListener('load',function(){
+  document.getElementById('fee-date').value=new Date().toISOString().split('T')[0];
+  populateStudents();
+  updateStats();
+  // Load logo
+  var keys=Object.keys(localStorage).filter(function(k){return k.startsWith('rsms_onboarding_RSMS-');});
+  for(var i=0;i<keys.length;i++){
+    try{var d=JSON.parse(localStorage.getItem(keys[i])||'{}');if(d.logo){schoolLogo=d.logo;break;}}catch(e){}
+  }
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
+});
+</script>
+</body>
+</html>
