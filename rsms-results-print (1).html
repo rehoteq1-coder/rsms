@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RSMS — Result Card & Report Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--panel:#0d0f1a;--card:#111420;--card2:#161929;
+  --line:rgba(255,255,255,0.07);--line2:rgba(255,255,255,0.13);
+  --gold:#d4a843;--goldl:rgba(212,168,67,0.1);
+  --success:#22c55e;--successl:rgba(34,197,94,0.1);
+  --danger:#f43f5e;--dangerl:rgba(244,63,94,0.1);
+  --warn:#f59e0b;--purple:#8b5cf6;--teal:#14b8a6;
+  --t1:#f0f2ff;--t2:rgba(240,242,255,0.65);--t3:rgba(240,242,255,0.35);--t4:rgba(240,242,255,0.14);
+  --r:14px;--r2:10px;--r3:7px;--serif:'Fraunces',serif;--sans:'Outfit',sans-serif;
+  --fs-sm:.88rem;--fs-base:.96rem;--fs-lg:1.1rem;--btn-h:50px;--input-h:48px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;}
+
+/* SCREEN TOPBAR */
+.topbar{background:var(--panel);border-bottom:1px solid var(--line);padding:13px 22px;
+  display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.tb-back{background:none;border:1px solid var(--line2);border-radius:var(--r3);color:var(--t3);cursor:pointer;font-size:var(--fs-sm);padding:8px 15px;font-family:var(--sans);}
+.tb-title{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;color:var(--t1);}
+.tb-right{margin-left:auto;display:flex;gap:8px;}
+.wrap{max-width:1100px;margin:0 auto;padding:22px 18px 60px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.fg label{font-size:.63rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;}
+.fi{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:0 13px;color:var(--t1);font-size:var(--fs-base);font-family:var(--sans);outline:none;width:100%;height:var(--input-h);transition:all .2s;}
+.fi:focus{border-color:rgba(212,168,67,.4);}
+select.fi{cursor:pointer;}
+textarea.fi{height:auto;min-height:70px;padding:10px 13px;resize:vertical;}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;}
+.f4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--btn-h);padding:0 22px;border:none;border-radius:var(--r2);cursor:pointer;font-family:var(--sans);font-size:var(--fs-base);font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-gold{background:linear-gradient(135deg,#4a2500,var(--gold));color:#000;}
+.btn-ok{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--t2);}
+.btn-ghost:hover{background:rgba(255,255,255,.1);color:var(--t1);}
+.btn-purple{background:linear-gradient(135deg,#3b0764,var(--purple));color:#fff;}
+.btn-sm{height:42px;padding:0 16px;font-size:var(--fs-sm);border-radius:var(--r3);}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;}
+.ct{font-size:var(--fs-base);font-weight:700;color:var(--t1);display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.score-in{background:var(--card2);border:1px solid var(--line2);border-radius:5px;padding:4px 6px;color:var(--t1);font-size:var(--fs-sm);font-family:var(--sans);outline:none;width:52px;text-align:center;}
+.score-in:focus{border-color:rgba(212,168,67,.4);}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:.63rem;font-weight:700;}
+.b-ok{background:var(--successl);color:var(--success);}
+.b-err{background:var(--dangerl);color:var(--danger);}
+.b-gold{background:var(--goldl);color:var(--gold);}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);border-radius:var(--r2);padding:10px 20px;font-size:var(--fs-sm);z-index:999;transition:transform .25s;pointer-events:none;display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.error{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.info{background:#0f1020;border:1px solid rgba(212,168,67,.35);color:var(--gold);}
+
+@media(max-width:700px){.g2,.f3,.f4{grid-template-columns:1fr 1fr;}}
+
+/* ════════════════════════════
+   PRINT RESULT CARD — white page
+════════════════════════════ */
+.result-card{
+  background:#fff;color:#000;
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:11px;
+  width:100%;max-width:790px;
+  margin:0 auto;
+  border:2px solid #333;
+  page-break-after:always;}
+.result-card:last-child{page-break-after:auto;}
+
+/* HEADER */
+.rc-header{
+  display:grid;grid-template-columns:120px 1fr 100px;
+  gap:8px;padding:10px 14px;
+  border-bottom:3px solid #1a0a3e;
+  align-items:center;}
+.rc-logo-box{width:100px;height:80px;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;overflow:hidden;}
+.rc-logo-box img{width:100%;height:100%;object-fit:contain;}
+.rc-school-center{text-align:center;}
+.rc-school-name{font-size:16px;font-weight:900;color:#1a0a3e;text-transform:uppercase;margin-bottom:2px;}
+.rc-school-address{font-size:9px;color:#555;margin-bottom:3px;}
+.rc-school-contact{font-size:9px;color:#555;margin-bottom:5px;}
+.rc-report-title{font-size:11px;font-weight:700;color:#1a0a3e;text-transform:uppercase;background:#f0f0f0;padding:3px 10px;border-radius:3px;display:inline-block;}
+.rc-photo-box{width:90px;height:90px;border:1px solid #999;display:flex;align-items:center;justify-content:center;font-size:9px;color:#999;overflow:hidden;background:#f5f5f5;}
+.rc-photo-box img{width:100%;height:100%;object-fit:cover;}
+
+/* STUDENT INFO */
+.rc-student-info{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid #1a0a3e;}
+.rc-si-left,.rc-si-right{padding:6px 10px;}
+.rc-si-row{display:flex;gap:0;margin-bottom:3px;font-size:10px;}
+.rc-si-label{font-weight:700;color:#000;min-width:130px;}
+.rc-si-val{color:#1a0a3e;font-weight:600;border-bottom:1px solid #ccc;flex:1;padding-bottom:1px;}
+
+/* SCORES TABLE */
+.rc-table-header{background:#1a0a3e;color:#fff;text-align:center;padding:5px;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.05em;}
+.rc-scores{width:100%;border-collapse:collapse;}
+.rc-scores th{background:#1a0a3e;color:#fff;padding:5px 4px;text-align:center;font-size:9px;font-weight:700;border:1px solid #333;}
+.rc-scores th:first-child{text-align:left;padding-left:6px;}
+.rc-scores td{padding:4px 4px;border:1px solid #ddd;text-align:center;font-size:10px;color:#000;}
+.rc-scores td:first-child{text-align:left;padding-left:6px;font-weight:600;}
+.rc-scores tr:nth-child(even){background:#f9f9f9;}
+.rc-scores tr:hover td{background:#fff8e1;}
+.rc-total-row{background:#1a0a3e!important;}
+.rc-total-row td{color:#fff!important;font-weight:700!important;}
+
+/* SUMMARY + GRADING */
+.rc-bottom{display:grid;grid-template-columns:1fr 1fr;border-top:2px solid #1a0a3e;}
+.rc-summary,.rc-grading{padding:8px 10px;}
+.rc-section-title{font-family:'Fraunces',Georgia,serif;font-size:14px;font-weight:700;color:#1a0a3e;text-align:center;margin-bottom:6px;border-bottom:1px solid #1a0a3e;padding-bottom:4px;}
+.rc-sum-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted #ddd;font-size:10px;}
+.rc-sum-label{color:#333;font-weight:600;}
+.rc-sum-val{color:#1a0a3e;font-weight:700;}
+.rc-grade-table{width:100%;border-collapse:collapse;}
+.rc-grade-table th{background:#1a0a3e;color:#fff;padding:4px 8px;font-size:9px;text-align:left;font-weight:700;}
+.rc-grade-table td{padding:3px 8px;border:1px solid #ddd;font-size:9px;}
+.rc-grade-table tr:nth-child(even){background:#f5f5f5;}
+
+/* AFFECTIVE + PSYCHOMOTOR */
+.rc-domains{border-top:2px solid #1a0a3e;padding:6px 10px;}
+.rc-domain-title{font-weight:700;font-size:10px;color:#1a0a3e;text-transform:uppercase;margin-bottom:5px;background:#e8e4f0;padding:3px 6px;}
+.rc-domain-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px 10px;margin-bottom:6px;}
+.rc-domain-item{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px dotted #ddd;font-size:9px;}
+.rc-domain-name{color:#333;}
+.rc-domain-score{font-weight:700;color:#1a0a3e;border:1px solid #ccc;width:24px;text-align:center;}
+.rc-domain-key{font-size:8px;color:#666;margin-top:2px;font-style:italic;}
+
+/* REMARKS */
+.rc-remarks{border-top:1px solid #ccc;padding:6px 10px;}
+.rc-remark-row{display:flex;gap:8px;margin-bottom:5px;font-size:10px;align-items:flex-start;}
+.rc-remark-label{font-weight:700;color:#000;min-width:200px;flex-shrink:0;}
+.rc-remark-text{color:#1a0a3e;font-weight:600;border-bottom:1px solid #ccc;flex:1;min-height:16px;padding-bottom:1px;}
+
+/* SIGNATURES */
+.rc-signatures{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #ccc;}
+.rc-sig{padding:8px 14px;text-align:center;}
+.rc-sig-line{border-bottom:1px solid #000;height:24px;margin-bottom:4px;}
+.rc-sig-name{font-size:10px;font-weight:700;color:#1a0a3e;}
+.rc-sig-title{font-size:9px;color:#555;font-weight:700;text-transform:uppercase;}
+
+/* FOOTER */
+.rc-footer{background:#1a0a3e;color:#fff;text-align:center;padding:4px;font-size:8px;}
+
+/* ── PRINT ── */
+@media print{
+  body{background:#fff;}
+  .topbar,.no-print,.card{display:none!important;}
+  .wrap{padding:0;max-width:100%;}
+  .result-card{border:2px solid #000;max-width:100%;}
+  .rc-header,.rc-table-header,.rc-scores th,.rc-total-row,.rc-domain-title,.rc-grade-table th,.rc-footer,.rc-signatures{
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  @page{margin:8mm;size:A4 portrait;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar no-print">
+  <button class="tb-back" onclick="history.back()">← Back</button>
+  <div class="tb-title">📄 Result Card Generator</div>
+  <div class="tb-right">
+    <button class="btn btn-ghost btn-sm" onclick="saveAllScores()">💾 Save</button>
+    <button class="btn btn-gold btn-sm" onclick="generateCards()">📄 Generate Cards</button>
+    <button class="btn btn-ok btn-sm" onclick="window.print()">🖨 Print All</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- CONTROLS (no-print) -->
+  <div class="card no-print">
+    <div class="ct">⚙️ Report Card Settings</div>
+    <div class="f3" style="margin-bottom:12px;">
+      <div class="fg"><label>Class *</label>
+        <select class="fi" id="cls-sel" onchange="loadClassStudents()">
+          <option value="">— Select Class —</option>
+          <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
+          <option>SS 1 Science</option><option>SS 1 Commercial</option><option>SS 1 Art</option>
+          <option>SS 2 Science</option><option>SS 2 Commercial</option><option>SS 2 Art</option>
+          <option>SS 3 Science</option><option>SS 3 Commercial</option><option>SS 3 Art</option>
+          <option>Primary 1</option><option>Primary 2</option><option>Primary 3</option>
+          <option>Primary 4</option><option>Primary 5</option><option>Primary 6</option>
+        </select>
+      </div>
+      <div class="fg"><label>Term</label>
+        <select class="fi" id="term-sel">
+          <option>First Term</option><option>Second Term</option><option>Third Term</option>
+        </select>
+      </div>
+      <div class="fg"><label>Session</label>
+        <input class="fi" type="text" id="sess-in" value="2025/2026"/>
+      </div>
+    </div>
+    <div class="f4">
+      <div class="fg"><label>Next Term Begins</label>
+        <input class="fi" type="text" id="next-term" placeholder="e.g. Monday, 13th Jan 2026"/>
+      </div>
+      <div class="fg"><label>CA 1 Max</label>
+        <input class="fi" type="number" id="ca1-max" value="20"/>
+      </div>
+      <div class="fg"><label>CA 2 Max</label>
+        <input class="fi" type="number" id="ca2-max" value="20"/>
+      </div>
+      <div class="fg"><label>Exam Max</label>
+        <input class="fi" type="number" id="exam-max" value="60"/>
+      </div>
+    </div>
+    <div class="g2" style="margin-bottom:10px;">
+      <div class="fg"><label>Total School Days</label>
+        <input class="fi" type="number" id="total-days" value="90"/>
+      </div>
+      <div class="fg"><label>Results Approval Date</label>
+        <input class="fi" type="date" id="approval-date"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCORE ENTRY TABLE -->
+  <div class="card no-print" id="score-entry-section" style="display:none;">
+    <div class="ct">📝 Enter Scores — <span id="entry-class-label" style="color:var(--gold);"></span>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="addSubjectRow()">+ Add Subject</button>
+    </div>
+
+    <!-- SUBJECTS CONFIG -->
+    <div id="subjects-config" style="margin-bottom:14px;padding:12px;background:var(--card2);border-radius:var(--r2);">
+      <div style="font-size:.72rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px;">Configure Subjects for this Class</div>
+      <div id="subjects-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input class="fi" id="new-subject-name" type="text" placeholder="Subject name..." style="height:38px;flex:1;" onkeydown="if(event.key==='Enter')addSubjectRow()"/>
+        <button class="btn btn-gold btn-sm" onclick="addSubjectRow()">+ Add</button>
+      </div>
+    </div>
+
+    <!-- SCORE GRID -->
+    <div style="overflow-x:auto;border-radius:var(--r);border:1px solid var(--line);">
+      <table style="width:100%;border-collapse:collapse;font-size:var(--fs-sm);min-width:900px;" id="score-table">
+        <thead id="score-head"></thead>
+        <tbody id="score-body"></tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;gap:9px;margin-top:14px;flex-wrap:wrap;">
+      <button class="btn btn-ok" onclick="saveAllScores()">💾 Save Scores</button>
+      <button class="btn btn-gold" onclick="generateCards()">📄 Generate Report Cards</button>
+      <button class="btn btn-ghost" onclick="window.print()">🖨 Print All</button>
+    </div>
+  </div>
+
+  <!-- REPORT CARDS OUTPUT -->
+  <div id="cards-output"></div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var DB = {
+  school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School Name","principal":"","address":"","phone":"","email":"","motto":""}'),
+  students: JSON.parse(localStorage.getItem('rsms_students')||'[]')
+};
+var schoolLogo = localStorage.getItem('rsms_school_logo')||'';
+var currentClass = '';
+var currentStudents = [];
+var subjects = [];
+var scoresData = {};
+
+// Grade systems
+var GRADE_SSS = [
+  {min:80,max:100,grade:'A1',remark:'Excellent'},
+  {min:75,max:79,grade:'B2',remark:'Very Good'},
+  {min:70,max:74,grade:'B3',remark:'Good'},
+  {min:65,max:69,grade:'C4',remark:'Credit'},
+  {min:60,max:64,grade:'C5',remark:'Credit'},
+  {min:55,max:59,grade:'C6',remark:'Credit'},
+  {min:50,max:54,grade:'D7',remark:'Pass'},
+  {min:45,max:49,grade:'E8',remark:'Pass'},
+  {min:0, max:44,grade:'F9',remark:'Fail'}
+];
+var GRADE_PRIMARY = [
+  {min:90,max:100,grade:'A',remark:'Excellent'},
+  {min:80,max:89, grade:'B',remark:'Distinction'},
+  {min:70,max:79, grade:'C',remark:'Very Good'},
+  {min:60,max:69, grade:'D',remark:'Good'},
+  {min:50,max:59, grade:'E',remark:'Credit'},
+  {min:40,max:49, grade:'F',remark:'Pass'},
+  {min:0, max:39, grade:'G',remark:'Fail'}
+];
+
+function getGrade(score, isPrimary) {
+  var system = isPrimary ? GRADE_PRIMARY : GRADE_SSS;
+  var g = system.find(function(g){ return score>=g.min && score<=g.max; });
+  return g || {grade:'—',remark:'—'};
+}
+
+function toast(msg,type){var t=document.getElementById('toast');t.className='toast '+(type||'info')+' show';t.innerHTML=msg;clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3500);}
+
+// ── LOAD CLASS ──
+function loadClassStudents(){
+  currentClass = document.getElementById('cls-sel').value;
+  if(!currentClass) return;
+  document.getElementById('entry-class-label').textContent = currentClass;
+
+  // Smart matching — case insensitive, trim spaces
+  currentStudents = DB.students.filter(function(s){
+    return (s.class||'').trim().toLowerCase() === currentClass.trim().toLowerCase();
+  });
+  // If still none, try partial match
+  if(!currentStudents.length){
+    currentStudents = DB.students.filter(function(s){
+      var sc=(s.class||'').trim().toLowerCase().replace(/\s+/g,'');
+      var cc=currentClass.trim().toLowerCase().replace(/\s+/g,'');
+      return sc===cc||sc.includes(cc)||cc.includes(sc);
+    });
+  }
+  if(!currentStudents.length){
+    // Show ALL students with a note
+    if(DB.students.length){
+      currentStudents = DB.students;
+      toast('No students matched "'+currentClass+'". Showing all '+DB.students.length+' students.','info');
+    } else {
+      // Demo students
+      currentStudents = [
+        {id:'d1',surname:'Adeyemi',firstname:'Tunde',reg:'REG-001',gender:'Male',dob:'2010-03-15',class:currentClass},
+        {id:'d2',surname:'Okafor',firstname:'Blessing',reg:'REG-002',gender:'Female',dob:'2010-07-22',class:currentClass},
+        {id:'d3',surname:'Hassan',firstname:'Fatima',reg:'REG-003',gender:'Female',dob:'2011-01-10',class:currentClass},
+        {id:'d4',surname:'Babatunde',firstname:'Emmanuel',reg:'REG-004',gender:'Male',dob:'2010-11-05',class:currentClass},
+        {id:'d5',surname:'Eze',firstname:'Chukwuemeka',reg:'REG-005',gender:'Male',dob:'2010-08-20',class:currentClass},
+      ];
+      toast('No students found. Using demo data.','info');
+    }
+  }
+
+  // Load saved scores
+  var key = 'scores_'+currentClass;
+  scoresData = JSON.parse(localStorage.getItem(key)||'{}');
+
+  // Load or set default subjects
+  var isPrimary = currentClass.toLowerCase().includes('primary');
+  var subKey = 'subjects_'+currentClass;
+  var savedSubs = JSON.parse(localStorage.getItem(subKey)||'null');
+
+  var NG_SUBJECTS = {"JSS": ["English Language", "Mathematics", "Basic Science & Technology", "Social Studies", "Civic Education", "Cultural & Creative Arts", "Physical & Health Education", "Computer Studies/ICT", "Agricultural Science", "Home Economics", "Business Studies", "French Language", "Yoruba Language", "Arabic Language", "Christian Religious Studies", "Islamic Religious Studies", "Security Education", "Pre-Vocational Studies", "Basic Technology"], "SS_SCIENCE": ["English Language", "Mathematics", "Physics", "Chemistry", "Biology", "Further Mathematics", "Agricultural Science", "Computer Studies", "Technical Drawing", "Geography", "Economics", "Food & Nutrition", "Health Science", "Physical Education"], "SS_COMMERCIAL": ["English Language", "Mathematics", "Economics", "Commerce", "Financial Accounting", "Business Studies", "Office Practice", "Computer Studies", "Government", "Literature in English", "Typewriting/Data Processing", "Marketing", "Insurance", "Banking & Finance"], "SS_ARTS": ["English Language", "Mathematics", "Literature in English", "Government", "History", "Christian Religious Studies", "Islamic Religious Studies", "Yoruba Language", "Igbo Language", "Hausa Language", "French Language", "Fine Arts", "Music", "Economics", "Geography", "Philosophy & Logic"]};
+  if(savedSubs){
+    subjects = savedSubs;
+  } else if(isPrimary){
+    subjects = ['English Language','Mathematics','Basic Science','Social Studies',
+      'Civic Education','Creative Arts','Physical Education','Religious Studies',
+      'Yoruba Language','Cultural & Creative Arts'];
+  } else {
+    // Auto-detect class type from name
+    var clsLower = currentClass.toLowerCase();
+    if(clsLower.includes('science')){
+      subjects = NG_SUBJECTS.SS_SCIENCE;
+    } else if(clsLower.includes('commercial') || clsLower.includes('commerce')){
+      subjects = NG_SUBJECTS.SS_COMMERCIAL;
+    } else if(clsLower.includes('art')){
+      subjects = NG_SUBJECTS.SS_ARTS;
+    } else if(clsLower.includes('jss') || clsLower.includes('js')){
+      subjects = NG_SUBJECTS.JSS;
+    } else {
+      subjects = NG_SUBJECTS.JSS; // Default JSS
+    }
+  }
+
+  document.getElementById('score-entry-section').style.display = 'block';
+  renderSubjectsList();
+  buildScoreTable();
+  document.getElementById('cards-output').innerHTML = '';
+  toast('Loaded '+currentStudents.length+' students for '+currentClass,'info');
+}
+
+// ── SUBJECTS CONFIG ──
+function renderSubjectsList(){
+  var el = document.getElementById('subjects-list');
+  el.innerHTML = subjects.map(function(s,i){
+    return '<div style="display:flex;align-items:center;gap:5px;background:var(--goldl);border:1px solid rgba(212,168,67,.2);border-radius:20px;padding:4px 10px;">'+
+      '<span style="font-size:.78rem;color:var(--gold);font-weight:700;">'+s+'</span>'+
+      '<button onclick="removeSubject('+i+')" style="background:none;border:none;color:var(--t4);cursor:pointer;font-size:.8rem;padding:0 2px;">×</button>'+
+    '</div>';
+  }).join('');
+}
+function removeSubject(idx){
+  subjects.splice(idx,1);
+  renderSubjectsList();
+  buildScoreTable();
+}
+function addSubjectRow(){
+  var inp = document.getElementById('new-subject-name');
+  var name = inp.value.trim();
+  if(!name){ toast('Enter subject name','error'); return; }
+  if(subjects.indexOf(name)>-1){ toast('Subject already added','error'); return; }
+  subjects.push(name);
+  inp.value='';
+  localStorage.setItem('subjects_'+currentClass, JSON.stringify(subjects));
+  renderSubjectsList();
+  buildScoreTable();
+}
+
+// ── SCORE TABLE ──
+function buildScoreTable(){
+  var ca1Max = parseInt(document.getElementById('ca1-max').value)||20;
+  var ca2Max = parseInt(document.getElementById('ca2-max').value)||20;
+  var examMax = parseInt(document.getElementById('exam-max').value)||60;
+
+  // Header
+  document.getElementById('score-head').innerHTML =
+    '<tr style="background:var(--card2);">'+
+    '<th style="padding:9px 12px;border:1px solid var(--line);font-size:.65rem;font-weight:800;color:var(--t3);text-transform:uppercase;min-width:160px;">Student</th>'+
+    subjects.map(function(s){
+      var saved = scoresData['sub_'+s];
+      return '<th style="padding:7px 4px;border:1px solid var(--line);font-size:.65rem;font-weight:800;color:var(--t3);text-transform:uppercase;text-align:center;min-width:54px;" colspan="3">'+
+        '<div>'+s.split(' ')[0]+'</div>'+
+        '<div style="display:flex;gap:2px;justify-content:center;font-size:.55rem;color:var(--t4);margin-top:3px;">'+
+          '<span>CA1/'+ca1Max+'</span><span>|</span>'+
+          '<span>CA2/'+ca2Max+'</span><span>|</span>'+
+          '<span>Exam/'+examMax+'</span>'+
+        '</div>'+
+      '</th>';
+    }).join('')+
+    '<th style="padding:7px;border:1px solid var(--line);font-size:.65rem;color:var(--gold);font-weight:800;text-align:center;">Avg</th>'+
+    '</tr>';
+
+  // Body
+  document.getElementById('score-body').innerHTML = currentStudents.map(function(s){
+    var name = (s.surname||'')+' '+(s.firstname||'');
+    var saved = scoresData[s.id] || {};
+    var subCells = subjects.map(function(sub){
+      var ss = saved[sub]||{};
+      return '<td style="padding:4px 3px;border:1px solid var(--line);" colspan="3">'+
+        '<div style="display:flex;gap:2px;justify-content:center;">'+
+        '<input class="score-in" type="number" min="0" max="'+ca1Max+'" value="'+(ss.ca1||'')+'" data-sid="'+s.id+'" data-sub="'+sub+'" data-field="ca1" oninput="calcTotal(\''+s.id+'\')"/>'+
+        '<input class="score-in" type="number" min="0" max="'+ca2Max+'" value="'+(ss.ca2||'')+'" data-sid="'+s.id+'" data-sub="'+sub+'" data-field="ca2" oninput="calcTotal(\''+s.id+'\')"/>'+
+        '<input class="score-in" type="number" min="0" max="'+examMax+'" value="'+(ss.exam||'')+'" data-sid="'+s.id+'" data-sub="'+sub+'" data-field="exam" oninput="calcTotal(\''+s.id+'\')"/>'+
+        '</div></td>';
+    }).join('');
+    var avg = document.getElementById('avg-'+s.id) ? document.getElementById('avg-'+s.id).textContent : '—';
+    return '<tr>'+
+      '<td style="padding:8px 12px;border:1px solid var(--line);font-weight:700;color:var(--t1);">'+name+'</td>'+
+      subCells+
+      '<td style="padding:8px 6px;border:1px solid var(--line);font-family:var(--serif);font-weight:700;color:var(--gold);text-align:center;font-size:.9rem;" id="avg-'+s.id+'">—</td>'+
+      '</tr>';
+  }).join('');
+
+  // Calculate existing
+  currentStudents.forEach(function(s){ calcTotal(s.id); });
+}
+
+function calcTotal(sid){
+  var saved = scoresData[sid] = scoresData[sid]||{};
+  var inputs = document.querySelectorAll('[data-sid="'+sid+'"]');
+  var totals = {};
+  inputs.forEach(function(inp){
+    var sub = inp.dataset.sub;
+    var field = inp.dataset.field;
+    var val = parseInt(inp.value)||0;
+    if(!saved[sub])saved[sub]={};
+    saved[sub][field] = val;
+    if(!totals[sub])totals[sub]=0;
+    totals[sub] += val;
+  });
+  var totalAll = Object.values(totals).reduce(function(s,v){return s+v;},0);
+  var avgEl = document.getElementById('avg-'+sid);
+  if(avgEl) avgEl.textContent = subjects.length ? Math.round(totalAll/subjects.length)+'%' : '—';
+}
+
+function saveAllScores(){
+  currentStudents.forEach(function(s){ calcTotal(s.id); });
+  localStorage.setItem('scores_'+currentClass, JSON.stringify(scoresData));
+  localStorage.setItem('subjects_'+currentClass, JSON.stringify(subjects));
+  toast('✅ Scores saved for '+currentClass,'success');
+}
+
+// ── GENERATE REPORT CARDS ──
+function generateCards(){
+  saveAllScores();
+  var cls = currentClass;
+  var term = document.getElementById('term-sel').value;
+  var session = document.getElementById('sess-in').value;
+  var nextTerm = document.getElementById('next-term').value || 'To be announced';
+  var ca1Max = parseInt(document.getElementById('ca1-max').value)||20;
+  var ca2Max = parseInt(document.getElementById('ca2-max').value)||20;
+  var examMax = parseInt(document.getElementById('exam-max').value)||60;
+  var totalMax = ca1Max+ca2Max+examMax;
+  var totalDays = document.getElementById('total-days').value||'90';
+  var approvalDate = document.getElementById('approval-date').value;
+  var isPrimary = cls.toLowerCase().includes('primary');
+  var school = DB.school;
+
+  // Calculate class averages per subject (for highest/lowest/class average)
+  var subjectStats = {};
+  subjects.forEach(function(sub){
+    var scores = currentStudents.map(function(s){
+      var sd = scoresData[s.id]&&scoresData[s.id][sub];
+      return sd ? (parseInt(sd.ca1||0)+parseInt(sd.ca2||0)+parseInt(sd.exam||0)) : 0;
+    }).filter(function(v){return v>0;});
+    subjectStats[sub] = {
+      highest: scores.length?Math.max.apply(null,scores):0,
+      lowest:  scores.length?Math.min.apply(null,scores):0,
+      average: scores.length?Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length):0,
+      count:   currentStudents.length
+    };
+  });
+
+  // Calculate overall class totals for position
+  var classTotals = currentStudents.map(function(s){
+    var total = subjects.reduce(function(sum,sub){
+      var sd = scoresData[s.id]&&scoresData[s.id][sub];
+      return sum + (sd?(parseInt(sd.ca1||0)+parseInt(sd.ca2||0)+parseInt(sd.exam||0)):0);
+    },0);
+    return {id:s.id, total:total};
+  }).sort(function(a,b){return b.total-a.total;});
+  var posMap = {};
+  classTotals.forEach(function(s,i){posMap[s.id]=i+1;});
+
+  var cards = currentStudents.map(function(student){
+    var name = (student.surname||'')+' '+(student.firstname||'');
+    var sd = scoresData[student.id]||{};
+    var logoHtml = schoolLogo?'<img src="'+schoolLogo+'" onerror="this.parentNode.innerHTML=\'LOGO\'"/>':'School<br/>Logo';
+    var photoHtml = student.passport?'<img src="'+student.passport+'" onerror="this.parentNode.innerHTML=\'Student<br/>Photo\'"/>':'Student<br/>Photo';
+    var grandTotal = 0;
+    var subjectRows = subjects.map(function(sub){
+      var scores = sd[sub]||{};
+      var ca1=parseInt(scores.ca1||0), ca2=parseInt(scores.ca2||0), exam=parseInt(scores.exam||0);
+      var total=ca1+ca2+exam;
+      grandTotal+=total;
+      var g = getGrade(total,isPrimary);
+      var st = subjectStats[sub];
+      var subPos = 0;
+      // Find position for this subject
+      var subScores = currentStudents.map(function(x){
+        var xs=scoresData[x.id]&&scoresData[x.id][sub];
+        return {id:x.id,t:xs?(parseInt(xs.ca1||0)+parseInt(xs.ca2||0)+parseInt(xs.exam||0)):0};
+      }).sort(function(a,b){return b.t-a.t;});
+      subPos = subScores.findIndex(function(x){return x.id===student.id;})+1;
+      var posStr = subPos>0?subPos+ordinal(subPos):'—';
+      return '<tr>'+
+        '<td style="text-align:left;padding-left:6px;font-weight:600;">'+sub+'</td>'+
+        '<td>'+( ca1||'—')+'</td>'+
+        '<td>'+( ca2||'—')+'</td>'+
+        '<td>'+( exam||'—')+'</td>'+
+        '<td style="font-weight:700;color:#1a0a3e;">'+( total||'—')+'</td>'+
+        '<td>'+posStr+'</td>'+
+        '<td style="color:#006600;font-weight:700;">'+g.remark+'</td>'+
+        '<td>'+( st.lowest||'—')+'</td>'+
+        '<td>'+( st.highest||'—')+'</td>'+
+        '<td>'+(st.average||'—')+'</td>'+
+        '<td style="font-weight:700;">'+g.grade+'</td>'+
+        '</tr>';
+    }).join('');
+
+    var avg = subjects.length?Math.round(grandTotal/subjects.length):'—';
+    var pos = posMap[student.id]||'—';
+    var posOrd = typeof pos==='number'?pos+ordinal(pos):pos;
+    var classAvg = subjects.length?Math.round(
+      currentStudents.reduce(function(sum,s){
+        return sum+subjects.reduce(function(ss,sub){
+          var xs=scoresData[s.id]&&scoresData[s.id][sub];
+          return ss+(xs?(parseInt(xs.ca1||0)+parseInt(xs.ca2||0)+parseInt(xs.exam||0)):0);
+        },0);
+      },0)/(currentStudents.length*subjects.length)
+    ):'—';
+
+    // HOD comments
+    var reviews = JSON.parse(localStorage.getItem('rsms_reviews')||'[]');
+    var stuReview = reviews.find(function(r){return r.studentId===student.id&&r.term===term;});
+    var teacherRemark = stuReview?stuReview.comment:'';
+    var principalRemark = '';
+
+    // Affective domain defaults
+    var affective = [
+      {label:'Class Attendance',score:5},{label:'Punctuality',score:5},
+      {label:'Neatness',score:4},{label:'Spirit of Responsibility',score:4},
+      {label:'Health',score:5},{label:'Organizational Ability',score:4},
+      {label:'Politeness',score:5},{label:'Relationship with Teacher',score:4},
+      {label:'Spirit of Co-operation',score:5},{label:'Initiative',score:4}
+    ];
+    var psychomotor = [
+      {label:'Communication Skill',score:4},{label:'Craft',score:4},
+      {label:'Hardworking',score:4},{label:'Musical Skill',score:3},
+      {label:'Sports',score:5}
+    ];
+
+    return '<div class="result-card">'+
+      // HEADER
+      '<div class="rc-header">'+
+        '<div class="rc-logo-box">'+logoHtml+'</div>'+
+        '<div class="rc-school-center">'+
+          '<div class="rc-school-name">'+school.name+'</div>'+
+          (school.address?'<div class="rc-school-address">'+school.address+'</div>':'<div class="rc-school-address">School Address Here</div>')+
+          '<div class="rc-school-contact">'+
+            (school.phone?'Tel: '+school.phone+' | ':'')+
+            (school.email?'Email: '+school.email:'')+'</div>'+
+          '<div class="rc-report-title">Termly Continuous Assessment Report Card</div>'+
+        '</div>'+
+        '<div class="rc-photo-box">'+photoHtml+'</div>'+
+      '</div>'+
+
+      // STUDENT INFO
+      '<div class="rc-student-info">'+
+        '<div class="rc-si-left">'+
+          row('Name:', name)+
+          row('Registration No:', student.reg||'—')+
+          row('Class:', cls)+
+          row('Gender:', student.gender||'—')+
+          row('Date of Birth:', student.dob||'—')+
+        '</div>'+
+        '<div class="rc-si-right">'+
+          row('Term:', term)+
+          row('Session:', session)+
+          row('Total School Days:', totalDays)+
+          row('Next Term Begins:', nextTerm)+
+          (approvalDate?row('Results Approval Date:', new Date(approvalDate).toDateString()):'')+
+        '</div>'+
+      '</div>'+
+
+      // SCORES TABLE
+      '<div class="rc-table-header">STUDENTS TERMLY CONTINUOUS ASSESSMENT PERFORMANCE BREAKDOWN</div>'+
+      '<table class="rc-scores">'+
+        '<thead><tr>'+
+          '<th rowspan="2" style="min-width:130px;text-align:left;padding-left:6px;">SUBJECTS</th>'+
+          '<th>1st CA<br/><small>('+ca1Max+'%)</small></th>'+
+          '<th>2nd CA<br/><small>('+ca2Max+'%)</small></th>'+
+          '<th>EXAM<br/><small>('+examMax+'%)</small></th>'+
+          '<th>TERM<br/>TOTAL<br/><small>(100)</small></th>'+
+          '<th>POSITION</th>'+
+          '<th>REMARKS</th>'+
+          '<th>LOWEST<br/>IN CLASS</th>'+
+          '<th>HIGHEST<br/>IN CLASS</th>'+
+          '<th>CLASS<br/>AVERAGE</th>'+
+          '<th>GRADE</th>'+
+        '</tr></thead>'+
+        '<tbody>'+subjectRows+'</tbody>'+
+        '<tr class="rc-total-row">'+
+          '<td style="text-align:left;padding-left:6px;font-weight:700;">TOTAL / AVERAGE</td>'+
+          '<td colspan="3"></td>'+
+          '<td style="font-weight:700;">'+grandTotal+'</td>'+
+          '<td colspan="4"></td>'+
+          '<td>'+avg+'%</td>'+
+          '<td></td>'+
+        '</tr>'+
+      '</table>'+
+
+      // BOTTOM SUMMARY + GRADING
+      '<div class="rc-bottom">'+
+        '<div class="rc-summary">'+
+          '<div class="rc-section-title">Report Summary</div>'+
+          sumRow('Overall Total Score out of '+(subjects.length*totalMax),grandTotal)+
+          sumRow('Average Score',avg+'%')+
+          sumRow('Position in Class',posOrd+' out of '+currentStudents.length)+
+          sumRow('Class Average',classAvg+'%')+
+          sumRow('Number of Subjects',subjects.length)+
+        '</div>'+
+        '<div class="rc-grading">'+
+          '<div class="rc-section-title">Grading System</div>'+
+          (isPrimary?
+            '<table class="rc-grade-table"><tr><th>Score Range</th><th>Grade</th><th>Remark</th></tr>'+
+            GRADE_PRIMARY.map(function(g){return '<tr><td>'+g.min+'%-'+g.max+'%</td><td>'+g.grade+'</td><td>'+g.remark+'</td></tr>';}).join('')+'</table>':
+            '<table class="rc-grade-table"><tr><th>Score Range</th><th>Grade</th><th>Remark</th></tr>'+
+            GRADE_SSS.map(function(g){return '<tr><td>'+g.min+'%-'+g.max+'%</td><td>'+g.grade+'</td><td>'+g.remark+'</td></tr>';}).join('')+'</table>'
+          )+
+        '</div>'+
+      '</div>'+
+
+      // AFFECTIVE DOMAIN
+      '<div class="rc-domains">'+
+        '<div class="rc-domain-title">AFFECTIVE DOMAIN (Score are based on incidences in school)</div>'+
+        '<div class="rc-domain-grid">'+
+          affective.map(function(a){
+            return '<div class="rc-domain-item"><span class="rc-domain-name">'+a.label+'</span><span class="rc-domain-score">'+a.score+'</span></div>';
+          }).join('')+
+        '</div>'+
+        '<div class="rc-domain-key">Key: 5-Excellent, 4-Very Good, 3-Good, 2-Fair, 1-Poor</div>'+
+      '</div>'+
+
+      // PSYCHOMOTOR
+      '<div class="rc-domains" style="border-top:none;padding-top:2px;">'+
+        '<div class="rc-domain-title">PSYCHOMOTOR SKILLS (Score are based on incidences in school)</div>'+
+        '<div class="rc-domain-grid">'+
+          psychomotor.map(function(a){
+            return '<div class="rc-domain-item"><span class="rc-domain-name">'+a.label+'</span><span class="rc-domain-score">'+a.score+'</span></div>';
+          }).join('')+
+        '</div>'+
+      '</div>'+
+
+      // REMARKS
+      '<div class="rc-remarks">'+
+        '<div class="rc-remark-row"><span class="rc-remark-label">Class/Form Teacher\'s Remark:</span><span class="rc-remark-text">'+( teacherRemark||'&nbsp;')+'</span></div>'+
+        '<div class="rc-remark-row"><span class="rc-remark-label">Head of School\'s Remark and Signature:</span><span class="rc-remark-text">&nbsp;</span></div>'+
+      '</div>'+
+
+      // SIGNATURES
+      '<div class="rc-signatures">'+
+        '<div class="rc-sig">'+
+          '<div class="rc-sig-line"></div>'+
+          '<div class="rc-sig-name">'+(school.principal||'Principal')+'</div>'+
+          '<div class="rc-sig-title">Principal / Head Teacher</div>'+
+        '</div>'+
+        '<div class="rc-sig">'+
+          '<div class="rc-sig-line"></div>'+
+          '<div class="rc-sig-name">Class Teacher</div>'+
+          '<div class="rc-sig-title">Form Teacher / Class Teacher</div>'+
+        '</div>'+
+      '</div>'+
+
+      // FOOTER
+      '<div class="rc-footer">'+school.name+' | '+term+' '+session+' | Powered by RSMS — Rehoteq Technologies (rsms.rehoteq.com)</div>'+
+    '</div>';
+  }).join('');
+
+  document.getElementById('cards-output').innerHTML = cards;
+  toast('📄 '+currentStudents.length+' report cards generated','success');
+  setTimeout(function(){ document.getElementById('cards-output').scrollIntoView({behavior:'smooth'}); },300);
+}
+
+// ── HELPERS ──
+function row(label,val){
+  return '<div class="rc-si-row"><span class="rc-si-label">'+label+'</span><span class="rc-si-val">'+val+'</span></div>';
+}
+function sumRow(label,val){
+  return '<div class="rc-sum-row"><span class="rc-sum-label">'+label+'</span><span class="rc-sum-val">'+val+'</span></div>';
+}
+function ordinal(n){
+  var s=['th','st','nd','rd'];
+  var v=n%100;
+  return s[(v-20)%10]||s[v]||s[0];
+}
+
+// ── INIT ──
+window.addEventListener('load',function(){
+  document.getElementById('approval-date').value=new Date().toISOString().split('T')[0];
+  var keys=Object.keys(localStorage).filter(function(k){return k.startsWith('rsms_onboarding_RSMS-');});
+  for(var i=0;i<keys.length;i++){
+    try{var d=JSON.parse(localStorage.getItem(keys[i])||'{}');if(d.logo){schoolLogo=d.logo;break;}}catch(e){}
+  }
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
+});
+</script>
+</body>
+</html>
