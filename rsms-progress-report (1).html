@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RSMS — KG & Nursery Progress Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--panel:#0d0f1a;--card:#111420;--card2:#161929;
+  --line:rgba(255,255,255,0.07);--line2:rgba(255,255,255,0.13);
+  --gold:#d4a843;--goldl:rgba(212,168,67,0.1);
+  --success:#22c55e;--danger:#f43f5e;--warn:#f59e0b;--info:#3b82f6;
+  --t1:#f0f2ff;--t2:rgba(240,242,255,0.65);--t3:rgba(240,242,255,0.35);--t4:rgba(240,242,255,0.14);
+  --r:14px;--r2:10px;--r3:7px;--serif:'Fraunces',serif;--sans:'Outfit',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;}
+
+/* CONTROLS */
+.controls{background:var(--panel);border-bottom:1px solid var(--line);
+  padding:13px 22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  position:sticky;top:0;z-index:50;}
+.ctrl-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--t1);}
+.ctrl-right{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  height:42px;padding:0 18px;border:none;border-radius:var(--r3);cursor:pointer;
+  font-family:var(--sans);font-size:.88rem;font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-gold{background:linear-gradient(135deg,#4a2500,var(--gold));color:#000;}
+.btn-ok{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--t2);}
+.btn-ghost:hover{background:rgba(255,255,255,.1);}
+.btn-sm{height:38px;padding:0 14px;font-size:.82rem;}
+
+/* SCREEN CONTROLS */
+.screen-wrap{max-width:900px;margin:0 auto;padding:22px 18px 40px;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;}
+.ct{font-size:.96rem;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.fg label{font-size:.65rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;}
+.fi{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);
+  padding:0 14px;color:var(--t1);font-size:.94rem;font-family:var(--sans);
+  outline:none;width:100%;height:48px;transition:all .2s;}
+.fi:focus{border-color:rgba(212,168,67,.4);}
+select.fi{cursor:pointer;}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;}
+@media(max-width:600px){.f2,.f3{grid-template-columns:1fr;}}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:.65rem;font-weight:700;}
+.b-ok{background:rgba(34,197,94,.1);color:#22c55e;}
+.b-gold{background:var(--goldl);color:var(--gold);}
+
+/* ═══════════════════════════════════════════
+   A4 PRINT REPORT — WHITE PAGE
+═══════════════════════════════════════════ */
+.report-card{
+  background:#fff;color:#000;
+  font-family:Arial,Helvetica,sans-serif;
+  width:210mm;min-height:297mm;
+  margin:0 auto 14px;
+  border:1px solid #ccc;
+  font-size:10.5px;
+  page-break-after:always;
+  page-break-inside:avoid;}
+.report-card:last-child{page-break-after:auto;}
+@media screen{.report-card{box-shadow:0 4px 24px rgba(0,0,0,.15);}}
+
+/* ── REPORT HEADER ── */
+.rp-head{
+  display:grid;grid-template-columns:80px 1fr 80px;
+  align-items:center;gap:8px;
+  padding:10px 14px;
+  border-bottom:3px solid #1a0a3e;}
+.rp-logo{width:72px;height:72px;border:1px solid #ccc;
+  display:flex;align-items:center;justify-content:center;font-size:.55rem;
+  color:#666;overflow:hidden;text-align:center;}
+.rp-logo img{width:100%;height:100%;object-fit:contain;}
+.rp-school-center{text-align:center;}
+.rp-school-name{font-size:15px;font-weight:900;color:#1a0a3e;text-transform:uppercase;margin-bottom:2px;}
+.rp-school-addr{font-size:8.5px;color:#555;margin-bottom:3px;}
+.rp-report-type{font-size:10px;font-weight:700;color:#1a0a3e;
+  background:#f0f0f0;padding:3px 10px;border-radius:3px;display:inline-block;}
+.rp-photo{width:72px;height:80px;border:1px solid #999;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.55rem;color:#999;overflow:hidden;background:#f5f5f5;}
+.rp-photo img{width:100%;height:100%;object-fit:cover;}
+
+/* ── STUDENT INFO BAR ── */
+.rp-info-bar{
+  display:grid;grid-template-columns:1fr 1fr;
+  border-bottom:2px solid #1a0a3e;}
+.rp-info-half{padding:7px 12px;}
+.rp-info-row{display:flex;gap:0;margin-bottom:3px;font-size:9.5px;}
+.rp-info-label{font-weight:700;color:#000;min-width:110px;}
+.rp-info-val{color:#1a0a3e;font-weight:600;
+  border-bottom:1px solid #ddd;flex:1;padding-bottom:1px;}
+
+/* ── SECTION TITLE ── */
+.rp-sec-title{
+  background:#1a0a3e;color:#fff;
+  padding:4px 12px;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;}
+
+/* ── DEVELOPMENT AREAS TABLE ── */
+.rp-dev-table{width:100%;border-collapse:collapse;}
+.rp-dev-table th{
+  background:#2d1b6e;color:#fff;
+  padding:5px 8px;font-size:8.5px;font-weight:700;
+  border:1px solid #333;text-align:center;}
+.rp-dev-table th:first-child{text-align:left;}
+.rp-dev-table td{
+  padding:5px 8px;border:1px solid #ddd;
+  font-size:9.5px;color:#000;vertical-align:middle;}
+.rp-dev-table tr:nth-child(even) td{background:#f9f9f9;}
+.rp-dev-table .area-name{font-weight:600;color:#1a0a3e;}
+.rp-dev-table .area-sub{font-size:8px;color:#777;margin-top:1px;}
+
+/* Rating circles */
+.rating-cell{text-align:center;}
+.rating-circle{
+  display:inline-block;width:18px;height:18px;border-radius:50%;
+  border:1.5px solid #ccc;line-height:15px;font-size:8px;
+  font-weight:700;cursor:pointer;}
+.rating-circle.e{background:#22c55e;border-color:#22c55e;color:#fff;}
+.rating-circle.g{background:#3b82f6;border-color:#3b82f6;color:#fff;}
+.rating-circle.f{background:#f59e0b;border-color:#f59e0b;color:#fff;}
+.rating-circle.n{background:#f43f5e;border-color:#f43f5e;color:#fff;}
+.rating-circle.selected{transform:scale(1.2);}
+
+/* ── SKILLS TABLE ── */
+.rp-skills-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  border-top:1px solid #ddd;}
+.rp-skill-section{border-right:1px solid #ddd;}
+.rp-skill-section:last-child{border-right:none;}
+.rp-skill-title{
+  background:#2d1b6e;color:#fff;
+  padding:4px 10px;font-size:8.5px;font-weight:700;text-transform:uppercase;}
+.rp-skill-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:9px;}
+.rp-skill-row:last-child{border-bottom:none;}
+.rp-skill-name{color:#1a0a3e;font-weight:600;}
+.rp-skill-rating{display:flex;gap:3px;}
+.rp-rating-dot{
+  width:14px;height:14px;border-radius:50%;
+  border:1px solid #ccc;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:6.5px;font-weight:700;}
+.rp-rating-dot.e{background:#22c55e;border-color:#22c55e;color:#fff;}
+.rp-rating-dot.g{background:#3b82f6;border-color:#3b82f6;color:#fff;}
+.rp-rating-dot.f{background:#f59e0b;border-color:#f59e0b;color:#fff;}
+.rp-rating-dot.n{background:#f43f5e;border-color:#f43f5e;color:#fff;}
+
+/* ── ATTENDANCE ── */
+.rp-att-row{
+  display:flex;padding:8px 12px;gap:10px;
+  border-bottom:2px solid #1a0a3e;flex-wrap:wrap;}
+.rp-att-item{display:flex;align-items:center;gap:6px;font-size:9.5px;}
+.rp-att-label{color:#555;font-weight:600;}
+.rp-att-val{color:#1a0a3e;font-weight:700;
+  border-bottom:1px solid #999;min-width:40px;text-align:center;}
+
+/* ── REMARKS ── */
+.rp-remarks{padding:8px 12px;border-bottom:1px solid #ddd;}
+.rp-remark-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;font-size:9.5px;}
+.rp-remark-label{font-weight:700;color:#000;min-width:180px;flex-shrink:0;}
+.rp-remark-line{flex:1;border-bottom:1px solid #ccc;min-height:16px;color:#1a0a3e;font-weight:600;padding-bottom:1px;}
+
+/* ── SIGNATURES ── */
+.rp-sigs{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #ddd;}
+.rp-sig{padding:8px 14px;text-align:center;}
+.rp-sig-line{border-bottom:1px solid #000;height:22px;margin-bottom:4px;}
+.rp-sig-name{font-size:9px;font-weight:700;color:#1a0a3e;}
+.rp-sig-title{font-size:8px;color:#555;text-transform:uppercase;letter-spacing:.05em;}
+
+/* ── FOOTER ── */
+.rp-footer{
+  background:#1a0a3e;color:#fff;
+  padding:4px 12px;font-size:7.5px;text-align:center;
+  display:flex;justify-content:space-between;}
+
+/* KEY ROW */
+.rp-key{
+  display:flex;gap:14px;padding:5px 12px;
+  background:#f5f5f5;border-top:1px solid #ddd;flex-wrap:wrap;}
+.rp-key-item{display:flex;align-items:center;gap:4px;font-size:8.5px;}
+.rp-key-circle{width:12px;height:12px;border-radius:50%;display:inline-block;}
+
+/* ── PRINT ── */
+@media print{
+  body{background:#fff;margin:0;padding:0;}
+  .controls,.screen-wrap{display:none!important;}
+  .report-card{
+    border:1px solid #000;
+    width:100%;margin:0;
+    box-shadow:none;}
+  .rp-head,.rp-sec-title,.rp-dev-table th,
+  .rp-skill-title,.rp-footer{
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  @page{size:A4 portrait;margin:5mm;}
+}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);
+  border-radius:var(--r2);padding:10px 20px;font-size:.86rem;z-index:999;
+  transition:transform .25s;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.error{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.info{background:#0f1020;border:1px solid rgba(212,168,67,.35);color:var(--gold);}
+</style>
+</head>
+<body>
+
+<!-- SCREEN CONTROLS -->
+<div class="controls">
+  <div class="ctrl-title">🌱 KG & Nursery Progress Report</div>
+  <div class="ctrl-right">
+    <select class="fi" id="ctrl-class" style="height:38px;font-size:.82rem;max-width:160px;">
+      <option value="">All Classes</option>
+      <option>Crèche A</option><option>Crèche B</option>
+      <option>Nursery 1</option><option>Nursery 2</option>
+      <option>KG 1</option><option>KG 2</option>
+      <option>Pre-Primary 1</option><option>Pre-Primary 2</option>
+    </select>
+    <input class="fi" id="ctrl-term" type="text" value="First Term" style="height:38px;font-size:.82rem;max-width:120px;"/>
+    <input class="fi" id="ctrl-session" type="text" value="2025/2026" style="height:38px;font-size:.82rem;max-width:110px;"/>
+    <button class="btn btn-gold btn-sm" onclick="generateReports()">📄 Generate</button>
+    <button class="btn btn-ok btn-sm" onclick="window.print()">🖨 Print All</button>
+  </div>
+</div>
+
+<!-- SCREEN SETUP FORM -->
+<div class="screen-wrap" id="setup-screen">
+  <div class="card">
+    <div class="ct">⚙️ Report Settings</div>
+    <div class="f2">
+      <div class="fg"><label>Class *</label>
+        <select class="fi" id="sel-class">
+          <option value="">— Select Class —</option>
+          <option>Crèche A</option><option>Crèche B</option>
+          <option>Nursery 1</option><option>Nursery 2</option>
+          <option>KG 1</option><option>KG 2</option>
+          <option>Pre-Primary 1</option><option>Pre-Primary 2</option>
+        </select>
+      </div>
+      <div class="fg"><label>Next Term Begins</label>
+        <input class="fi" id="sel-nextterm" placeholder="e.g. Monday, 14th Jan 2026"/>
+      </div>
+    </div>
+    <div class="f3">
+      <div class="fg"><label>Days School Opened</label>
+        <input class="fi" type="number" id="sel-days-open" value="90"/>
+      </div>
+      <div class="fg"><label>Teacher's Name</label>
+        <input class="fi" id="sel-teacher" placeholder="Class teacher name"/>
+      </div>
+      <div class="fg"><label>Principal/Head Teacher</label>
+        <input class="fi" id="sel-principal" placeholder="Principal's name"/>
+      </div>
+    </div>
+    <button class="btn btn-gold" onclick="generateReports()" style="width:100%;">📄 Generate Progress Reports</button>
+  </div>
+
+  <!-- INFO -->
+  <div class="card" style="border:1px solid rgba(212,168,67,.15);padding:14px 16px;">
+    <div class="ct" style="margin-bottom:8px;">📋 Development Areas Covered</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.82rem;color:var(--t2);">
+      <div>🧠 Cognitive Development</div><div>🗣 Language & Communication</div>
+      <div>🤲 Fine Motor Skills</div><div>🏃 Gross Motor Skills</div>
+      <div>❤️ Social & Emotional</div><div>🎨 Creative Arts</div>
+      <div>📖 Early Literacy</div><div>🔢 Early Numeracy</div>
+      <div>🌍 Environmental Knowledge</div><div>✝️ Religious/Moral Development</div>
+    </div>
+    <div style="margin-top:10px;font-size:.78rem;color:var(--t3);">
+      Rating: <strong style="color:var(--success);">E = Excellent</strong> &nbsp;
+      <strong style="color:var(--info);">G = Good</strong> &nbsp;
+      <strong style="color:var(--warn);">F = Fair</strong> &nbsp;
+      <strong style="color:var(--danger);">N = Needs Improvement</strong>
+    </div>
+  </div>
+</div>
+
+<!-- REPORTS OUTPUT -->
+<div id="reports-output"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var DB = {
+  school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School Name","principal":"","address":""}'),
+  students: JSON.parse(localStorage.getItem('rsms_students')||'[]')
+};
+var schoolLogo = localStorage.getItem('rsms_school_logo')||'';
+
+// ── DEVELOPMENT AREAS ──
+var DEV_AREAS = [
+  {area:'COGNITIVE DEVELOPMENT',items:[
+    'Problem Solving Ability','Attention & Concentration',
+    'Memory & Recall','Logical Thinking','Curiosity & Exploration'
+  ]},
+  {area:'LANGUAGE & COMMUNICATION',items:[
+    'Oral Expression','Listening Skills',
+    'Vocabulary Development','Story Narration','Response to Instructions'
+  ]},
+  {area:'EARLY LITERACY',items:[
+    'Letter Recognition (A-Z)','Letter Sounds (Phonics)',
+    'Reading Readiness','Pre-Writing Skills','Book Handling'
+  ]},
+  {area:'EARLY NUMERACY',items:[
+    'Number Recognition (1-20)','Counting Objects','Sorting & Matching',
+    'Shape Recognition','Size Comparison'
+  ]},
+  {area:'FINE MOTOR SKILLS',items:[
+    'Pencil/Crayon Grip','Cutting with Scissors',
+    'Drawing & Colouring','Bead Threading','Puzzle Assembly'
+  ]},
+  {area:'GROSS MOTOR SKILLS',items:[
+    'Running & Jumping','Balance & Coordination',
+    'Ball Skills','Dancing & Movement','Physical Endurance'
+  ]},
+  {area:'SOCIAL & EMOTIONAL',items:[
+    'Sharing & Taking Turns','Respect for Others',
+    'Self Control','Friendship Skills','Emotional Expression'
+  ]},
+  {area:'CREATIVE ARTS',items:[
+    'Drawing & Painting','Music & Rhythm',
+    'Dramatic Play','Craft & Construction','Imagination'
+  ]},
+  {area:'SELF CARE & INDEPENDENCE',items:[
+    'Personal Hygiene','Dressing & Undressing',
+    'Tidying Up After Activities','Following Routine','Care of Belongings'
+  ]},
+  {area:'RELIGIOUS & MORAL DEVELOPMENT',items:[
+    'Obedience & Respect','Honesty','Kindness to Others',
+    'Prayer/Devotion Participation','Moral Conduct'
+  ]}
+];
+
+// Personal Skills
+var PERSONAL_SKILLS = [
+  'Neatness & Tidiness','Punctuality','Class Participation',
+  'Politeness','Spirit of Cooperation','Initiative',
+  'Health Habits','Relationship with Teacher',
+  'Confidence','Concentration Span'
+];
+
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.className='toast '+(type||'info')+' show';
+  t.textContent=msg;clearTimeout(t._t);
+  t._t=setTimeout(function(){t.classList.remove('show');},3500);
+}
+
+function generateReports(){
+  var cls = document.getElementById('sel-class').value||document.getElementById('ctrl-class').value;
+  var term = document.getElementById('ctrl-term').value||'First Term';
+  var session = document.getElementById('ctrl-session').value||'2025/2026';
+  var nextTerm = document.getElementById('sel-nextterm').value||'To be announced';
+  var daysOpen = document.getElementById('sel-days-open').value||'90';
+  var teacher = document.getElementById('sel-teacher').value||DB.school.principal||'Class Teacher';
+  var principal = document.getElementById('sel-principal').value||DB.school.principal||'Principal';
+
+  var students = cls ?
+    DB.students.filter(function(s){return s.class===cls;}) : DB.students;
+
+  // Filter to only early childhood classes
+  if(!students.length && !cls){
+    students = DB.students.filter(function(s){
+      var c=(s.class||'').toLowerCase();
+      return c.includes('nursery')||c.includes('kg')||
+             c.includes('creche')||c.includes('crèche')||
+             c.includes('pre-primary')||c.includes('kindergarten');
+    });
+  }
+
+  if(!students.length){
+    // Demo students
+    students = [
+      {id:'d1',surname:'Adeyemi',firstname:'Tunde',gender:'Male',class:cls||'Nursery 1',reg:'REG-001',dob:'2020-03-10'},
+      {id:'d2',surname:'Okafor',firstname:'Blessing',gender:'Female',class:cls||'Nursery 1',reg:'REG-002',dob:'2020-07-22'},
+      {id:'d3',surname:'Hassan',firstname:'Aisha',gender:'Female',class:cls||'KG 1',reg:'REG-003',dob:'2019-11-15'},
+    ];
+    toast('Using demo students — add real students in Admin portal','info');
+  }
+
+  document.getElementById('setup-screen').style.display='none';
+
+  var html = students.map(function(student){
+    var name = (student.surname||'')+' '+(student.firstname||'');
+    var logoHtml = schoolLogo?
+      '<img src="'+schoolLogo+'" onerror="this.parentNode.innerHTML=\'LOGO\'"/>':
+      '<div style="font-size:.55rem;text-align:center;color:#666;">School<br/>Logo</div>';
+    var photoHtml = student.passport?
+      '<img src="'+student.passport+'"/>':
+      '<div style="font-size:.55rem;text-align:center;color:#999;padding:5px;">Student<br/>Photo</div>';
+
+    // Build dev areas table rows
+    var devRows = '';
+    DEV_AREAS.forEach(function(section){
+      // Section header
+      devRows += '<tr><td colspan="6" style="background:#e8e4f0;font-weight:700;'+
+        'font-size:8.5px;padding:4px 8px;color:#1a0a3e;text-transform:uppercase;'+
+        'letter-spacing:.06em;">'+section.area+'</td></tr>';
+      section.items.forEach(function(item){
+        devRows += '<tr>'+
+          '<td class="area-name" style="padding-left:14px;">'+item+'</td>'+
+          '<td class="rating-cell"><div class="rating-circle e" onclick="setRating(this,\'e\')">E</div></td>'+
+          '<td class="rating-cell"><div class="rating-circle g" onclick="setRating(this,\'g\')">G</div></td>'+
+          '<td class="rating-cell"><div class="rating-circle f" onclick="setRating(this,\'f\')">F</div></td>'+
+          '<td class="rating-cell"><div class="rating-circle n" onclick="setRating(this,\'n\')">N</div></td>'+
+          '<td style="font-size:8px;color:#777;padding:0 6px;min-width:80px;"></td>'+
+        '</tr>';
+      });
+    });
+
+    // Personal skills
+    var skillRows = PERSONAL_SKILLS.map(function(s){
+      return '<div class="rp-skill-row">'+
+        '<span class="rp-skill-name">'+s+'</span>'+
+        '<div class="rp-skill-rating">'+
+          '<div class="rp-rating-dot e" onclick="dotRating(this)">E</div>'+
+          '<div class="rp-rating-dot g" onclick="dotRating(this)">G</div>'+
+          '<div class="rp-rating-dot f" onclick="dotRating(this)">F</div>'+
+          '<div class="rp-rating-dot n" onclick="dotRating(this)">N</div>'+
+        '</div></div>';
+    }).join('');
+
+    return '<div class="report-card">'+
+
+      // HEADER
+      '<div class="rp-head">'+
+        '<div class="rp-logo">'+logoHtml+'</div>'+
+        '<div class="rp-school-center">'+
+          '<div class="rp-school-name">'+DB.school.name+'</div>'+
+          (DB.school.address?'<div class="rp-school-addr">'+DB.school.address+'</div>':'<div class="rp-school-addr">School Address</div>')+
+          '<div class="rp-report-type">Early Childhood Development Progress Report</div>'+
+        '</div>'+
+        '<div class="rp-photo">'+photoHtml+'</div>'+
+      '</div>'+
+
+      // STUDENT INFO
+      '<div class="rp-info-bar">'+
+        '<div class="rp-info-half">'+
+          srow("Pupil's Name:",name)+
+          srow("Class:",student.class||'—')+
+          srow("Reg. Number:",student.reg||'—')+
+          srow("Gender:",student.gender||'—')+
+        '</div>'+
+        '<div class="rp-info-half">'+
+          srow("Term:",term)+
+          srow("Session:",session)+
+          srow("Next Term Begins:",nextTerm)+
+          srow("Date of Birth:",student.dob||'—')+
+        '</div>'+
+      '</div>'+
+
+      // ATTENDANCE
+      '<div class="rp-att-row">'+
+        '<div class="rp-att-item"><span class="rp-att-label">Days School Opened:</span>'+
+          '<span class="rp-att-val">'+daysOpen+'</span></div>'+
+        '<div class="rp-att-item"><span class="rp-att-label">Days Present:</span>'+
+          '<span class="rp-att-val">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>'+
+        '<div class="rp-att-item"><span class="rp-att-label">Days Absent:</span>'+
+          '<span class="rp-att-val">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>'+
+        '<div class="rp-att-item"><span class="rp-att-label">Punctuality:</span>'+
+          '<span class="rp-att-val">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>'+
+      '</div>'+
+
+      // KEY
+      '<div class="rp-key">'+
+        '<div class="rp-key-item"><div class="rp-key-circle" style="background:#22c55e;"></div> E = Excellent</div>'+
+        '<div class="rp-key-item"><div class="rp-key-circle" style="background:#3b82f6;"></div> G = Good</div>'+
+        '<div class="rp-key-item"><div class="rp-key-circle" style="background:#f59e0b;"></div> F = Fair</div>'+
+        '<div class="rp-key-item"><div class="rp-key-circle" style="background:#f43f5e;"></div> N = Needs Improvement</div>'+
+      '</div>'+
+
+      // DEVELOPMENT TABLE
+      '<div class="rp-sec-title">Developmental Progress Assessment</div>'+
+      '<table class="rp-dev-table">'+
+        '<thead><tr>'+
+          '<th style="min-width:160px;text-align:left;padding-left:8px;">Development Area / Skill</th>'+
+          '<th style="width:36px;">E</th>'+
+          '<th style="width:36px;">G</th>'+
+          '<th style="width:36px;">F</th>'+
+          '<th style="width:36px;">N</th>'+
+          '<th style="min-width:80px;">Teacher\'s Note</th>'+
+        '</tr></thead>'+
+        '<tbody>'+devRows+'</tbody>'+
+      '</table>'+
+
+      // PERSONAL SKILLS
+      '<div class="rp-sec-title">Personal & Social Skills</div>'+
+      '<div class="rp-skills-grid">'+
+        '<div class="rp-skill-section">'+
+          skillRows.slice(0,Math.ceil(PERSONAL_SKILLS.length/2)).join('')+
+        '</div>'+
+        '<div class="rp-skill-section">'+
+          skillRows.slice(Math.ceil(PERSONAL_SKILLS.length/2)).join('')+
+        '</div>'+
+      '</div>'+
+
+      // REMARKS
+      '<div class="rp-remarks">'+
+        '<div class="rp-remark-row"><span class="rp-remark-label">Class Teacher\'s Comment:</span>'+
+          '<span class="rp-remark-line">&nbsp;</span></div>'+
+        '<div class="rp-remark-row"><span class="rp-remark-label">Head Teacher/Principal\'s Remark:</span>'+
+          '<span class="rp-remark-line">&nbsp;</span></div>'+
+      '</div>'+
+
+      // SIGNATURES
+      '<div class="rp-sigs">'+
+        '<div class="rp-sig">'+
+          '<div class="rp-sig-line"></div>'+
+          '<div class="rp-sig-name">'+teacher+'</div>'+
+          '<div class="rp-sig-title">Class Teacher</div>'+
+        '</div>'+
+        '<div class="rp-sig">'+
+          '<div class="rp-sig-line"></div>'+
+          '<div class="rp-sig-name">'+principal+'</div>'+
+          '<div class="rp-sig-title">Head Teacher / Principal</div>'+
+        '</div>'+
+      '</div>'+
+
+      // FOOTER
+      '<div class="rp-footer">'+
+        '<span>'+DB.school.name+' | '+term+' '+session+'</span>'+
+        '<span>Powered by RSMS — Rehoteq Technologies (rsms.rehoteq.com)</span>'+
+      '</div>'+
+
+    '</div>';
+  }).join('');
+
+  document.getElementById('reports-output').innerHTML = html;
+  toast('✅ '+students.length+' progress reports generated','success');
+  setTimeout(function(){
+    document.getElementById('reports-output').scrollIntoView({behavior:'smooth'});
+  },300);
+}
+
+function srow(label,val){
+  return '<div class="rp-info-row"><span class="rp-info-label">'+label+'</span>'+
+    '<span class="rp-info-val">'+val+'</span></div>';
+}
+
+// Rating interaction — click to select one rating per row
+function setRating(el, rating){
+  var row = el.closest('tr');
+  row.querySelectorAll('.rating-circle').forEach(function(c){
+    c.style.opacity='0.25';c.style.transform='';
+  });
+  el.style.opacity='1';el.style.transform='scale(1.2)';
+}
+function dotRating(el){
+  var wrap=el.closest('.rp-skill-rating');
+  wrap.querySelectorAll('.rp-rating-dot').forEach(function(d){
+    d.style.opacity='0.25';d.style.transform='';
+  });
+  el.style.opacity='1';el.style.transform='scale(1.2)';
+}
+
+// Init
+window.addEventListener('load',function(){
+  // Load logo
+  var keys=Object.keys(localStorage).filter(function(k){return k.startsWith('rsms_onboarding_RSMS-');});
+  for(var i=0;i<keys.length;i++){
+    try{var d=JSON.parse(localStorage.getItem(keys[i])||'{}');if(d.logo){schoolLogo=d.logo;break;}}catch(e){}
+  }
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
+});
+</script>
+</body>
+</html>
