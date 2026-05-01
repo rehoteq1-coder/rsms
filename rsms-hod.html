@@ -924,5 +924,8 @@ function sendMessage(){
   adminNotifs.push(m);localStorage.setItem('rsms_admin_messages',JSON.stringify(adminNotifs));
 }
 </script>
+<!-- AI FAB -->
+<button onclick="window.open('rsms-voice-ai.html','_blank')" style="position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));right:18px;z-index:99;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#14b8a6);border:none;cursor:pointer;font-size:1.3rem;box-shadow:0 4px 20px rgba(139,92,246,.4);display:flex;align-items:center;justify-content:center;" title="AI Assistant">🤖</button>
+
 </body>
 </html>
