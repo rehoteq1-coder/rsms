@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#030305"/>
+<title>RSMS Voice AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--panel:#080b14;--card:#0d1020;--card2:#121828;
+  --gold:#d4a843;--goldl:rgba(212,168,67,0.12);--goldm:rgba(212,168,67,0.22);
+  --teal:#14b8a6;--teall:rgba(20,184,166,0.1);
+  --purple:#8b5cf6;--purplel:rgba(139,92,246,0.1);
+  --danger:#f43f5e;--success:#22c55e;
+  --t1:#f0f2ff;--t2:rgba(240,242,255,.65);--t3:rgba(240,242,255,.35);--t4:rgba(240,242,255,.13);
+  --line:rgba(255,255,255,.06);--line2:rgba(255,255,255,.12);
+  --sans:'Outfit',sans-serif;--serif:'Fraunces',serif;
+  --safe-bot:env(safe-area-inset-bottom);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--t1);overflow:hidden;}
+.bg-r{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 50% at 30% 20%,rgba(139,92,246,.07),transparent),
+    radial-gradient(ellipse 50% 60% at 80% 80%,rgba(212,168,67,.06),transparent);}
+.bg-g{position:fixed;inset:0;z-index:0;opacity:.018;pointer-events:none;
+  background-image:linear-gradient(rgba(212,168,67,1) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(212,168,67,1) 1px,transparent 1px);
+  background-size:44px 44px;}
+.wrap{position:relative;z-index:1;display:flex;flex-direction:column;
+  height:100vh;max-width:520px;margin:0 auto;}
+
+/* TOPBAR */
+.topbar{padding:13px 16px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--line);background:rgba(8,11,20,.95);
+  backdrop-filter:blur(20px);flex-shrink:0;}
+.tb-back{background:none;border:1px solid var(--line2);border-radius:8px;
+  color:var(--t3);cursor:pointer;font-size:.8rem;padding:7px 12px;font-family:var(--sans);}
+.tb-name{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--t1);flex:1;}
+.tb-badge{background:var(--teall);border:1px solid rgba(20,184,166,.25);
+  border-radius:20px;padding:4px 11px;font-size:.65rem;font-weight:700;
+  color:var(--teal);display:flex;align-items:center;gap:5px;}
+.tb-dot{width:5px;height:5px;border-radius:50%;background:var(--teal);
+  animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.2;}}
+
+/* PERSONA BAR */
+.persona-bar{padding:10px 12px;display:flex;gap:7px;overflow-x:auto;
+  border-bottom:1px solid var(--line);flex-shrink:0;}
+.persona-bar::-webkit-scrollbar{display:none;}
+.pc{display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 12px;border-radius:12px;border:1px solid var(--line2);
+  background:var(--card);cursor:pointer;transition:all .2s;flex-shrink:0;min-width:70px;}
+.pc.active{border-color:rgba(212,168,67,.4);background:var(--goldl);}
+.pc-av{font-size:1.7rem;}
+.pc-name{font-size:.6rem;font-weight:800;color:var(--t3);text-transform:uppercase;}
+.pc.active .pc-name{color:var(--gold);}
+.pc-lang{font-size:.52rem;color:var(--t4);}
+.pc.active .pc-lang{color:rgba(212,168,67,.6);}
+
+/* CHAT */
+.chat{flex:1;overflow-y:auto;padding:14px 14px 8px;
+  display:flex;flex-direction:column;gap:10px;}
+.chat::-webkit-scrollbar{width:3px;}
+.chat::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px;}
+
+/* Welcome */
+.welcome{background:var(--card);border:1px solid rgba(212,168,67,.1);
+  border-radius:16px;padding:20px;text-align:center;}
+.welcome h2{font-family:var(--serif);font-size:1.1rem;font-weight:700;
+  color:var(--t1);margin:10px 0 6px;}
+.welcome p{font-size:.8rem;color:var(--t3);line-height:1.7;margin-bottom:14px;}
+.big-mic{width:76px;height:76px;border-radius:50%;margin:0 auto 10px;
+  background:linear-gradient(135deg,#1a0a3e,#2d1b6e);
+  border:2.5px solid rgba(212,168,67,.5);
+  box-shadow:0 0 0 7px rgba(212,168,67,.06);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;cursor:pointer;transition:all .25s;}
+.big-mic:active{transform:scale(.94);}
+.tap-label{font-size:.7rem;font-weight:800;color:rgba(212,168,67,.7);
+  letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;}
+.examples{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;}
+.ex{background:var(--card2);border:1px solid var(--line2);border-radius:20px;
+  padding:5px 12px;font-size:.72rem;color:var(--t2);cursor:pointer;transition:all .18s;}
+.ex:hover,.ex:active{background:var(--goldl);border-color:rgba(212,168,67,.3);color:var(--gold);}
+
+/* Messages */
+.msg{display:flex;gap:9px;animation:min .28s ease;}
+@keyframes min{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:none;}}
+.msg.user{flex-direction:row-reverse;}
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.9rem;flex-shrink:0;}
+.av.ai{background:linear-gradient(135deg,var(--purple),var(--teal));}
+.av.user{background:linear-gradient(135deg,var(--gold),#f0c060);}
+.bubble{max-width:80%;padding:11px 14px;border-radius:14px;
+  font-size:.88rem;line-height:1.65;}
+.msg.ai .bubble{background:var(--card);border:1px solid var(--line);
+  color:var(--t1);border-bottom-left-radius:4px;}
+.msg.user .bubble{background:linear-gradient(135deg,#2d1b6e,#4a2d9e);
+  color:#fff;border-bottom-right-radius:4px;}
+.msg-meta{font-size:.6rem;color:var(--t4);margin-top:4px;}
+.play-btn{background:none;border:none;color:var(--teal);cursor:pointer;
+  font-size:.72rem;font-family:var(--sans);font-weight:600;
+  display:flex;align-items:center;gap:4px;margin-top:3px;padding:0;}
+.typing{display:flex;align-items:center;gap:5px;padding:14px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--t3);
+  animation:tb .8s ease-in-out infinite;}
+.dot:nth-child(2){animation-delay:.15s;}
+.dot:nth-child(3){animation-delay:.3s;}
+@keyframes tb{0%,80%,100%{transform:translateY(0);}40%{transform:translateY(-6px);}}
+
+/* INPUT BAR */
+.input-bar{
+  padding:11px 12px;
+  padding-bottom:calc(11px + var(--safe-bot));
+  border-top:1px solid var(--line);
+  background:rgba(8,11,20,.97);
+  flex-shrink:0;}
+.input-row{display:flex;align-items:flex-end;gap:8px;}
+.input-box{flex:1;position:relative;}
+.chat-input{
+  width:100%;background:var(--card);border:1px solid var(--line2);
+  border-radius:14px;padding:12px 46px 12px 14px;
+  color:var(--t1);font-size:.9rem;font-family:var(--sans);
+  outline:none;resize:none;min-height:48px;max-height:110px;
+  line-height:1.5;transition:border-color .2s;}
+.chat-input:focus{border-color:rgba(212,168,67,.4);}
+.chat-input::placeholder{color:var(--t4);}
+.send-btn{position:absolute;right:9px;bottom:8px;
+  background:linear-gradient(135deg,var(--purple),var(--teal));
+  border:none;border-radius:8px;width:32px;height:32px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;color:#fff;}
+.send-btn:active{transform:scale(.93);}
+.mic-btn{
+  width:56px;height:56px;border-radius:50%;border:2px solid rgba(212,168,67,.4);
+  background:linear-gradient(135deg,#1a0a3e,#2d1b6e);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;font-size:1.4rem;flex-shrink:0;
+  box-shadow:0 0 0 4px rgba(212,168,67,.07);transition:all .22s;}
+.mic-btn:active,.mic-btn:hover{border-color:rgba(212,168,67,.7);transform:scale(1.04);}
+.mic-btn.listening{background:linear-gradient(135deg,#7f1d1d,var(--danger));
+  border-color:var(--danger);animation:mpulse 1s ease-in-out infinite;}
+.mic-btn.processing{background:linear-gradient(135deg,var(--purple),var(--teal));}
+@keyframes mpulse{
+  0%{box-shadow:0 0 0 0 rgba(244,63,94,.6);}
+  70%{box-shadow:0 0 0 16px rgba(244,63,94,0);}
+  100%{box-shadow:0 0 0 0 rgba(244,63,94,0);}
+}
+.mic-lbl{font-size:.42rem;font-weight:800;color:rgba(212,168,67,.6);
+  letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
+.status{text-align:center;font-size:.67rem;color:var(--t4);
+  margin-top:7px;min-height:14px;transition:color .3s;}
+.status.listening{color:var(--danger);}
+.status.processing{color:var(--teal);}
+.status.speaking{color:var(--success);}
+
+/* API GATE */
+.gate{position:fixed;inset:0;z-index:999;background:rgba(3,3,5,.96);
+  backdrop-filter:blur(20px);display:flex;align-items:center;
+  justify-content:center;padding:20px;}
+.gate-card{background:var(--panel,#080b14);border:1px solid rgba(212,168,67,.15);
+  border-radius:20px;padding:28px;width:100%;max-width:400px;}
+.gate-card h2{font-family:var(--serif);font-size:1.2rem;font-weight:700;
+  color:var(--t1);margin-bottom:6px;}
+.gate-card p{font-size:.82rem;color:var(--t3);margin-bottom:18px;line-height:1.6;}
+.gate-input{width:100%;height:50px;background:var(--card2,#121828);
+  border:1px solid var(--line2);border-radius:10px;padding:0 14px;
+  color:var(--t1);font-size:.88rem;outline:none;margin-bottom:10px;
+  font-family:'Courier New',monospace;transition:border-color .2s;}
+.gate-input:focus{border-color:rgba(212,168,67,.4);}
+.gate-btn{width:100%;height:50px;background:linear-gradient(135deg,#4a2500,var(--gold));
+  border:none;border-radius:10px;color:#000;font-family:var(--sans);
+  font-size:1rem;font-weight:800;cursor:pointer;margin-bottom:8px;}
+.gate-skip{width:100%;background:none;border:none;color:var(--t4);
+  font-size:.8rem;cursor:pointer;font-family:var(--sans);padding:6px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:100px;left:50%;
+  transform:translateX(-50%) translateY(70px);
+  border-radius:10px;padding:10px 20px;font-size:.84rem;z-index:9999;
+  transition:transform .28s;pointer-events:none;
+  display:flex;align-items:center;gap:7px;white-space:nowrap;max-width:92vw;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.s{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.e{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.i{background:#0f1020;border:1px solid rgba(212,168,67,.35);color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="bg-r"></div>
+<div class="bg-g"></div>
+
+<!-- API GATE -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div style="font-size:2rem;margin-bottom:10px;">⚡</div>
+    <h2>RSMS Voice AI</h2>
+    <p>Enter your <strong style="color:var(--gold);">Groq API key</strong> to activate.<br/>
+      Get one free at <strong style="color:var(--teal);">console.groq.com</strong></p>
+    <input class="gate-input" id="gate-key" type="password" placeholder="gsk_..."
+      onkeydown="if(event.key==='Enter')saveKey()"/>
+    <button class="gate-btn" onclick="saveKey()">⚡ Activate Voice AI</button>
+    <button class="gate-skip" onclick="skipGate()">Already set up — Continue</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="wrap">
+  <div class="topbar">
+    <button class="tb-back" onclick="history.back()">← Back</button>
+    <div class="tb-name" id="tb-name">👩🏾 Omotola</div>
+    <div class="tb-badge"><div class="tb-dot"></div>⚡ Groq</div>
+  </div>
+
+  <!-- PERSONA BAR -->
+  <div class="persona-bar">
+    <div class="pc active" data-p="omotola" onclick="setPer(this)">
+      <div class="pc-av">👩🏾</div>
+      <div class="pc-name">Omotola</div>
+      <div class="pc-lang">Yoruba</div>
+    </div>
+    <div class="pc" data-p="oyinyeh" onclick="setPer(this)">
+      <div class="pc-av">👩🏿</div>
+      <div class="pc-name">Oyinyeh</div>
+      <div class="pc-lang">Igbo</div>
+    </div>
+    <div class="pc" data-p="ibrahim" onclick="setPer(this)">
+      <div class="pc-av">👨🏾</div>
+      <div class="pc-name">Ibrahim</div>
+      <div class="pc-lang">Hausa</div>
+    </div>
+    <div class="pc" data-p="phebe" onclick="setPer(this)">
+      <div class="pc-av">👩🏽</div>
+      <div class="pc-name">Phebe</div>
+      <div class="pc-lang">Pidgin</div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="chat" id="chat">
+    <div class="welcome" id="welcome">
+      <div style="font-size:2.2rem;">🏫</div>
+      <h2>RSMS School Assistants</h2>
+      <p>Choose your assistant above.<br/>
+        <strong style="color:var(--gold);">Omotola</strong> — Yoruba &nbsp;
+        <strong style="color:var(--gold);">Oyinyeh</strong> — Igbo<br/>
+        <strong style="color:var(--gold);">Ibrahim</strong> — Hausa &nbsp;
+        <strong style="color:var(--gold);">Phebe</strong> — Pidgin
+      </p>
+      <div class="big-mic" id="big-mic" onclick="tapMic()">🎙️</div>
+      <div class="tap-label">Tap to Speak</div>
+      <div style="font-size:.68rem;color:var(--t4);margin-bottom:4px;">or type below</div>
+      <div class="examples" id="examples"></div>
+    </div>
+  </div>
+
+  <!-- INPUT -->
+  <div class="input-bar">
+    <div class="input-row">
+      <div class="input-box">
+        <textarea class="chat-input" id="input"
+          placeholder="Type your question..."
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="resize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="send()">➤</button>
+      </div>
+      <button class="mic-btn" id="mic-btn" onclick="tapMic()">
+        🎙️<div class="mic-lbl" id="mic-lbl">SPEAK</div>
+      </button>
+    </div>
+    <div class="status" id="status">Select an assistant above and start chatting</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// RSMS VOICE AI — COMPLETE WORKING VERSION
+// ══════════════════════════════════════════
+
+// ── STATE ──
+var GROQ_KEY = localStorage.getItem('rsms_groq_key') || '';
+var persona = null;
+var history = [];
+var listening = false;
+var recognition = null;
+var synth = window.speechSynthesis;
+var audioUnlocked = false;
+
+// ── PERSONAS ──
+var PERSONAS = {
+  omotola: {
+    name:'Omotola', av:'👩🏾', lang:'yo-NG', langName:'Yoruba',
+    greeting:'Ẹ káàbọ̀! Mo jẹ Omotola. Báwo ni mo ṣe lè ràn yín lọ́wọ́?',
+    system:'You are Omotola, a warm Yoruba-speaking RSMS school assistant. Respond in Yoruba mixed with English naturally. Always include phonetic pronunciation in parentheses after Yoruba words to help text-to-speech. Example: "Ẹ káàbọ̀ (Eh kah-boh)". Keep replies short — 2 sentences max for voice clarity. Be warm like a real Yoruba woman.',
+    examples:['Kini abajade omo mi?','Se ti san owo ile-iwe?','Igba wo ni igba-iwe to nbo?','Ta ni oluko kilasi?']
+  },
+  oyinyeh: {
+    name:'Oyinyeh', av:'👩🏿', lang:'ig-NG', langName:'Igbo',
+    greeting:'Nnọọ! Aha m bụ Oyinyeh. Kedu ka m ga-esi nyere gị aka?',
+    system:'You are Oyinyeh, a friendly Igbo-speaking RSMS school assistant. Respond in Igbo mixed with English. Include phonetic pronunciation in parentheses: "Nnọọ (Nnoh-oh)". Keep replies short — 2 sentences for voice. Be warm like a real Igbo woman.',
+    examples:['Kedu ihe bụ nsonaazụ nwa m?','A kwụọla ụgwọ?','Kedu mgbe oge akwụkwọ ga-amalite?','Onye bụ ọkụzy klas?']
+  },
+  ibrahim: {
+    name:'Ibrahim', av:'👨🏾', lang:'ha-NG', langName:'Hausa',
+    greeting:'Sannu! Sunana Ibrahim. Yaya zan taimaka muku yau?',
+    system:'You are Ibrahim, a respectful Hausa-speaking RSMS school assistant. Respond in Hausa mixed with English. Include phonetic pronunciation: "Sannu (San-nu)". Keep replies short — 2 sentences for voice. Be respectful like a real Northern Nigerian man.',
+    examples:['Mene ne sakamako dan na?','An biya kudin makaranta?','Yaushe za a fara lokaci na gaba?','Wane ne malamin aji?']
+  },
+  phebe: {
+    name:'Phebe', av:'👩🏽', lang:'en-NG', langName:'Pidgin',
+    greeting:'How far! Na me be Phebe, your RSMS helper. Wetin you wan know?',
+    system:'You are Phebe, a lively Nigerian Pidgin English RSMS school assistant. Use real Naija Pidgin — "abeg", "oya", "sabi", "dey", "wetin", "pikin". Sound like a real Lagos person — energetic and friendly. Keep replies short — 2 sentences max.',
+    examples:['Wetin be my pikin result?','E don pay school fees?','When next term go start?','Who be class teacher?']
+  }
+};
+
+// ── DB ──
+var DB = {
+  school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"Your School"}'),
+  students: JSON.parse(localStorage.getItem('rsms_students')||'[]'),
+  fees: JSON.parse(localStorage.getItem('rsms_fees')||'[]')
+};
+
+// ── UTILS ──
+function toast(msg, type) {
+  var t = document.getElementById('toast');
+  t.className = 'toast show ' + (type||'i');
+  t.textContent = msg;
+  clearTimeout(t._t);
+  t._t = setTimeout(function(){ t.classList.remove('show'); }, 4000);
+}
+function setStatus(msg, cls) {
+  var el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status' + (cls ? ' '+cls : '');
+}
+function resize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+}
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+}
+function scrollChat() {
+  var c = document.getElementById('chat');
+  c.scrollTop = c.scrollHeight;
+}
+
+// ── GATE ──
+function saveKey() {
+  var k = document.getElementById('gate-key').value.trim();
+  if (!k || !k.startsWith('gsk_')) {
+    toast('Enter a valid Groq key (starts with gsk_)', 'e');
+    return;
+  }
+  localStorage.setItem('rsms_groq_key', k);
+  GROQ_KEY = k;
+  document.getElementById('gate').style.display = 'none';
+  toast('✅ Voice AI activated!', 's');
+}
+function skipGate() {
+  GROQ_KEY = localStorage.getItem('rsms_groq_key') || '';
+  document.getElementById('gate').style.display = 'none';
+  if (!GROQ_KEY) toast('No Groq key found — get one at console.groq.com', 'e');
+}
+
+// ── PERSONA ──
+function setPer(el) {
+  document.querySelectorAll('.pc').forEach(function(p){ p.classList.remove('active'); });
+  el.classList.add('active');
+  persona = PERSONAS[el.dataset.p];
+  document.getElementById('tb-name').textContent = persona.av + ' ' + persona.name;
+  history = [];
+  updateExamples();
+  setStatus(persona.name + ' is ready — tap mic or type', '');
+  // Show greeting
+  addMsg('ai', persona.greeting);
+  speakText(persona.greeting);
+}
+
+function updateExamples() {
+  if (!persona) return;
+  var el = document.getElementById('examples');
+  el.innerHTML = persona.examples.map(function(ex) {
+    return '<div class="ex" onclick="useEx(this)">' + ex + '</div>';
+  }).join('');
+}
+
+function useEx(el) {
+  document.getElementById('input').value = el.textContent;
+  send();
+}
+
+// ── MESSAGES ──
+function addMsg(role, text) {
+  var chat = document.getElementById('chat');
+  var div = document.createElement('div');
+  div.className = 'msg ' + role;
+  var av = persona ? persona.av : (role === 'ai' ? '🤖' : '👤');
+  var safeid = 'msg_' + Date.now();
+  div.innerHTML =
+    '<div class="av ' + role + '">' + (role === 'ai' ? av : '👤') + '</div>' +
+    '<div>' +
+      '<div class="bubble" id="' + safeid + '">' + text + '</div>' +
+      '<div class="msg-meta">' + (persona ? persona.name : 'AI') + ' · ' + (persona ? persona.langName : '') + '</div>' +
+      (role === 'ai' ? '<button class="play-btn" onclick="speakById(\'' + safeid + '\')">🔊 Play</button>' : '') +
+    '</div>';
+  chat.appendChild(div);
+  scrollChat();
+}
+
+function speakById(id) {
+  var el = document.getElementById(id);
+  if (el) speakText(el.textContent);
+}
+
+var typingEl = null;
+function showTyping() {
+  var chat = document.getElementById('chat');
+  typingEl = document.createElement('div');
+  typingEl.className = 'msg ai';
+  typingEl.innerHTML =
+    '<div class="av ai">' + (persona ? persona.av : '🤖') + '</div>' +
+    '<div class="bubble"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>';
+  chat.appendChild(typingEl);
+  scrollChat();
+}
+function removeTyping() {
+  if (typingEl && typingEl.parentNode) typingEl.parentNode.removeChild(typingEl);
+  typingEl = null;
+}
+
+// ── SEND ──
+function send() {
+  var inp = document.getElementById('input');
+  var text = (inp.value || '').trim();
+  if (!text) return;
+  inp.value = '';
+  inp.style.height = 'auto';
+
+  if (!persona) {
+    toast('Please select an assistant first (Omotola, Oyinyeh, Ibrahim or Phebe)', 'e');
+    return;
+  }
+  if (!GROQ_KEY) {
+    toast('No Groq API key — tap the ⚡ Groq badge to set up', 'e');
+    return;
+  }
+
+  addMsg('user', text);
+  history.push({ role: 'user', content: text });
+  showTyping();
+  setStatus(persona.name + ' is thinking...', 'processing');
+
+  var schoolCtx = 'School: ' + DB.school.name +
+    '. Students: ' + DB.students.length +
+    '. Term: ' + (DB.school.term || 'First Term') + ' ' + (DB.school.session || '2025/2026') + '.';
+
+  var msgs = [{ role: 'user', content: 'School context: ' + schoolCtx }]
+    .concat(history.slice(-10));
+
+  fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + GROQ_KEY
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: 200,
+      temperature: 0.75,
+      messages: [{ role: 'system', content: persona.system }].concat(msgs)
+    })
+  })
+  .then(function(res) {
+    return res.json().then(function(data) {
+      return { ok: res.ok, data: data };
+    });
+  })
+  .then(function(result) {
+    removeTyping();
+    if (!result.ok) {
+      var err = result.data.error && result.data.error.message || 'API error';
+      addMsg('ai', '⚠️ ' + err);
+      setStatus('Error — check your Groq key', '');
+      return;
+    }
+    var reply = result.data.choices &&
+      result.data.choices[0] &&
+      result.data.choices[0].message &&
+      result.data.choices[0].message.content || 'Sorry, no response.';
+    history.push({ role: 'assistant', content: reply });
+    addMsg('ai', reply);
+    speakText(reply);
+    setStatus('Ready — tap mic or type', '');
+  })
+  .catch(function(err) {
+    removeTyping();
+    var fallback = getFallback(text);
+    addMsg('ai', fallback);
+    speakText(fallback);
+    setStatus('Ready', '');
+  });
+}
+
+function getFallback(q) {
+  var ql = q.toLowerCase();
+  var school = DB.school.name || 'your school';
+  if (persona && persona.name === 'Phebe') {
+    if (ql.includes('result')) return 'Abeg login to Student Portal for ' + school + ' to check result.';
+    if (ql.includes('fee') || ql.includes('pay')) return 'For school fees, go meet the Bursar for ' + school + '.';
+    return 'I no fit answer that now. Call ' + school + ' directly.';
+  }
+  if (ql.includes('result')) return 'Please log in to the Student Portal at ' + school + ' to check results.';
+  if (ql.includes('fee') || ql.includes('pay')) return 'Please contact the school bursar for ' + school + ' for fee information.';
+  return 'Please contact ' + school + ' directly for that information.';
+}
+
+// ── MIC ──
+function tapMic() {
+  unlockAudio();
+  if (listening) { stopMic(); return; }
+  // Request permission explicitly
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    toast('Voice not supported — type instead', 'e');
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(function(stream) {
+      stream.getTracks().forEach(function(t) { t.stop(); });
+      startMic();
+    })
+    .catch(function(err) {
+      if (err.name === 'NotAllowedError') {
+        toast('⚠️ Mic blocked! In Chrome: tap 🔒 in address bar → Microphone → Allow', 'e');
+      } else {
+        toast('Mic error: ' + err.message, 'e');
+      }
+    });
+}
+
+function startMic() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { toast('Voice not available — use Chrome browser', 'e'); return; }
+  if (!persona) { toast('Select an assistant first', 'e'); return; }
+
+  recognition = new SR();
+  recognition.lang = persona.lang;
+  recognition.interimResults = true;
+  recognition.continuous = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = function() {
+    listening = true;
+    setMicState('listening');
+    setStatus('Listening... speak now 🎙️', 'listening');
+  };
+  recognition.onresult = function(e) {
+    var t = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
+    document.getElementById('input').value = t;
+  };
+  recognition.onend = function() {
+    listening = false;
+    setMicState('idle');
+    var txt = document.getElementById('input').value.trim();
+    if (txt) { send(); }
+    else { setStatus('No speech detected — try again', ''); }
+  };
+  recognition.onerror = function(e) {
+    listening = false;
+    setMicState('idle');
+    if (e.error === 'not-allowed') toast('Mic permission denied', 'e');
+    else if (e.error !== 'aborted') toast('Voice error: ' + e.error, 'e');
+    setStatus('Ready', '');
+  };
+  recognition.start();
+}
+
+function stopMic() {
+  if (recognition) recognition.stop();
+  listening = false;
+  setMicState('idle');
+}
+
+function setMicState(state) {
+  var btn = document.getElementById('mic-btn');
+  var lbl = document.getElementById('mic-lbl');
+  btn.className = 'mic-btn ' + state;
+  if (state === 'listening') {
+    btn.firstChild.nodeValue = '🔴';
+    if (lbl) lbl.textContent = 'STOP';
+  } else if (state === 'processing') {
+    btn.firstChild.nodeValue = '⏳';
+    if (lbl) lbl.textContent = '...';
+  } else {
+    btn.firstChild.nodeValue = '🎙️';
+    if (lbl) lbl.textContent = 'SPEAK';
+  }
+}
+
+// ── SPEAK ──
+function unlockAudio() {
+  if (audioUnlocked) return;
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var buf = ctx.createBuffer(1, 1, 22050);
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+    ctx.resume();
+    audioUnlocked = true;
+  } catch(e) {}
+}
+
+function speakText(text) {
+  if (!text || !synth) return;
+  unlockAudio();
+  synth.cancel();
+  var clean = text.replace(/[*_#`]/g, '').replace(/\n/g, ' ').trim().slice(0, 300);
+  if (!clean) return;
+  setTimeout(function() {
+    var utt = new SpeechSynthesisUtterance(clean);
+    var voices = synth.getVoices();
+    var lang = persona ? persona.lang : 'en-NG';
+    var voice = voices.find(function(v){ return v.lang.toLowerCase() === lang.toLowerCase(); }) ||
+      voices.find(function(v){ return v.lang.toLowerCase().startsWith(lang.split('-')[0].toLowerCase()); }) ||
+      voices.find(function(v){ return v.lang.includes('NG'); }) ||
+      voices.find(function(v){ return v.lang.includes('GB'); });
+    if (voice) utt.voice = voice;
+    utt.lang = lang;
+    utt.rate = 0.88;
+    utt.pitch = (persona && persona.name === 'Ibrahim') ? 0.7 : 1.1;
+    utt.volume = 1;
+    utt.onstart = function(){ setStatus((persona ? persona.name : 'AI') + ' is speaking...', 'speaking'); };
+    utt.onend = function(){ setStatus('Ready — tap mic or type', ''); };
+    utt.onerror = function(){ setStatus('Ready', ''); };
+    synth.speak(utt);
+  }, 250);
+}
+
+// ── INIT ──
+window.addEventListener('load', function() {
+  GROQ_KEY = localStorage.getItem('rsms_groq_key') || '';
+  if (GROQ_KEY) document.getElementById('gate').style.display = 'none';
+
+  // Set default persona
+  persona = PERSONAS.omotola;
+  updateExamples();
+
+  // Load voices (async on Android)
+  if (synth) {
+    synth.getVoices();
+    synth.onvoiceschanged = function(){ synth.getVoices(); };
+  }
+
+  // Check speech recognition
+  if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+    setStatus('Voice not available — type your questions below', '');
+    document.getElementById('mic-btn').style.opacity = '0.35';
+  } else {
+    setStatus('Ready — select assistant, tap mic or type', '');
+  }
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
+});
+</script>
+</body>
+</html>
