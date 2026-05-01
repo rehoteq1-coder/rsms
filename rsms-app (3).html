@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#030305"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="RSMS"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<title>RSMS — Loading...</title>
+<!-- Redirect to proper login immediately -->
+<script>
+  // Preserve any query params (e.g. ?school=OND-ENT-0001 or ?token=xxx)
+  var params = window.location.search;
+  // Redirect to login page with params intact
+  window.location.replace('rsms-login.html' + params);
+</script>
+<style>
+  body{margin:0;background:#030305;display:flex;align-items:center;
+    justify-content:center;height:100vh;font-family:Outfit,sans-serif;}
+  .loader{text-align:center;color:rgba(212,168,67,.7);}
+  .spin{width:44px;height:44px;border:3px solid rgba(212,168,67,.15);
+    border-top-color:#d4a843;border-radius:50%;
+    animation:spin .8s linear infinite;margin:0 auto 14px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .txt{font-size:.88rem;color:rgba(240,242,255,.3);}
+</style>
+</head>
+<body>
+<div class="loader">
+  <div class="spin"></div>
+  <div class="txt">Loading RSMS...</div>
+</div>
+</body>
+</html>
