@@ -239,12 +239,13 @@ select.fi{cursor:pointer;}
     <div class="f2">
       <div class="fg"><label>Class *</label>
         <select class="fi" id="sel-class">
-          <option value="">— Select Class —</option>
+          <option value="">— All Early Childhood Classes —</option>
           <option>Crèche A</option><option>Crèche B</option>
           <option>Nursery 1</option><option>Nursery 2</option>
           <option>KG 1</option><option>KG 2</option>
           <option>Pre-Primary 1</option><option>Pre-Primary 2</option>
         </select>
+        <div id="class-student-count" style="font-size:.72rem;color:var(--t3);margin-top:5px;"></div>
       </div>
       <div class="fg"><label>Next Term Begins</label>
         <input class="fi" id="sel-nextterm" placeholder="e.g. Monday, 14th Jan 2026"/>
@@ -355,7 +356,11 @@ function toast(msg,type){
 }
 
 function generateReports(){
-  var cls = document.getElementById('sel-class').value||document.getElementById('ctrl-class').value;
+  // Always reload fresh from localStorage
+  DB.students = JSON.parse(localStorage.getItem('rsms_students')||'[]');
+  DB.school = JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School"}');
+
+  var cls = document.getElementById('sel-class').value||document.getElementById('ctrl-class').value||'';
   var term = document.getElementById('ctrl-term').value||'First Term';
   var session = document.getElementById('ctrl-session').value||'2025/2026';
   var nextTerm = document.getElementById('sel-nextterm').value||'To be announced';
@@ -363,27 +368,39 @@ function generateReports(){
   var teacher = document.getElementById('sel-teacher').value||DB.school.principal||'Class Teacher';
   var principal = document.getElementById('sel-principal').value||DB.school.principal||'Principal';
 
-  var students = cls ?
-    DB.students.filter(function(s){return s.class===cls;}) : DB.students;
+  var students = [];
 
-  // Filter to only early childhood classes
-  if(!students.length && !cls){
+  if(cls){
+    // Filter by selected class
+    students = DB.students.filter(function(s){return (s.class||'')===cls;});
+  } else {
+    // No class selected — show all early childhood students
     students = DB.students.filter(function(s){
       var c=(s.class||'').toLowerCase();
-      return c.includes('nursery')||c.includes('kg')||
+      return c.includes('nursery')||c.includes('kg')||c.includes('k.g')||
              c.includes('creche')||c.includes('crèche')||
-             c.includes('pre-primary')||c.includes('kindergarten');
+             c.includes('pre-primary')||c.includes('kindergarten')||
+             c.includes('nursery')||c.includes('toddler')||c.includes('playgroup');
     });
   }
 
+  if(!students.length && DB.students.length){
+    // Students exist but not in early childhood classes — offer all
+    if(confirm('No early childhood students found in class "'+cls+'". Show all '+DB.students.length+' students?')){
+      students = cls ? [] : DB.students;
+      if(cls) students = DB.students.filter(function(s){return (s.class||'')===cls;});
+      if(!students.length) students = DB.students;
+    } else return;
+  }
+
   if(!students.length){
-    // Demo students
+    // Truly no students — use demo
     students = [
       {id:'d1',surname:'Adeyemi',firstname:'Tunde',gender:'Male',class:cls||'Nursery 1',reg:'REG-001',dob:'2020-03-10'},
       {id:'d2',surname:'Okafor',firstname:'Blessing',gender:'Female',class:cls||'Nursery 1',reg:'REG-002',dob:'2020-07-22'},
       {id:'d3',surname:'Hassan',firstname:'Aisha',gender:'Female',class:cls||'KG 1',reg:'REG-003',dob:'2019-11-15'},
     ];
-    toast('Using demo students — add real students in Admin portal','info');
+    toast('No students found — showing demo. Add students in Admin portal first.','info');
   }
 
   document.getElementById('setup-screen').style.display='none';
@@ -568,6 +585,36 @@ window.addEventListener('load',function(){
   for(var i=0;i<keys.length;i++){
     try{var d=JSON.parse(localStorage.getItem(keys[i])||'{}');if(d.logo){schoolLogo=d.logo;break;}}catch(e){}
   }
+  // Populate class dropdown with actual classes from DB
+  var students = JSON.parse(localStorage.getItem('rsms_students')||'[]');
+  var classes = [...new Set(students.map(function(s){return s.class||'';}).filter(Boolean))].sort();
+  var sel = document.getElementById('sel-class');
+  var ctrlSel = document.getElementById('ctrl-class');
+  // Add dynamic classes not already in dropdown
+  classes.forEach(function(cls){
+    var exists = false;
+    for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===cls){exists=true;break;}}
+    if(!exists){
+      var opt=document.createElement('option');opt.value=cls;opt.textContent=cls;
+      sel.appendChild(opt);
+      if(ctrlSel){var opt2=document.createElement('option');opt2.value=cls;opt2.textContent=cls;ctrlSel.appendChild(opt2);}
+    }
+  });
+
+  // Show student count when class selected
+  sel.onchange = function(){
+    var cls=sel.value;
+    var count=students.filter(function(s){return !cls||(s.class||'')===cls;}).length;
+    var countEl=document.getElementById('class-student-count');
+    if(countEl)countEl.textContent=count+' student'+(count!==1?'s':'')+' in this class';
+  };
+
+  var totalECE = students.filter(function(s){
+    var c=(s.class||'').toLowerCase();
+    return c.includes('nursery')||c.includes('kg')||c.includes('creche')||c.includes('pre-primary');
+  }).length;
+  if(totalECE>0)toast(totalECE+' early childhood students found in database','success');
+
   if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
 });
 </script>
