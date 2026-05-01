@@ -315,7 +315,7 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--t
       </div>
       <!-- BIG MIC PROMPT -->
       <div style="margin:14px 0 10px;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <button onclick="toggleMic()" style="
+        <button onclick="unlockAudio();toggleMic()" style="
           width:80px;height:80px;border-radius:50%;
           background:linear-gradient(135deg,#1a0a3e,#2d1b6e);
           border:3px solid rgba(212,168,67,.5);
@@ -343,9 +343,9 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--t
           rows="1"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"
           oninput="autoResize(this)"></textarea>
-        <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
+        <button class="send-btn" id="send-btn" onclick="unlockAudio();sendMessage()">➤</button>
       </div>
-      <button class="mic-btn idle" id="mic-btn" onclick="toggleMic()" title="Tap to speak">
+      <button class="mic-btn idle" id="mic-btn" onclick="unlockAudio();toggleMic()" title="Tap to speak">
         <div class="mic-ring"></div>
         <span id="mic-ico">🎙️</span>
         <span class="mic-label" id="mic-lbl">SPEAK</span>
