@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RSMS — School Flier</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:#0a0a0f;
+  font-family:'DM Sans',sans-serif;
+  display:flex;flex-direction:column;
+  align-items:center;padding:30px 16px 60px;
+  min-height:100vh;
+}
+
+/* Print & Share buttons */
+.controls{display:flex;gap:10px;margin-bottom:24px;}
+.ctrl-btn{
+  padding:10px 22px;border-radius:8px;font-family:'DM Sans',sans-serif;
+  font-size:.88rem;font-weight:700;cursor:pointer;border:none;
+  transition:all .2s;
+}
+.ctrl-print{background:#d4a843;color:#000;}
+.ctrl-print:hover{background:#f0c060;}
+.ctrl-ghost{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.12);}
+.ctrl-ghost:hover{background:rgba(255,255,255,.14);color:#fff;}
+@media print{.controls{display:none;}}
+
+/* ══ FLIER WRAPPER ══ */
+.flier{
+  width:100%;
+  max-width:480px;
+  background:#060810;
+  position:relative;
+  overflow:hidden;
+  border-radius:4px;
+  box-shadow:0 40px 120px rgba(0,0,0,.8),0 0 0 1px rgba(212,168,67,.15);
+}
+
+/* BG ELEMENTS */
+.bg-radial{
+  position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 40% at 80% 10%,rgba(212,168,67,.12),transparent),
+    radial-gradient(ellipse 50% 60% at 10% 80%,rgba(139,92,246,.08),transparent),
+    radial-gradient(ellipse 40% 30% at 50% 50%,rgba(20,184,166,.04),transparent);
+}
+.bg-grid{
+  position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.04;
+  background-image:
+    linear-gradient(rgba(212,168,67,1) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(212,168,67,1) 1px,transparent 1px);
+  background-size:36px 36px;
+}
+.bg-lines{
+  position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,#d4a843,#f0c060,#d4a843,transparent);
+  z-index:1;
+}
+
+/* ── HEADER ── */
+.flier-head{
+  position:relative;z-index:2;
+  padding:36px 32px 28px;
+  border-bottom:1px solid rgba(212,168,67,.12);
+}
+.head-top{display:flex;align-items:center;gap:14px;margin-bottom:22px;}
+.head-logo{
+  width:54px;height:54px;border-radius:12px;flex-shrink:0;
+  background:linear-gradient(135deg,#1a0a3e,#2d1b6e);
+  border:1.5px solid rgba(212,168,67,.4);
+  box-shadow:0 0 0 4px rgba(212,168,67,.07),0 8px 24px rgba(0,0,0,.4);
+  display:flex;align-items:center;justify-content:center;
+}
+.head-brand{flex:1;}
+.head-brand-name{font-family:'DM Mono',monospace;font-size:.65rem;font-weight:500;
+  color:rgba(212,168,67,.6);letter-spacing:.22em;text-transform:uppercase;margin-bottom:3px;}
+.head-brand-full{font-size:.82rem;color:rgba(255,255,255,.45);font-weight:400;}
+.head-powered{font-size:.6rem;color:rgba(255,255,255,.2);font-family:'DM Mono',monospace;
+  letter-spacing:.12em;text-transform:uppercase;}
+
+.head-greeting{
+  font-family:'Playfair Display',serif;
+  font-size:1.05rem;font-weight:400;font-style:italic;
+  color:rgba(255,255,255,.45);
+  line-height:1.5;margin-bottom:14px;
+}
+.head-greeting strong{
+  font-style:normal;font-weight:700;
+  background:linear-gradient(135deg,#d4a843,#f0c060);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+
+.head-headline{
+  font-family:'Playfair Display',serif;
+  font-size:2.05rem;font-weight:900;
+  color:#fff;line-height:1.2;
+}
+.head-headline em{
+  font-style:italic;
+  background:linear-gradient(135deg,#d4a843,#f0c060,#d4a843);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+
+/* ── HERO STRIP ── */
+.hero-strip{
+  position:relative;z-index:2;
+  background:linear-gradient(135deg,#0e0d1a,#150f2a);
+  border-top:1px solid rgba(139,92,246,.15);
+  border-bottom:1px solid rgba(139,92,246,.15);
+  padding:18px 32px;
+  display:flex;align-items:center;gap:14px;
+}
+.hero-icon{font-size:2rem;flex-shrink:0;}
+.hero-text{font-size:.88rem;color:rgba(255,255,255,.55);line-height:1.6;}
+.hero-text strong{color:#fff;font-weight:700;}
+
+/* ── AUDIENCE CARDS ── */
+.audience-section{position:relative;z-index:2;padding:26px 32px;}
+.section-label{
+  font-family:'DM Mono',monospace;font-size:.6rem;font-weight:500;
+  color:rgba(212,168,67,.5);letter-spacing:.2em;text-transform:uppercase;
+  margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.section-label::after{content:'';flex:1;height:1px;background:rgba(212,168,67,.15);}
+
+.aud-card{
+  border-radius:12px;padding:16px 18px;margin-bottom:10px;
+  border:1px solid transparent;position:relative;overflow:hidden;
+}
+.aud-card::before{
+  content:'';position:absolute;inset:0;border-radius:12px;
+  opacity:.06;pointer-events:none;
+}
+/* Admin */
+.aud-admin{background:rgba(212,168,67,.06);border-color:rgba(212,168,67,.18);}
+.aud-admin::before{background:linear-gradient(135deg,#d4a843,transparent);}
+.aud-admin .aud-accent{color:#d4a843;}
+/* Teacher */
+.aud-teacher{background:rgba(20,184,166,.05);border-color:rgba(20,184,166,.15);}
+.aud-teacher::before{background:linear-gradient(135deg,#14b8a6,transparent);}
+.aud-teacher .aud-accent{color:#14b8a6;}
+/* Parent */
+.aud-parent{background:rgba(139,92,246,.05);border-color:rgba(139,92,246,.15);}
+.aud-parent::before{background:linear-gradient(135deg,#8b5cf6,transparent);}
+.aud-parent .aud-accent{color:#8b5cf6;}
+/* Student */
+.aud-student{background:rgba(59,130,246,.05);border-color:rgba(59,130,246,.15);}
+.aud-student::before{background:linear-gradient(135deg,#3b82f6,transparent);}
+.aud-student .aud-accent{color:#3b82f6;}
+
+.aud-head{display:flex;align-items:center;gap:11px;margin-bottom:10px;}
+.aud-ico{font-size:1.5rem;flex-shrink:0;}
+.aud-title{font-weight:700;font-size:.95rem;color:#fff;}
+.aud-subtitle{font-size:.7rem;font-weight:500;margin-top:1px;}
+.aud-features{
+  display:flex;flex-wrap:wrap;gap:5px;
+}
+.aud-feat{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:.72rem;font-weight:500;color:rgba(255,255,255,.6);
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);
+  border-radius:20px;padding:3px 10px;
+}
+.aud-feat .dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.aud-admin .aud-feat .dot{background:#d4a843;}
+.aud-teacher .aud-feat .dot{background:#14b8a6;}
+.aud-parent .aud-feat .dot{background:#8b5cf6;}
+.aud-student .aud-feat .dot{background:#3b82f6;}
+
+/* ── DIVIDER ── */
+.divider{
+  position:relative;z-index:2;
+  margin:0 32px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(212,168,67,.2),transparent);
+}
+
+/* ── CTA ── */
+.cta-section{
+  position:relative;z-index:2;
+  padding:24px 32px 28px;
+}
+.cta-box{
+  background:linear-gradient(135deg,rgba(212,168,67,.1),rgba(212,168,67,.04));
+  border:1px solid rgba(212,168,67,.25);
+  border-radius:14px;padding:20px 20px;text-align:center;
+}
+.cta-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.2rem;font-weight:700;color:#fff;margin-bottom:6px;
+}
+.cta-sub{font-size:.82rem;color:rgba(255,255,255,.45);margin-bottom:16px;line-height:1.6;}
+.cta-url{
+  display:inline-block;
+  font-family:'DM Mono',monospace;font-size:.85rem;font-weight:500;
+  color:#000;
+  background:linear-gradient(135deg,#d4a843,#f0c060);
+  border-radius:8px;padding:9px 20px;margin-bottom:12px;
+  letter-spacing:.04em;
+}
+.cta-contact{
+  display:flex;justify-content:center;gap:22px;flex-wrap:wrap;
+}
+.cta-c{font-size:.72rem;color:rgba(255,255,255,.35);display:flex;align-items:center;gap:5px;}
+.cta-c span{color:rgba(255,255,255,.6);font-weight:600;}
+
+/* ── FOOTER ── */
+.flier-foot{
+  position:relative;z-index:2;
+  border-top:1px solid rgba(255,255,255,.05);
+  padding:14px 32px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.foot-copy{font-size:.62rem;color:rgba(255,255,255,.2);font-family:'DM Mono',monospace;}
+.foot-badges{display:flex;gap:6px;}
+.foot-badge{
+  font-size:.58rem;font-weight:700;font-family:'DM Mono',monospace;
+  letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 8px;border-radius:4px;
+}
+.fb-secure{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.2);}
+.fb-cloud{background:rgba(59,130,246,.1);color:#3b82f6;border:1px solid rgba(59,130,246,.18);}
+.fb-ng{background:rgba(212,168,67,.1);color:#d4a843;border:1px solid rgba(212,168,67,.18);}
+
+/* Bottom gold line */
+.flier-foot-line{
+  height:3px;
+  background:linear-gradient(90deg,transparent,#d4a843 30%,#f0c060 50%,#d4a843 70%,transparent);
+}
+
+@media print{
+  body{background:#fff;padding:0;}
+  .flier{box-shadow:none;max-width:100%;border-radius:0;}
+  .bg-radial,.bg-grid{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <button class="ctrl-btn ctrl-print" onclick="window.print()">🖨 Print Flier</button>
+  <button class="ctrl-btn ctrl-ghost" onclick="shareWA()">📱 Share on WhatsApp</button>
+  <button class="ctrl-btn ctrl-ghost" onclick="shareWA2()">📩 Share Link</button>
+</div>
+
+<div class="flier" id="flier">
+  <div class="bg-radial"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-lines"></div>
+
+  <!-- ── HEADER ── -->
+  <div class="flier-head">
+    <div class="head-top">
+      <div class="head-logo">
+        <svg width="32" height="32" viewBox="0 0 120 120">
+          <defs>
+            <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#8b5cf6"/>
+              <stop offset="100%" stop-color="#d4a843"/>
+            </linearGradient>
+          </defs>
+          <polygon points="60,6 110,33 110,87 60,114 10,87 10,33"
+            fill="transparent" stroke="url(#hg)" stroke-width="5"/>
+          <text x="60" y="80" text-anchor="middle" font-family="Georgia,serif"
+            font-size="56" font-weight="bold" fill="#d4a843">R</text>
+        </svg>
+      </div>
+      <div class="head-brand">
+        <div class="head-brand-name">RSMS</div>
+        <div class="head-brand-full">Rehoteq School Management System</div>
+        <div class="head-powered">Powered by Rehoteq Technologies · Nigeria</div>
+      </div>
+    </div>
+
+    <div class="head-greeting">
+      Greetings to our esteemed <strong>School Administrators,</strong><br/>
+      <strong>Teachers, Parents</strong> &amp; <strong>School Workers</strong> 🙏
+    </div>
+
+    <div class="head-headline">
+      Your School.<br/><em>Fully Managed.</em><br/>All in One Place.
+    </div>
+  </div>
+
+  <!-- ── HERO STRIP ── -->
+  <div class="hero-strip">
+    <div class="hero-icon">🚀</div>
+    <div class="hero-text">
+      <strong>RSMS</strong> is a complete, cloud-powered school management platform
+      built specifically for Nigerian schools — covering every role, every need.
+    </div>
+  </div>
+
+  <!-- ── AUDIENCE CARDS ── -->
+  <div class="audience-section">
+    <div class="section-label">What RSMS offers you</div>
+
+    <!-- ADMIN -->
+    <div class="aud-card aud-admin">
+      <div class="aud-head">
+        <div class="aud-ico">🏫</div>
+        <div>
+          <div class="aud-title">School Administrator</div>
+          <div class="aud-subtitle aud-accent">Full school command centre</div>
+        </div>
+      </div>
+      <div class="aud-features">
+        <div class="aud-feat"><div class="dot"></div>Student Enrollment & Records</div>
+        <div class="aud-feat"><div class="dot"></div>Staff Management & HOD Assignment</div>
+        <div class="aud-feat"><div class="dot"></div>Fee Payment Tracking</div>
+        <div class="aud-feat"><div class="dot"></div>Class Teacher Assignment</div>
+        <div class="aud-feat"><div class="dot"></div>QR Code Generation</div>
+        <div class="aud-feat"><div class="dot"></div>Portal Access Control</div>
+        <div class="aud-feat"><div class="dot"></div>Bulk Student Upload</div>
+        <div class="aud-feat"><div class="dot"></div>WhatsApp Alerts</div>
+      </div>
+    </div>
+
+    <!-- TEACHER -->
+    <div class="aud-card aud-teacher">
+      <div class="aud-head">
+        <div class="aud-ico">👨‍🏫</div>
+        <div>
+          <div class="aud-title">Teachers & HODs</div>
+          <div class="aud-subtitle aud-accent">Smart academic tools at your fingertips</div>
+        </div>
+      </div>
+      <div class="aud-features">
+        <div class="aud-feat"><div class="dot"></div>Digital Score Entry (CA1, CA2, Exam)</div>
+        <div class="aud-feat"><div class="dot"></div>QR Attendance Register</div>
+        <div class="aud-feat"><div class="dot"></div>Lesson Plan & Diary</div>
+        <div class="aud-feat"><div class="dot"></div>HOD Lesson Note Review</div>
+        <div class="aud-feat"><div class="dot"></div>Auto Report Card Generation</div>
+        <div class="aud-feat"><div class="dot"></div>Student Comments & Reviews</div>
+        <div class="aud-feat"><div class="dot"></div>Absent Parent WhatsApp Alert</div>
+        <div class="aud-feat"><div class="dot"></div>Report to VP Academic</div>
+      </div>
+    </div>
+
+    <!-- PARENT -->
+    <div class="aud-card aud-parent">
+      <div class="aud-head">
+        <div class="aud-ico">👪</div>
+        <div>
+          <div class="aud-title">Parents & Guardians</div>
+          <div class="aud-subtitle aud-accent">Stay connected with your child's education</div>
+        </div>
+      </div>
+      <div class="aud-features">
+        <div class="aud-feat"><div class="dot"></div>Child's Results Anytime</div>
+        <div class="aud-feat"><div class="dot"></div>Attendance Notifications</div>
+        <div class="aud-feat"><div class="dot"></div>Fee Payment Status</div>
+        <div class="aud-feat"><div class="dot"></div>Teacher's Comments</div>
+        <div class="aud-feat"><div class="dot"></div>WhatsApp Receipts</div>
+        <div class="aud-feat"><div class="dot"></div>Private Secure Portal Link</div>
+      </div>
+    </div>
+
+    <!-- BURSAR -->
+    <div class="aud-card aud-student">
+      <div class="aud-head">
+        <div class="aud-ico">💰</div>
+        <div>
+          <div class="aud-title">Bursar / Finance Officer</div>
+          <div class="aud-subtitle aud-accent">Independent finance management system</div>
+        </div>
+      </div>
+      <div class="aud-features">
+        <div class="aud-feat"><div class="dot"></div>Record & Track Payments</div>
+        <div class="aud-feat"><div class="dot"></div>Printable Official Receipts</div>
+        <div class="aud-feat"><div class="dot"></div>Student Ledger Per Term</div>
+        <div class="aud-feat"><div class="dot"></div>Daily Cashbook</div>
+        <div class="aud-feat"><div class="dot"></div>Debtors List & Reminders</div>
+        <div class="aud-feat"><div class="dot"></div>Financial Reports & Export</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── CTA ── -->
+  <div class="cta-section">
+    <div class="cta-box">
+      <div class="cta-title">Ready to Transform Your School?</div>
+      <div class="cta-sub">
+        Join schools already on RSMS. Onboarding takes minutes.<br/>
+        Your school. Your subdomain. Your brand.
+      </div>
+      <div class="cta-url">rsms.rehoteq.com</div>
+      <div class="cta-contact">
+        <div class="cta-c">📞 <span>07036302585</span></div>
+        <div class="cta-c">📱 WhatsApp: <span>08166519177</span></div>
+        <div class="cta-c">✉️ <span>rehoteq@gmail.com</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <div class="flier-foot">
+    <div class="foot-copy">© 2025 Rehoteq Technologies · Okitipupa, Ondo State</div>
+    <div class="foot-badges">
+      <div class="foot-badge fb-secure">Secure</div>
+      <div class="foot-badge fb-cloud">Cloud</div>
+      <div class="foot-badge fb-ng">Made in Nigeria</div>
+    </div>
+  </div>
+  <div class="flier-foot-line"></div>
+</div>
+
+<script>
+function shareWA(){
+  var msg = 'RSMS — Rehoteq School Management System\n\n' +
+    'Dear School Administrator, Teacher, Parent or School Worker,\n\n' +
+    'We are excited to introduce RSMS — a complete school management platform built for Nigerian schools.\n\n' +
+    'What RSMS offers:\n' +
+    'ADMIN: Student enrollment, staff management, fee tracking, QR codes, portal control\n' +
+    'TEACHERS/HODs: Score entry, QR attendance, lesson diary, auto report cards\n' +
+    'PARENTS: Child results, attendance alerts, fee receipts via WhatsApp\n' +
+    'BURSAR: Payment records, official receipts, student ledger, financial reports\n\n' +
+    'Visit us at: https://rsms.rehoteq.com\n' +
+    'Call/WhatsApp: 07036302585\n' +
+    'Email: rehoteq@gmail.com\n\n' +
+    '_Rehoteq Technologies · Okitipupa, Ondo State · rehoteq.com_';
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+function shareWA2(){
+  navigator.clipboard.writeText('https://rsms.rehoteq.com').then(function(){
+    alert('Link copied! Share it on WhatsApp or any platform.');
+  });
+}
+</script>
+</body>
+</html>

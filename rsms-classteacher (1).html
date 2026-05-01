@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0d0f1a"/>
+<link rel="manifest" href="manifest.json"/>
+<title>RSMS — Class Teacher Portal</title>
+<script src="rsms-school-detect.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--panel:#0d0f1a;--card:#111420;--card2:#161929;
+  --line:rgba(255,255,255,0.07);--line2:rgba(255,255,255,0.13);
+  --gold:#d4a843;--goldl:rgba(212,168,67,0.1);--goldm:rgba(212,168,67,0.2);
+  --success:#22c55e;--successl:rgba(34,197,94,0.1);
+  --danger:#f43f5e;--dangerl:rgba(244,63,94,0.1);
+  --warn:#f59e0b;--warnl:rgba(245,158,11,0.1);
+  --info:#3b82f6;--infol:rgba(59,130,246,0.1);
+  --teal:#14b8a6;--teall:rgba(20,184,166,0.1);
+  --purple:#8b5cf6;--purplel:rgba(139,92,246,0.1);
+  --t1:#f0f2ff;--t2:rgba(240,242,255,0.65);--t3:rgba(240,242,255,0.35);--t4:rgba(240,242,255,0.14);
+  --r:14px;--r2:10px;--r3:7px;--serif:'Fraunces',serif;--sans:'Outfit',sans-serif;
+  --fs-xs:.76rem;--fs-sm:.88rem;--fs-base:.96rem;--fs-lg:1.1rem;
+  --btn-h:50px;--input-h:48px;--sb-w:230px;
+  --safe-bot:env(safe-area-inset-bottom);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--t1);overflow:hidden;}
+.layout{display:grid;grid-template-columns:var(--sb-w) 1fr;height:100vh;overflow:hidden;}
+@media(max-width:899px){.layout{grid-template-columns:1fr;}}
+.sidebar{grid-row:1/3;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100vh;z-index:40;transition:transform .28s;}
+@media(max-width:899px){.sidebar{position:fixed;left:0;top:0;transform:translateX(-100%);box-shadow:4px 0 32px rgba(0,0,0,.5);}}
+.sidebar.open{transform:translateX(0)!important;}
+.sb-brand{height:60px;padding:0 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);flex-shrink:0;}
+.sb-brand-name{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;color:var(--gold);}
+.sb-brand-sub{font-size:.58rem;color:var(--t4);text-transform:uppercase;letter-spacing:.12em;}
+.sb-school{padding:10px 14px;border-bottom:1px solid var(--line);flex-shrink:0;}
+.sb-sname{font-size:var(--fs-sm);font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-class-badge{display:inline-flex;align-items:center;gap:5px;background:var(--teall);border:1px solid rgba(20,184,166,.2);border-radius:20px;padding:3px 10px;font-size:.65rem;font-weight:700;color:var(--teal);margin-top:4px;}
+.sb-nav{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:1px;}
+.sb-nav::-webkit-scrollbar{display:none;}
+.sb-grp{font-size:.6rem;font-weight:800;color:var(--t4);text-transform:uppercase;letter-spacing:.16em;padding:11px 10px 4px;}
+.sb-item{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:var(--r2);cursor:pointer;transition:all .18s;border:1px solid transparent;}
+.sb-item:hover{background:rgba(255,255,255,.04);}
+.sb-item.active{background:var(--goldl);border-color:rgba(212,168,67,.2);}
+.sb-icon{font-size:1.22rem;width:24px;text-align:center;flex-shrink:0;}
+.sb-label{font-size:var(--fs-sm);font-weight:600;color:var(--t2);}
+.sb-item.active .sb-label{color:var(--gold);font-weight:700;}
+.sb-pip{margin-left:auto;font-size:.6rem;font-weight:800;background:var(--danger);color:#fff;border-radius:20px;padding:2px 6px;min-width:18px;text-align:center;}
+.sb-foot{padding:12px 14px;border-top:1px solid var(--line);flex-shrink:0;}
+.sb-user{display:flex;align-items:center;gap:9px;}
+.sb-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.88rem;color:#fff;flex-shrink:0;}
+.sb-uname{font-size:var(--fs-sm);font-weight:700;color:var(--t1);}
+.sb-urole{font-size:.62rem;color:var(--t4);}
+.sb-logout{margin-left:auto;background:none;border:none;color:var(--t4);cursor:pointer;font-size:1rem;padding:4px;}
+.sb-logout:hover{color:var(--danger);}
+.main-area{display:flex;flex-direction:column;min-width:0;overflow:hidden;height:100vh;}
+.topbar{background:var(--panel);border-bottom:1px solid var(--line);padding:0 20px;height:60px;flex-shrink:0;display:flex;align-items:center;gap:12px;z-index:30;}
+.hamburger{background:none;border:1px solid var(--line2);border-radius:var(--r3);color:var(--t2);cursor:pointer;padding:9px 11px;font-size:1rem;display:none;}
+@media(max-width:899px){.hamburger{display:flex;align-items:center;}}
+.tb-page-icon{font-size:1.3rem;}
+.tb-page-name{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;color:var(--t1);flex:1;}
+.tb-right{display:flex;gap:8px;align-items:center;}
+.tb-date{font-size:var(--fs-xs);color:var(--t4);}
+.content{flex:1;overflow-y:auto;padding:22px 20px 80px;min-height:0;}
+.content::-webkit-scrollbar{width:4px;}
+.content::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px;}
+@media(min-width:900px){.content{padding:26px 28px 40px;}}
+.page{display:none;}
+.page.active{display:block;animation:pg-in .25s ease;}
+@keyframes pg-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:22px;flex-wrap:wrap;}
+.ph-title{font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--t1);margin-bottom:4px;}
+.ph-sub{font-size:var(--fs-sm);color:var(--t3);}
+.ph-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+@media(max-width:899px){.kpi-grid{grid-template-columns:1fr 1fr;}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;cursor:pointer;transition:all .2s;}
+.kpi:hover{transform:translateY(-2px);border-color:var(--line2);}
+.kpi-icon{font-size:1.6rem;margin-bottom:8px;}
+.kpi-label{font-size:var(--fs-xs);font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:7px;}
+.kpi-val{font-family:var(--serif);font-size:1.8rem;font-weight:700;margin-bottom:4px;}
+.kpi-sub{font-size:var(--fs-xs);color:var(--t3);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+@media(max-width:600px){.g2{grid-template-columns:1fr;}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;}
+.ct{font-size:var(--fs-base);font-weight:700;color:var(--t1);display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.ct-action{margin-left:auto;font-size:var(--fs-sm);color:var(--gold);cursor:pointer;font-weight:600;}
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--line);}
+.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-sm);}
+.tbl thead{background:var(--card2);}
+.tbl th{padding:11px 14px;text-align:left;font-size:var(--fs-xs);font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;border-bottom:1px solid var(--line);white-space:nowrap;}
+.tbl td{padding:12px 14px;border-bottom:1px solid var(--line);color:var(--t2);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tbody tr:hover td{background:rgba(255,255,255,.02);color:var(--t1);}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.fg label{font-size:var(--fs-xs);font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;}
+.fi{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:0 14px;color:var(--t1);font-size:var(--fs-base);font-family:var(--sans);outline:none;width:100%;height:var(--input-h);transition:all .2s;}
+.fi:focus{border-color:rgba(212,168,67,.45);box-shadow:0 0 0 3px rgba(212,168,67,.08);}
+select.fi{cursor:pointer;}
+textarea.fi{height:auto;min-height:80px;padding:12px 14px;resize:vertical;}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;}
+@media(max-width:600px){.f2,.f3{grid-template-columns:1fr;}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--btn-h);padding:0 22px;border:none;border-radius:var(--r2);cursor:pointer;font-family:var(--sans);font-size:var(--fs-base);font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-gold{background:linear-gradient(135deg,#4a2500,var(--gold));color:#000;}
+.btn-ok{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;}
+.btn-err{background:linear-gradient(135deg,#4c0519,var(--danger));color:#fff;}
+.btn-teal{background:linear-gradient(135deg,#0a3d38,var(--teal));color:#fff;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--t2);}
+.btn-ghost:hover{background:rgba(255,255,255,.1);color:var(--t1);}
+.btn-purple{background:linear-gradient(135deg,#3b0764,var(--purple));color:#fff;}
+.btn-sm{height:42px;padding:0 16px;font-size:var(--fs-sm);border-radius:var(--r3);}
+.btn-xs{height:34px;padding:0 10px;font-size:var(--fs-xs);border-radius:5px;}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;}
+.b-ok{background:var(--successl);color:var(--success);}
+.b-err{background:var(--dangerl);color:var(--danger);}
+.b-gold{background:var(--goldl);color:var(--gold);}
+.b-teal{background:var(--teall);color:var(--teal);}
+.b-purple{background:var(--purplel);color:var(--purple);}
+.b-mute{background:rgba(255,255,255,.05);color:var(--t3);}
+.b-warn{background:var(--warnl);color:var(--warn);}
+.score-in{background:var(--card2);border:1px solid var(--line2);border-radius:5px;padding:5px 6px;color:var(--t1);font-size:var(--fs-sm);font-family:var(--sans);outline:none;width:52px;text-align:center;transition:border-color .18s;}
+.score-in:focus{border-color:rgba(212,168,67,.4);}
+.att-btn{width:38px;height:38px;border-radius:var(--r3);border:1px solid var(--line2);background:rgba(255,255,255,.03);cursor:pointer;font-size:.9rem;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.att-btn.p{background:var(--successl);border-color:rgba(34,197,94,.35);}
+.att-btn.l{background:var(--warnl);border-color:rgba(245,158,11,.3);}
+.att-btn.a{background:var(--dangerl);border-color:rgba(244,63,94,.3);}
+.att-btn.e{background:var(--purplel);border-color:rgba(139,92,246,.3);}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:500;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-ov.show{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--line2);border-radius:20px;padding:26px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;animation:m-in .28s cubic-bezier(.34,1.56,.64,1);}
+@keyframes m-in{from{opacity:0;transform:scale(.9);}to{opacity:1;transform:none;}}
+.m-title{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;color:var(--t1);margin-bottom:4px;}
+.m-sub{font-size:var(--fs-sm);color:var(--t2);margin-bottom:18px;}
+.m-close{float:right;background:none;border:1px solid var(--line2);border-radius:var(--r3);color:var(--t3);cursor:pointer;width:32px;height:32px;font-size:.95rem;display:inline-flex;align-items:center;justify-content:center;}
+.bnav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(13,15,26,.98);border-top:1px solid var(--line);padding-bottom:var(--safe-bot);box-shadow:0 -4px 24px rgba(0,0,0,.5);}
+@media(max-width:899px){.bnav{display:flex;}}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;cursor:pointer;}
+.bn-ico{font-size:1.6rem;margin-bottom:3px;transition:transform .2s;}
+.bn-lbl{font-size:.6rem;font-weight:700;color:var(--t4);}
+.bn-item.active .bn-ico{transform:scale(1.15);}
+.bn-item.active .bn-lbl{color:var(--gold);}
+.sb-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:199;display:none;}
+.sb-ov.show{display:block;}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(60px);border-radius:var(--r2);padding:11px 20px;font-size:var(--fs-sm);z-index:999;transition:transform .28s;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap;max-width:92vw;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.error{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.info{background:#0f1020;border:1px solid rgba(212,168,67,.35);color:var(--gold);}
+@media(min-width:900px){.toast{bottom:22px;}}
+</style>
+</head>
+<body>
+<div class="sb-ov" id="sb-ov" onclick="closeSb()"></div>
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <svg width="32" height="32" viewBox="0 0 120 120">
+      <polygon points="60,6 110,33 110,87 60,114 10,87 10,33" fill="#0d0f1a" stroke="#d4a843" stroke-width="5"/>
+      <text x="60" y="80" text-anchor="middle" font-family="Georgia,serif" font-size="56" font-weight="bold" fill="#d4a843">R</text>
+    </svg>
+    <div><div class="sb-brand-name">RSMS</div><div class="sb-brand-sub">Class Teacher</div></div>
+  </div>
+  <div class="sb-school" style="padding:10px 14px;border-bottom:1px solid var(--line);">
+    <div class="sb-sname" id="sb-sname">School Name</div>
+    <div class="sb-class-badge" id="sb-class-badge">📚 My Class</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-grp">Overview</div>
+    <div class="sb-item active" onclick="goto('dashboard',this,'📊','Dashboard')"><span class="sb-icon">📊</span><span class="sb-label">Dashboard</span></div>
+    <div class="sb-grp">My Class</div>
+    <div class="sb-item" onclick="goto('students',this,'👨‍🎓','My Students')"><span class="sb-icon">👨‍🎓</span><span class="sb-label">My Students</span><span class="sb-pip" id="sb-stu-pip">0</span></div>
+    <div class="sb-item" onclick="goto('attendance',this,'✅','Attendance')"><span class="sb-icon">✅</span><span class="sb-label">Attendance Register</span></div>
+    <div class="sb-item" onclick="goto('scores',this,'📝','Enter Scores')"><span class="sb-icon">📝</span><span class="sb-label">Enter Scores</span></div>
+    <div class="sb-item" onclick="goto('comments',this,'✍️','Student Comments')"><span class="sb-icon">✍️</span><span class="sb-label">Student Comments</span></div>
+    <div class="sb-grp">Academic</div>
+    <div class="sb-item" onclick="goto('lessonplan',this,'📖','Lesson Plan')"><span class="sb-icon">📖</span><span class="sb-label">Lesson Plan/Diary</span></div>
+    <div class="sb-item" onclick="goto('reportcard',this,'📄','Report Cards')"><span class="sb-icon">📄</span><span class="sb-label">Report Cards</span></div>
+    <div class="sb-grp">Communication</div>
+    <div class="sb-item" onclick="goto('messages',this,'💬','Messages')"><span class="sb-icon">💬</span><span class="sb-label">VP Academic Report</span></div>
+    <div class="sb-item" onclick="goto('notices',this,'📢','Notices')"><span class="sb-icon">📢</span><span class="sb-label">Notice Board</span></div>
+  </nav>
+  <div class="sb-foot">
+    <div class="sb-user">
+      <div class="sb-av" id="sb-av">C</div>
+      <div><div class="sb-uname" id="sb-uname">Class Teacher</div><div class="sb-urole" id="sb-urole">Form Teacher</div></div>
+      <button class="sb-logout" onclick="if(confirm('Sign out?')){sessionStorage.clear();window.location.href='rsms-login.html';}">⎋</button>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main-area">
+<header class="topbar">
+  <button class="hamburger" onclick="openSb()">☰</button>
+  <span class="tb-page-icon" id="tb-icon">📊</span>
+  <span class="tb-page-name" id="tb-page">Dashboard</span>
+  <div class="tb-right">
+    <span class="tb-date" id="tb-date"></span>
+    <button class="btn btn-teal btn-sm" onclick="goto('attendance',document.querySelector('[onclick*=attendance]'),'✅','Attendance')">✅ Mark Register</button>
+    <button class="btn btn-gold btn-sm" onclick="openM('m-add-student')">+ Add Student</button>
+  </div>
+</header>
+
+<main class="content">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="ph">
+    <div><div class="ph-title" id="dash-greet">Good morning 👋</div>
+    <div class="ph-sub" id="dash-sub">Your class overview</div></div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi" onclick="goto('students',document.querySelector('[onclick*=students]'),'👨‍🎓','Students')">
+      <div class="kpi-icon">👨‍🎓</div><div class="kpi-label">Students</div>
+      <div class="kpi-val" id="kpi-students" style="color:var(--teal);">0</div>
+      <div class="kpi-sub">In my class</div>
+    </div>
+    <div class="kpi" onclick="goto('attendance',document.querySelector('[onclick*=attendance]'),'✅','Attendance')">
+      <div class="kpi-icon">✅</div><div class="kpi-label">Today's Attendance</div>
+      <div class="kpi-val" id="kpi-att" style="color:var(--success);">—%</div>
+      <div class="kpi-sub">Present today</div>
+    </div>
+    <div class="kpi" onclick="goto('comments',document.querySelector('[onclick*=comments]'),'✍️','Comments')">
+      <div class="kpi-icon">✍️</div><div class="kpi-label">Pending Comments</div>
+      <div class="kpi-val" id="kpi-comments" style="color:var(--warn);">0</div>
+      <div class="kpi-sub">Students without comment</div>
+    </div>
+    <div class="kpi" onclick="goto('scores',document.querySelector('[onclick*=scores]'),'📝','Scores')">
+      <div class="kpi-icon">📝</div><div class="kpi-label">Scores Entered</div>
+      <div class="kpi-val" id="kpi-scores" style="color:var(--gold);">0</div>
+      <div class="kpi-sub">Subjects with scores</div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ct">👨‍🎓 Recent Students<span class="ct-action" onclick="goto('students',document.querySelector('[onclick*=students]'),'👨‍🎓','Students')">All →</span></div>
+      <div id="dash-students"></div>
+    </div>
+    <div class="card">
+      <div class="ct">⚡ Quick Actions</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btn-teal" onclick="goto('attendance',document.querySelector('[onclick*=attendance]'),'✅','Attendance')" style="width:100%;">✅ Mark Today's Attendance</button>
+        <button class="btn btn-gold" onclick="goto('scores',document.querySelector('[onclick*=scores]'),'📝','Scores')" style="width:100%;">📝 Enter Scores</button>
+        <button class="btn btn-ghost" onclick="openM('m-add-student')" style="width:100%;">➕ Add Student to Class</button>
+        <button class="btn btn-ghost" onclick="goto('messages',document.querySelector('[onclick*=messages]'),'💬','Messages')" style="width:100%;">📤 Report to VP Academic</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MY STUDENTS -->
+<div class="page" id="page-students">
+  <div class="ph">
+    <div><div class="ph-title">My Students</div><div class="ph-sub" id="stu-sub">—</div></div>
+    <div class="ph-actions">
+      <input class="fi" id="stu-search" type="text" placeholder="Search name or reg..." oninput="renderStudents()" style="height:40px;max-width:220px;font-size:var(--fs-sm);"/>
+      <button class="btn btn-gold btn-sm" onclick="openM('m-add-student')">+ Add Student</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportStudents()">📤 Export</button>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>#</th><th>Photo</th><th>Student</th><th>Reg No.</th><th>Gender</th><th>Boarding</th><th>Parent Phone</th><th>Comment</th><th>Action</th></tr></thead>
+      <tbody id="students-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ATTENDANCE -->
+<div class="page" id="page-attendance">
+  <div class="ph">
+    <div><div class="ph-title">Attendance Register</div></div>
+    <div class="ph-actions">
+      <input class="fi" type="date" id="att-date" style="height:40px;max-width:180px;font-size:var(--fs-sm);"/>
+      <button class="btn btn-ghost btn-sm" onclick="markAll('p')">✅ All Present</button>
+      <button class="btn btn-ghost btn-sm" onclick="markAll('a')">❌ All Absent</button>
+      <button class="btn btn-ok btn-sm" onclick="saveAttendance()">💾 Save & Alert Parents</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+    <div style="background:var(--successl);border:1px solid rgba(34,197,94,.2);border-radius:var(--r2);padding:10px 18px;text-align:center;">
+      <div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--success);" id="att-present-cnt">0</div>
+      <div style="font-size:var(--fs-xs);color:var(--t4);">Present</div>
+    </div>
+    <div style="background:var(--dangerl);border:1px solid rgba(244,63,94,.2);border-radius:var(--r2);padding:10px 18px;text-align:center;">
+      <div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--danger);" id="att-absent-cnt">0</div>
+      <div style="font-size:var(--fs-xs);color:var(--t4);">Absent</div>
+    </div>
+    <div style="background:var(--warnl);border:1px solid rgba(245,158,11,.2);border-radius:var(--r2);padding:10px 18px;text-align:center;">
+      <div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--warn);" id="att-late-cnt">0</div>
+      <div style="font-size:var(--fs-xs);color:var(--t4);">Late</div>
+    </div>
+  </div>
+  <div id="att-register" style="border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:var(--card);"></div>
+</div>
+
+<!-- SCORE ENTRY -->
+<div class="page" id="page-scores">
+  <div class="ph">
+    <div><div class="ph-title">Enter Scores</div><div class="ph-sub" id="scores-sub">All subjects for my class</div></div>
+    <div class="ph-actions">
+      <select class="fi" id="score-subject" style="height:40px;max-width:220px;font-size:var(--fs-sm);">
+        <option value="">— Select Subject —</option>
+      </select>
+      <select class="fi" id="score-term" style="height:40px;max-width:160px;font-size:var(--fs-sm);">
+        <option>First Term</option><option>Second Term</option><option>Third Term</option>
+      </select>
+      <button class="btn btn-ok btn-sm" onclick="saveScores()">💾 Save Scores</button>
+    </div>
+  </div>
+  <!-- CA CONFIG -->
+  <div class="card card-sm" style="padding:14px 16px;margin-bottom:14px;">
+    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+      <div class="fg" style="margin-bottom:0;"><label>CA1 Max</label><input class="fi" type="number" id="sc-ca1-max" value="20" style="height:40px;width:80px;"/></div>
+      <div class="fg" style="margin-bottom:0;"><label>CA2 Max</label><input class="fi" type="number" id="sc-ca2-max" value="20" style="height:40px;width:80px;"/></div>
+      <div class="fg" style="margin-bottom:0;"><label>Exam Max</label><input class="fi" type="number" id="sc-exam-max" value="60" style="height:40px;width:80px;"/></div>
+      <div class="fg" style="margin-bottom:0;"><label>Session</label><input class="fi" type="text" id="sc-session" value="2025/2026" style="height:40px;width:120px;"/></div>
+      <button class="btn btn-ghost btn-sm" onclick="loadScoreTable()">Load Students</button>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table class="tbl" id="score-table">
+      <thead id="score-thead"></thead>
+      <tbody id="score-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- STUDENT COMMENTS -->
+<div class="page" id="page-comments">
+  <div class="ph">
+    <div><div class="ph-title">Student Comments</div><div class="ph-sub">End of term class teacher comments for all students</div></div>
+    <div class="ph-actions">
+      <select class="fi" id="cmt-term" style="height:40px;max-width:180px;font-size:var(--fs-sm);">
+        <option>First Term</option><option>Second Term</option><option>Third Term</option>
+      </select>
+      <button class="btn btn-ok btn-sm" onclick="saveAllComments()">💾 Save All</button>
+    </div>
+  </div>
+  <!-- QUICK TEMPLATES -->
+  <div class="card" style="margin-bottom:14px;padding:14px 16px;">
+    <div style="font-size:var(--fs-xs);font-weight:800;color:var(--t4);text-transform:uppercase;letter-spacing:.09em;margin-bottom:9px;">Quick Comment Templates — Click to use</div>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;" id="cmt-templates"></div>
+  </div>
+  <div id="comments-list"></div>
+</div>
+
+<!-- LESSON PLAN/DIARY -->
+<div class="page" id="page-lessonplan">
+  <div class="ph">
+    <div><div class="ph-title">Lesson Plan & Diary</div><div class="ph-sub">HOD will review and mark these</div></div>
+    <div class="ph-actions">
+      <button class="btn btn-gold btn-sm" onclick="openM('m-lesson')">+ New Lesson Entry</button>
+    </div>
+  </div>
+  <div id="lesson-list"></div>
+</div>
+
+<!-- REPORT CARDS -->
+<div class="page" id="page-reportcard">
+  <div class="ph"><div><div class="ph-title">Report Cards</div></div></div>
+  <div class="card" style="text-align:center;padding:40px;">
+    <div style="font-size:3rem;margin-bottom:14px;">📄</div>
+    <div style="font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--t1);margin-bottom:8px;">Generate Report Cards</div>
+    <div style="font-size:var(--fs-sm);color:var(--t3);margin-bottom:20px;">Opens the full result card system for your class</div>
+    <button class="btn btn-gold" onclick="window.open('rsms-results-print.html','_blank')" style="width:100%;max-width:300px;">📄 Open Result Card Generator</button>
+  </div>
+</div>
+
+<!-- VP ACADEMIC REPORT -->
+<div class="page" id="page-messages">
+  <div class="ph">
+    <div><div class="ph-title">Report to VP Academic</div></div>
+    <div class="ph-actions"><button class="btn btn-gold btn-sm" onclick="openM('m-report')">+ New Report</button></div>
+  </div>
+  <div id="messages-list"></div>
+</div>
+
+<!-- NOTICES -->
+<div class="page" id="page-notices">
+  <div class="ph"><div><div class="ph-title">Notice Board</div></div></div>
+  <div id="notices-list"><div style="text-align:center;padding:30px;color:var(--t4);">No notices yet</div></div>
+</div>
+
+</main>
+</div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <div class="bn-item active" onclick="gotoM('dashboard','📊','Dashboard',this)"><span class="bn-ico">📊</span><div class="bn-lbl">Home</div></div>
+  <div class="bn-item" onclick="gotoM('students','👨‍🎓','Students',this)"><span class="bn-ico">👨‍🎓</span><div class="bn-lbl">Students</div></div>
+  <div class="bn-item" onclick="gotoM('attendance','✅','Attendance',this)"><span class="bn-ico">✅</span><div class="bn-lbl">Register</div></div>
+  <div class="bn-item" onclick="gotoM('scores','📝','Scores',this)"><span class="bn-ico">📝</span><div class="bn-lbl">Scores</div></div>
+  <div class="bn-item" onclick="gotoM('comments','✍️','Comments',this)"><span class="bn-ico">✍️</span><div class="bn-lbl">Comments</div></div>
+</div>
+
+<!-- ADD STUDENT MODAL -->
+<div class="modal-ov" id="m-add-student">
+  <div class="modal">
+    <button class="m-close" onclick="closeM('m-add-student')">✕</button>
+    <div class="m-title">➕ Add Student to Class</div>
+    <div class="m-sub">Add a new student directly to your class</div>
+    <div class="f2">
+      <div class="fg"><label>Surname *</label><input class="fi" id="ns-surname" placeholder="Surname"/></div>
+      <div class="fg"><label>First Name *</label><input class="fi" id="ns-first" placeholder="First name"/></div>
+    </div>
+    <div class="fg"><label>Middle Name</label><input class="fi" id="ns-middle" placeholder="Middle name (optional)"/></div>
+    <div class="f2">
+      <div class="fg"><label>Gender *</label><select class="fi" id="ns-gender"><option>Male</option><option>Female</option></select></div>
+      <div class="fg"><label>Date of Birth</label><input class="fi" type="date" id="ns-dob"/></div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Parent Phone *</label><input class="fi" id="ns-phone" type="tel" placeholder="080XXXXXXXX"/></div>
+      <div class="fg"><label>State of Origin</label><select class="fi" id="ns-state"><option value="">— Select —</option><option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option><option>Anambra</option><option>Bauchi</option><option>Bayelsa</option><option>Benue</option><option>Borno</option><option>Cross River</option><option>Delta</option><option>Ebonyi</option><option>Edo</option><option>Ekiti</option><option>Enugu</option><option>FCT Abuja</option><option>Gombe</option><option>Imo</option><option>Jigawa</option><option>Kaduna</option><option>Kano</option><option>Katsina</option><option>Kebbi</option><option>Kogi</option><option>Kwara</option><option>Lagos</option><option>Nasarawa</option><option>Niger</option><option>Ogun</option><option>Ondo</option><option>Osun</option><option>Oyo</option><option>Plateau</option><option>Rivers</option><option>Sokoto</option><option>Taraba</option><option>Yobe</option><option>Zamfara</option></select></div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Boarding Status</label><select class="fi" id="ns-boarding"><option>Day Student</option><option>Boarder</option><option>Weekly Boarder</option></select></div>
+      <div class="fg"><label>Last School</label><input class="fi" id="ns-lastschool" placeholder="Previous school name"/></div>
+    </div>
+    <div class="fg"><label>Passport Photo</label>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div id="ns-photo-preview" style="width:60px;height:70px;border-radius:8px;background:var(--card2);border:2px dashed var(--line2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;overflow:hidden;flex-shrink:0;">📷</div>
+        <div><input type="file" id="ns-photo" accept="image/*" onchange="previewPhoto()" style="display:none;"/><button class="btn btn-ghost btn-sm" onclick="document.getElementById('ns-photo').click()">📷 Upload Photo</button></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeM('m-add-student')" style="flex:1;">Cancel</button>
+      <button class="btn btn-gold" onclick="addStudent()" style="flex:2;">✅ Add Student</button>
+    </div>
+  </div>
+</div>
+
+<!-- LESSON PLAN MODAL -->
+<div class="modal-ov" id="m-lesson">
+  <div class="modal">
+    <button class="m-close" onclick="closeM('m-lesson')">✕</button>
+    <div class="m-title">📖 Lesson Plan Entry</div>
+    <div class="f2">
+      <div class="fg"><label>Subject *</label><select class="fi" id="lp-subject"><option>— Select —</option></select></div>
+      <div class="fg"><label>Date *</label><input class="fi" type="date" id="lp-date"/></div>
+    </div>
+    <div class="fg"><label>Topic *</label><input class="fi" id="lp-topic" placeholder="Lesson topic"/></div>
+    <div class="fg"><label>Learning Objectives</label><textarea class="fi" id="lp-objectives" placeholder="By end of lesson, students will be able to..."></textarea></div>
+    <div class="fg"><label>Teaching Method</label>
+      <select class="fi" id="lp-method">
+        <option>Discussion</option><option>Demonstration</option><option>Project-Based</option>
+        <option>Inquiry/Discovery</option><option>Lecture</option><option>Group Work</option>
+        <option>Practical/Lab</option><option>Field Trip</option>
+      </select>
+    </div>
+    <div class="fg"><label>Resources / Materials</label><input class="fi" id="lp-resources" placeholder="Textbook, charts, projector..."/></div>
+    <div class="fg"><label>Teacher's Note / Reflection</label><textarea class="fi" id="lp-note" placeholder="How did the lesson go? What to improve?"></textarea></div>
+    <div class="fg"><label>Status</label>
+      <select class="fi" id="lp-status">
+        <option>Planned</option><option>Delivered</option><option>Partially Delivered</option><option>Postponed</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeM('m-lesson')" style="flex:1;">Cancel</button>
+      <button class="btn btn-gold" onclick="saveLessonPlan()" style="flex:2;">💾 Save Lesson Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- VP ACADEMIC REPORT MODAL -->
+<div class="modal-ov" id="m-report">
+  <div class="modal">
+    <button class="m-close" onclick="closeM('m-report')">✕</button>
+    <div class="m-title">📤 Report to VP Academic</div>
+    <div class="fg"><label>Subject / Title *</label><input class="fi" id="rpt-subject" placeholder="e.g. Class performance — First Term"/></div>
+    <div class="fg"><label>Report Type</label>
+      <select class="fi" id="rpt-type">
+        <option>General Class Report</option><option>Student Welfare</option>
+        <option>Academic Performance</option><option>Discipline Issue</option>
+        <option>Resource Request</option><option>Other</option>
+      </select>
+    </div>
+    <div class="fg"><label>Report Content *</label><textarea class="fi" id="rpt-body" placeholder="Write your report..." style="min-height:120px;"></textarea></div>
+    <div class="fg"><label>Priority</label>
+      <select class="fi" id="rpt-priority"><option>Normal</option><option>Important</option><option>Urgent</option></select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeM('m-report')" style="flex:1;">Cancel</button>
+      <button class="btn btn-gold" onclick="sendReport()" style="flex:2;">📤 Send to VP Academic</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+// ── DATA ──
+var DB = {
+  school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School","term":"First Term","session":"2025/2026"}'),
+  students: JSON.parse(localStorage.getItem('rsms_students')||'[]'),
+  staff: JSON.parse(localStorage.getItem('rsms_staff')||'[]')
+};
+var ME = JSON.parse(sessionStorage.getItem('rsms_user')||'{}');
+var MY_CLASS = '';
+var MY_STUDENTS = [];
+var attData = {};
+var COMMENTS = JSON.parse(localStorage.getItem('rsms_ct_comments')||'{}');
+var LESSONS = JSON.parse(localStorage.getItem('rsms_lessons')||'[]');
+var REPORTS = JSON.parse(localStorage.getItem('rsms_vp_reports')||'[]');
+var scoresData = {};
+
+// Nigerian subjects by class type
+var NG_SUBJECTS = {
+  JSS:['English Language','Mathematics','Basic Science & Technology','Social Studies','Civic Education',
+    'Cultural & Creative Arts','Physical & Health Education','Computer Studies/ICT','Agricultural Science',
+    'Home Economics','Business Studies','French Language','Yoruba Language','Christian Religious Studies',
+    'Islamic Religious Studies','Security Education','Pre-Vocational Studies','Basic Technology'],
+  SS_SCIENCE:['English Language','Mathematics','Physics','Chemistry','Biology','Further Mathematics',
+    'Agricultural Science','Computer Studies','Technical Drawing','Geography','Economics',
+    'Food & Nutrition','Health Science','Physical Education'],
+  SS_COMMERCIAL:['English Language','Mathematics','Economics','Commerce','Financial Accounting',
+    'Business Studies','Office Practice','Computer Studies','Government','Literature in English',
+    'Typewriting/Data Processing','Marketing','Insurance','Banking & Finance'],
+  SS_ARTS:['English Language','Mathematics','Literature in English','Government','History',
+    'Christian Religious Studies','Islamic Religious Studies','Yoruba Language','Igbo Language',
+    'Hausa Language','French Language','Fine Arts','Music','Economics','Geography','Philosophy & Logic']
+};
+
+var COMMENT_TEMPLATES = [
+  'An excellent student who consistently delivers outstanding work. A pride to the class.',
+  'A hardworking student showing great improvement this term. Keep it up!',
+  'Good performance this term. With more focus and dedication, results can be even better.',
+  'Shows great potential. Needs to work harder and pay more attention during lessons.',
+  'A brilliant and active participant in class. Shows strong leadership qualities.',
+  'Performance this term was below expectation. Requires more effort and parental support.',
+  'Very creative and innovative student. Should channel energy more productively into academics.',
+  'Consistent and reliable student. Notable improvement across all subjects this term.',
+  'A cheerful and cooperative student. Needs to improve study habits for better results.',
+  'Struggled this term. Recommend extra tutoring and closer parental involvement.',
+  'An exceptionally bright student with outstanding analytical and reasoning skills.',
+  'Shows improvement but still has room to excel. Should read more widely.'
+];
+
+function toast(msg,type){var t=document.getElementById('toast');t.className='toast '+(type||'info')+' show';t.innerHTML=msg;clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3500);}
+function openM(id){document.getElementById(id).classList.add('show');}
+function closeM(id){document.getElementById(id).classList.remove('show');}
+function openSb(){document.getElementById('sidebar').classList.add('open');document.getElementById('sb-ov').classList.add('show');}
+function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sb-ov').classList.remove('show');}
+
+function goto(page,el,icon,label){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  var pg=document.getElementById('page-'+page);if(pg)pg.classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(function(s){s.classList.remove('active');});
+  if(el&&el.classList)el.classList.add('active');
+  document.getElementById('tb-icon').textContent=icon||'📄';
+  document.getElementById('tb-page').textContent=label||page;
+  closeSb();
+  if(page==='students')renderStudents();
+  if(page==='attendance')renderAttendance();
+  if(page==='scores')renderScorePage();
+  if(page==='comments')renderComments();
+  if(page==='lessonplan')renderLessons();
+  if(page==='messages')renderReports();
+}
+function gotoM(page,icon,label,el){
+  document.querySelectorAll('.bn-item').forEach(function(b){b.classList.remove('active');});
+  if(el)el.classList.add('active');
+  goto(page,null,icon,label);
+}
+
+function getSubjectsForClass(cls){
+  var c=(cls||'').toLowerCase();
+  if(c.includes('science'))return NG_SUBJECTS.SS_SCIENCE;
+  if(c.includes('commercial')||c.includes('commerce'))return NG_SUBJECTS.SS_COMMERCIAL;
+  if(c.includes('art'))return NG_SUBJECTS.SS_ARTS;
+  if(c.includes('jss')||c.includes('js'))return NG_SUBJECTS.JSS;
+  if(c.includes('primary')||c.includes('nursery')||c.includes('kg'))return ['English Language','Mathematics','Basic Science','Social Studies','Civic Education','Creative Arts','Physical Education','Religious Studies'];
+  return NG_SUBJECTS.JSS;
+}
+
+// ── INIT ──
+window.addEventListener('load',function(){
+  var staffRec = DB.staff.find(function(s){return s.name===ME.name;});
+  MY_CLASS = (staffRec&&staffRec.myClass) || localStorage.getItem('rsms_my_class') || '';
+
+  // If no assigned class, use first class from students
+  if(!MY_CLASS && DB.students.length){
+    MY_CLASS = DB.students[0].class||'';
+  }
+
+  document.getElementById('sb-sname').textContent=DB.school.name||'School';
+  document.getElementById('sb-class-badge').textContent='📚 '+( MY_CLASS||'No class assigned');
+  document.getElementById('sb-uname').textContent=ME.name||'Class Teacher';
+  document.getElementById('sb-av').textContent=(ME.name||'C').charAt(0).toUpperCase();
+  document.getElementById('tb-date').textContent=new Date().toLocaleDateString('en-NG',{weekday:'short',day:'numeric',month:'short'});
+  var hr=new Date().getHours();
+  var greet=hr<12?'Good morning':(hr<17?'Good afternoon':'Good evening');
+  document.getElementById('dash-greet').textContent=greet+', '+(ME.name||'Class Teacher')+' 👋';
+  document.getElementById('att-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('lp-date').value=new Date().toISOString().split('T')[0];
+
+  // Load my students
+  MY_STUDENTS = MY_CLASS ?
+    DB.students.filter(function(s){
+      return (s.class||'').trim().toLowerCase()===(MY_CLASS||'').trim().toLowerCase();
+    }) : DB.students;
+
+  document.getElementById('dash-sub').textContent=(MY_CLASS||'All Classes')+' • '+(DB.school.term||'First Term')+' '+(DB.school.session||'2025/2026');
+  document.getElementById('sb-stu-pip').textContent=MY_STUDENTS.length;
+
+  // Load scores
+  scoresData=JSON.parse(localStorage.getItem('scores_'+(MY_CLASS||'all'))||'{}');
+
+  // Populate lesson plan subject select
+  var subjects=getSubjectsForClass(MY_CLASS);
+  var lpSel=document.getElementById('lp-subject');
+  lpSel.innerHTML='<option value="">— Select Subject —</option>'+subjects.map(function(s){return '<option>'+s+'</option>';}).join('');
+
+  // Populate score subject select
+  var scSel=document.getElementById('score-subject');
+  scSel.innerHTML='<option value="">— Select Subject —</option>'+subjects.map(function(s){return '<option>'+s+'</option>';}).join('');
+
+  renderDashboard();
+  buildCommentTemplates();
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
+});
+
+// ── DASHBOARD ──
+function renderDashboard(){
+  document.getElementById('kpi-students').textContent=MY_STUDENTS.length;
+  var todayKey='att_'+(MY_CLASS||'all')+'_'+new Date().toISOString().split('T')[0];
+  var todayAtt=JSON.parse(localStorage.getItem(todayKey)||'{}');
+  var present=Object.values(todayAtt).filter(function(v){return v==='p'||v==='l';}).length;
+  var pct=MY_STUDENTS.length?Math.round((present/MY_STUDENTS.length)*100):0;
+  document.getElementById('kpi-att').textContent=MY_STUDENTS.length?(pct+'%'):'—%';
+  var commented=Object.keys(COMMENTS).filter(function(id){return MY_STUDENTS.some(function(s){return s.id===id;});}).length;
+  document.getElementById('kpi-comments').textContent=Math.max(0,MY_STUDENTS.length-commented);
+  var subjectsWithScores=new Set();
+  Object.values(scoresData).forEach(function(ss){Object.keys(ss).forEach(function(s){subjectsWithScores.add(s);});});
+  document.getElementById('kpi-scores').textContent=subjectsWithScores.size;
+
+  // Recent students
+  var el=document.getElementById('dash-students');
+  var recent=MY_STUDENTS.slice(0,5);
+  el.innerHTML=recent.length?recent.map(function(s){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    return '<div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);">'+
+      (s.passport?'<img src="'+s.passport+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;"/>':
+        '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0;">'+name.charAt(0)+'</div>')+
+      '<div><div style="font-weight:700;font-size:var(--fs-sm);color:var(--t1);">'+name+'</div>'+
+      '<div style="font-size:var(--fs-xs);color:var(--t4);">'+(s.reg||'—')+'</div></div>'+
+      '<span class="badge '+(COMMENTS[s.id]?'b-ok':'b-mute')+'" style="margin-left:auto;">'+(COMMENTS[s.id]?'✅ Commented':'⏳')+'</span></div>';
+  }).join(''):'<div style="text-align:center;padding:16px;color:var(--t4);font-size:var(--fs-sm);">No students in your class yet</div>';
+}
+
+// ── STUDENTS ──
+function renderStudents(){
+  var q=(document.getElementById('stu-search')||{value:''}).value.toLowerCase();
+  var students=q?MY_STUDENTS.filter(function(s){return ((s.surname||'')+(s.firstname||'')+(s.reg||'')).toLowerCase().includes(q);}):MY_STUDENTS;
+  document.getElementById('stu-sub').textContent=students.length+' student'+(students.length!==1?'s':'')+' in '+(MY_CLASS||'your class');
+  var tbody=document.getElementById('students-tbody');
+  if(!students.length){
+    tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--t4);">No students yet. Click "+ Add Student" to add.</td></tr>';return;
+  }
+  tbody.innerHTML=students.map(function(s,i){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    var phone=s.wa||s.phone||'';
+    return '<tr>'+
+      '<td style="color:var(--t4);">'+(i+1)+'</td>'+
+      '<td>'+(s.passport?'<img src="'+s.passport+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"/>':
+        '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.9rem;">'+name.charAt(0)+'</div>')+'</td>'+
+      '<td style="font-weight:700;color:var(--t1);">'+name+'</td>'+
+      '<td style="font-family:monospace;font-size:.8rem;color:var(--teal);">'+(s.reg||'—')+'</td>'+
+      '<td>'+(s.gender||'—')+'</td>'+
+      '<td><span class="badge b-mute">'+(s.boarding||'Day')+'</span></td>'+
+      '<td style="font-family:monospace;font-size:var(--fs-sm);">'+(phone||'—')+'</td>'+
+      '<td><span class="badge '+(COMMENTS[s.id]?'b-ok':'b-mute')+'">'+(COMMENTS[s.id]?'✅ Done':'⏳ Pending')+'</span></td>'+
+      '<td style="display:flex;gap:5px;">'+
+        '<button class="btn btn-ghost btn-xs" onclick="callParent(\''+phone+'\',\''+name+'\')">📱</button>'+
+        '<button class="btn btn-ghost btn-xs" onclick="quickComment(\''+s.id+'\')">✍️</button>'+
+      '</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function callParent(phone,name){
+  if(!phone){toast('No phone number','error');return;}
+  phone=phone.replace(/\D/g,'');if(phone.startsWith('0'))phone='234'+phone.slice(1);
+  window.open('https://wa.me/'+phone+'?text=Hello, this is the class teacher of '+name+' from '+DB.school.name,'_blank');
+}
+function exportStudents(){
+  var rows=MY_STUDENTS.map(function(s){return [(s.surname||'')+(s.firstname?' '+s.firstname:''),s.reg||'',s.class||'',s.gender||'',s.phone||''].join(',');});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['Name,Reg,Class,Gender,Phone\n'+rows.join('\n')],{type:'text/csv'}));
+  a.download=(MY_CLASS||'Class').replace(/\s/g,'_')+'_Students.csv';
+  a.click();toast('📤 Exported','success');
+}
+
+// ── ADD STUDENT ──
+function previewPhoto(){
+  var f=document.getElementById('ns-photo').files[0];if(!f)return;
+  if(f.size>2*1024*1024){alert('Max 2MB');return;}
+  var r=new FileReader();
+  r.onload=function(e){
+    var el=document.getElementById('ns-photo-preview');
+    el.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:6px;"/>';
+    el.dataset.src=e.target.result;
+  };
+  r.readAsDataURL(f);
+}
+
+function addStudent(){
+  var surname=document.getElementById('ns-surname').value.trim();
+  var first=document.getElementById('ns-first').value.trim();
+  if(!surname||!first){toast('⚠️ Enter surname and first name','error');return;}
+  var seq=String(DB.students.length+1).padStart(4,'0');
+  var schoolId=(DB.school.schoolId||'SCH').replace(/-/g,'').slice(-4);
+  var student={
+    id:'s'+Date.now(),surname:surname,firstname:first,
+    middlename:document.getElementById('ns-middle').value,
+    class:MY_CLASS,
+    gender:document.getElementById('ns-gender').value,
+    dob:document.getElementById('ns-dob').value,
+    phone:document.getElementById('ns-phone').value,
+    wa:document.getElementById('ns-phone').value,
+    state:document.getElementById('ns-state').value,
+    boarding:document.getElementById('ns-boarding').value,
+    lastSchool:document.getElementById('ns-lastschool').value,
+    passport:document.getElementById('ns-photo-preview').dataset.src||'',
+    reg:'REG-'+schoolId+'-'+seq,status:'Active',
+    enrolled:new Date().toISOString()
+  };
+  DB.students.push(student);
+  MY_STUDENTS.push(student);
+  localStorage.setItem('rsms_students',JSON.stringify(DB.students));
+  closeM('m-add-student');
+  ['ns-surname','ns-first','ns-middle','ns-phone','ns-lastschool'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('ns-photo-preview').innerHTML='📷';
+  renderStudents();renderDashboard();
+  document.getElementById('sb-stu-pip').textContent=MY_STUDENTS.length;
+  document.getElementById('kpi-students').textContent=MY_STUDENTS.length;
+  toast('✅ '+surname+' '+first+' added to '+MY_CLASS,'success');
+}
+
+// ── ATTENDANCE ──
+function renderAttendance(){
+  var date=document.getElementById('att-date').value;
+  var key='att_'+(MY_CLASS||'all')+'_'+date;
+  attData=JSON.parse(localStorage.getItem(key)||'{}');
+  if(!MY_STUDENTS.length){
+    document.getElementById('att-register').innerHTML='<div style="text-align:center;padding:30px;color:var(--t4);">No students in your class yet</div>';return;
+  }
+  document.getElementById('att-register').innerHTML=MY_STUDENTS.map(function(s,i){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    var status=attData[s.id]||'';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line);">'+
+      '<div style="width:26px;color:var(--t4);font-size:var(--fs-sm);">'+(i+1)+'</div>'+
+      (s.passport?'<img src="'+s.passport+'" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;"/>':
+        '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0;">'+name.charAt(0)+'</div>')+
+      '<div style="flex:1;"><div style="font-weight:700;font-size:var(--fs-base);color:var(--t1);">'+name+'</div>'+
+      '<div style="font-size:var(--fs-xs);color:var(--t4);">'+(s.reg||'')+'</div></div>'+
+      '<div style="display:flex;gap:7px;">'+
+        '<div style="text-align:center;"><div class="att-btn '+(status==='p'?'p':'')+'" onclick="setAtt(\''+s.id+'\',\'p\',this)">✅</div><div style="font-size:.55rem;color:var(--t4);margin-top:2px;">Present</div></div>'+
+        '<div style="text-align:center;"><div class="att-btn '+(status==='l'?'l':'')+'" onclick="setAtt(\''+s.id+'\',\'l\',this)">🕐</div><div style="font-size:.55rem;color:var(--t4);margin-top:2px;">Late</div></div>'+
+        '<div style="text-align:center;"><div class="att-btn '+(status==='a'?'a':'')+'" onclick="setAtt(\''+s.id+'\',\'a\',this)">❌</div><div style="font-size:.55rem;color:var(--t4);margin-top:2px;">Absent</div></div>'+
+        '<div style="text-align:center;"><div class="att-btn '+(status==='e'?'e':'')+'" onclick="setAtt(\''+s.id+'\',\'e\',this)">📋</div><div style="font-size:.55rem;color:var(--t4);margin-top:2px;">Excused</div></div>'+
+      '</div></div>';
+  }).join('');
+  updateAttCounts();
+}
+
+function setAtt(id,status,btn){
+  var row=btn.closest('[style*="border-bottom"]');
+  row.querySelectorAll('.att-btn').forEach(function(b){b.className='att-btn';});
+  if(attData[id]===status)delete attData[id];
+  else{attData[id]=status;btn.classList.add(status);}
+  updateAttCounts();
+}
+function updateAttCounts(){
+  var p=0,a=0,l=0;
+  Object.values(attData).forEach(function(v){if(v==='p')p++;else if(v==='a')a++;else if(v==='l'){p++;l++;}});
+  document.getElementById('att-present-cnt').textContent=p;
+  document.getElementById('att-absent-cnt').textContent=a;
+  document.getElementById('att-late-cnt').textContent=l;
+}
+function markAll(status){
+  MY_STUDENTS.forEach(function(s){attData[s.id]=status;});
+  renderAttendance();
+}
+function saveAttendance(){
+  var date=document.getElementById('att-date').value;
+  var key='att_'+(MY_CLASS||'all')+'_'+date;
+  localStorage.setItem(key,JSON.stringify(attData));
+  var absentees=MY_STUDENTS.filter(function(s){return attData[s.id]==='a';});
+  toast('✅ Attendance saved'+(absentees.length?' — '+absentees.length+' absent':''),'success');
+  renderDashboard();
+  if(absentees.length&&confirm('Send WhatsApp alerts to '+absentees.length+' absent parents?')){
+    absentees.forEach(function(s,i){
+      setTimeout(function(){
+        var phone=(s.wa||s.phone||'').replace(/\D/g,'');
+        if(phone.startsWith('0'))phone='234'+phone.slice(1);
+        if(!phone)return;
+        var name=(s.surname||'')+' '+(s.firstname||'');
+        var msg='Dear Parent, your ward *'+name+'* was absent from '+DB.school.name+' on *'+new Date(date).toDateString()+'*. Please ensure attendance tomorrow.\n\n_'+MY_CLASS+' Class Teacher_';
+        window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg),'_blank');
+      },i*1800);
+    });
+  }
+}
+
+// ── SCORE ENTRY ──
+function renderScorePage(){
+  document.getElementById('scores-sub').textContent=(MY_CLASS||'Your class')+' — Select subject and term above';
+}
+function loadScoreTable(){
+  var subject=document.getElementById('score-subject').value;
+  var term=document.getElementById('score-term').value;
+  if(!subject){toast('⚠️ Select a subject first','error');return;}
+  var ca1Max=parseInt(document.getElementById('sc-ca1-max').value)||20;
+  var ca2Max=parseInt(document.getElementById('sc-ca2-max').value)||20;
+  var examMax=parseInt(document.getElementById('sc-exam-max').value)||60;
+  var key='scores_'+(MY_CLASS||'all');
+  scoresData=JSON.parse(localStorage.getItem(key)||'{}');
+
+  if(!MY_STUDENTS.length){
+    toast('No students in your class','error');return;
+  }
+
+  // Header
+  document.getElementById('score-thead').innerHTML=
+    '<tr style="background:var(--card2);">'+
+    '<th style="padding:10px 13px;border:1px solid var(--line);font-size:var(--fs-xs);min-width:160px;">Student</th>'+
+    '<th style="padding:8px 6px;border:1px solid var(--line);font-size:var(--fs-xs);text-align:center;min-width:60px;">CA1/'+ca1Max+'</th>'+
+    '<th style="padding:8px 6px;border:1px solid var(--line);font-size:var(--fs-xs);text-align:center;min-width:60px;">CA2/'+ca2Max+'</th>'+
+    '<th style="padding:8px 6px;border:1px solid var(--line);font-size:var(--fs-xs);text-align:center;min-width:60px;">Exam/'+examMax+'</th>'+
+    '<th style="padding:8px 6px;border:1px solid var(--line);font-size:var(--fs-xs);text-align:center;min-width:60px;color:var(--gold);">Total</th>'+
+    '<th style="padding:8px 6px;border:1px solid var(--line);font-size:var(--fs-xs);text-align:center;min-width:50px;">Grade</th>'+
+    '</tr>';
+
+  document.getElementById('score-tbody').innerHTML=MY_STUDENTS.map(function(s){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    var saved=(scoresData[s.id]&&scoresData[s.id][subject])||{};
+    return '<tr>'+
+      '<td style="padding:9px 13px;border:1px solid var(--line);font-weight:700;color:var(--t1);">'+name+'</td>'+
+      '<td style="padding:5px;border:1px solid var(--line);text-align:center;"><input class="score-in" type="number" min="0" max="'+ca1Max+'" value="'+(saved.ca1||'')+'" data-sid="'+s.id+'" data-field="ca1" oninput="calcRow(\''+s.id+'\')"/></td>'+
+      '<td style="padding:5px;border:1px solid var(--line);text-align:center;"><input class="score-in" type="number" min="0" max="'+ca2Max+'" value="'+(saved.ca2||'')+'" data-sid="'+s.id+'" data-field="ca2" oninput="calcRow(\''+s.id+'\')"/></td>'+
+      '<td style="padding:5px;border:1px solid var(--line);text-align:center;"><input class="score-in" type="number" min="0" max="'+examMax+'" value="'+(saved.exam||'')+'" data-sid="'+s.id+'" data-field="exam" oninput="calcRow(\''+s.id+'\')"/></td>'+
+      '<td style="padding:9px 6px;border:1px solid var(--line);text-align:center;font-family:var(--serif);font-weight:700;color:var(--gold);" id="stot-'+s.id+'">'+(saved.ca1||saved.ca2||saved.exam?(parseInt(saved.ca1||0)+parseInt(saved.ca2||0)+parseInt(saved.exam||0)):'—')+'</td>'+
+      '<td style="padding:9px 6px;border:1px solid var(--line);text-align:center;" id="sgrade-'+s.id+'"></td>'+
+    '</tr>';
+  }).join('');
+
+  MY_STUDENTS.forEach(function(s){calcRow(s.id);});
+  toast('Loaded '+MY_STUDENTS.length+' students — '+subject,'success');
+}
+
+function calcRow(sid){
+  var ca1=parseInt(document.querySelector('[data-sid="'+sid+'"][data-field="ca1"]')&&document.querySelector('[data-sid="'+sid+'"][data-field="ca1"]').value||0);
+  var ca2=parseInt(document.querySelector('[data-sid="'+sid+'"][data-field="ca2"]')&&document.querySelector('[data-sid="'+sid+'"][data-field="ca2"]').value||0);
+  var exam=parseInt(document.querySelector('[data-sid="'+sid+'"][data-field="exam"]')&&document.querySelector('[data-sid="'+sid+'"][data-field="exam"]').value||0);
+  var total=ca1+ca2+exam;
+  var totEl=document.getElementById('stot-'+sid);
+  var grEl=document.getElementById('sgrade-'+sid);
+  if(totEl)totEl.textContent=total||'—';
+  if(grEl){
+    var g=total>=80?'A1':total>=75?'B2':total>=70?'B3':total>=65?'C4':total>=60?'C5':total>=55?'C6':total>=50?'D7':total>=45?'E8':'F9';
+    var col=total>=50?'var(--success)':'var(--danger)';
+    if(total>=70)col='var(--gold)';
+    grEl.innerHTML='<span style="font-weight:700;color:'+col+';">'+g+'</span>';
+  }
+}
+
+function saveScores(){
+  var subject=document.getElementById('score-subject').value;
+  if(!subject){toast('⚠️ Select a subject first','error');return;}
+  MY_STUDENTS.forEach(function(s){
+    if(!scoresData[s.id])scoresData[s.id]={};
+    var ca1=document.querySelector('[data-sid="'+s.id+'"][data-field="ca1"]');
+    var ca2=document.querySelector('[data-sid="'+s.id+'"][data-field="ca2"]');
+    var exam=document.querySelector('[data-sid="'+s.id+'"][data-field="exam"]');
+    if(ca1||ca2||exam){
+      scoresData[s.id][subject]={
+        ca1:ca1&&ca1.value?parseInt(ca1.value):0,
+        ca2:ca2&&ca2.value?parseInt(ca2.value):0,
+        exam:exam&&exam.value?parseInt(exam.value):0
+      };
+    }
+  });
+  localStorage.setItem('scores_'+(MY_CLASS||'all'),JSON.stringify(scoresData));
+  toast('✅ '+subject+' scores saved for '+MY_STUDENTS.length+' students','success');
+  renderDashboard();
+}
+
+// ── COMMENTS ──
+function buildCommentTemplates(){
+  var el=document.getElementById('cmt-templates');if(!el)return;
+  el.innerHTML=COMMENT_TEMPLATES.map(function(t,i){
+    return '<button onclick="applyTemplate(this)" data-text="'+t.replace(/"/g,'&quot;')+'" style="background:var(--card2);border:1px solid var(--line2);border-radius:var(--r3);padding:6px 12px;font-size:.72rem;color:var(--t2);cursor:pointer;font-family:var(--sans);text-align:left;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all .18s;">'+t.slice(0,45)+'...</button>';
+  }).join('');
+}
+function applyTemplate(btn){
+  var text=btn.dataset.text;
+  // Apply to first pending student's textarea
+  var textareas=document.querySelectorAll('.cmt-textarea');
+  for(var i=0;i<textareas.length;i++){
+    if(!textareas[i].value){textareas[i].value=text;textareas[i].focus();break;}
+  }
+}
+function quickComment(sid){
+  goto('comments',document.querySelector('[onclick*=comments]'),'✍️','Comments');
+  setTimeout(function(){
+    var ta=document.getElementById('cmt-'+sid);
+    if(ta){ta.scrollIntoView({behavior:'smooth'});ta.focus();}
+  },400);
+}
+function renderComments(){
+  var term=document.getElementById('cmt-term').value;
+  var el=document.getElementById('comments-list');
+  if(!MY_STUDENTS.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t4);">No students yet</div>';return;}
+  el.innerHTML=MY_STUDENTS.map(function(s){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    var key=s.id+'_'+term;
+    var saved=COMMENTS[key]||{};
+    return '<div style="background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:10px;">'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'+
+        (s.passport?'<img src="'+s.passport+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover;"/>':
+          '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;">'+name.charAt(0)+'</div>')+
+        '<div>'+
+          '<div style="font-weight:700;font-size:var(--fs-base);color:var(--t1);">'+name+'</div>'+
+          '<div style="font-size:var(--fs-xs);color:var(--t4);">'+(s.class||'—')+' • '+(s.reg||'—')+'</div>'+
+        '</div>'+
+        '<span class="badge '+(saved.comment?'b-ok':'b-mute')+'" style="margin-left:auto;">'+(saved.comment?'✅ Done':'⏳ Pending')+'</span>'+
+      '</div>'+
+      '<div class="fg" style="margin-bottom:8px;"><label>Class Teacher\'s Comment</label>'+
+        '<textarea class="fi cmt-textarea" id="cmt-'+s.id+'" data-sid="'+s.id+'" data-term="'+term+'" placeholder="Write comment for '+name+'..." style="min-height:80px;">'+( saved.comment||'')+'</textarea>'+
+      '</div>'+
+      '<div class="fg" style="margin-bottom:8px;"><label>Recommendation</label>'+
+        '<input class="fi" id="rec-'+s.id+'" value="'+(saved.recommend||'')+'" placeholder="Recommendation for next term..." style="height:42px;"/>'+
+      '</div>'+
+      '<button class="btn btn-gold btn-sm" onclick="saveComment(\''+s.id+'\',\''+term+'\')" style="width:100%;">💾 Save Comment</button>'+
+    '</div>';
+  }).join('');
+}
+function saveComment(sid,term){
+  var ta=document.getElementById('cmt-'+sid);
+  var rec=document.getElementById('rec-'+sid);
+  if(!ta||!ta.value.trim()){toast('⚠️ Write a comment first','error');return;}
+  var key=sid+'_'+term;
+  COMMENTS[key]={comment:ta.value.trim(),recommend:rec&&rec.value||'',savedAt:new Date().toISOString()};
+  localStorage.setItem('rsms_ct_comments',JSON.stringify(COMMENTS));
+  // Also save to reviews for report card
+  var reviews=JSON.parse(localStorage.getItem('rsms_reviews')||'[]');
+  var student=MY_STUDENTS.find(function(s){return s.id===sid;});
+  var existing=reviews.findIndex(function(r){return r.studentId===sid&&r.term===term;});
+  var review={id:'rev'+Date.now(),studentId:sid,studentName:student?(student.surname||'')+' '+(student.firstname||''):'',class:MY_CLASS,term:term,type:'Class Teacher Comment',comment:ta.value.trim(),recommend:rec&&rec.value||'',rating:4,createdAt:new Date().toISOString(),createdBy:ME.name||'Class Teacher'};
+  if(existing>-1)reviews[existing]=review;else reviews.push(review);
+  localStorage.setItem('rsms_reviews',JSON.stringify(reviews));
+  renderComments();renderDashboard();
+  toast('✅ Comment saved for '+(student?(student.surname||''):'student'),'success');
+}
+function saveAllComments(){
+  var term=document.getElementById('cmt-term').value;
+  MY_STUDENTS.forEach(function(s){
+    var ta=document.getElementById('cmt-'+s.id);
+    if(ta&&ta.value.trim())saveComment(s.id,term);
+  });
+  toast('✅ All comments saved','success');
+}
+
+// ── LESSON PLAN ──
+function renderLessons(){
+  var el=document.getElementById('lesson-list');
+  if(!LESSONS.length){
+    el.innerHTML='<div class="card" style="text-align:center;padding:40px;"><div style="font-size:3rem;margin-bottom:14px;">📖</div><div style="font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--t1);margin-bottom:8px;">No Lesson Entries Yet</div><div style="font-size:var(--fs-sm);color:var(--t3);margin-bottom:16px;">Your HOD will review and mark your lesson notes here</div><button class="btn btn-gold btn-sm" onclick="openM(\'m-lesson\')">+ Add First Entry</button></div>';return;
+  }
+  var statColors={Delivered:'var(--success)',Planned:'var(--info)','Partially Delivered':'var(--warn)',Postponed:'var(--danger)'};
+  el.innerHTML=LESSONS.slice().reverse().map(function(l){
+    var hodMark=l.hodMark;
+    return '<div style="background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:10px;">'+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;">'+
+        '<div>'+
+          '<div style="font-weight:700;font-size:var(--fs-base);color:var(--t1);margin-bottom:3px;">'+l.topic+'</div>'+
+          '<div style="font-size:var(--fs-xs);color:var(--t4);">'+l.subject+' • '+l.date+' • '+l.method+'</div>'+
+        '</div>'+
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">'+
+          '<span style="font-size:.72rem;font-weight:700;color:'+( statColors[l.status]||'var(--t3)')+';background:rgba(255,255,255,.05);border-radius:20px;padding:2px 9px;">'+l.status+'</span>'+
+          (hodMark?'<span class="badge b-ok">HOD ✓ '+hodMark+'</span>':'<span class="badge b-mute">Awaiting HOD Review</span>')+
+        '</div>'+
+      '</div>'+
+      (l.objectives?'<div style="font-size:var(--fs-sm);color:var(--t2);margin-bottom:6px;"><strong>Objectives:</strong> '+l.objectives+'</div>':'')+
+      (l.note?'<div style="font-size:var(--fs-sm);color:var(--t3);font-style:italic;">📝 '+l.note+'</div>':'')+
+    '</div>';
+  }).join('');
+}
+function saveLessonPlan(){
+  var topic=document.getElementById('lp-topic').value.trim();
+  var subject=document.getElementById('lp-subject').value;
+  if(!topic||!subject){toast('⚠️ Fill topic and subject','error');return;}
+  var lesson={id:'lp'+Date.now(),topic:topic,subject:subject,date:document.getElementById('lp-date').value,method:document.getElementById('lp-method').value,objectives:document.getElementById('lp-objectives').value,resources:document.getElementById('lp-resources').value,note:document.getElementById('lp-note').value,status:document.getElementById('lp-status').value,class:MY_CLASS,teacher:ME.name||'Class Teacher',hodMark:null,createdAt:new Date().toISOString()};
+  LESSONS.push(lesson);localStorage.setItem('rsms_lessons',JSON.stringify(LESSONS));
+  closeM('m-lesson');renderLessons();
+  toast('📖 Lesson entry saved','success');
+}
+
+// ── VP REPORTS ──
+function renderReports(){
+  var el=document.getElementById('messages-list');
+  if(!REPORTS.length){el.innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--t4);">No reports sent yet</div>';return;}
+  el.innerHTML=REPORTS.slice().reverse().map(function(r){
+    return '<div style="background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:10px;">'+
+      '<div style="font-weight:700;font-size:var(--fs-base);color:var(--t1);margin-bottom:3px;">'+r.subject+'</div>'+
+      '<div style="font-size:var(--fs-xs);color:var(--t4);margin-bottom:8px;">'+r.type+' • '+new Date(r.createdAt).toLocaleDateString('en-NG')+'<span class="badge '+(r.priority==='urgent'?'b-err':r.priority==='important'?'b-warn':'b-mute')+'" style="margin-left:8px;">'+r.priority+'</span></div>'+
+      '<div style="font-size:var(--fs-sm);color:var(--t2);">'+r.body+'</div></div>';
+  }).join('');
+}
+function sendReport(){
+  var sub=document.getElementById('rpt-subject').value.trim();
+  var body=document.getElementById('rpt-body').value.trim();
+  if(!sub||!body){toast('⚠️ Fill all fields','error');return;}
+  var rpt={id:'rpt'+Date.now(),subject:sub,body:body,type:document.getElementById('rpt-type').value,priority:document.getElementById('rpt-priority').value,from:ME.name||'Class Teacher',class:MY_CLASS,createdAt:new Date().toISOString()};
+  REPORTS.push(rpt);localStorage.setItem('rsms_vp_reports',JSON.stringify(REPORTS));
+  // Save to admin/VP inbox
+  var inbox=JSON.parse(localStorage.getItem('rsms_vp_inbox')||'[]');
+  inbox.push(rpt);localStorage.setItem('rsms_vp_inbox',JSON.stringify(inbox));
+  closeM('m-report');renderReports();
+  toast('📤 Report sent to VP Academic','success');
+}
+</script>
+</body>
+</html>
