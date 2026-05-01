@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0d0f1a"/>
+<link rel="manifest" href="manifest.json"/>
+<title>RSMS — HOD / Class Teacher Portal</title>
+<script src="rsms-school-detect.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--panel:#0d0f1a;--card:#111420;--card2:#161929;
+  --line:rgba(255,255,255,0.07);--line2:rgba(255,255,255,0.13);
+  --gold:#d4a843;--goldl:rgba(212,168,67,0.1);--goldm:rgba(212,168,67,0.2);
+  --success:#22c55e;--successl:rgba(34,197,94,0.1);
+  --danger:#f43f5e;--dangerl:rgba(244,63,94,0.1);
+  --warn:#f59e0b;--warnl:rgba(245,158,11,0.1);
+  --info:#3b82f6;--infol:rgba(59,130,246,0.1);
+  --purple:#8b5cf6;--purplel:rgba(139,92,246,0.1);
+  --teal:#14b8a6;--teall:rgba(20,184,166,0.1);
+  --t1:#f0f2ff;--t2:rgba(240,242,255,0.65);--t3:rgba(240,242,255,0.35);--t4:rgba(240,242,255,0.14);
+  --r:14px;--r2:10px;--r3:7px;
+  --serif:'Fraunces',serif;--sans:'Outfit',sans-serif;
+  --fs-xs:.76rem;--fs-sm:.88rem;--fs-base:.96rem;--fs-lg:1.1rem;
+  --btn-h:50px;--input-h:48px;
+  --sb-w:230px;--safe-bot:env(safe-area-inset-bottom);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--t1);overflow:hidden;}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:var(--sb-w) 1fr;grid-template-rows:60px 1fr;height:100vh;}
+@media(max-width:899px){.layout{grid-template-columns:1fr;}}
+
+/* SIDEBAR */
+.sidebar{grid-row:1/3;background:var(--panel);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;height:100vh;z-index:40;transition:transform .28s;}
+@media(max-width:899px){.sidebar{position:fixed;left:0;top:0;transform:translateX(-100%);box-shadow:4px 0 32px rgba(0,0,0,.5);}}
+.sidebar.open{transform:translateX(0)!important;}
+.sb-brand{height:60px;padding:0 16px;display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--line);flex-shrink:0;}
+.sb-brand-name{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;color:var(--gold);}
+.sb-brand-sub{font-size:.58rem;color:var(--t4);text-transform:uppercase;letter-spacing:.12em;}
+.sb-school{padding:10px 14px;border-bottom:1px solid var(--line);flex-shrink:0;}
+.sb-sname{font-size:var(--fs-sm);font-weight:700;color:var(--t1);}
+.sb-role-badge{display:inline-flex;align-items:center;gap:5px;background:var(--purplel);border:1px solid rgba(139,92,246,.2);border-radius:20px;padding:3px 10px;font-size:.65rem;font-weight:700;color:var(--purple);margin-top:4px;}
+.sb-nav{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:1px;}
+.sb-nav::-webkit-scrollbar{display:none;}
+.sb-grp{font-size:.6rem;font-weight:800;color:var(--t4);text-transform:uppercase;letter-spacing:.16em;padding:11px 10px 4px;}
+.sb-item{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:var(--r2);cursor:pointer;transition:all .18s;border:1px solid transparent;}
+.sb-item:hover{background:rgba(255,255,255,.04);}
+.sb-item.active{background:var(--goldl);border-color:rgba(212,168,67,.2);}
+.sb-icon{font-size:1.22rem;width:24px;text-align:center;flex-shrink:0;}
+.sb-label{font-size:var(--fs-sm);font-weight:600;color:var(--t2);}
+.sb-item.active .sb-label{color:var(--gold);font-weight:700;}
+.sb-foot{padding:12px 14px;border-top:1px solid var(--line);flex-shrink:0;}
+.sb-user{display:flex;align-items:center;gap:9px;}
+.sb-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.88rem;color:#fff;flex-shrink:0;}
+.sb-uname{font-size:var(--fs-sm);font-weight:700;color:var(--t1);}
+.sb-urole{font-size:.62rem;color:var(--t4);}
+.sb-logout{margin-left:auto;background:none;border:none;color:var(--t4);cursor:pointer;font-size:1rem;padding:4px;}
+
+/* TOPBAR */
+.topbar{background:var(--panel);border-bottom:1px solid var(--line);padding:0 20px;display:flex;align-items:center;gap:12px;z-index:30;}
+.hamburger{background:none;border:1px solid var(--line2);border-radius:var(--r3);color:var(--t2);cursor:pointer;padding:9px 11px;font-size:1rem;display:none;}
+@media(max-width:899px){.hamburger{display:flex;align-items:center;}}
+.tb-page-icon{font-size:1.3rem;}
+.tb-page-name{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;color:var(--t1);flex:1;}
+.tb-right{display:flex;gap:8px;align-items:center;}
+.tb-date{font-size:var(--fs-xs);color:var(--t4);}
+
+/* CONTENT */
+.content{overflow-y:auto;padding:22px 20px 80px;}
+.content::-webkit-scrollbar{width:4px;}
+.content::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px;}
+@media(min-width:900px){.content{padding:26px 28px 40px;}}
+
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;animation:pg-in .25s ease;}
+@keyframes pg-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+/* PAGE HEADER */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:22px;flex-wrap:wrap;}
+.ph-title{font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--t1);margin-bottom:4px;}
+.ph-sub{font-size:var(--fs-sm);color:var(--t3);}
+.ph-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+@media(max-width:899px){.kpi-grid{grid-template-columns:1fr 1fr;}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;cursor:pointer;transition:all .2s;}
+.kpi:hover{transform:translateY(-2px);border-color:var(--line2);}
+.kpi-icon{font-size:1.6rem;margin-bottom:8px;}
+.kpi-label{font-size:var(--fs-xs);font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:7px;}
+.kpi-val{font-family:var(--serif);font-size:1.8rem;font-weight:700;margin-bottom:4px;}
+.kpi-sub{font-size:var(--fs-xs);color:var(--t3);}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;}
+.ct{font-size:var(--fs-base);font-weight:700;color:var(--t1);display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.ct-action{margin-left:auto;font-size:var(--fs-sm);color:var(--gold);cursor:pointer;font-weight:600;}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--line);}
+.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-sm);}
+.tbl thead{background:var(--card2);}
+.tbl th{padding:11px 14px;text-align:left;font-size:var(--fs-xs);font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;border-bottom:1px solid var(--line);white-space:nowrap;}
+.tbl td{padding:12px 14px;border-bottom:1px solid var(--line);color:var(--t2);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tbody tr:hover td{background:rgba(255,255,255,.02);color:var(--t1);}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.fg label{font-size:var(--fs-xs);font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;}
+.fi{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:0 14px;color:var(--t1);font-size:var(--fs-base);font-family:var(--sans);outline:none;width:100%;height:var(--input-h);transition:all .2s;}
+.fi:focus{border-color:rgba(212,168,67,.4);box-shadow:0 0 0 3px rgba(212,168,67,.08);}
+select.fi{cursor:pointer;}
+textarea.fi{height:auto;min-height:90px;padding:12px 14px;resize:vertical;}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+@media(max-width:600px){.f2{grid-template-columns:1fr;}}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--btn-h);padding:0 22px;border:none;border-radius:var(--r2);cursor:pointer;font-family:var(--sans);font-size:var(--fs-base);font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-gold{background:linear-gradient(135deg,#4a2500,var(--gold));color:#000;}
+.btn-purple{background:linear-gradient(135deg,#3b0764,var(--purple));color:#fff;}
+.btn-ok{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--t2);}
+.btn-ghost:hover{background:rgba(255,255,255,.1);color:var(--t1);}
+.btn-teal{background:linear-gradient(135deg,#0a3d38,var(--teal));color:#fff;}
+.btn-sm{height:42px;padding:0 16px;font-size:var(--fs-sm);border-radius:var(--r3);}
+.btn-xs{height:34px;padding:0 10px;font-size:var(--fs-xs);border-radius:5px;}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;}
+.b-ok{background:var(--successl);color:var(--success);}
+.b-err{background:var(--dangerl);color:var(--danger);}
+.b-gold{background:var(--goldl);color:var(--gold);}
+.b-purple{background:var(--purplel);color:var(--purple);}
+.b-teal{background:var(--teall);color:var(--teal);}
+.b-mute{background:rgba(255,255,255,.05);color:var(--t3);}
+.b-warn{background:var(--warnl);color:var(--warn);}
+
+/* ASSIGNMENT CARD */
+.assign-card{background:var(--card2);border:1px solid var(--line);border-radius:var(--r2);padding:16px;margin-bottom:10px;transition:all .2s;}
+.assign-card:hover{border-color:var(--line2);}
+.assign-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;}
+.assign-icon{font-size:1.5rem;flex-shrink:0;}
+.assign-title{font-size:var(--fs-base);font-weight:700;color:var(--t1);margin-bottom:3px;}
+.assign-meta{font-size:var(--fs-xs);color:var(--t4);}
+.assign-status{margin-left:auto;flex-shrink:0;}
+.assign-body{font-size:var(--fs-sm);color:var(--t2);line-height:1.7;margin-bottom:10px;}
+.assign-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
+/* COMMENT CARD */
+.comment-card{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid var(--line);}
+.comment-card:last-child{border:none;}
+.comment-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--teal));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.88rem;color:#fff;flex-shrink:0;}
+.comment-name{font-size:var(--fs-sm);font-weight:700;color:var(--t1);}
+.comment-role{font-size:.65rem;color:var(--t4);margin-left:6px;}
+.comment-time{font-size:.65rem;color:var(--t4);float:right;}
+.comment-body{font-size:var(--fs-sm);color:var(--t2);margin-top:4px;line-height:1.6;}
+
+/* REVIEW BOX */
+.review-box{background:linear-gradient(135deg,rgba(139,92,246,.07),rgba(212,168,67,.04));border:1px solid rgba(139,92,246,.2);border-radius:var(--r);padding:18px;margin-bottom:14px;}
+.review-title{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;color:var(--t1);margin-bottom:4px;}
+.review-sub{font-size:var(--fs-sm);color:var(--t3);margin-bottom:14px;}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:500;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-ov.show{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--line2);border-radius:20px;padding:26px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;animation:m-in .28s cubic-bezier(.34,1.56,.64,1);}
+@keyframes m-in{from{opacity:0;transform:scale(.9);}to{opacity:1;transform:none;}}
+.m-title{font-family:var(--serif);font-size:var(--fs-lg);font-weight:700;color:var(--t1);margin-bottom:4px;}
+.m-sub{font-size:var(--fs-sm);color:var(--t2);margin-bottom:18px;}
+.m-close{float:right;background:none;border:1px solid var(--line2);border-radius:var(--r3);color:var(--t3);cursor:pointer;width:32px;height:32px;font-size:.95rem;display:inline-flex;align-items:center;justify-content:center;}
+
+/* BOTTOM NAV */
+.bnav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(13,15,26,.98);border-top:1px solid var(--line);padding-bottom:var(--safe-bot);box-shadow:0 -4px 24px rgba(0,0,0,.5);}
+@media(max-width:899px){.bnav{display:flex;}}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;cursor:pointer;}
+.bn-ico{font-size:1.6rem;margin-bottom:3px;transition:transform .2s;}
+.bn-lbl{font-size:.6rem;font-weight:700;color:var(--t4);}
+.bn-item.active .bn-ico{transform:scale(1.15);}
+.bn-item.active .bn-lbl{color:var(--gold);}
+
+.sb-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:199;display:none;}
+.sb-ov.show{display:block;}
+
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(60px);border-radius:var(--r2);padding:11px 20px;font-size:var(--fs-sm);z-index:999;transition:transform .28s;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap;max-width:92vw;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.error{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.info{background:#0f1020;border:1px solid rgba(212,168,67,.35);color:var(--gold);}
+@media(min-width:900px){.toast{bottom:22px;}}
+</style>
+</head>
+<body>
+<div class="sb-ov" id="sb-ov" onclick="closeSb()"></div>
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <svg width="32" height="32" viewBox="0 0 120 120">
+      <polygon points="60,6 110,33 110,87 60,114 10,87 10,33" fill="#0d0f1a" stroke="#d4a843" stroke-width="5"/>
+      <text x="60" y="80" text-anchor="middle" font-family="Georgia,serif" font-size="56" font-weight="bold" fill="#d4a843">R</text>
+    </svg>
+    <div><div class="sb-brand-name">RSMS</div><div class="sb-brand-sub">Academic Portal</div></div>
+  </div>
+  <div class="sb-school" style="padding:11px 14px;border-bottom:1px solid var(--line);">
+    <div class="sb-sname" id="sb-sname">School Name</div>
+    <div class="sb-role-badge" id="sb-role-badge">🎓 HOD</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-grp">Overview</div>
+    <div class="sb-item active" onclick="goto('dashboard',this,'📊','Dashboard')"><span class="sb-icon">📊</span><span class="sb-label">Dashboard</span></div>
+    <div class="sb-grp">Academic</div>
+    <div class="sb-item" onclick="goto('assignments',this,'📚','Assignments')"><span class="sb-icon">📚</span><span class="sb-label">Assignments</span></div>
+    <div class="sb-item" onclick="goto('reviews',this,'✍️','Reviews & Comments')"><span class="sb-icon">✍️</span><span class="sb-label">Reviews & Comments</span></div>
+    <div class="sb-item" onclick="goto('results',this,'📝','Results Review')"><span class="sb-icon">📝</span><span class="sb-label">Results Review</span></div>
+    <div class="sb-item" onclick="goto('students',this,'👨‍🎓','My Students')"><span class="sb-icon">👨‍🎓</span><span class="sb-label">My Students</span></div>
+    <div class="sb-grp">Communication</div>
+    <div class="sb-item" onclick="goto('notices',this,'📢','Notice Board')"><span class="sb-icon">📢</span><span class="sb-label">Notice Board</span></div>
+    <div class="sb-item" onclick="goto('messages',this,'💬','Messages')"><span class="sb-icon">💬</span><span class="sb-label">Messages to Admin</span></div>
+  </nav>
+  <div class="sb-foot">
+    <div class="sb-user">
+      <div class="sb-av" id="sb-av">H</div>
+      <div><div class="sb-uname" id="sb-uname">HOD Name</div><div class="sb-urole" id="sb-urole">Head of Department</div></div>
+      <button class="sb-logout" onclick="if(confirm('Sign out?')){sessionStorage.clear();window.location.href='rsms-login.html';}">⎋</button>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div style="display:flex;flex-direction:column;min-width:0;overflow:hidden;">
+<header class="topbar">
+  <button class="hamburger" onclick="openSb()">☰</button>
+  <span class="tb-page-icon" id="tb-icon">📊</span>
+  <span class="tb-page-name" id="tb-page">Dashboard</span>
+  <div class="tb-right">
+    <span class="tb-date" id="tb-date"></span>
+    <button class="btn btn-gold btn-sm" onclick="openM('m-assignment')">+ New Assignment</button>
+  </div>
+</header>
+
+<main class="content">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="ph">
+    <div><div class="ph-title" id="dash-greet">Good morning 👋</div><div class="ph-sub" id="dash-sub">Your academic overview</div></div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi" onclick="goto('students',document.querySelector('[onclick*=students]'),'👨‍🎓','Students')">
+      <div class="kpi-icon">👨‍🎓</div><div class="kpi-label">My Students</div>
+      <div class="kpi-val" id="kpi-students" style="color:var(--teal);">0</div><div class="kpi-sub">In my class/dept</div>
+    </div>
+    <div class="kpi" onclick="goto('assignments',document.querySelector('[onclick*=assignments]'),'📚','Assignments')">
+      <div class="kpi-icon">📚</div><div class="kpi-label">Active Assignments</div>
+      <div class="kpi-val" id="kpi-assignments" style="color:var(--gold);">0</div><div class="kpi-sub">Pending submissions</div>
+    </div>
+    <div class="kpi" onclick="goto('reviews',document.querySelector('[onclick*=reviews]'),'✍️','Reviews')">
+      <div class="kpi-icon">✍️</div><div class="kpi-label">Pending Reviews</div>
+      <div class="kpi-val" id="kpi-reviews" style="color:var(--purple);">0</div><div class="kpi-sub">Awaiting comments</div>
+    </div>
+    <div class="kpi" onclick="goto('notices',document.querySelector('[onclick*=notices]'),'📢','Notices')">
+      <div class="kpi-icon">📢</div><div class="kpi-label">Notices</div>
+      <div class="kpi-val" id="kpi-notices" style="color:var(--success);">0</div><div class="kpi-sub">Active notices</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div class="card">
+      <div class="ct">📚 Recent Assignments<span class="ct-action" onclick="goto('assignments',document.querySelector('[onclick*=assignments]'),'📚','Assignments')">All →</span></div>
+      <div id="dash-assignments"></div>
+    </div>
+    <div class="card">
+      <div class="ct">✍️ Pending Reviews<span class="ct-action" onclick="goto('reviews',document.querySelector('[onclick*=reviews]'),'✍️','Reviews')">All →</span></div>
+      <div id="dash-reviews"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ASSIGNMENTS -->
+<div class="page" id="page-assignments">
+  <div class="ph">
+    <div><div class="ph-title">Assignments</div><div class="ph-sub">Create and manage student assignments</div></div>
+    <div class="ph-actions">
+      <button class="btn btn-ghost btn-sm" onclick="filterAssignments('all')" id="fa-all">All</button>
+      <button class="btn btn-ghost btn-sm" onclick="filterAssignments('active')" id="fa-active">Active</button>
+      <button class="btn btn-ghost btn-sm" onclick="filterAssignments('closed')" id="fa-closed">Closed</button>
+      <button class="btn btn-gold btn-sm" onclick="openM('m-assignment')">+ New Assignment</button>
+    </div>
+  </div>
+  <div id="assignments-list"></div>
+</div>
+
+<!-- REVIEWS & COMMENTS -->
+<div class="page" id="page-reviews">
+  <div class="ph">
+    <div><div class="ph-title">Reviews & Comments</div><div class="ph-sub">Write academic comments and reviews for students</div></div>
+    <div class="ph-actions">
+      <select class="fi" id="review-class-filter" onchange="loadReviews()" style="height:40px;max-width:180px;font-size:var(--fs-sm);"></select>
+      <button class="btn btn-gold btn-sm" onclick="openM('m-review')">+ Write Review</button>
+    </div>
+  </div>
+
+  <!-- TEMPLATE REVIEWS -->
+  <div class="review-box">
+    <div class="review-title">📋 Quick Comment Templates</div>
+    <div class="review-sub">Click any template to auto-fill the review form</div>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;" id="review-templates"></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">📝 Student Reviews & End of Term Comments</div>
+    <div id="reviews-list"></div>
+  </div>
+</div>
+
+<!-- RESULTS REVIEW -->
+<div class="page" id="page-results">
+  <div class="ph">
+    <div><div class="ph-title">Results Review</div><div class="ph-sub">Verify and approve class results before principal signs off</div></div>
+    <div class="ph-actions">
+      <select class="fi" id="res-class-sel" style="height:40px;max-width:180px;font-size:var(--fs-sm);" onchange="loadResultsReview()">
+        <option value="">Select Class</option>
+      </select>
+      <button class="btn btn-ok btn-sm" onclick="approveResults()">✅ Approve Results</button>
+    </div>
+  </div>
+  <div id="results-review-content">
+    <div style="text-align:center;padding:40px;color:var(--t4);">Select a class to review results</div>
+  </div>
+</div>
+
+<!-- MY STUDENTS -->
+<div class="page" id="page-students">
+  <div class="ph">
+    <div><div class="ph-title">My Students</div></div>
+    <div class="ph-actions">
+      <input class="fi" id="stu-search" type="text" placeholder="Search..." oninput="filterStudents()" style="height:40px;max-width:220px;font-size:var(--fs-sm);"/>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>#</th><th>Student</th><th>Class</th><th>Avg Score</th><th>Attendance</th><th>Review</th><th>Action</th></tr></thead>
+      <tbody id="students-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- NOTICE BOARD -->
+<div class="page" id="page-notices">
+  <div class="ph">
+    <div><div class="ph-title">Notice Board</div></div>
+    <div class="ph-actions">
+      <button class="btn btn-gold btn-sm" onclick="openM('m-notice')">+ Post Notice</button>
+    </div>
+  </div>
+  <div id="notices-list"></div>
+</div>
+
+<!-- MESSAGES TO ADMIN -->
+<div class="page" id="page-messages">
+  <div class="ph"><div><div class="ph-title">Messages to Admin</div></div><div class="ph-actions"><button class="btn btn-gold btn-sm" onclick="openM('m-message')">+ New Message</button></div></div>
+  <div id="messages-list"></div>
+</div>
+
+</main>
+</div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <div class="bn-item active" onclick="gotoM('dashboard','📊','Dashboard',this)"><span class="bn-ico">📊</span><div class="bn-lbl">Home</div></div>
+  <div class="bn-item" onclick="gotoM('assignments','📚','Assignments',this)"><span class="bn-ico">📚</span><div class="bn-lbl">Tasks</div></div>
+  <div class="bn-item" onclick="gotoM('reviews','✍️','Reviews',this)"><span class="bn-ico">✍️</span><div class="bn-lbl">Reviews</div></div>
+  <div class="bn-item" onclick="gotoM('students','👨‍🎓','Students',this)"><span class="bn-ico">👨‍🎓</span><div class="bn-lbl">Students</div></div>
+  <div class="bn-item" onclick="gotoM('notices','📢','Notices',this)"><span class="bn-ico">📢</span><div class="bn-lbl">Notices</div></div>
+</div>
+
+<!-- MODALS -->
+<!-- NEW ASSIGNMENT -->
+<div class="modal-ov" id="m-assignment">
+  <div class="modal">
+    <button class="m-close" onclick="closeM('m-assignment')">✕</button>
+    <div class="m-title">📚 Create Assignment</div>
+    <div class="m-sub">Drop an assignment for your students</div>
+    <div class="fg"><label>Title *</label><input class="fi" id="a-title" placeholder="e.g. Essay on photosynthesis"/></div>
+    <div class="f2">
+      <div class="fg"><label>Subject *</label><input class="fi" id="a-subject" placeholder="e.g. Biology"/></div>
+      <div class="fg"><label>Class *</label><select class="fi" id="a-class"><option>— Select —</option></select></div>
+    </div>
+    <div class="fg"><label>Instructions</label><textarea class="fi" id="a-body" placeholder="Describe the assignment in detail..."></textarea></div>
+    <div class="f2">
+      <div class="fg"><label>Due Date *</label><input class="fi" type="date" id="a-due"/></div>
+      <div class="fg"><label>Max Score</label><input class="fi" type="number" id="a-score" value="100"/></div>
+    </div>
+    <div class="fg"><label>Type</label>
+      <select class="fi" id="a-type">
+        <option>Written Assignment</option><option>Project Work</option>
+        <option>Oral Presentation</option><option>Group Work</option>
+        <option>Research</option><option>Practical</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeM('m-assignment')" style="flex:1;">Cancel</button>
+      <button class="btn btn-gold" onclick="createAssignment()" style="flex:2;">📚 Post Assignment</button>
+    </div>
+  </div>
+</div>
+
+<!-- WRITE REVIEW -->
+<div class="modal-ov" id="m-review">
+  <div class="modal">
+    <button class="m-close" onclick="closeM('m-review')">✕</button>
+    <div class="m-title">✍️ Write Student Review</div>
+    <div class="m-sub">End of term comment or academic review</div>
+    <div class="fg"><label>Student *</label><select class="fi" id="r-student"><option>— Select Student —</option></select></div>
+    <div class="f2">
+      <div class="fg"><label>Term</label><select class="fi" id="r-term"><option>First Term</option><option>Second Term</option><option>Third Term</option></select></div>
+      <div class="fg"><label>Review Type</label>
+        <select class="fi" id="r-type">
+          <option>End of Term Comment</option>
+          <option>Academic Performance</option>
+          <option>Behaviour & Conduct</option>
+          <option>Special Achievement</option>
+          <option>Area for Improvement</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Comment / Review *</label>
+      <textarea class="fi" id="r-comment" placeholder="Write detailed comment here..." style="min-height:110px;"></textarea>
+    </div>
+    <div class="fg"><label>Recommendation</label>
+      <input class="fi" id="r-recommend" placeholder="e.g. Should focus more on practical work"/>
+    </div>
+    <div class="fg"><label>Rating</label>
+      <select class="fi" id="r-rating">
+        <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+        <option value="4">⭐⭐⭐⭐ Very Good</option>
+        <option value="3">⭐⭐⭐ Good</option>
+        <option value="2">⭐⭐ Fair</option>
+        <option value="1">⭐ Needs Improvement</option>
+      </select>
+    </div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:var(--fs-sm);color:var(--t2);margin-bottom:14px;cursor:pointer;">
+      <input type="checkbox" id="r-notify" checked style="width:18px;height:18px;accent-color:var(--gold);"/> Notify parent via WhatsApp
+    </label>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeM('m-review')" style="flex:1;">Cancel</button>
+      <button class="btn btn-purple" onclick="saveReview()" style="flex:2;">✍️ Save Review</button>
+    </div>
+  </div>
+</div>
+
+<!-- POST NOTICE -->
+<div class="modal-ov" id="m-notice">
+  <div class="modal">
+    <button class="m-close" onclick="closeM('m-notice')">✕</button>
+    <div class="m-title">📢 Post Notice</div>
+    <div class="fg"><label>Title *</label><input class="fi" id="n-title" placeholder="Notice title"/></div>
+    <div class="fg"><label>Content *</label><textarea class="fi" id="n-body" placeholder="Write notice content..."></textarea></div>
+    <div class="f2">
+      <div class="fg"><label>Priority</label>
+        <select class="fi" id="n-priority">
+          <option value="normal">Normal</option><option value="important">Important</option><option value="urgent">Urgent</option>
+        </select>
+      </div>
+      <div class="fg"><label>Target</label>
+        <select class="fi" id="n-target">
+          <option>All Students</option><option>My Class Only</option><option>Staff Only</option><option>Parents</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeM('m-notice')" style="flex:1;">Cancel</button>
+      <button class="btn btn-gold" onclick="postNotice()" style="flex:2;">📢 Post Notice</button>
+    </div>
+  </div>
+</div>
+
+<!-- MESSAGE TO ADMIN -->
+<div class="modal-ov" id="m-message">
+  <div class="modal">
+    <button class="m-close" onclick="closeM('m-message')">✕</button>
+    <div class="m-title">💬 Message to Admin</div>
+    <div class="fg"><label>Subject *</label><input class="fi" id="msg-subject" placeholder="Subject of your message"/></div>
+    <div class="fg"><label>Message *</label><textarea class="fi" id="msg-body" placeholder="Write your message to the admin/principal..."></textarea></div>
+    <div class="fg"><label>Priority</label>
+      <select class="fi" id="msg-priority">
+        <option value="normal">Normal</option><option value="urgent">Urgent</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeM('m-message')" style="flex:1;">Cancel</button>
+      <button class="btn btn-gold" onclick="sendMessage()" style="flex:2;">📤 Send to Admin</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var DB = {
+  school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School"}'),
+  students: JSON.parse(localStorage.getItem('rsms_students')||'[]'),
+  staff: JSON.parse(localStorage.getItem('rsms_staff')||'[]')
+};
+var ASSIGNMENTS = JSON.parse(localStorage.getItem('rsms_assignments')||'[]');
+var REVIEWS = JSON.parse(localStorage.getItem('rsms_reviews')||'[]');
+var NOTICES = JSON.parse(localStorage.getItem('rsms_notices')||'[]');
+var MESSAGES = JSON.parse(localStorage.getItem('rsms_hod_messages')||'[]');
+var ME = JSON.parse(sessionStorage.getItem('rsms_user')||'{}');
+var myClasses = [];
+
+var COMMENT_TEMPLATES = [
+  'An outstanding student who consistently delivers excellent work. Keep it up!',
+  'A hardworking student who shows great improvement. Encourage more reading.',
+  'Good performance this term. With more focus, results can be even better.',
+  'Shows potential but needs to work harder and pay more attention in class.',
+  'Brilliant student with exceptional analytical skills. A pleasure to teach.',
+  'Performance this term was below expectation. Requires extra study and parental support.',
+  'An active participant in class activities. Shows leadership qualities.',
+  'Very creative and innovative. Should channel energy more into academics.',
+  'Consistent and reliable student. Improvement noted across all subjects.',
+  'Struggled this term. Recommend additional tutoring and parental guidance.'
+];
+
+function toast(msg,type){var t=document.getElementById('toast');t.className='toast '+(type||'info')+' show';t.innerHTML=msg;clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3500);}
+function openM(id){document.getElementById(id).classList.add('show');}
+function closeM(id){document.getElementById(id).classList.remove('show');}
+function openSb(){document.getElementById('sidebar').classList.add('open');document.getElementById('sb-ov').classList.add('show');}
+function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sb-ov').classList.remove('show');}
+
+function goto(page,el,icon,label){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  var pg=document.getElementById('page-'+page);if(pg)pg.classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(function(s){s.classList.remove('active');});
+  if(el&&el.classList)el.classList.add('active');
+  document.getElementById('tb-icon').textContent=icon||'📄';
+  document.getElementById('tb-page').textContent=label||page;
+  closeSb();
+  if(page==='assignments')renderAssignments();
+  if(page==='reviews'){loadReviewFilters();loadReviews();}
+  if(page==='students')renderStudents();
+  if(page==='notices')renderNotices();
+  if(page==='messages')renderMessages();
+  if(page==='results')loadResultClassFilter();
+}
+function gotoM(page,icon,label,el){
+  document.querySelectorAll('.bn-item').forEach(function(b){b.classList.remove('active');});
+  if(el)el.classList.add('active');
+  goto(page,null,icon,label);
+}
+
+// ── INIT ──
+window.addEventListener('load',function(){
+  document.getElementById('sb-sname').textContent=DB.school.name||'School';
+  document.getElementById('sb-uname').textContent=ME.name||'Teacher';
+  document.getElementById('sb-av').textContent=(ME.name||'H').charAt(0).toUpperCase();
+  document.getElementById('tb-date').textContent=new Date().toLocaleDateString('en-NG',{weekday:'short',day:'numeric',month:'short'});
+  var hr=new Date().getHours();
+  var greet=hr<12?'Good morning':(hr<17?'Good afternoon':'Good evening');
+  document.getElementById('dash-greet').textContent=greet+', '+(ME.name||'Teacher')+' 👋';
+
+  // Get my classes from staff record
+  var staffRec=DB.staff.find(function(s){return s.name===ME.name;});
+  if(staffRec){
+    document.getElementById('sb-role-badge').textContent=staffRec.role||'Teacher';
+    document.getElementById('sb-urole').textContent=staffRec.role||'Teacher';
+    myClasses=staffRec.class?staffRec.class.split(',').map(function(c){return c.trim();}):[];
+  }
+  if(!myClasses.length){
+    // Default: all classes
+    myClasses=[...new Set(DB.students.map(function(s){return s.class||'';}).filter(Boolean))].sort();
+  }
+  document.getElementById('dash-sub').textContent='Classes: '+myClasses.slice(0,3).join(', ')+(myClasses.length>3?' +more':'');
+
+  // Populate class selects
+  populateClassSelects();
+  populateStudentSelects();
+  renderDashboard();
+  loadReviewFilters();
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
+});
+
+function populateClassSelects(){
+  var classes=myClasses.length?myClasses:[...new Set(DB.students.map(function(s){return s.class||'';}).filter(Boolean))].sort();
+  ['a-class','res-class-sel'].forEach(function(id){
+    var sel=document.getElementById(id);if(!sel)return;
+    sel.innerHTML='<option value="">— Select Class —</option>'+classes.map(function(c){return '<option>'+c+'</option>';}).join('');
+  });
+}
+
+function populateStudentSelects(){
+  var students=myClasses.length?DB.students.filter(function(s){return myClasses.indexOf(s.class)>-1;}):DB.students;
+  var sel=document.getElementById('r-student');
+  if(sel)sel.innerHTML='<option value="">— Select Student —</option>'+students.map(function(s){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    return '<option value="'+s.id+'">'+name+' ('+s.class+')</option>';
+  }).join('');
+}
+
+// ── DASHBOARD ──
+function renderDashboard(){
+  var myStudents=myClasses.length?DB.students.filter(function(s){return myClasses.indexOf(s.class)>-1;}):DB.students;
+  var activeAssign=ASSIGNMENTS.filter(function(a){return a.active;}).length;
+  var pendingReviews=myStudents.length-REVIEWS.filter(function(r){return r.term==='First Term';}).length;
+  document.getElementById('kpi-students').textContent=myStudents.length;
+  document.getElementById('kpi-assignments').textContent=activeAssign;
+  document.getElementById('kpi-reviews').textContent=Math.max(0,pendingReviews);
+  document.getElementById('kpi-notices').textContent=NOTICES.filter(function(n){return n.active;}).length;
+
+  var da=document.getElementById('dash-assignments');
+  var activeList=ASSIGNMENTS.slice().reverse().slice(0,3);
+  da.innerHTML=activeList.length?activeList.map(function(a){
+    return '<div style="padding:9px 0;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px;">'+
+      '<span style="font-size:1rem;">📚</span>'+
+      '<div><div style="font-size:var(--fs-sm);font-weight:700;color:var(--t1);">'+a.title+'</div>'+
+      '<div style="font-size:var(--fs-xs);color:var(--t4);">'+a.class+' • Due: '+a.due+'</div></div>'+
+      '<span class="badge '+(a.active?'b-ok':'b-mute')+'" style="margin-left:auto;">'+(a.active?'Active':'Closed')+'</span></div>';
+  }).join(''):'<div style="text-align:center;padding:16px;color:var(--t4);font-size:var(--fs-sm);">No assignments yet</div>';
+
+  var dr=document.getElementById('dash-reviews');
+  var pendingStudents=myStudents.filter(function(s){
+    return !REVIEWS.some(function(r){return r.studentId===s.id&&r.term==='First Term';});
+  }).slice(0,4);
+  dr.innerHTML=pendingStudents.length?pendingStudents.map(function(s){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    return '<div style="padding:9px 0;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px;">'+
+      '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--teal));display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.82rem;flex-shrink:0;">'+name.charAt(0)+'</div>'+
+      '<div><div style="font-size:var(--fs-sm);font-weight:700;color:var(--t1);">'+name+'</div>'+
+      '<div style="font-size:var(--fs-xs);color:var(--t4);">'+s.class+'</div></div>'+
+      '<button class="btn btn-ghost btn-xs" style="margin-left:auto;" onclick="quickReview(\''+s.id+'\')">Review</button></div>';
+  }).join(''):'<div style="text-align:center;padding:16px;color:var(--success);font-size:var(--fs-sm);">✅ All students reviewed!</div>';
+}
+
+function quickReview(sid){
+  document.getElementById('r-student').value=sid;
+  openM('m-review');
+}
+
+// ── ASSIGNMENTS ──
+function renderAssignments(filter){
+  filter=filter||'all';
+  var list=filter==='active'?ASSIGNMENTS.filter(function(a){return a.active;}):
+            filter==='closed'?ASSIGNMENTS.filter(function(a){return !a.active;}):ASSIGNMENTS;
+  var el=document.getElementById('assignments-list');
+  if(!list.length){
+    el.innerHTML='<div class="card" style="text-align:center;padding:40px;"><div style="font-size:3rem;margin-bottom:14px;">📚</div><div style="font-family:var(--serif);font-size:1rem;color:var(--t1);margin-bottom:8px;">No Assignments Yet</div><button class="btn btn-gold btn-sm" onclick="openM(\'m-assignment\')">+ Create First Assignment</button></div>';
+    return;
+  }
+  el.innerHTML=list.slice().reverse().map(function(a){
+    var typeIcons={
+      'Written Assignment':'✏️','Project Work':'🔬','Oral Presentation':'🎤',
+      'Group Work':'👥','Research':'🔍','Practical':'🧪'
+    };
+    return '<div class="assign-card">'+
+      '<div class="assign-header">'+
+        '<div class="assign-icon">'+(typeIcons[a.type]||'📚')+'</div>'+
+        '<div>'+
+          '<div class="assign-title">'+a.title+'</div>'+
+          '<div class="assign-meta">'+a.subject+' • '+a.class+' • Due: <strong style="color:'+(new Date(a.due)<new Date()?'var(--danger)':'var(--success)')+';">'+a.due+'</strong> • Max: '+a.score+' marks</div>'+
+        '</div>'+
+        '<div class="assign-status"><span class="badge '+(a.active?'b-ok':'b-mute')+'">'+(a.active?'Active':'Closed')+'</span></div>'+
+      '</div>'+
+      '<div class="assign-body">'+a.body+'</div>'+
+      '<div class="assign-footer">'+
+        '<span class="badge b-teal">'+a.type+'</span>'+
+        '<span style="font-size:var(--fs-xs);color:var(--t4);margin-left:auto;">Posted: '+new Date(a.createdAt).toLocaleDateString('en-NG')+'</span>'+
+        '<button class="btn btn-ghost btn-xs" onclick="toggleAssignment(\''+a.id+'\')">'+( a.active?'Close':'Reopen')+'</button>'+
+        '<button class="btn btn-ghost btn-xs" onclick="shareAssignment(\''+a.id+'\')">📱 Share</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function filterAssignments(type){
+  document.querySelectorAll('[id^=fa-]').forEach(function(b){b.className='btn btn-ghost btn-sm';});
+  document.getElementById('fa-'+type).className='btn btn-gold btn-sm';
+  renderAssignments(type);
+}
+
+function createAssignment(){
+  var title=document.getElementById('a-title').value.trim();
+  var subject=document.getElementById('a-subject').value.trim();
+  var cls=document.getElementById('a-class').value;
+  var body=document.getElementById('a-body').value.trim();
+  var due=document.getElementById('a-due').value;
+  if(!title||!subject||!cls||!due){toast('⚠️ Fill all required fields','error');return;}
+  var a={
+    id:'assign'+Date.now(),title:title,subject:subject,class:cls,
+    body:body||'See class for details.',due:due,
+    score:parseInt(document.getElementById('a-score').value)||100,
+    type:document.getElementById('a-type').value,
+    active:true,createdAt:new Date().toISOString(),
+    createdBy:ME.name||'Teacher'
+  };
+  ASSIGNMENTS.push(a);
+  localStorage.setItem('rsms_assignments',JSON.stringify(ASSIGNMENTS));
+  closeM('m-assignment');
+  renderAssignments();renderDashboard();
+  toast('📚 Assignment posted for '+cls,'success');
+}
+
+function toggleAssignment(id){
+  var a=ASSIGNMENTS.find(function(x){return x.id===id;});
+  if(a){a.active=!a.active;localStorage.setItem('rsms_assignments',JSON.stringify(ASSIGNMENTS));renderAssignments();renderDashboard();}
+}
+
+function shareAssignment(id){
+  var a=ASSIGNMENTS.find(function(x){return x.id===id;});if(!a)return;
+  var msg='📚 *NEW ASSIGNMENT*\n\n*'+a.title+'*\nSubject: '+a.subject+'\nClass: '+a.class+'\n\n'+a.body+'\n\nDue Date: *'+a.due+'*\nMax Score: '+a.score+'\n\n_'+DB.school.name+'_';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+// ── REVIEWS ──
+function loadReviewFilters(){
+  var sel=document.getElementById('review-class-filter');if(!sel)return;
+  var classes=myClasses.length?myClasses:[...new Set(DB.students.map(function(s){return s.class||'';}).filter(Boolean))].sort();
+  sel.innerHTML='<option value="">All My Classes</option>'+classes.map(function(c){return '<option>'+c+'</option>';}).join('');
+
+  // Templates
+  var tplEl=document.getElementById('review-templates');if(!tplEl)return;
+  tplEl.innerHTML=COMMENT_TEMPLATES.slice(0,6).map(function(t,i){
+    return '<button onclick="useTemplate(\''+t.replace(/'/g,"\\'")+'\')" style="background:var(--card2);border:1px solid var(--line2);border-radius:var(--r3);padding:7px 12px;font-size:.72rem;color:var(--t2);cursor:pointer;font-family:var(--sans);text-align:left;transition:all .18s;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+t.slice(0,50)+'...</button>';
+  }).join('');
+}
+
+function useTemplate(text){
+  openM('m-review');
+  var el=document.getElementById('r-comment');if(el)el.value=text;
+}
+
+function loadReviews(){
+  var cls=(document.getElementById('review-class-filter')||{value:''}).value;
+  var reviews=REVIEWS.slice().reverse();
+  if(cls)reviews=reviews.filter(function(r){return r.class===cls;});
+  var el=document.getElementById('reviews-list');if(!el)return;
+  if(!reviews.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t4);font-size:var(--fs-sm);">No reviews written yet for this class</div>';return;}
+  el.innerHTML=reviews.map(function(r){
+    var stars='⭐'.repeat(parseInt(r.rating)||3);
+    return '<div style="background:var(--card2);border:1px solid var(--line);border-radius:var(--r2);padding:16px;margin-bottom:10px;">'+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;">'+
+        '<div>'+
+          '<div style="font-weight:700;font-size:var(--fs-base);color:var(--t1);">'+r.studentName+'</div>'+
+          '<div style="font-size:var(--fs-xs);color:var(--t4);">'+r.class+' • '+r.term+' • '+r.type+'</div>'+
+        '</div>'+
+        '<div style="text-align:right;">'+
+          '<div style="font-size:.82rem;">'+stars+'</div>'+
+          '<div style="font-size:var(--fs-xs);color:var(--t4);">'+new Date(r.createdAt).toLocaleDateString('en-NG')+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="font-size:var(--fs-sm);color:var(--t2);line-height:1.7;margin-bottom:8px;">'+r.comment+'</div>'+
+      (r.recommend?'<div style="font-size:var(--fs-xs);color:var(--teal);background:var(--teall);border-radius:5px;padding:5px 10px;"><strong>Recommendation:</strong> '+r.recommend+'</div>':'')+
+    '</div>';
+  }).join('');
+}
+
+function saveReview(){
+  var sid=document.getElementById('r-student').value;
+  var comment=document.getElementById('r-comment').value.trim();
+  if(!sid){toast('⚠️ Select a student','error');return;}
+  if(!comment){toast('⚠️ Write a comment','error');return;}
+  var student=DB.students.find(function(s){return s.id===sid;});
+  var name=student?(student.surname||'')+' '+(student.firstname||''):'Unknown';
+  var review={
+    id:'rev'+Date.now(),studentId:sid,studentName:name,
+    class:student&&student.class||'',
+    term:document.getElementById('r-term').value,
+    type:document.getElementById('r-type').value,
+    comment:comment,
+    recommend:document.getElementById('r-recommend').value,
+    rating:document.getElementById('r-rating').value,
+    createdAt:new Date().toISOString(),
+    createdBy:ME.name||'Teacher'
+  };
+  REVIEWS.push(review);
+  localStorage.setItem('rsms_reviews',JSON.stringify(REVIEWS));
+  closeM('m-review');
+  loadReviews();renderDashboard();
+  toast('✅ Review saved for '+name,'success');
+  // WhatsApp notify parent
+  if(document.getElementById('r-notify').checked&&student){
+    var phone=(student.wa||student.phone||'').replace(/\D/g,'');
+    if(phone.startsWith('0'))phone='234'+phone.slice(1);
+    if(phone){
+      var msg='Dear Parent,\n\nAcademic review for *'+name+'* — '+review.term+':\n\n"'+comment+'"'+(review.recommend?'\n\nRecommendation: '+review.recommend:'')+'\n\n_'+DB.school.name+'_';
+      setTimeout(function(){window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg),'_blank');},500);
+    }
+  }
+}
+
+// ── STUDENTS ──
+function renderStudents(){
+  var myStudents=myClasses.length?DB.students.filter(function(s){return myClasses.indexOf(s.class)>-1;}):DB.students;
+  var q=(document.getElementById('stu-search')||{value:''}).value.toLowerCase();
+  if(q)myStudents=myStudents.filter(function(s){return ((s.surname||'')+(s.firstname||'')).toLowerCase().includes(q);});
+  var tbody=document.getElementById('students-tbody');
+  tbody.innerHTML=myStudents.map(function(s,i){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    var hasReview=REVIEWS.some(function(r){return r.studentId===s.id;});
+    return '<tr>'+
+      '<td style="color:var(--t4);">'+(i+1)+'</td>'+
+      '<td><div style="display:flex;align-items:center;gap:8px;">'+
+        (s.passport?'<img src="'+s.passport+'" style="width:34px;height:34px;border-radius:50%;object-fit:cover;"/>':'<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--teal));display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.82rem;">'+name.charAt(0)+'</div>')+
+        '<div><div style="font-weight:700;color:var(--t1);">'+name+'</div><div style="font-size:var(--fs-xs);color:var(--t4);">'+(s.reg||'')+'</div></div></div></td>'+
+      '<td><span class="badge b-mute">'+(s.class||'—')+'</span></td>'+
+      '<td style="color:var(--gold);font-family:var(--serif);font-weight:700;">'+Math.floor(50+Math.random()*40)+'%</td>'+
+      '<td><span class="badge '+(Math.random()>.3?'b-ok':'b-warn')+'">'+(Math.random()>.3?'Good':'Fair')+'</span></td>'+
+      '<td><span class="badge '+(hasReview?'b-ok':'b-mute')+'">'+(hasReview?'✅ Done':'⏳ Pending')+'</span></td>'+
+      '<td><button class="btn btn-ghost btn-xs" onclick="quickReview(\''+s.id+'\')">Review</button></td></tr>';
+  }).join('');
+}
+
+function filterStudents(){renderStudents();}
+
+// ── RESULTS REVIEW ──
+function loadResultClassFilter(){
+  var sel=document.getElementById('res-class-sel');if(!sel)return;
+  var classes=myClasses.length?myClasses:[...new Set(DB.students.map(function(s){return s.class||'';}).filter(Boolean))].sort();
+  sel.innerHTML='<option value="">Select Class</option>'+classes.map(function(c){return '<option>'+c+'</option>';}).join('');
+}
+
+function loadResultsReview(){
+  var cls=document.getElementById('res-class-sel').value;if(!cls)return;
+  var students=DB.students.filter(function(s){return s.class===cls;});
+  var el=document.getElementById('results-review-content');
+  if(!students.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t4);">No students in '+cls+'</div>';return;}
+  el.innerHTML='<div class="card">'+
+    '<div class="ct">📊 '+cls+' Results — Review & Approve</div>'+
+    '<div style="margin-bottom:12px;font-size:var(--fs-sm);color:var(--t3);">Review the scores below. Once approved, the HOD signature is applied to all report cards.</div>'+
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Student</th><th>Avg Score</th><th>Grade</th><th>Position</th><th>HOD Comment</th></tr></thead><tbody>'+
+    students.map(function(s,i){
+      var name=(s.surname||'')+' '+(s.firstname||'');
+      var avg=Math.floor(50+Math.random()*40);
+      var grade=avg>=70?'A':avg>=60?'B':avg>=50?'C':'F';
+      return '<tr>'+
+        '<td style="font-weight:700;color:var(--t1);">'+name+'</td>'+
+        '<td style="font-family:var(--serif);font-weight:700;color:var(--gold);">'+avg+'%</td>'+
+        '<td><span class="badge '+(avg>=50?'b-ok':'b-err')+'">'+grade+'</span></td>'+
+        '<td style="color:var(--t3);">'+(i+1)+'/'+students.length+'</td>'+
+        '<td><input style="background:var(--card2);border:1px solid var(--line2);border-radius:5px;padding:5px 9px;color:var(--t1);font-size:var(--fs-xs);font-family:var(--sans);outline:none;width:160px;" placeholder="Optional comment..." data-sid="'+s.id+'"/></td>'+
+      '</tr>';
+    }).join('')+
+    '</tbody></table></div></div>';
+}
+
+function approveResults(){
+  var cls=document.getElementById('res-class-sel').value;if(!cls){toast('Select a class first','error');return;}
+  toast('✅ Results for '+cls+' approved and signed by HOD','success');
+  var log=JSON.parse(localStorage.getItem('rsms_approvals')||'[]');
+  log.push({class:cls,approvedBy:ME.name||'HOD',time:new Date().toISOString()});
+  localStorage.setItem('rsms_approvals',JSON.stringify(log));
+}
+
+// ── NOTICES ──
+function renderNotices(){
+  var el=document.getElementById('notices-list');
+  if(!NOTICES.length){
+    el.innerHTML='<div class="card" style="text-align:center;padding:40px;"><div style="font-size:3rem;margin-bottom:14px;">📢</div><div style="font-family:var(--serif);font-size:1rem;color:var(--t1);margin-bottom:8px;">No Notices Yet</div><button class="btn btn-gold btn-sm" onclick="openM(\'m-notice\')">+ Post First Notice</button></div>';return;
+  }
+  el.innerHTML=NOTICES.slice().reverse().map(function(n){
+    var colors={urgent:'var(--danger)',important:'var(--warn)',normal:'var(--info)'};
+    return '<div class="card" style="margin-bottom:10px;border-left:3px solid '+(colors[n.priority]||'var(--info)')+';">'+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">'+
+        '<div>'+
+          '<div style="font-weight:700;font-size:var(--fs-base);color:var(--t1);margin-bottom:3px;">'+n.title+'</div>'+
+          '<div style="font-size:var(--fs-xs);color:var(--t4);">'+n.target+' • '+new Date(n.createdAt).toLocaleDateString('en-NG')+'</div>'+
+        '</div>'+
+        '<span class="badge '+(n.priority==='urgent'?'b-err':n.priority==='important'?'b-warn':'b-info')+'">'+n.priority+'</span>'+
+      '</div>'+
+      '<div style="font-size:var(--fs-sm);color:var(--t2);margin-top:10px;line-height:1.7;">'+n.body+'</div>'+
+      '<div style="margin-top:10px;">'+
+        '<button class="btn btn-ghost btn-xs" onclick="shareNoticeWA(\''+n.id+'\')">📱 Share</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+function postNotice(){
+  var title=document.getElementById('n-title').value.trim();
+  var body=document.getElementById('n-body').value.trim();
+  if(!title||!body){toast('⚠️ Fill title and content','error');return;}
+  var n={id:'n'+Date.now(),title:title,body:body,priority:document.getElementById('n-priority').value,target:document.getElementById('n-target').value,active:true,createdAt:new Date().toISOString(),createdBy:ME.name||'Teacher'};
+  NOTICES.push(n);localStorage.setItem('rsms_notices',JSON.stringify(NOTICES));
+  closeM('m-notice');renderNotices();renderDashboard();
+  toast('📢 Notice posted','success');
+}
+
+function shareNoticeWA(id){
+  var n=NOTICES.find(function(x){return x.id===id;});if(!n)return;
+  var msg='📢 *NOTICE — '+DB.school.name+'*\n\n*'+n.title+'*\n\n'+n.body+'\n\nFrom: '+( n.createdBy||'Staff')+' | '+new Date(n.createdAt).toLocaleDateString('en-NG');
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+// ── MESSAGES ──
+function renderMessages(){
+  var el=document.getElementById('messages-list');
+  if(!MESSAGES.length){el.innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--t4);">No messages sent yet</div>';return;}
+  el.innerHTML=MESSAGES.slice().reverse().map(function(m){
+    return '<div class="card" style="margin-bottom:10px;">'+
+      '<div style="font-weight:700;font-size:var(--fs-base);color:var(--t1);margin-bottom:3px;">'+m.subject+'</div>'+
+      '<div style="font-size:var(--fs-xs);color:var(--t4);margin-bottom:8px;">To: Admin • '+new Date(m.createdAt).toLocaleDateString('en-NG')+'<span class="badge '+(m.priority==='urgent'?'b-err':'b-mute')+'" style="margin-left:8px;">'+m.priority+'</span></div>'+
+      '<div style="font-size:var(--fs-sm);color:var(--t2);">'+m.body+'</div></div>';
+  }).join('');
+}
+
+function sendMessage(){
+  var sub=document.getElementById('msg-subject').value.trim();
+  var body=document.getElementById('msg-body').value.trim();
+  if(!sub||!body){toast('⚠️ Fill subject and message','error');return;}
+  var m={id:'msg'+Date.now(),subject:sub,body:body,priority:document.getElementById('msg-priority').value,createdAt:new Date().toISOString(),from:ME.name||'Teacher'};
+  MESSAGES.push(m);localStorage.setItem('rsms_hod_messages',JSON.stringify(MESSAGES));
+  closeM('m-message');renderMessages();
+  toast('📤 Message sent to admin','success');
+  // Store in admin notifications
+  var adminNotifs=JSON.parse(localStorage.getItem('rsms_admin_messages')||'[]');
+  adminNotifs.push(m);localStorage.setItem('rsms_admin_messages',JSON.stringify(adminNotifs));
+}
+</script>
+<!-- AI FAB -->
+<button onclick="window.open('rsms-voice-ai.html','_blank')" style="position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));right:18px;z-index:99;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#14b8a6);border:none;cursor:pointer;font-size:1.3rem;box-shadow:0 4px 20px rgba(139,92,246,.4);display:flex;align-items:center;justify-content:center;" title="AI Assistant">🤖</button>
+
+</body>
+</html>

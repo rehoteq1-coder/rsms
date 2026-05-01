@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0d0f1a"/>
+<link rel="manifest" href="manifest.json"/>
+<title>RSMS — Student Portal</title>
+<script src="rsms-school-detect.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#030305;--panel:#0d0f1a;--card:#111420;--card2:#161929;
+  --line:rgba(255,255,255,0.06);--line2:rgba(255,255,255,0.11);
+  --gold:#d4a843;--goldl:rgba(212,168,67,0.1);
+  --purple:#8b5cf6;--purplel:rgba(139,92,246,0.1);
+  --success:#22c55e;--successl:rgba(34,197,94,0.1);
+  --danger:#f43f5e;--dangerl:rgba(244,63,94,0.1);
+  --info:#3b82f6;--infol:rgba(59,130,246,0.1);
+  --warn:#f59e0b;--warnl:rgba(245,158,11,0.1);
+  --t1:#f0f2ff;--t2:rgba(240,242,255,0.6);--t3:rgba(240,242,255,0.3);--t4:rgba(240,242,255,0.12);
+  --r:12px;--r2:8px;--r3:6px;--serif:'Fraunces',serif;--sans:'Outfit',sans-serif;
+  --safe-bot:env(safe-area-inset-bottom);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--t1);overflow:hidden;}
+.app{display:flex;flex-direction:column;height:100vh;}
+/* TOPBAR */
+.topbar{background:var(--panel);border-bottom:1px solid var(--line);padding:0 18px;height:54px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.tb-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.82rem;color:#fff;}
+.tb-name{font-size:.82rem;font-weight:700;color:var(--t1);}
+.tb-class{font-size:.62rem;color:var(--t4);}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.notif-btn{background:none;border:none;color:var(--t2);font-size:1.1rem;cursor:pointer;padding:4px;position:relative;}
+.notif-pip{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--danger);border:1.5px solid var(--panel);}
+/* SCROLL */
+.scroll{flex:1;overflow-y:auto;padding:16px 16px calc(65px + var(--safe-bot));}
+.scroll::-webkit-scrollbar{display:none;}
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(13,15,26,.97);border-top:1px solid var(--line);display:flex;padding-bottom:var(--safe-bot);}
+.nav-item{flex:1;padding:9px 4px 7px;text-align:center;cursor:pointer;}
+.nav-ico{font-size:1.25rem;display:block;margin-bottom:2px;}
+.nav-lbl{font-size:.52rem;font-weight:600;color:var(--t4);}
+.nav-item.active .nav-lbl{color:var(--purple);}
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;animation:pg-in .25s ease;}
+@keyframes pg-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+/* PAGE HEADER */
+.ph{margin-bottom:18px;}
+.ph-title{font-family:var(--serif);font-size:1.25rem;font-weight:700;color:var(--t1);margin-bottom:3px;}
+.ph-sub{font-size:.72rem;color:var(--t3);}
+/* HERO CARD */
+.hero-card{background:linear-gradient(135deg,#1a0a3e,#2d1b6e,#4a2d9e);border-radius:18px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden;}
+.hero-card::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(212,168,67,.08);}
+.hero-card::after{content:'';position:absolute;bottom:-20px;left:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.04);}
+.hero-greeting{font-size:.7rem;color:rgba(212,168,67,.7);font-weight:600;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;}
+.hero-name{font-family:var(--serif);font-size:1.3rem;font-weight:900;color:#fff;margin-bottom:3px;}
+.hero-meta{font-size:.7rem;color:rgba(255,255,255,.5);}
+.hero-reg{font-family:monospace;font-size:.78rem;color:var(--gold);margin-top:10px;font-weight:700;}
+.qr-btn{position:absolute;right:16px;bottom:16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:var(--r2);padding:8px 12px;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;backdrop-filter:blur(10px);font-family:var(--sans);}
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.stat-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px;text-align:center;}
+.stat-val{font-family:var(--serif);font-size:1.4rem;font-weight:700;margin-bottom:3px;}
+.stat-lbl{font-size:.6rem;color:var(--t4);text-transform:uppercase;letter-spacing:.08em;}
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.ct{font-size:.8rem;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:7px;margin-bottom:13px;}
+.ct-action{margin-left:auto;font-size:.68rem;color:var(--purple);cursor:pointer;}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:.6rem;font-weight:700;}
+.b-ok{background:var(--successl);color:var(--success);}
+.b-err{background:var(--dangerl);color:var(--danger);}
+.b-gold{background:var(--goldl);color:var(--gold);}
+.b-purple{background:var(--purplel);color:var(--purple);}
+.b-mute{background:rgba(255,255,255,.05);color:var(--t3);}
+/* RESULT CARD */
+.result-subject{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);}
+.result-subject:last-child{border:none;}
+.rs-name{font-size:.82rem;font-weight:600;color:var(--t1);}
+.rs-score{font-family:var(--serif);font-size:1.2rem;font-weight:700;}
+.rs-grade{font-size:.7rem;font-weight:700;}
+.rs-bar{height:3px;background:var(--line2);border-radius:2px;margin-top:5px;overflow:hidden;}
+.rs-bar-fill{height:100%;border-radius:2px;}
+/* ATTENDANCE PIE */
+.att-ring{width:90px;height:90px;border-radius:50%;position:relative;margin:0 auto 10px;}
+.att-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.1rem;font-weight:700;}
+/* CBT EXAM CARD */
+.exam-card{background:var(--card2);border:1px solid var(--line);border-radius:var(--r2);padding:14px;margin-bottom:9px;display:flex;align-items:center;gap:12px;}
+.exam-ico{width:40px;height:40px;border-radius:var(--r2);background:var(--purplel);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.exam-info{flex:1;}
+.exam-name{font-size:.82rem;font-weight:700;color:var(--t1);margin-bottom:2px;}
+.exam-meta{font-size:.65rem;color:var(--t4);}
+.exam-btn{background:var(--purple);border:none;border-radius:var(--r3);color:#fff;font-size:.72rem;font-weight:700;padding:7px 13px;cursor:pointer;font-family:var(--sans);white-space:nowrap;}
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(60px);border-radius:var(--r2);padding:9px 18px;font-size:.78rem;z-index:999;transition:transform .25s;white-space:nowrap;pointer-events:none;display:flex;align-items:center;gap:7px;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#0a1f12;border:1px solid rgba(34,197,94,.35);color:#4ade80;}
+.toast.error{background:#1f0a12;border:1px solid rgba(244,63,94,.35);color:#fb7185;}
+.toast.info{background:#0f1020;border:1px solid rgba(212,168,67,.3);color:var(--gold);}
+/* QR MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-ov.show{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--line2);border-radius:18px;padding:24px;width:100%;max-width:340px;text-align:center;}
+.m-title{font-family:var(--serif);font-size:1.05rem;font-weight:700;margin-bottom:6px;}
+.m-sub{font-size:.72rem;color:var(--t3);margin-bottom:16px;}
+.qr-box{background:var(--card2);border-radius:var(--r);padding:20px;margin-bottom:14px;}
+.m-close-btn{width:100%;padding:11px;background:rgba(255,255,255,.05);border:1px solid var(--line2);border-radius:var(--r2);color:var(--t2);font-family:var(--sans);font-size:.82rem;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="topbar">
+  <div class="tb-avatar" id="tb-av">S</div>
+  <div>
+    <div class="tb-name" id="tb-name">Student</div>
+    <div class="tb-class" id="tb-class">—</div>
+  </div>
+  <div class="tb-right">
+    <button class="notif-btn">🔔<div class="notif-pip"></div></button>
+    <button style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:.9rem;" onclick="logout()">⎋</button>
+  </div>
+</div>
+
+<div class="scroll">
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="hero-card">
+    <div class="hero-greeting">Welcome back</div>
+    <div class="hero-name" id="hero-name">Student Name</div>
+    <div class="hero-meta" id="hero-meta">JSS 1A • 2025/2026 Session</div>
+    <div class="hero-reg" id="hero-reg">REG — ———</div>
+    <button class="qr-btn" onclick="showQR()">📱 My QR Code</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-val" id="stat-att" style="color:var(--success);">—%</div>
+      <div class="stat-lbl">Attendance</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-avg" style="color:var(--gold);">—</div>
+      <div class="stat-lbl">Term Avg</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-pos" style="color:var(--purple);">—</div>
+      <div class="stat-lbl">Position</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">📝 Recent Results
+      <span class="ct-action" onclick="switchTab('results',document.querySelectorAll('.nav-item')[1])">View all ›</span>
+    </div>
+    <div id="recent-results"></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">🖥 Available Exams
+      <span class="ct-action" onclick="switchTab('exams',document.querySelectorAll('.nav-item')[2])">View all ›</span>
+    </div>
+    <div id="home-exams"></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">📅 Today's Timetable</div>
+    <div id="home-timetable"></div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="page" id="page-results">
+  <div class="ph"><div class="ph-title">My Results</div><div class="ph-sub">All term results and report cards</div></div>
+  <div class="card" style="margin-bottom:12px;padding:12px;">
+    <select id="res-term-filter" onchange="loadResults()" style="background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:9px 13px;color:var(--t1);font-size:.82rem;font-family:var(--sans);outline:none;width:100%;">
+      <option>First Term 2025/2026</option><option>Second Term 2025/2026</option><option>Third Term 2024/2025</option>
+    </select>
+  </div>
+  <div class="card">
+    <div class="ct">📊 Subject Scores</div>
+    <div id="results-list"></div>
+  </div>
+  <div class="card">
+    <div class="ct">🏆 Performance Summary</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center;">
+      <div><div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--gold);" id="perf-avg">—</div><div style="font-size:.62rem;color:var(--t4);">Average</div></div>
+      <div><div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--purple);" id="perf-pos">—</div><div style="font-size:.62rem;color:var(--t4);">Position</div></div>
+      <div><div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--success);" id="perf-grade">—</div><div style="font-size:.62rem;color:var(--t4);">Grade</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- EXAMS -->
+<div class="page" id="page-exams">
+  <div class="ph"><div class="ph-title">CBT Exams</div><div class="ph-sub">Available computer-based tests</div></div>
+  <div id="exams-list"></div>
+</div>
+
+<!-- FEES -->
+<div class="page" id="page-fees">
+  <div class="ph"><div class="ph-title">Fee Status</div><div class="ph-sub">Your payment history and balance</div></div>
+  <div class="card" style="background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(212,168,67,.05));border-color:rgba(34,197,94,.15);margin-bottom:12px;">
+    <div style="font-size:.65rem;color:var(--t4);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em;">Current Status</div>
+    <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--success);margin-bottom:3px;" id="fee-status-val">—</div>
+    <div style="font-size:.72rem;color:var(--t3);" id="fee-status-sub">—</div>
+  </div>
+  <div class="card">
+    <div class="ct">💳 Payment History</div>
+    <div id="fee-history"></div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="page" id="page-profile">
+  <div class="ph"><div class="ph-title">My Profile</div></div>
+  <div class="card">
+    <div style="text-align:center;padding:10px 0 20px;">
+      <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--gold));display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:12px;" id="prof-av">S</div>
+      <div style="font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--t1);" id="prof-name">—</div>
+      <div style="font-size:.72rem;color:var(--t4);margin-top:3px;" id="prof-class">—</div>
+    </div>
+    <div id="prof-details"></div>
+  </div>
+  <div class="card">
+    <div class="ct">🔒 Security</div>
+    <button onclick="logout()" style="width:100%;padding:11px;background:var(--dangerl);border:1px solid rgba(244,63,94,.2);border-radius:var(--r2);color:var(--danger);font-family:var(--sans);font-size:.82rem;font-weight:700;cursor:pointer;">Sign Out</button>
+  </div>
+</div>
+
+</div><!-- /scroll -->
+
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="switchTab('home',this)"><span class="nav-ico">🏠</span><div class="nav-lbl">Home</div></div>
+  <div class="nav-item" onclick="switchTab('results',this)"><span class="nav-ico">📝</span><div class="nav-lbl">Results</div></div>
+  <div class="nav-item" onclick="switchTab('exams',this)"><span class="nav-ico">🖥</span><div class="nav-lbl">Exams</div></div>
+  <div class="nav-item" onclick="switchTab('fees',this)"><span class="nav-ico">💰</span><div class="nav-lbl">Fees</div></div>
+  <div class="nav-item" onclick="switchTab('profile',this)"><span class="nav-ico">👤</span><div class="nav-lbl">Profile</div></div>
+</div>
+</div>
+
+<!-- QR MODAL -->
+<div class="modal-ov" id="m-qr">
+  <div class="modal">
+    <div class="m-title">📱 My QR Code</div>
+    <div class="m-sub">Show this to your teacher for QR attendance</div>
+    <div class="qr-box" id="qr-code-box"></div>
+    <div style="font-size:.7rem;color:var(--t3);margin-bottom:14px;" id="qr-reg-label">—</div>
+    <button class="m-close-btn" onclick="document.getElementById('m-qr').classList.remove('show')">Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+var DB = {
+  school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School"}'),
+  students: JSON.parse(localStorage.getItem('rsms_students')||'[]'),
+  fees: JSON.parse(localStorage.getItem('rsms_fees')||'[]'),
+  exams: JSON.parse(localStorage.getItem('rsms_cbt_exams')||'[]')
+};
+var ME = {};
+
+function toast(msg,type){
+  var t=document.getElementById('toast');t.className='toast '+(type||'info')+' show';
+  t.innerHTML=msg;clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3500);
+}
+
+function switchTab(name,el){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  if(el)el.classList.add('active');
+  if(name==='results')loadResults();
+  if(name==='exams')loadExams();
+  if(name==='fees')loadFees();
+  if(name==='profile')loadProfile();
+}
+
+function logout(){if(confirm('Sign out?')){sessionStorage.clear();window.location.href='rsms-app.html';}}
+
+window.addEventListener('load',function(){
+  var u=JSON.parse(sessionStorage.getItem('rsms_user')||'{}');
+  // Find student record
+  ME=DB.students.find(function(s){return (s.email&&s.email===u.email)||(s.reg&&s.reg===u.id);});
+  if(!ME&&DB.students.length)ME=DB.students[0]; // demo fallback
+  if(!ME)ME={surname:'Demo',firstname:'Student',class:'JSS 1',reg:'REG-000001',gender:'Male',status:'Active'};
+
+  var name=(ME.surname||'')+' '+(ME.firstname||'');
+  document.getElementById('tb-av').textContent=name.charAt(0);
+  document.getElementById('tb-name').textContent=name;
+  document.getElementById('tb-class').textContent=ME.class||'—';
+  document.getElementById('hero-name').textContent=name;
+  document.getElementById('hero-meta').textContent=(ME.class||'—')+' • '+DB.school.name;
+  document.getElementById('hero-reg').textContent='REG: '+(ME.reg||'—');
+  document.getElementById('stat-att').textContent=Math.floor(80+Math.random()*18)+'%';
+  document.getElementById('stat-avg').textContent=Math.floor(58+Math.random()*30)+'%';
+  document.getElementById('stat-pos').textContent=Math.floor(1+Math.random()*15);
+  loadHomeResults();
+  loadHomeExams();
+  loadHomeTimetable();
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
+});
+
+// ── QR CODE ──
+function showQR(){
+  var reg=ME.reg||'REG-000001';
+  var name=(ME.surname||'')+' '+(ME.firstname||'');
+  var box=document.getElementById('qr-code-box');
+  box.innerHTML='';
+  try{
+    new QRCode(box,{text:JSON.stringify({reg:reg,name:name,class:ME.class||'—'}),width:200,height:200,colorDark:'#d4a843',colorLight:'#0d0f1a',correctLevel:QRCode.CorrectLevel.M});
+  }catch(e){
+    box.innerHTML='<div style="font-size:3rem;padding:20px;">📱</div><div style="font-size:.76rem;color:var(--t3);">QR Code: '+reg+'</div>';
+  }
+  document.getElementById('qr-reg-label').textContent=name+' • '+reg;
+  document.getElementById('m-qr').classList.add('show');
+}
+
+// ── HOME RESULTS ──
+var SUBJECTS = ['Mathematics','English Language','Physics','Chemistry','Biology','Economics','Government','Literature'];
+var COLORS = ['var(--gold)','var(--purple)','var(--success)','var(--info)','var(--teal,#14b8a6)','var(--warn)','var(--danger)','var(--success)'];
+
+function loadHomeResults(){
+  var results=document.getElementById('recent-results');
+  var subjects=SUBJECTS.slice(0,4);
+  results.innerHTML=subjects.map(function(s,i){
+    var score=Math.floor(50+Math.random()*45);
+    var grade=score>=75?'A1':score>=70?'B2':score>=65?'B3':score>=60?'C4':score>=50?'C6':'F9';
+    var color=score>=70?'var(--gold)':score>=50?'var(--success)':'var(--danger)';
+    return '<div class="result-subject">'+
+      '<div><div class="rs-name">'+s+'</div>'+
+      '<div class="rs-bar"><div class="rs-bar-fill" style="width:'+score+'%;background:'+color+';"></div></div></div>'+
+      '<div style="text-align:right;"><div class="rs-score" style="color:'+color+';">'+score+'</div>'+
+      '<div class="rs-grade">'+grade+'</div></div></div>';
+  }).join('');
+}
+
+function loadHomeExams(){
+  var el=document.getElementById('home-exams');
+  var exams=DB.exams.filter(function(e){return e.active;}).slice(0,2);
+  if(!exams.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--t4);font-size:.76rem;">No active exams right now</div>';return;}
+  el.innerHTML=exams.map(function(e){
+    return '<div class="exam-card"><div class="exam-ico">🖥</div>'+
+      '<div class="exam-info"><div class="exam-name">'+e.title+'</div><div class="exam-meta">'+e.duration+' mins • '+e.qcount+' questions</div></div>'+
+      '<button class="exam-btn" onclick="startExam(\''+e.id+'\')">Start</button></div>';
+  }).join('');
+}
+
+function loadHomeTimetable(){
+  var el=document.getElementById('home-timetable');
+  var periods=[
+    {time:'7:30',subject:'Mathematics',teacher:'Mr. Adeyemi',room:'Room 3'},
+    {time:'9:00',subject:'English Language',teacher:'Mrs. Okafor',room:'Room 7'},
+    {time:'11:00',subject:'Biology',teacher:'Mr. Hassan',room:'Lab 1'},
+  ];
+  el.innerHTML=periods.map(function(p){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);">'+
+      '<div style="font-family:monospace;font-size:.7rem;color:var(--gold);min-width:40px;">'+p.time+'</div>'+
+      '<div><div style="font-size:.8rem;font-weight:600;color:var(--t1);">'+p.subject+'</div>'+
+      '<div style="font-size:.62rem;color:var(--t4);">'+p.teacher+' • '+p.room+'</div></div></div>';
+  }).join('');
+}
+
+// ── RESULTS ──
+function loadResults(){
+  var el=document.getElementById('results-list');
+  var scores=SUBJECTS.map(function(s,i){
+    var score=Math.floor(50+Math.random()*45);
+    var grade=score>=75?'A1':score>=70?'B2':score>=65?'B3':score>=60?'C4':score>=50?'C6':'F9';
+    return {subject:s,score:score,grade:grade,color:COLORS[i%COLORS.length]};
+  });
+  el.innerHTML=scores.map(function(r){
+    return '<div class="result-subject">'+
+      '<div style="flex:1;"><div class="rs-name">'+r.subject+'</div>'+
+      '<div class="rs-bar"><div class="rs-bar-fill" style="width:'+r.score+'%;background:'+r.color+';transition:width 1s ease;"></div></div></div>'+
+      '<div style="text-align:right;margin-left:12px;"><div class="rs-score" style="color:'+r.color+';">'+r.score+'</div>'+
+      '<div class="rs-grade">'+r.grade+'</div></div></div>';
+  }).join('');
+  var avg=Math.floor(scores.reduce(function(s,r){return s+r.score;},0)/scores.length);
+  var grade=avg>=70?'A':avg>=60?'B':avg>=50?'C':'F';
+  document.getElementById('perf-avg').textContent=avg+'%';
+  document.getElementById('perf-pos').textContent=Math.floor(1+Math.random()*20);
+  document.getElementById('perf-grade').textContent=grade;
+}
+
+// ── EXAMS ──
+function loadExams(){
+  var el=document.getElementById('exams-list');
+  var exams=DB.exams.filter(function(e){return e.active;});
+  if(!exams.length){
+    el.innerHTML='<div class="card" style="text-align:center;padding:30px;"><div style="font-size:2rem;margin-bottom:10px;">🖥</div><div style="font-size:.84rem;color:var(--t3);">No active exams right now</div></div>';
+    return;
+  }
+  el.innerHTML=exams.map(function(e){
+    return '<div class="exam-card"><div class="exam-ico">🖥</div>'+
+      '<div class="exam-info"><div class="exam-name">'+e.title+'</div>'+
+      '<div class="exam-meta">'+e.subject+' • '+e.duration+' mins • '+e.qcount+' questions</div>'+
+      '<div style="margin-top:4px;">'+(e.instructions?'<div style="font-size:.62rem;color:var(--t4);">'+e.instructions+'</div>':'')+'</div></div>'+
+      '<button class="exam-btn" onclick="startExam(\''+e.id+'\')">Start →</button></div>';
+  }).join('');
+}
+
+function startExam(id){
+  var exam=DB.exams.find(function(e){return e.id===id;});
+  if(!exam)return;
+  if(confirm('Start "'+exam.title+'"?\n\nDuration: '+exam.duration+' minutes\nQuestions: '+exam.qcount+'\n\nMake sure you are ready!')){
+    window.open('rsms-cbt.html?exam='+id,'_blank');
+  }
+}
+
+// ── FEES ──
+function loadFees(){
+  var myFees=DB.fees.filter(function(f){return f.stuId===ME.id||f.student===(ME.surname+' '+ME.firstname);});
+  var total=myFees.reduce(function(s,f){return s+parseFloat(f.amount||0);},0);
+  var expected=parseFloat(ME.fee||45000);
+  var outstanding=Math.max(0,expected-total);
+  document.getElementById('fee-status-val').textContent=outstanding<=0?'All Paid ✅':'₦'+outstanding.toLocaleString()+' Outstanding';
+  document.getElementById('fee-status-sub').textContent=outstanding<=0?'Your fees are fully paid for this term':'Please pay before end of term';
+  document.getElementById('fee-status-val').style.color=outstanding<=0?'var(--success)':'var(--danger)';
+  var hist=document.getElementById('fee-history');
+  if(!myFees.length){hist.innerHTML='<div style="text-align:center;padding:20px;color:var(--t4);">No payment records found</div>';return;}
+  hist.innerHTML=myFees.map(function(f){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);">'+
+      '<div><div style="font-size:.8rem;font-weight:600;color:var(--t1);">'+f.type+'</div>'+
+      '<div style="font-size:.65rem;color:var(--t4);">'+f.date+' • '+f.method+'</div></div>'+
+      '<div style="font-family:var(--serif);font-weight:700;color:var(--success);">₦'+parseFloat(f.amount||0).toLocaleString()+'</div></div>';
+  }).join('');
+}
+
+// ── PROFILE ──
+function loadProfile(){
+  var name=(ME.surname||'')+' '+(ME.firstname||'');
+  document.getElementById('prof-av').textContent=name.charAt(0);
+  document.getElementById('prof-name').textContent=name;
+  document.getElementById('prof-class').textContent=(ME.class||'—')+' • '+(ME.reg||'—');
+  var details=[
+    ['Gender',ME.gender||'—'],['Date of Birth',ME.dob||'—'],
+    ['Parent Phone',ME.phone||'—'],['Status',ME.status||'Active'],
+    ['Enrolled',ME.enrolled||'—']
+  ];
+  document.getElementById('prof-details').innerHTML=details.map(function(d){
+    return '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:.8rem;">'+
+      '<span style="color:var(--t3);">'+d[0]+'</span><span style="font-weight:600;color:var(--t1);">'+d[1]+'</span></div>';
+  }).join('');
+}
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
+<!-- AI FAB -->
+<button onclick="window.open('rsms-voice-ai.html','_blank')" style="position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));right:18px;z-index:99;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#14b8a6);border:none;cursor:pointer;font-size:1.3rem;box-shadow:0 4px 20px rgba(139,92,246,.4);display:flex;align-items:center;justify-content:center;" title="AI Assistant">🤖</button>
+
+</body>
+</html>

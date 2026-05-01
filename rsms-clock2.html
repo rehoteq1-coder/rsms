@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#030305"/>
+<title>RSMS — Staff Clock In/Out</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="rsms-school-detect.js"></script>
+<style>
+:root{
+  --bg:#030305;--panel:#080b14;--card:#0d1020;--card2:#121828;
+  --gold:#d4a843;--goldl:rgba(212,168,67,.1);
+  --teal:#14b8a6;--teall:rgba(20,184,166,.1);
+  --success:#22c55e;--successl:rgba(34,197,94,.1);
+  --danger:#f43f5e;--dangerl:rgba(244,63,94,.1);
+  --warn:#f59e0b;--warnl:rgba(245,158,11,.1);
+  --t1:#f0f2ff;--t2:rgba(240,242,255,.65);--t3:rgba(240,242,255,.35);--t4:rgba(240,242,255,.13);
+  --line:rgba(255,255,255,.06);--line2:rgba(255,255,255,.12);
+  --r:14px;--r2:10px;--sans:'Outfit',sans-serif;--serif:'Fraunces',serif;--mono:'DM Mono',monospace;
+  --safe-bot:env(safe-area-inset-bottom);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:var(--sans);background:var(--bg);color:var(--t1);}
+body{
+  background:radial-gradient(ellipse 70% 50% at 20% 0%,rgba(20,184,166,.07),transparent),
+    radial-gradient(ellipse 50% 60% at 80% 100%,rgba(212,168,67,.06),transparent),#030305;}
+
+/* TOPBAR */
+.topbar{background:rgba(8,11,20,.96);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--line);padding:12px 18px;
+  display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.tb-title{font-family:var(--serif);font-size:1rem;font-weight:700;flex:1;}
+.btn{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 16px;
+  border:none;border-radius:var(--r2);cursor:pointer;font-family:var(--sans);
+  font-size:.84rem;font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-teal{background:linear-gradient(135deg,#042f2e,var(--teal));color:#fff;}
+.btn-gold{background:linear-gradient(135deg,#4a2500,var(--gold));color:#000;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--t2);}
+.btn-ok{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;}
+.btn-err{background:var(--dangerl);border:1px solid rgba(244,63,94,.25);color:var(--danger);}
+.btn-warn{background:var(--warnl);border:1px solid rgba(245,158,11,.25);color:var(--warn);}
+.btn-sm{height:36px;padding:0 13px;font-size:.8rem;}
+.btn-xs{height:30px;padding:0 10px;font-size:.72rem;}
+
+/* CONTENT */
+.wrap{max-width:900px;margin:0 auto;padding:22px 16px 60px;}
+
+/* CLOCK HERO */
+.clock-hero{
+  background:linear-gradient(135deg,#0a1628,#0d2040);
+  border:1px solid rgba(20,184,166,.18);
+  border-radius:22px;padding:30px 24px;
+  text-align:center;margin-bottom:20px;
+  position:relative;overflow:hidden;}
+.clock-hero::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 60% at 50% 0%,rgba(20,184,166,.08),transparent);}
+.ch-time{font-family:var(--mono);font-size:3.5rem;font-weight:500;
+  color:var(--teal);letter-spacing:.06em;position:relative;z-index:1;
+  text-shadow:0 0 40px rgba(20,184,166,.3);}
+.ch-date{font-size:.88rem;color:var(--t3);margin-top:4px;margin-bottom:20px;
+  position:relative;z-index:1;}
+.ch-school{font-family:var(--serif);font-size:1.1rem;font-weight:700;
+  color:var(--t1);margin-bottom:18px;position:relative;z-index:1;}
+
+/* CLOCK BUTTONS */
+.clock-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;
+  position:relative;z-index:1;}
+.clock-btn{
+  padding:14px 28px;border-radius:14px;border:none;
+  font-family:var(--sans);font-size:1rem;font-weight:800;
+  cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:9px;}
+.clock-btn:active{transform:scale(.96);}
+.cb-in{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;
+  box-shadow:0 4px 20px rgba(34,197,94,.25);}
+.cb-out{background:linear-gradient(135deg,#4a1020,var(--danger));color:#fff;
+  box-shadow:0 4px 20px rgba(244,63,94,.25);}
+.cb-break{background:linear-gradient(135deg,#4a2500,var(--warn));color:#000;
+  box-shadow:0 4px 20px rgba(245,158,11,.2);}
+.cb-back{background:linear-gradient(135deg,#1a0a3e,var(--teal));color:#fff;}
+
+/* STATUS BADGE */
+.staff-status{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:7px 16px;border-radius:20px;font-size:.8rem;font-weight:700;
+  margin-bottom:20px;position:relative;z-index:1;}
+.ss-in{background:var(--successl);border:1px solid rgba(34,197,94,.25);color:var(--success);}
+.ss-out{background:rgba(255,255,255,.05);border:1px solid var(--line2);color:var(--t3);}
+.ss-break{background:var(--warnl);border:1px solid rgba(245,158,11,.25);color:var(--warn);}
+.ss-dot{width:7px;height:7px;border-radius:50%;animation:pulse 2s infinite;}
+.ss-in .ss-dot{background:var(--success);}
+.ss-out .ss-dot{background:var(--t3);animation:none;}
+.ss-break .ss-dot{background:var(--warn);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px;}
+.ct{font-size:.92rem;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:.63rem;font-weight:700;}
+.b-ok{background:var(--successl);color:var(--success);}
+.b-err{background:var(--dangerl);color:var(--danger);}
+.b-warn{background:var(--warnl);color:var(--warn);}
+.b-teal{background:var(--teall);color:var(--teal);}
+.b-gold{background:var(--goldl);color:var(--gold);}
+.b-mute{background:rgba(255,255,255,.06);color:var(--t3);}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r2);border:1px solid var(--line);}
+.tbl{width:100%;border-collapse:collapse;font-size:.82rem;}
+.tbl th{background:var(--card2);color:var(--t3);font-size:.6rem;font-weight:800;
+  text-transform:uppercase;letter-spacing:.08em;padding:10px 12px;
+  border-bottom:1px solid var(--line);white-space:nowrap;}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--line);color:var(--t2);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+
+/* STAFF GRID */
+.staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:16px;}
+.staff-tile{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);
+  padding:14px;text-align:center;cursor:pointer;transition:all .2s;}
+.staff-tile:hover{border-color:var(--line2);background:var(--card2);}
+.staff-tile.clocked-in{border-color:rgba(34,197,94,.3);background:var(--successl);}
+.staff-tile.on-break{border-color:rgba(245,158,11,.3);background:var(--warnl);}
+.st-av{width:44px;height:44px;border-radius:50%;margin:0 auto 8px;
+  background:linear-gradient(135deg,#1a0a3e,var(--teal));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:1rem;color:#fff;}
+.st-name{font-size:.8rem;font-weight:700;color:var(--t1);margin-bottom:2px;}
+.st-role{font-size:.62rem;color:var(--t3);margin-bottom:6px;}
+.st-time{font-family:var(--mono);font-size:.72rem;color:var(--teal);}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.fg label{font-size:.63rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;}
+.fi{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);
+  padding:0 14px;color:var(--t1);font-size:.9rem;font-family:var(--sans);
+  outline:none;width:100%;height:46px;transition:all .2s;}
+.fi:focus{border-color:rgba(20,184,166,.4);}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;
+  display:none;align-items:center;justify-content:center;padding:16px;
+  backdrop-filter:blur(10px);}
+.modal-ov.open{display:flex;}
+.modal{background:var(--panel);border:1px solid rgba(20,184,166,.2);
+  border-radius:20px;padding:24px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;}
+.m-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.m-title{font-family:var(--serif);font-size:1.05rem;font-weight:700;color:var(--t1);}
+.m-close{background:none;border:1px solid var(--line2);border-radius:6px;
+  color:var(--t3);cursor:pointer;width:30px;height:30px;font-size:.9rem;}
+.btn-row{display:flex;gap:9px;margin-top:6px;}
+
+/* SUMMARY BARS */
+.sum-bar{display:flex;align-items:center;gap:12px;padding:10px 0;
+  border-bottom:1px solid var(--line);}
+.sum-bar:last-child{border-bottom:none;}
+.sum-av{width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,#1a0a3e,var(--teal));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:.85rem;color:#fff;flex-shrink:0;}
+.sum-name{flex:1;font-size:.85rem;font-weight:700;color:var(--t1);}
+.sum-time{font-family:var(--mono);font-size:.78rem;color:var(--teal);}
+.sum-hrs{font-size:.72rem;color:var(--t3);margin-top:2px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(70px);
+  border-radius:var(--r2);padding:10px 22px;font-size:.86rem;z-index:999;
+  transition:transform .28s;pointer-events:none;
+  display:flex;align-items:center;gap:8px;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.s{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.e{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.i{background:#0f1020;border:1px solid rgba(212,168,67,.35);color:var(--gold);}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:var(--card2);border-radius:var(--r2);
+  padding:3px;margin-bottom:16px;}
+.tab{flex:1;padding:9px;border-radius:var(--r2);border:none;cursor:pointer;
+  font-family:var(--sans);font-size:.8rem;font-weight:700;
+  color:var(--t3);background:none;transition:all .2s;}
+.tab.active{background:var(--card);color:var(--teal);
+  box-shadow:0 1px 4px rgba(0,0,0,.3);}
+
+@media print{
+  .topbar,.clock-btns,.clock-btn,.btn-row,.tabs,.no-print{display:none!important;}
+  body{background:#fff;color:#000;}
+  .card{border:1px solid #ddd;border-radius:0;}
+  .ct,.tbl th{color:#000;}
+  .tbl td{color:#333;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tb-title">⏱ Staff Clock In/Out</div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-ghost btn-sm" onclick="switchView('staff')">👤 My Clock</button>
+    <button class="btn btn-teal btn-sm" onclick="switchView('admin')">📊 Admin View</button>
+    <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Report</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- STAFF VIEW -->
+  <div id="view-staff">
+    <!-- CLOCK HERO -->
+    <div class="clock-hero">
+      <div class="ch-school" id="ch-school">School Name</div>
+      <div class="ch-time" id="live-time">00:00:00</div>
+      <div class="ch-date" id="live-date">Loading...</div>
+
+      <!-- STATUS -->
+      <div class="staff-status ss-out" id="staff-status">
+        <div class="ss-dot"></div>
+        <span id="status-text">Not Clocked In</span>
+      </div>
+
+      <!-- LOGIN IF NOT IDENTIFIED -->
+      <div id="staff-select-wrap" style="margin-bottom:16px;position:relative;z-index:1;">
+        <select class="fi" id="staff-select"
+          style="max-width:260px;margin:0 auto;display:block;text-align:center;height:48px;background:rgba(255,255,255,.06);">
+          <option value="">— Who are you? —</option>
+        </select>
+      </div>
+
+      <div class="clock-btns">
+        <button class="clock-btn cb-in" onclick="clockAction('in')">✅ Clock In</button>
+        <button class="clock-btn cb-break" onclick="clockAction('break')">☕ Break</button>
+        <button class="clock-btn cb-back" onclick="clockAction('back')">↩ Back from Break</button>
+        <button class="clock-btn cb-out" onclick="clockAction('out')">🚪 Clock Out</button>
+      </div>
+    </div>
+
+    <!-- MY TODAY'S LOG -->
+    <div class="card">
+      <div class="ct">📋 My Activity Today</div>
+      <div id="my-log">
+        <div style="text-align:center;padding:20px;color:var(--t4);">No activity recorded today</div>
+      </div>
+    </div>
+
+    <!-- MY WEEKLY SUMMARY -->
+    <div class="card">
+      <div class="ct">📅 My This Week</div>
+      <div id="my-weekly">
+        <div style="text-align:center;padding:20px;color:var(--t4);">No data this week</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN VIEW -->
+  <div id="view-admin" style="display:none;">
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('today',this)">Today</button>
+      <button class="tab" onclick="switchTab('weekly',this)">This Week</button>
+      <button class="tab" onclick="switchTab('monthly',this)">Monthly</button>
+      <button class="tab" onclick="switchTab('history',this)">History</button>
+    </div>
+
+    <!-- TODAY -->
+    <div id="tab-today">
+      <!-- Live Staff Tiles -->
+      <div class="card">
+        <div class="ct">🟢 Staff Status Right Now
+          <span class="badge b-ok" id="in-count">0 In</span>
+          <span class="badge b-err" id="out-count">0 Out</span>
+          <span class="badge b-warn" id="break-count">0 On Break</span>
+        </div>
+        <div class="staff-grid" id="staff-tiles"></div>
+      </div>
+
+      <!-- Today's Full Log -->
+      <div class="card">
+        <div class="ct">📋 Today's Clock Log
+          <button class="btn btn-ghost btn-sm no-print" onclick="exportCSV()">⬇ Export CSV</button>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>Staff</th><th>Role</th><th>Clock In</th><th>Break Out</th>
+              <th>Break In</th><th>Clock Out</th><th>Hours</th><th>Status</th>
+            </tr></thead>
+            <tbody id="today-log-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEKLY -->
+    <div id="tab-weekly" style="display:none;">
+      <div class="card">
+        <div class="ct">📅 Weekly Attendance Summary</div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>Staff</th><th>Mon</th><th>Tue</th><th>Wed</th>
+              <th>Thu</th><th>Fri</th><th>Total Hrs</th><th>Days</th>
+            </tr></thead>
+            <tbody id="weekly-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MONTHLY -->
+    <div id="tab-monthly" style="display:none;">
+      <div class="card">
+        <div class="ct">📆 Monthly Summary
+          <select class="fi btn-sm" id="month-select" style="height:34px;width:140px;"
+            onchange="renderMonthly()">
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>Staff</th><th>Days Present</th><th>Days Late</th>
+              <th>Total Hours</th><th>Avg Arrival</th><th>Status</th>
+            </tr></thead>
+            <tbody id="monthly-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="tab-history" style="display:none;">
+      <div class="card">
+        <div class="ct">🗂 Clock History</div>
+        <div style="display:flex;gap:9px;margin-bottom:12px;flex-wrap:wrap;">
+          <input class="fi" type="date" id="hist-date" style="max-width:160px;height:38px;"
+            onchange="renderHistory()"/>
+          <select class="fi" id="hist-staff" style="max-width:180px;height:38px;"
+            onchange="renderHistory()">
+            <option value="">All Staff</option>
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>Date</th><th>Staff</th><th>Action</th><th>Time</th><th>Note</th>
+            </tr></thead>
+            <tbody id="history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- LATE NOTE MODAL -->
+<div class="modal-ov" id="m-late">
+  <div class="modal">
+    <div class="m-head">
+      <div class="m-title">⏰ Late Arrival Note</div>
+      <button class="m-close" onclick="closeM('m-late')">✕</button>
+    </div>
+    <div style="background:var(--warnl);border:1px solid rgba(245,158,11,.2);
+      border-radius:var(--r2);padding:12px 14px;margin-bottom:14px;font-size:.85rem;color:var(--warn);">
+      ⚠️ You are clocking in after <strong id="late-by"></strong> — please provide a reason.
+    </div>
+    <div class="fg"><label>Reason for Late Arrival</label>
+      <select class="fi" id="late-reason">
+        <option>Traffic / Road delay</option>
+        <option>Family emergency</option>
+        <option>Health issue</option>
+        <option>Transport problem</option>
+        <option>Other (explain below)</option>
+      </select>
+    </div>
+    <div class="fg"><label>Additional Note</label>
+      <input class="fi" id="late-note" placeholder="Optional extra details..."/>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeM('m-late')" style="flex:1;">Cancel</button>
+      <button class="btn btn-ok" onclick="confirmLateClockIn()" style="flex:2;">✅ Confirm Clock In</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════
+// RSMS STAFF CLOCKING SYSTEM
+// ══════════════════════════════════
+var DB = {
+  school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School","clockInTime":"7:30","clockOutTime":"15:00"}'),
+  staff: JSON.parse(localStorage.getItem('rsms_staff')||'[]'),
+  clockLog: JSON.parse(localStorage.getItem('rsms_clock_log')||'{}')
+};
+function saveLog(){ localStorage.setItem('rsms_clock_log', JSON.stringify(DB.clockLog)); }
+
+var CLOCK_IN_TIME = DB.school.clockInTime || '7:30';
+var currentStaff = null;
+var currentView = 'staff';
+
+// ── UTILS ──
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.className='toast show '+(type||'i');
+  t.textContent=msg;clearTimeout(t._t);
+  t._t=setTimeout(function(){t.classList.remove('show');},3500);
+}
+function openM(id){ document.getElementById(id).classList.add('open'); }
+function closeM(id){ document.getElementById(id).classList.remove('open'); }
+function now(){ return new Date(); }
+function fmtTime(d){ return new Date(d).toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'}); }
+function fmtDate(d){ return new Date(d).toLocaleDateString('en-NG'); }
+function todayKey(){ return new Date().toDateString(); }
+function calcHours(inTime, outTime){
+  if(!inTime||!outTime)return '—';
+  var diff=(new Date(outTime)-new Date(inTime))/3600000;
+  return diff.toFixed(1)+'h';
+}
+
+// ── LIVE CLOCK ──
+function updateClock(){
+  var d=now();
+  var t=d.toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  var dt=d.toLocaleDateString('en-NG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('live-time').textContent=t;
+  document.getElementById('live-date').textContent=dt;
+}
+setInterval(updateClock,1000);
+updateClock();
+
+// ── VIEW SWITCH ──
+function switchView(v){
+  currentView=v;
+  document.getElementById('view-staff').style.display=v==='staff'?'block':'none';
+  document.getElementById('view-admin').style.display=v==='admin'?'block':'none';
+  if(v==='admin') renderAdminToday();
+}
+function switchTab(tab, el){
+  ['today','weekly','monthly','history'].forEach(function(t){
+    document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  if(el)el.classList.add('active');
+  if(tab==='weekly')renderWeekly();
+  if(tab==='monthly'){initMonthSelect();renderMonthly();}
+  if(tab==='history')renderHistory();
+  if(tab==='today')renderAdminToday();
+}
+
+// ── POPULATE STAFF SELECT ──
+function populateStaffSelect(){
+  var sel=document.getElementById('staff-select');
+  var user=JSON.parse(sessionStorage.getItem('rsms_user')||'{}');
+  // If already logged in as staff, pre-select
+  if(user.name&&user.role!=='admin'){
+    var found=DB.staff.find(function(s){return s.name===user.name;});
+    if(found){ currentStaff=found; }
+  }
+  sel.innerHTML='<option value="">— Who are you? —</option>'+
+    DB.staff.map(function(s,i){
+      return '<option value="'+i+'">'+s.name+' ('+s.role+')</option>';
+    }).join('');
+  sel.onchange=function(){
+    if(sel.value==='')currentStaff=null;
+    else currentStaff=DB.staff[parseInt(sel.value)];
+    updateStaffStatus();
+  };
+  if(currentStaff){
+    var idx=DB.staff.indexOf(currentStaff);
+    if(idx>-1)sel.value=idx;
+    updateStaffStatus();
+  }
+}
+
+// ── STAFF STATUS ──
+function updateStaffStatus(){
+  if(!currentStaff)return;
+  var today=todayKey();
+  var log=DB.clockLog[today]&&DB.clockLog[today][currentStaff.staffId||currentStaff.name];
+  var statusEl=document.getElementById('staff-status');
+  var statusText=document.getElementById('status-text');
+  if(!log||!log.clockIn){
+    statusEl.className='staff-status ss-out';
+    statusText.textContent='Not Clocked In';
+  } else if(log.breakOut&&!log.breakIn){
+    statusEl.className='staff-status ss-break';
+    statusText.textContent='On Break since '+fmtTime(log.breakOut);
+  } else if(!log.clockOut){
+    statusEl.className='staff-status ss-in';
+    statusText.textContent='Clocked In since '+fmtTime(log.clockIn);
+  } else {
+    statusEl.className='staff-status ss-out';
+    statusText.textContent='Clocked Out at '+fmtTime(log.clockOut);
+  }
+  renderMyLog();
+}
+
+// ── CLOCK ACTION ──
+var pendingClockIn=false;
+function clockAction(action){
+  if(!currentStaff){toast('Please select your name first','e');return;}
+  var today=todayKey();
+  if(!DB.clockLog[today])DB.clockLog[today]={};
+  var key=currentStaff.staffId||currentStaff.name;
+  if(!DB.clockLog[today][key])DB.clockLog[today][key]={name:currentStaff.name,role:currentStaff.role};
+  var log=DB.clockLog[today][key];
+  var t=now().toISOString();
+
+  if(action==='in'){
+    if(log.clockIn){toast('Already clocked in today','e');return;}
+    // Check if late
+    var scheduled=CLOCK_IN_TIME.split(':');
+    var scheduledMins=parseInt(scheduled[0])*60+parseInt(scheduled[1]||0);
+    var nowMins=now().getHours()*60+now().getMinutes();
+    var lateBy=nowMins-scheduledMins;
+    if(lateBy>15){
+      pendingClockIn=true;
+      document.getElementById('late-by').textContent=lateBy+' minutes (scheduled: '+CLOCK_IN_TIME+')';
+      openM('m-late');
+      return;
+    }
+    doClockIn(log,t,key,today);
+  } else if(action==='break'){
+    if(!log.clockIn){toast('Clock in first','e');return;}
+    if(log.breakOut&&!log.breakIn){toast('Already on break','e');return;}
+    log.breakOut=t;
+    saveLog();toast('☕ Break started at '+fmtTime(t),'i');
+  } else if(action==='back'){
+    if(!log.breakOut){toast('Not on break','e');return;}
+    log.breakIn=t;
+    saveLog();toast('✅ Back from break at '+fmtTime(t),'s');
+  } else if(action==='out'){
+    if(!log.clockIn){toast('Not clocked in','e');return;}
+    if(log.clockOut){toast('Already clocked out','e');return;}
+    log.clockOut=t;
+    var hrs=calcHours(log.clockIn,log.clockOut);
+    saveLog();toast('🚪 Clocked out — '+hrs+' hours today','s');
+  }
+  updateStaffStatus();
+}
+
+function doClockIn(log,t,key,today){
+  log.clockIn=t;
+  var scheduled=CLOCK_IN_TIME.split(':');
+  var scheduledMins=parseInt(scheduled[0])*60+parseInt(scheduled[1]||0);
+  var nowMins=now().getHours()*60+now().getMinutes();
+  log.lateBy=Math.max(0,nowMins-scheduledMins);
+  log.lateReason=document.getElementById('late-reason')?document.getElementById('late-reason').value:'';
+  saveLog();
+  toast('✅ '+currentStaff.name+' clocked in at '+fmtTime(t)+(log.lateBy>0?' — '+log.lateBy+'min late':''),'s');
+  updateStaffStatus();
+  pendingClockIn=false;
+}
+
+function confirmLateClockIn(){
+  if(!currentStaff)return;
+  var today=todayKey();
+  var key=currentStaff.staffId||currentStaff.name;
+  if(!DB.clockLog[today])DB.clockLog[today]={};
+  if(!DB.clockLog[today][key])DB.clockLog[today][key]={name:currentStaff.name,role:currentStaff.role};
+  doClockIn(DB.clockLog[today][key],now().toISOString(),key,today);
+  closeM('m-late');
+}
+
+// ── MY LOG ──
+function renderMyLog(){
+  if(!currentStaff)return;
+  var today=todayKey();
+  var log=DB.clockLog[today]&&DB.clockLog[today][currentStaff.staffId||currentStaff.name];
+  var el=document.getElementById('my-log');
+  if(!log||!log.clockIn){
+    el.innerHTML='<div style="text-align:center;padding:20px;color:var(--t4);">No activity yet today</div>';
+    return;
+  }
+  var rows=[
+    {icon:'✅',label:'Clock In',time:log.clockIn,note:log.lateBy>0?log.lateBy+'min late':'On time'},
+    log.breakOut?{icon:'☕',label:'Break Out',time:log.breakOut,note:''}:null,
+    log.breakIn?{icon:'↩',label:'Back from Break',time:log.breakIn,note:''}:null,
+    log.clockOut?{icon:'🚪',label:'Clock Out',time:log.clockOut,note:calcHours(log.clockIn,log.clockOut)+' total'}:null
+  ].filter(Boolean);
+  el.innerHTML=rows.map(function(r){
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);">'+
+      '<div style="font-size:1.3rem;">'+r.icon+'</div>'+
+      '<div style="flex:1;"><div style="font-weight:700;font-size:.88rem;color:var(--t1);">'+r.label+'</div>'+
+      '<div style="font-size:.72rem;color:var(--t3);">'+r.note+'</div></div>'+
+      '<div style="font-family:var(--mono);font-size:.88rem;color:var(--teal);">'+fmtTime(r.time)+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+// ── ADMIN TODAY ──
+function renderAdminToday(){
+  var today=todayKey();
+  var dayLog=DB.clockLog[today]||{};
+  var staffKeys=Object.keys(dayLog);
+  var inCount=0,outCount=0,breakCount=0;
+  var tilesHtml='';
+  var tbodyHtml='';
+
+  // Also include staff not yet clocked in
+  var allStaff=DB.staff.length?DB.staff:[];
+  var coveredKeys=[];
+
+  staffKeys.forEach(function(key){
+    var log=dayLog[key];
+    var isIn=log.clockIn&&!log.clockOut;
+    var isOut=log.clockOut;
+    var isBreak=log.breakOut&&!log.breakIn;
+    if(isIn&&!isBreak)inCount++;
+    else if(isBreak)breakCount++;
+    else if(isOut)outCount++;
+    coveredKeys.push(log.name);
+
+    var statClass=isBreak?'on-break':isIn?'clocked-in':'';
+    var statBadge=isBreak?'<span class="badge b-warn">On Break</span>':
+      isIn?'<span class="badge b-ok">In</span>':
+      isOut?'<span class="badge b-err">Out</span>':'';
+    tilesHtml+='<div class="staff-tile '+statClass+'">'+
+      '<div class="st-av">'+(log.name||'?').charAt(0)+'</div>'+
+      '<div class="st-name">'+(log.name||'—')+'</div>'+
+      '<div class="st-role">'+(log.role||'—')+'</div>'+
+      '<div class="st-time">'+fmtTime(log.clockIn||now())+'</div>'+
+      statBadge+'</div>';
+
+    tbodyHtml+='<tr>'+
+      '<td style="font-weight:700;color:var(--t1);">'+(log.name||'—')+'</td>'+
+      '<td><span class="badge b-mute">'+(log.role||'—')+'</span></td>'+
+      '<td style="color:var(--success);">'+(log.clockIn?fmtTime(log.clockIn):'—')+'</td>'+
+      '<td style="color:var(--warn);">'+(log.breakOut?fmtTime(log.breakOut):'—')+'</td>'+
+      '<td style="color:var(--teal);">'+(log.breakIn?fmtTime(log.breakIn):'—')+'</td>'+
+      '<td style="color:var(--danger);">'+(log.clockOut?fmtTime(log.clockOut):'—')+'</td>'+
+      '<td style="font-family:var(--mono);">'+calcHours(log.clockIn,log.clockOut||null)+'</td>'+
+      '<td>'+(isBreak?'<span class="badge b-warn">Break</span>':
+        isIn?'<span class="badge b-ok">Present</span>':
+        isOut?'<span class="badge b-err">Left</span>':'<span class="badge b-mute">—</span>')+'</td>'+
+    '</tr>';
+  });
+
+  // Staff not yet clocked in
+  allStaff.filter(function(s){return coveredKeys.indexOf(s.name)<0;}).forEach(function(s){
+    tilesHtml+='<div class="staff-tile">'+
+      '<div class="st-av">'+s.name.charAt(0)+'</div>'+
+      '<div class="st-name">'+s.name+'</div>'+
+      '<div class="st-role">'+s.role+'</div>'+
+      '<div class="st-time">—</div>'+
+      '<span class="badge b-err">Not In</span></div>';
+    tbodyHtml+='<tr>'+
+      '<td style="font-weight:700;color:var(--t1);">'+s.name+'</td>'+
+      '<td><span class="badge b-mute">'+s.role+'</span></td>'+
+      '<td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>'+
+      '<td><span class="badge b-err">Absent</span></td></tr>';
+  });
+
+  document.getElementById('in-count').textContent=inCount+' In';
+  document.getElementById('out-count').textContent=outCount+' Left';
+  document.getElementById('break-count').textContent=breakCount+' Break';
+  document.getElementById('staff-tiles').innerHTML=tilesHtml||'<div style="color:var(--t4);padding:20px;text-align:center;">No staff activity yet today</div>';
+  document.getElementById('today-log-tbody').innerHTML=tbodyHtml||'<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--t4);">No clock records today</td></tr>';
+}
+
+// ── WEEKLY ──
+function renderWeekly(){
+  var days=['Monday','Tuesday','Wednesday','Thursday','Friday'];
+  var now2=new Date();
+  var dayOfWeek=now2.getDay();
+  var monday=new Date(now2);
+  monday.setDate(now2.getDate()-(dayOfWeek===0?6:dayOfWeek-1));
+  var tbody=document.getElementById('weekly-tbody');
+  var staffList=DB.staff.length?DB.staff:[{name:'No staff added',role:'—'}];
+  tbody.innerHTML=staffList.map(function(s){
+    var totalHrs=0;var daysPresent=0;
+    var dayCells=days.map(function(day,i){
+      var d=new Date(monday);d.setDate(monday.getDate()+i);
+      var key=d.toDateString();
+      var log=DB.clockLog[key]&&DB.clockLog[key][s.staffId||s.name];
+      if(!log||!log.clockIn)return '<td style="color:var(--t4);">—</td>';
+      daysPresent++;
+      var hrs=log.clockOut?(new Date(log.clockOut)-new Date(log.clockIn))/3600000:0;
+      totalHrs+=hrs;
+      var late=log.lateBy>15;
+      return '<td style="color:'+(late?'var(--warn)':'var(--success)')+';">'+
+        fmtTime(log.clockIn)+(late?' ⚠️':'')+'</td>';
+    }).join('');
+    return '<tr>'+
+      '<td style="font-weight:700;color:var(--t1);">'+s.name+'<br/>'+
+        '<span style="font-size:.65rem;color:var(--t3);">'+s.role+'</span></td>'+
+      dayCells+
+      '<td style="font-family:var(--mono);color:var(--teal);">'+totalHrs.toFixed(1)+'h</td>'+
+      '<td>'+daysPresent+'/5</td></tr>';
+  }).join('');
+}
+
+// ── MONTHLY ──
+function initMonthSelect(){
+  var sel=document.getElementById('month-select');
+  if(sel.options.length>1)return;
+  var months=['January','February','March','April','May','June',
+    'July','August','September','October','November','December'];
+  var now2=new Date();
+  for(var i=0;i<6;i++){
+    var d=new Date(now2.getFullYear(),now2.getMonth()-i,1);
+    var opt=document.createElement('option');
+    opt.value=d.getFullYear()+'-'+(d.getMonth()+1);
+    opt.textContent=months[d.getMonth()]+' '+d.getFullYear();
+    sel.appendChild(opt);
+  }
+}
+function renderMonthly(){
+  var tbody=document.getElementById('monthly-tbody');
+  var staffList=DB.staff.length?DB.staff:[{name:'No staff',role:'—'}];
+  tbody.innerHTML=staffList.map(function(s){
+    return '<tr>'+
+      '<td style="font-weight:700;color:var(--t1);">'+s.name+'</td>'+
+      '<td>—</td><td>—</td><td>—</td><td>—</td>'+
+      '<td><span class="badge b-ok">Active</span></td></tr>';
+  }).join('');
+}
+
+// ── HISTORY ──
+function renderHistory(){
+  var dateVal=document.getElementById('hist-date').value;
+  var staffVal=document.getElementById('hist-staff').value;
+  var tbody=document.getElementById('history-tbody');
+  var rows=[];
+  Object.keys(DB.clockLog).forEach(function(dateKey){
+    var dayLog=DB.clockLog[dateKey];
+    Object.keys(dayLog).forEach(function(key){
+      var log=dayLog[key];
+      if(staffVal&&log.name!==staffVal)return;
+      if(dateVal){var d=new Date(dateKey);var dv=d.toISOString().slice(0,10);if(dv!==dateVal)return;}
+      if(log.clockIn)rows.push({date:dateKey,name:log.name,role:log.role,action:'Clock In',time:log.clockIn,note:log.lateBy>0?'Late '+log.lateBy+'min':''});
+      if(log.breakOut)rows.push({date:dateKey,name:log.name,role:log.role,action:'Break',time:log.breakOut,note:''});
+      if(log.breakIn)rows.push({date:dateKey,name:log.name,role:log.role,action:'Break Return',time:log.breakIn,note:''});
+      if(log.clockOut)rows.push({date:dateKey,name:log.name,role:log.role,action:'Clock Out',time:log.clockOut,note:calcHours(log.clockIn,log.clockOut)});
+    });
+  });
+  rows.sort(function(a,b){return new Date(b.time)-new Date(a.time);});
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--t4);">No history for selected filter</td></tr>';return;}
+  tbody.innerHTML=rows.map(function(r){
+    var ac=r.action==='Clock In'?'b-ok':r.action==='Clock Out'?'b-err':r.action.includes('Break')?'b-warn':'b-mute';
+    return '<tr>'+
+      '<td style="font-size:.75rem;color:var(--t3);">'+fmtDate(r.date)+'</td>'+
+      '<td style="font-weight:700;color:var(--t1);">'+r.name+'</td>'+
+      '<td><span class="badge '+ac+'">'+r.action+'</span></td>'+
+      '<td style="font-family:var(--mono);">'+fmtTime(r.time)+'</td>'+
+      '<td style="font-size:.75rem;color:var(--t3);">'+r.note+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+// ── EXPORT CSV ──
+function exportCSV(){
+  var today=todayKey();
+  var dayLog=DB.clockLog[today]||{};
+  var rows=[['Name','Role','Clock In','Break Out','Break In','Clock Out','Hours','Status']];
+  Object.keys(dayLog).forEach(function(key){
+    var l=dayLog[key];
+    rows.push([l.name,l.role,l.clockIn?fmtTime(l.clockIn):'',l.breakOut?fmtTime(l.breakOut):'',
+      l.breakIn?fmtTime(l.breakIn):'',l.clockOut?fmtTime(l.clockOut):'',
+      calcHours(l.clockIn,l.clockOut),'']);
+  });
+  var csv=rows.map(function(r){return r.join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='Clock_Log_'+today.replace(/\s/g,'_')+'.csv';
+  a.click();
+  toast('✅ CSV exported','s');
+}
+
+// ── INIT ──
+window.addEventListener('load',function(){
+  var school=DB.school;
+  document.getElementById('ch-school').textContent=school.name||'School';
+  populateStaffSelect();
+  // Populate history staff filter
+  var hsel=document.getElementById('hist-staff');
+  DB.staff.forEach(function(s){
+    var opt=document.createElement('option');
+    opt.value=s.name;opt.textContent=s.name;hsel.appendChild(opt);
+  });
+  // Set today's date as default for history
+  document.getElementById('hist-date').value=new Date().toISOString().slice(0,10);
+});
+</script>
+</body>
+</html>

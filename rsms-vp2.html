@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#030305"/>
+<title>RSMS — Vice Principal Academic</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="rsms-school-detect.js"></script>
+<style>
+:root{
+  --bg:#030305;--panel:#080b14;--card:#0d1020;--card2:#121828;
+  --gold:#d4a843;--goldl:rgba(212,168,67,.1);--goldm:rgba(212,168,67,.22);
+  --teal:#14b8a6;--teall:rgba(20,184,166,.1);
+  --purple:#8b5cf6;--purplel:rgba(139,92,246,.1);
+  --success:#22c55e;--successl:rgba(34,197,94,.1);
+  --danger:#f43f5e;--dangerl:rgba(244,63,94,.1);
+  --warn:#f59e0b;--warnl:rgba(245,158,11,.1);
+  --t1:#f0f2ff;--t2:rgba(240,242,255,.65);--t3:rgba(240,242,255,.35);--t4:rgba(240,242,255,.13);
+  --line:rgba(255,255,255,.06);--line2:rgba(255,255,255,.12);
+  --r:14px;--r2:10px;--r3:7px;--serif:'Fraunces',serif;--sans:'Outfit',sans-serif;
+  --safe-bot:env(safe-area-inset-bottom);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--t1);}
+body{display:flex;flex-direction:column;}
+
+/* BG */
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 70% 50% at 20% 0%,rgba(139,92,246,.07),transparent),
+    radial-gradient(ellipse 60% 50% at 80% 100%,rgba(212,168,67,.05),transparent);}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(8,11,20,.96);
+  backdrop-filter:blur(20px);border-bottom:1px solid var(--line);
+  padding:12px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.tb-logo{width:36px;height:36px;border-radius:9px;
+  background:linear-gradient(135deg,#1a0a3e,var(--purple));
+  border:1px solid rgba(139,92,246,.35);display:flex;align-items:center;
+  justify-content:center;font-size:1rem;flex-shrink:0;}
+.tb-info{flex:1;}
+.tb-title{font-family:var(--serif);font-size:.96rem;font-weight:700;color:var(--t1);}
+.tb-sub{font-size:.65rem;color:var(--t3);}
+.tb-actions{display:flex;gap:8px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:40px;padding:0 16px;border:none;border-radius:var(--r3);cursor:pointer;
+  font-family:var(--sans);font-size:.84rem;font-weight:700;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-purple{background:linear-gradient(135deg,#4c1d95,var(--purple));color:#fff;}
+.btn-gold{background:linear-gradient(135deg,#4a2500,var(--gold));color:#000;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--t2);}
+.btn-sm{height:36px;padding:0 13px;font-size:.78rem;}
+.btn-xs{height:30px;padding:0 10px;font-size:.72rem;}
+.btn-ok{background:linear-gradient(135deg,#052e16,var(--success));color:#fff;}
+.btn-err{background:rgba(244,63,94,.15);border:1px solid rgba(244,63,94,.25);color:var(--danger);}
+
+/* SIDEBAR + CONTENT */
+.main{display:flex;flex:1;overflow:hidden;position:relative;z-index:1;}
+.sb{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--line);
+  overflow-y:auto;display:flex;flex-direction:column;}
+@media(max-width:768px){.sb{display:none;}.sb.open{display:flex;position:fixed;
+  inset:0;z-index:100;width:260px;backdrop-filter:blur(20px);}}
+.sb-school{padding:16px 14px;border-bottom:1px solid var(--line);}
+.sb-sname{font-weight:700;font-size:.88rem;color:var(--t1);margin-bottom:2px;}
+.sb-sterm{font-size:.65rem;color:var(--t3);}
+.sb-user{padding:12px 14px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:9px;}
+.sb-av{width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--purple),var(--gold));
+  display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;}
+.sb-uname{font-size:.82rem;font-weight:700;color:var(--t1);}
+.sb-role{font-size:.6rem;color:var(--purple);}
+.sb-nav{flex:1;padding:10px 8px;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:var(--r2);
+  cursor:pointer;transition:all .18s;margin-bottom:2px;font-size:.84rem;font-weight:600;color:var(--t3);}
+.sb-item:hover{background:rgba(255,255,255,.04);color:var(--t2);}
+.sb-item.active{background:var(--purplel);color:var(--purple);}
+.sb-item .ico{font-size:1rem;width:22px;text-align:center;}
+.sb-section{font-size:.55rem;font-weight:800;color:var(--t4);text-transform:uppercase;
+  letter-spacing:.14em;padding:12px 10px 5px;}
+.sb-bottom{padding:10px 8px;border-top:1px solid var(--line);}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:20px 18px;}
+.content::-webkit-scrollbar{width:4px;}
+.content::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* PAGE HEADER */
+.ph{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.ph-title{font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--t1);}
+.ph-sub{font-size:.8rem;color:var(--t3);margin-top:2px;}
+.ph-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:18px;}
+.stat-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.stat-gold::before{background:var(--gold);}
+.stat-purple::before{background:var(--purple);}
+.stat-teal::before{background:var(--teal);}
+.stat-ok::before{background:var(--success);}
+.stat-val{font-family:var(--serif);font-size:1.8rem;font-weight:900;color:var(--t1);}
+.stat-lbl{font-size:.68rem;color:var(--t3);margin-top:3px;font-weight:600;}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px;margin-bottom:14px;}
+.ct{font-size:.92rem;font-weight:700;color:var(--t1);display:flex;
+  align-items:center;gap:8px;margin-bottom:14px;}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;
+  border-radius:20px;font-size:.63rem;font-weight:700;}
+.b-ok{background:var(--successl);color:var(--success);}
+.b-warn{background:var(--warnl);color:var(--warn);}
+.b-err{background:var(--dangerl);color:var(--danger);}
+.b-gold{background:var(--goldl);color:var(--gold);}
+.b-purple{background:var(--purplel);color:var(--purple);}
+.b-teal{background:var(--teall);color:var(--teal);}
+.b-mute{background:rgba(255,255,255,.06);color:var(--t3);}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r2);border:1px solid var(--line);}
+.tbl{width:100%;border-collapse:collapse;font-size:.82rem;}
+.tbl th{background:var(--card2);color:var(--t3);font-size:.62rem;font-weight:800;
+  text-transform:uppercase;letter-spacing:.08em;padding:10px 12px;
+  border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--line);color:var(--t2);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.fg label{font-size:.63rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;}
+.fi{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);
+  padding:0 14px;color:var(--t1);font-size:.9rem;font-family:var(--sans);
+  outline:none;width:100%;height:46px;transition:all .2s;}
+.fi:focus{border-color:rgba(139,92,246,.4);}
+textarea.fi{padding:12px 14px;height:auto;resize:vertical;}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+@media(max-width:600px){.f2{grid-template-columns:1fr;}}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;
+  display:none;align-items:center;justify-content:center;padding:16px;
+  backdrop-filter:blur(8px);}
+.modal-ov.open{display:flex;}
+.modal{background:var(--panel);border:1px solid rgba(139,92,246,.2);
+  border-radius:20px;padding:24px;width:100%;max-width:500px;
+  max-height:88vh;overflow-y:auto;}
+.m-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.m-title{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--t1);}
+.m-close{background:none;border:1px solid var(--line2);border-radius:6px;
+  color:var(--t3);cursor:pointer;width:30px;height:30px;font-size:.9rem;}
+.btn-row{display:flex;gap:9px;margin-top:6px;}
+
+/* LESSON NOTE CARD */
+.lesson-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px;margin-bottom:10px;transition:all .2s;}
+.lesson-card:hover{border-color:var(--line2);}
+.lc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.lc-title{font-weight:700;font-size:.9rem;color:var(--t1);}
+.lc-meta{font-size:.7rem;color:var(--t3);margin-top:2px;}
+.lc-body{font-size:.82rem;color:var(--t2);line-height:1.6;margin-bottom:10px;}
+.lc-actions{display:flex;gap:7px;}
+
+/* REPORT CARD */
+.report-item{border-left:3px solid var(--purple);padding:10px 14px;
+  background:var(--card);border-radius:0 var(--r2) var(--r2) 0;margin-bottom:8px;}
+
+/* NOTICE */
+.notice-item{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);
+  padding:12px 14px;margin-bottom:8px;}
+.notice-title{font-weight:700;font-size:.88rem;color:var(--t1);margin-bottom:4px;}
+.notice-body{font-size:.78rem;color:var(--t2);line-height:1.6;}
+.notice-meta{font-size:.65rem;color:var(--t4);margin-top:6px;}
+
+/* AI FAB */
+.ai-fab{position:fixed;bottom:calc(20px + var(--safe-bot));right:18px;z-index:99;
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,var(--purple),var(--teal));
+  border:none;cursor:pointer;font-size:1.3rem;
+  box-shadow:0 4px 20px rgba(139,92,246,.4);
+  display:flex;align-items:center;justify-content:center;
+  transition:all .25s;}
+.ai-fab:hover{transform:scale(1.1);}
+
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(60px);
+  border-radius:var(--r2);padding:10px 20px;font-size:.86rem;z-index:999;
+  transition:transform .28s;pointer-events:none;
+  display:flex;align-items:center;gap:8px;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.s{background:#0a1f12;border:1px solid rgba(34,197,94,.4);color:#4ade80;}
+.toast.e{background:#1f0a12;border:1px solid rgba(244,63,94,.4);color:#fb7185;}
+.toast.i{background:#0f1020;border:1px solid rgba(212,168,67,.35);color:var(--gold);}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-logo">🎓</div>
+  <div class="tb-info">
+    <div class="tb-title" id="tb-title">Vice Principal Academic</div>
+    <div class="tb-sub" id="tb-sub">Loading...</div>
+  </div>
+  <div class="tb-actions">
+    <button class="btn btn-ghost btn-sm" onclick="window.location.href='rsms-login.html'">← Logout</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- SIDEBAR -->
+  <div class="sb" id="sidebar">
+    <div class="sb-school">
+      <div class="sb-sname" id="sb-sname">School Name</div>
+      <div class="sb-sterm" id="sb-sterm">Term · Session</div>
+    </div>
+    <div class="sb-user">
+      <div class="sb-av" id="sb-av">VP</div>
+      <div>
+        <div class="sb-uname" id="sb-uname">VP Academic</div>
+        <div class="sb-role">Vice Principal Academic</div>
+      </div>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-section">Overview</div>
+      <div class="sb-item active" onclick="goto('dashboard',this)">
+        <span class="ico">📊</span>Dashboard
+      </div>
+      <div class="sb-item" onclick="goto('results',this)">
+        <span class="ico">📝</span>Results Overview
+      </div>
+      <div class="sb-section">Academic</div>
+      <div class="sb-item" onclick="goto('lesson-notes',this)">
+        <span class="ico">📖</span>Lesson Notes
+      </div>
+      <div class="sb-item" onclick="goto('timetable',this)">
+        <span class="ico">🗓</span>Timetable
+      </div>
+      <div class="sb-item" onclick="goto('attendance',this)">
+        <span class="ico">✅</span>Attendance
+      </div>
+      <div class="sb-section">Staff</div>
+      <div class="sb-item" onclick="goto('staff-reports',this)">
+        <span class="ico">👨‍🏫</span>Staff Reports
+      </div>
+      <div class="sb-item" onclick="goto('hod-reports',this)">
+        <span class="ico">🎓</span>HOD Reports
+      </div>
+      <div class="sb-section">Communication</div>
+      <div class="sb-item" onclick="goto('notice-board',this)">
+        <span class="ico">📣</span>Notice Board
+      </div>
+      <div class="sb-item" onclick="goto('messages',this)">
+        <span class="ico">💬</span>Messages
+      </div>
+    </div>
+    <div class="sb-bottom">
+      <div class="sb-item" onclick="window.open('rsms-voice-ai.html','_blank')">
+        <span class="ico">🤖</span>AI Assistant
+      </div>
+      <div class="sb-item" onclick="if(confirm('Logout?')){sessionStorage.clear();window.location.href='rsms-login.html';}">
+        <span class="ico">🚪</span>Logout
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="ph">
+        <div>
+          <div class="ph-title">Academic Overview</div>
+          <div class="ph-sub">Monitor academic performance across all classes</div>
+        </div>
+        <div class="ph-actions">
+          <button class="btn btn-purple btn-sm" onclick="goto('lesson-notes',document.querySelector('[onclick*=lesson]'))">📖 Review Lesson Notes</button>
+        </div>
+      </div>
+
+      <div class="stats" id="dash-stats">
+        <div class="stat-card stat-purple">
+          <div class="stat-val" id="st-classes">0</div>
+          <div class="stat-lbl">Active Classes</div>
+        </div>
+        <div class="stat-card stat-gold">
+          <div class="stat-val" id="st-teachers">0</div>
+          <div class="stat-lbl">Teaching Staff</div>
+        </div>
+        <div class="stat-card stat-teal">
+          <div class="stat-val" id="st-students">0</div>
+          <div class="stat-lbl">Total Students</div>
+        </div>
+        <div class="stat-card stat-ok">
+          <div class="stat-val" id="st-notes">0</div>
+          <div class="stat-lbl">Lesson Notes Pending</div>
+        </div>
+      </div>
+
+      <!-- CLASS PERFORMANCE -->
+      <div class="card">
+        <div class="ct">📊 Class Performance Summary</div>
+        <div class="tbl-wrap">
+          <table class="tbl" id="perf-table">
+            <thead><tr>
+              <th>Class</th><th>Class Teacher</th><th>Students</th>
+              <th>Avg Score</th><th>Attendance %</th><th>Status</th>
+            </tr></thead>
+            <tbody id="perf-tbody">
+              <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--t4);">
+                No class data yet — add students in Admin portal
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- QUICK ACTIONS -->
+      <div class="f2">
+        <div class="card" style="cursor:pointer;" onclick="goto('lesson-notes',null)">
+          <div class="ct" style="margin-bottom:8px;">📖 Pending Lesson Notes</div>
+          <div id="pending-notes-count" style="font-size:2rem;font-weight:900;
+            font-family:var(--serif);color:var(--warn);">0</div>
+          <div style="font-size:.75rem;color:var(--t3);">Awaiting your review</div>
+        </div>
+        <div class="card" style="cursor:pointer;" onclick="goto('staff-reports',null)">
+          <div class="ct" style="margin-bottom:8px;">👨‍🏫 Staff Activity</div>
+          <div id="active-staff-count" style="font-size:2rem;font-weight:900;
+            font-family:var(--serif);color:var(--teal);">0</div>
+          <div style="font-size:.75rem;color:var(--t3);">Teachers active this term</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LESSON NOTES -->
+    <div class="page" id="page-lesson-notes">
+      <div class="ph">
+        <div>
+          <div class="ph-title">Lesson Notes Review</div>
+          <div class="ph-sub">Review and approve lesson notes from class teachers and HODs</div>
+        </div>
+        <div class="ph-actions">
+          <select class="fi btn-sm" id="filter-subject" style="height:36px;width:140px;"
+            onchange="renderLessonNotes()">
+            <option value="">All Subjects</option>
+            <option>Mathematics</option><option>English</option><option>Basic Science</option>
+            <option>Social Studies</option><option>Physics</option><option>Chemistry</option>
+            <option>Biology</option><option>Economics</option><option>Government</option>
+          </select>
+          <select class="fi btn-sm" id="filter-status" style="height:36px;width:120px;"
+            onchange="renderLessonNotes()">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="returned">Returned</option>
+          </select>
+        </div>
+      </div>
+      <div id="lesson-notes-list">
+        <div class="lesson-card">
+          <div class="lc-head">
+            <div>
+              <div class="lc-title">Mathematics — Quadratic Equations</div>
+              <div class="lc-meta">👨‍🏫 Mr. Adeyemi · SS 2 Science · Week 3</div>
+            </div>
+            <span class="badge b-warn">Pending Review</span>
+          </div>
+          <div class="lc-body">
+            Topic: Solving quadratic equations by factorization and formula method.
+            Objectives: Students will be able to solve quadratic equations using three methods.
+            Materials: Textbook, chalk, ruler.
+          </div>
+          <div class="lc-actions">
+            <button class="btn btn-ok btn-xs" onclick="approveNote(this,'Mathematics — Quadratic Equations')">✅ Approve</button>
+            <button class="btn btn-err btn-xs" onclick="returnNote(this)">↩ Return</button>
+            <button class="btn btn-ghost btn-xs" onclick="viewNoteDetail(this)">👁 View Full</button>
+          </div>
+        </div>
+        <div class="lesson-card">
+          <div class="lc-head">
+            <div>
+              <div class="lc-title">English Language — Essay Writing</div>
+              <div class="lc-meta">👩‍🏫 Mrs. Okafor · SS 3 Commercial · Week 3</div>
+            </div>
+            <span class="badge b-ok">Approved</span>
+          </div>
+          <div class="lc-body">
+            Topic: Argumentative essay writing techniques. Objectives: Students will master
+            structured essay formats for WAEC examinations.
+          </div>
+          <div class="lc-actions">
+            <button class="btn btn-ghost btn-xs" onclick="viewNoteDetail(this)">👁 View Full</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS OVERVIEW -->
+    <div class="page" id="page-results">
+      <div class="ph">
+        <div>
+          <div class="ph-title">Results Overview</div>
+          <div class="ph-sub">Monitor academic results across all classes</div>
+        </div>
+        <div class="ph-actions">
+          <button class="btn btn-purple btn-sm" onclick="window.open('rsms-results-print.html','_blank')">🖨 Print Result Cards</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ct">📝 Score Entry Status by Class</div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>Class</th><th>Class Teacher</th><th>Subjects</th>
+              <th>Scores Entered</th><th>Completion</th><th>Action</th>
+            </tr></thead>
+            <tbody id="results-tbody">
+              <tr><td colspan="6" style="text-align:center;padding:28px;color:var(--t4);">
+                No results data — teachers need to enter scores first
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIMETABLE -->
+    <div class="page" id="page-timetable">
+      <div class="ph">
+        <div><div class="ph-title">School Timetable</div>
+        <div class="ph-sub">Manage class timetables for all classes</div></div>
+        <div class="ph-actions">
+          <button class="btn btn-purple btn-sm" onclick="openM('m-timetable')">+ Create Timetable</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ct">🗓 Select Class to View Timetable</div>
+        <select class="fi" id="tt-class" onchange="renderTimetable()" style="max-width:220px;margin-bottom:14px;">
+          <option value="">— Select Class —</option>
+          <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
+          <option>SS 1 Science</option><option>SS 1 Commercial</option><option>SS 1 Art</option>
+          <option>SS 2 Science</option><option>SS 2 Commercial</option><option>SS 2 Art</option>
+          <option>SS 3 Science</option><option>SS 3 Commercial</option><option>SS 3 Art</option>
+        </select>
+        <div id="tt-display" style="overflow-x:auto;">
+          <div style="text-align:center;padding:30px;color:var(--t4);">Select a class to view timetable</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div class="page" id="page-attendance">
+      <div class="ph">
+        <div><div class="ph-title">Attendance Overview</div></div>
+      </div>
+      <div class="stats">
+        <div class="stat-card stat-ok">
+          <div class="stat-val" id="att-present">—</div>
+          <div class="stat-lbl">Present Today</div>
+        </div>
+        <div class="stat-card stat-err" style="--err:var(--danger);">
+          <div class="stat-val" id="att-absent">—</div>
+          <div class="stat-lbl">Absent Today</div>
+        </div>
+        <div class="stat-card stat-purple">
+          <div class="stat-val" id="att-rate">—%</div>
+          <div class="stat-lbl">Attendance Rate</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ct">📋 Attendance by Class Today</div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>Class</th><th>Present</th><th>Absent</th><th>Rate</th><th>Teacher</th></tr></thead>
+            <tbody id="att-tbody">
+              <tr><td colspan="5" style="text-align:center;padding:28px;color:var(--t4);">
+                No attendance recorded today
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAFF REPORTS -->
+    <div class="page" id="page-staff-reports">
+      <div class="ph">
+        <div><div class="ph-title">Staff Reports</div>
+        <div class="ph-sub">Review class teacher and subject teacher reports</div></div>
+        <div class="ph-actions">
+          <button class="btn btn-purple btn-sm" onclick="openM('m-vp-msg')">📩 Send Message</button>
+        </div>
+      </div>
+      <div id="staff-reports-list"></div>
+    </div>
+
+    <!-- HOD REPORTS -->
+    <div class="page" id="page-hod-reports">
+      <div class="ph">
+        <div><div class="ph-title">HOD Department Reports</div>
+        <div class="ph-sub">Review reports from Heads of Department</div></div>
+      </div>
+      <div id="hod-reports-list">
+        <div class="report-item">
+          <div style="font-weight:700;color:var(--t1);margin-bottom:4px;">Sciences Department</div>
+          <div style="font-size:.78rem;color:var(--t3);margin-bottom:6px;">HOD: Mr. Afolabi · Week 3 Report</div>
+          <div style="font-size:.82rem;color:var(--t2);">All lesson notes submitted on time. 
+            Students performance in Physics improved by 12%. Chemistry practical scheduled for next week.</div>
+          <div style="margin-top:8px;display:flex;gap:7px;">
+            <button class="btn btn-ok btn-xs">✅ Acknowledge</button>
+            <button class="btn btn-ghost btn-xs">💬 Reply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTICE BOARD -->
+    <div class="page" id="page-notice-board">
+      <div class="ph">
+        <div><div class="ph-title">Notice Board</div></div>
+        <div class="ph-actions">
+          <button class="btn btn-purple btn-sm" onclick="openM('m-notice')">📣 Post Notice</button>
+        </div>
+      </div>
+      <div id="notices-list"></div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="page" id="page-messages">
+      <div class="ph">
+        <div><div class="ph-title">Messages</div></div>
+        <div class="ph-actions">
+          <button class="btn btn-purple btn-sm" onclick="openM('m-vp-msg')">✏️ New Message</button>
+        </div>
+      </div>
+      <div id="msgs-list">
+        <div style="text-align:center;padding:40px;color:var(--t4);">No messages yet</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-ov" id="m-notice">
+  <div class="modal">
+    <div class="m-head">
+      <div class="m-title">📣 Post Notice</div>
+      <button class="m-close" onclick="closeM('m-notice')">✕</button>
+    </div>
+    <div class="fg"><label>Notice Title *</label>
+      <input class="fi" id="nt-title" placeholder="e.g. Mid-term examination schedule"/></div>
+    <div class="fg"><label>Message *</label>
+      <textarea class="fi" id="nt-body" rows="4" placeholder="Type your notice here..."></textarea></div>
+    <div class="f2">
+      <div class="fg"><label>Target</label>
+        <select class="fi" id="nt-target">
+          <option>All Staff</option><option>Class Teachers</option>
+          <option>HODs</option><option>All Students</option><option>Everyone</option>
+        </select>
+      </div>
+      <div class="fg"><label>Priority</label>
+        <select class="fi" id="nt-priority">
+          <option>Normal</option><option>Important</option><option>Urgent</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeM('m-notice')" style="flex:1;">Cancel</button>
+      <button class="btn btn-purple" onclick="postNotice()" style="flex:2;">📣 Post Notice</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="m-vp-msg">
+  <div class="modal">
+    <div class="m-head">
+      <div class="m-title">💬 Send Message to Staff</div>
+      <button class="m-close" onclick="closeM('m-vp-msg')">✕</button>
+    </div>
+    <div class="fg"><label>To *</label>
+      <select class="fi" id="msg-to" id="msg-to">
+        <option value="">— Select Staff —</option>
+      </select>
+    </div>
+    <div class="fg"><label>Subject</label>
+      <input class="fi" id="msg-subj" placeholder="Message subject"/></div>
+    <div class="fg"><label>Message *</label>
+      <textarea class="fi" id="msg-body" rows="4" placeholder="Type your message..."></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeM('m-vp-msg')" style="flex:1;">Cancel</button>
+      <button class="btn btn-purple" onclick="sendVPMsg()" style="flex:2;">📩 Send</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="m-return-note">
+  <div class="modal">
+    <div class="m-head">
+      <div class="m-title">↩ Return Lesson Note</div>
+      <button class="m-close" onclick="closeM('m-return-note')">✕</button>
+    </div>
+    <div class="fg"><label>Reason for Return *</label>
+      <textarea class="fi" id="return-reason" rows="4"
+        placeholder="Explain what needs to be corrected..."></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeM('m-return-note')" style="flex:1;">Cancel</button>
+      <button class="btn btn-err" onclick="confirmReturn()" style="flex:2;">↩ Return to Teacher</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI FAB -->
+<button class="ai-fab" onclick="window.open('rsms-voice-ai.html','_blank')" title="AI Assistant">🤖</button>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var DB = {
+  school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School","term":"First Term","session":"2025/2026"}'),
+  students: JSON.parse(localStorage.getItem('rsms_students')||'[]'),
+  staff: JSON.parse(localStorage.getItem('rsms_staff')||'[]'),
+  scores: JSON.parse(localStorage.getItem('rsms_scores')||'{}'),
+  attendance: JSON.parse(localStorage.getItem('rsms_attendance')||'{}'),
+  notices: JSON.parse(localStorage.getItem('rsms_notices')||'[]'),
+  lessonNotes: JSON.parse(localStorage.getItem('rsms_lesson_notes')||'[]'),
+  vpMessages: JSON.parse(localStorage.getItem('rsms_vp_messages')||'[]')
+};
+
+function save(key){ localStorage.setItem('rsms_'+key, JSON.stringify(DB[key])); }
+
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.className='toast show '+(type||'i');
+  t.textContent=msg;clearTimeout(t._t);
+  t._t=setTimeout(function(){t.classList.remove('show');},3500);
+}
+
+function openM(id){ document.getElementById(id).classList.add('open'); }
+function closeM(id){ document.getElementById(id).classList.remove('open'); }
+
+function goto(page, el){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.sb-item').forEach(function(i){i.classList.remove('active');});
+  document.getElementById('page-'+page).classList.add('active');
+  if(el) el.classList.add('active');
+  renderPage(page);
+}
+
+function renderPage(page){
+  if(page==='dashboard') renderDashboard();
+  else if(page==='lesson-notes') renderLessonNotes();
+  else if(page==='staff-reports') renderStaffReports();
+  else if(page==='notice-board') renderNotices();
+  else if(page==='attendance') renderAttendance();
+  else if(page==='results') renderResults();
+}
+
+function renderDashboard(){
+  var classes=[...new Set(DB.students.map(function(s){return s.class||'';}).filter(Boolean))];
+  var teachers=DB.staff.filter(function(s){return ['Teacher','Class Teacher','HOD','Subject Teacher'].indexOf(s.role)>-1;});
+  var pendingNotes=DB.lessonNotes.filter(function(n){return n.status==='pending';}).length;
+  document.getElementById('st-classes').textContent=classes.length||'—';
+  document.getElementById('st-teachers').textContent=teachers.length||'—';
+  document.getElementById('st-students').textContent=DB.students.length||'—';
+  document.getElementById('st-notes').textContent=pendingNotes;
+  document.getElementById('pending-notes-count').textContent=pendingNotes;
+  document.getElementById('active-staff-count').textContent=teachers.length;
+
+  // Class performance table
+  var tbody=document.getElementById('perf-tbody');
+  if(!classes.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--t4);">No class data yet</td></tr>'; return; }
+  tbody.innerHTML=classes.map(function(cls){
+    var studs=DB.students.filter(function(s){return s.class===cls;});
+    var ct=DB.staff.find(function(s){return s.myClass===cls&&s.role==='Class Teacher';});
+    return '<tr>'+
+      '<td style="font-weight:700;color:var(--t1);">'+cls+'</td>'+
+      '<td>'+(ct?ct.name:'<span style="color:var(--danger);">⚠️ Unassigned</span>')+'</td>'+
+      '<td>'+studs.length+'</td>'+
+      '<td style="color:var(--gold);">—</td>'+
+      '<td>—</td>'+
+      '<td><span class="badge '+(ct?'b-ok':'b-err')+'">'+(ct?'Active':'No Teacher')+'</span></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function renderLessonNotes(){
+  var subj=document.getElementById('filter-subject').value;
+  var status=document.getElementById('filter-status').value;
+  var notes=DB.lessonNotes.filter(function(n){
+    return (!subj||n.subject===subj)&&(!status||n.status===status);
+  });
+  var el=document.getElementById('lesson-notes-list');
+  if(!notes.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--t4);">No lesson notes submitted yet. Teachers submit notes from their portals.</div>';
+    return;
+  }
+  el.innerHTML=notes.map(function(n,i){
+    var sc=n.status==='approved'?'b-ok':n.status==='returned'?'b-err':'b-warn';
+    return '<div class="lesson-card" id="ln-'+i+'">'+
+      '<div class="lc-head"><div>'+
+        '<div class="lc-title">'+n.subject+' — '+n.topic+'</div>'+
+        '<div class="lc-meta">👨‍🏫 '+n.teacher+' · '+n.class+' · Week '+n.week+'</div>'+
+      '</div><span class="badge '+sc+'">'+n.status.charAt(0).toUpperCase()+n.status.slice(1)+'</span></div>'+
+      '<div class="lc-body">'+(n.objectives||'')+'</div>'+
+      '<div class="lc-actions">'+
+        (n.status==='pending'?
+          '<button class="btn btn-ok btn-xs" onclick="approveNote(this,\''+n.topic+'\')">✅ Approve</button>'+
+          '<button class="btn btn-err btn-xs" onclick="returnNote(this)">↩ Return</button>':'')+
+        '<button class="btn btn-ghost btn-xs">👁 View</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+var currentReturnCard=null;
+function approveNote(btn, title){
+  var card=btn.closest('.lesson-card');
+  card.querySelector('.badge').className='badge b-ok';
+  card.querySelector('.badge').textContent='Approved';
+  btn.closest('.lc-actions').innerHTML='<button class="btn btn-ghost btn-xs">👁 View</button>';
+  toast('✅ Lesson note approved: '+title,'s');
+}
+function returnNote(btn){
+  currentReturnCard=btn.closest('.lesson-card');
+  openM('m-return-note');
+}
+function confirmReturn(){
+  var reason=document.getElementById('return-reason').value.trim();
+  if(!reason){toast('Enter reason for returning','e');return;}
+  if(currentReturnCard){
+    currentReturnCard.querySelector('.badge').className='badge b-err';
+    currentReturnCard.querySelector('.badge').textContent='Returned';
+    currentReturnCard.querySelector('.lc-actions').innerHTML=
+      '<button class="btn btn-ghost btn-xs">👁 View</button>';
+  }
+  document.getElementById('return-reason').value='';
+  closeM('m-return-note');
+  toast('↩ Lesson note returned to teacher','i');
+}
+function viewNoteDetail(btn){
+  toast('Full lesson note view coming soon','i');
+}
+
+function renderStaffReports(){
+  var teachers=DB.staff.filter(function(s){
+    return ['Teacher','Class Teacher','HOD','Subject Teacher'].indexOf(s.role)>-1;
+  });
+  var el=document.getElementById('staff-reports-list');
+  if(!teachers.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--t4);">No teaching staff added yet</div>';
+    return;
+  }
+  el.innerHTML=teachers.map(function(s){
+    return '<div class="report-item">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'+
+        '<div style="font-weight:700;color:var(--t1);">'+s.name+'</div>'+
+        '<span class="badge b-ok">'+s.role+'</span>'+
+      '</div>'+
+      '<div style="font-size:.78rem;color:var(--t3);margin-bottom:6px;">'+
+        (s.myClass||s.dept||'—')+' · '+( s.subjects||'—')+'</div>'+
+      '<div style="display:flex;gap:7px;">'+
+        '<button class="btn btn-ghost btn-xs" onclick="sendMsgTo(\''+s.name+'\')">💬 Message</button>'+
+        '<button class="btn btn-ghost btn-xs">📊 View Report</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+function renderNotices(){
+  var el=document.getElementById('notices-list');
+  if(!DB.notices.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--t4);">No notices posted yet</div>';
+    return;
+  }
+  el.innerHTML=DB.notices.map(function(n){
+    var pc=n.priority==='Urgent'?'b-err':n.priority==='Important'?'b-warn':'b-mute';
+    return '<div class="notice-item">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'+
+        '<div class="notice-title">'+n.title+'</div>'+
+        '<span class="badge '+pc+'">'+n.priority+'</span>'+
+      '</div>'+
+      '<div class="notice-body">'+n.body+'</div>'+
+      '<div class="notice-meta">To: '+n.target+' · '+new Date(n.at).toLocaleDateString()+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+function renderAttendance(){
+  var today=new Date().toDateString();
+  var att=DB.attendance[today]||{};
+  var totalPresent=0,totalAbsent=0;
+  Object.keys(att).forEach(function(cls){
+    totalPresent+=(att[cls].present||0);
+    totalAbsent+=(att[cls].absent||0);
+  });
+  var total=totalPresent+totalAbsent;
+  document.getElementById('att-present').textContent=totalPresent||'—';
+  document.getElementById('att-absent').textContent=totalAbsent||'—';
+  document.getElementById('att-rate').textContent=total?Math.round(totalPresent/total*100)+'%':'—%';
+  var tbody=document.getElementById('att-tbody');
+  if(!Object.keys(att).length){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--t4);">No attendance recorded today</td></tr>';
+    return;
+  }
+  tbody.innerHTML=Object.keys(att).map(function(cls){
+    var d=att[cls];
+    var p=d.present||0,a=d.absent||0,t=p+a;
+    var ct=DB.staff.find(function(s){return s.myClass===cls;});
+    return '<tr><td style="font-weight:700;color:var(--t1);">'+cls+'</td>'+
+      '<td style="color:var(--success);">'+p+'</td>'+
+      '<td style="color:var(--danger);">'+a+'</td>'+
+      '<td>'+(t?Math.round(p/t*100)+'%':'—')+'</td>'+
+      '<td>'+(ct?ct.name:'—')+'</td></tr>';
+  }).join('');
+}
+
+function renderResults(){
+  var classes=[...new Set(DB.students.map(function(s){return s.class||'';}).filter(Boolean))];
+  var tbody=document.getElementById('results-tbody');
+  if(!classes.length){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--t4);">No results data yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML=classes.map(function(cls){
+    var studs=DB.students.filter(function(s){return s.class===cls;});
+    var ct=DB.staff.find(function(s){return s.myClass===cls;});
+    return '<tr>'+
+      '<td style="font-weight:700;color:var(--t1);">'+cls+'</td>'+
+      '<td>'+(ct?ct.name:'—')+'</td>'+
+      '<td>—</td>'+
+      '<td style="color:var(--warn);">0/'+studs.length+' students</td>'+
+      '<td><div style="background:var(--line2);border-radius:4px;height:6px;overflow:hidden;">'+
+        '<div style="background:var(--warn);height:100%;width:0%;border-radius:4px;"></div></div></td>'+
+      '<td><button class="btn btn-ghost btn-xs">View</button></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function postNotice(){
+  var title=document.getElementById('nt-title').value.trim();
+  var body=document.getElementById('nt-body').value.trim();
+  if(!title||!body){toast('Fill title and message','e');return;}
+  DB.notices.unshift({
+    title:title,body:body,
+    target:document.getElementById('nt-target').value,
+    priority:document.getElementById('nt-priority').value,
+    at:new Date().toISOString(),by:'VP Academic'
+  });
+  save('notices');
+  ['nt-title','nt-body'].forEach(function(id){document.getElementById(id).value='';});
+  closeM('m-notice');
+  toast('📣 Notice posted to '+document.getElementById('nt-target').value,'s');
+}
+
+function sendMsgTo(name){
+  document.getElementById('msg-to').value=name;
+  openM('m-vp-msg');
+}
+
+function sendVPMsg(){
+  var to=document.getElementById('msg-to').value;
+  var body=document.getElementById('msg-body').value.trim();
+  if(!to||!body){toast('Select recipient and type message','e');return;}
+  toast('✅ Message sent to '+to,'s');
+  closeM('m-vp-msg');
+  ['msg-subj','msg-body'].forEach(function(id){document.getElementById(id).value='';});
+}
+
+function populateMsgTo(){
+  var sel=document.getElementById('msg-to');
+  sel.innerHTML='<option value="">— Select Staff —</option>'+
+    DB.staff.map(function(s){return '<option>'+s.name+'</option>';}).join('');
+}
+
+// Render timetable
+var DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday'];
+var PERIODS=['8:00','9:00','10:00','11:00','12:00','1:00','2:00','3:00'];
+function renderTimetable(){
+  var cls=document.getElementById('tt-class').value;
+  if(!cls){document.getElementById('tt-display').innerHTML='<div style="text-align:center;padding:28px;color:var(--t4);">Select a class</div>';return;}
+  var tt=JSON.parse(localStorage.getItem('rsms_tt_'+cls)||'{}');
+  var html='<table style="border-collapse:collapse;font-size:.75rem;min-width:600px;width:100%;">'+
+    '<tr><th style="background:var(--card2);padding:8px 10px;border:1px solid var(--line);color:var(--t3);">Period</th>'+
+    DAYS.map(function(d){return '<th style="background:var(--card2);padding:8px 10px;border:1px solid var(--line);color:var(--gold);">'+d+'</th>';}).join('')+
+    '</tr>'+
+    PERIODS.map(function(p){
+      return '<tr><td style="padding:7px 10px;border:1px solid var(--line);color:var(--t3);font-weight:600;white-space:nowrap;">'+p+'</td>'+
+        DAYS.map(function(d){
+          var subj=(tt[d]&&tt[d][p])||'';
+          return '<td style="padding:7px 10px;border:1px solid var(--line);color:var(--t2);'+
+            'cursor:pointer;transition:background .15s;" '+
+            'onclick="editTT(this,\''+d+'\',\''+p+'\',\''+cls+'\')" '+
+            'ondblclick="editTT(this,\''+d+'\',\''+p+'\',\''+cls+'\')">'+(subj||'<span style="color:var(--t4);">—</span>')+'</td>';
+        }).join('')+'</tr>';
+    }).join('')+
+  '</table>';
+  document.getElementById('tt-display').innerHTML=html;
+}
+
+function editTT(cell,day,period,cls){
+  var cur=cell.textContent.trim()==='—'?'':cell.textContent.trim();
+  var subj=prompt('Subject for '+day+' '+period+' ('+cls+'):',cur);
+  if(subj===null)return;
+  var tt=JSON.parse(localStorage.getItem('rsms_tt_'+cls)||'{}');
+  if(!tt[day])tt[day]={};
+  tt[day][period]=subj;
+  localStorage.setItem('rsms_tt_'+cls,JSON.stringify(tt));
+  cell.innerHTML=subj||'<span style="color:var(--t4);">—</span>';
+  toast('Timetable updated','s');
+}
+
+window.addEventListener('load',function(){
+  var school=DB.school;
+  document.getElementById('sb-sname').textContent=school.name||'School';
+  document.getElementById('sb-sterm').textContent=(school.term||'First Term')+' · '+(school.session||'2025/2026');
+  document.getElementById('tb-sub').textContent=school.name||'School';
+  var user=JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"VP Academic"}');
+  document.getElementById('sb-uname').textContent=user.name||'VP Academic';
+  document.getElementById('sb-av').textContent=(user.name||'VP').charAt(0).toUpperCase();
+  populateMsgTo();
+  renderDashboard();
+});
+</script>
+</body>
+</html>
