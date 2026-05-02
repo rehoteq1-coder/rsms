@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" href="icon-192.png"/>
 <title>RSMS — Teacher Portal</title>
 <script src="rsms-school-detect.js"></script>
+<script src="rsms-subjects.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 :root{
@@ -161,6 +162,51 @@ textarea.fi{min-height:70px;resize:vertical;}
   .content{padding:14px;}
 }
 @media(max-width:480px){.g2,.g3,.g4{grid-template-columns:1fr;}}
+
+/* ════════════════════════════════════
+   RSMS UNIVERSAL RESPONSIVE LAYOUT
+   Include this in ALL portals
+════════════════════════════════════ */
+:root { --sb-width: 220px; }
+
+/* Desktop: sidebar always visible */
+@media (min-width: 900px) {
+  .main { display: flex !important; }
+  .sidebar, .sb { 
+    width: var(--sb-width) !important;
+    position: sticky !important;
+    top: 0;
+    height: 100vh;
+    transform: none !important;
+    flex-shrink: 0;
+    display: flex !important;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .content { flex: 1 !important; overflow-y: auto; height: 100vh; }
+  .menu-btn, .sb-toggle { display: none !important; }
+  .sb-ov, .sb-overlay, .sidebar-overlay { display: none !important; }
+}
+
+/* Mobile: sidebar overlay */
+@media (max-width: 899px) {
+  .main { display: block !important; position: relative; }
+  .sidebar, .sb {
+    position: fixed !important;
+    left: 0; top: 0;
+    height: 100vh !important;
+    width: 260px !important;
+    transform: translateX(-100%) !important;
+    z-index: 200 !important;
+    transition: transform .28s ease !important;
+  }
+  .sidebar.open, .sb.open {
+    transform: translateX(0) !important;
+  }
+  .content { width: 100% !important; height: calc(100vh - 60px); overflow-y: auto; }
+  .menu-btn, .sb-toggle { display: flex !important; }
+}
+
 </style>
 </head>
 <body>
