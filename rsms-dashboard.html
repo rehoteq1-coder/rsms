@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#1a1f5e"/>
+<title>RSMS — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="rsms-school-detect.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --blue:#1a1f5e;--blue2:#2d3490;--bluem:#3b82f6;
+  --gold:#d4a843;--goldl:rgba(212,168,67,.12);
+  --green:#22c55e;--greenl:rgba(34,197,94,.1);
+  --red:#f43f5e;--redl:rgba(244,63,94,.1);
+  --purple:#8b5cf6;
+  --white:#fff;--off:#f8faff;--card:#fff;
+  --t1:#111827;--t2:#374151;--t3:#6b7280;--t4:#9ca3af;
+  --line:#e5e7eb;--line2:#d1d5db;
+  --sans:'Outfit',sans-serif;--serif:'Fraunces',serif;
+  --safe-top:env(safe-area-inset-top);
+  --safe-bot:env(safe-area-inset-bottom);
+  --r:16px;--r2:12px;--r3:8px;
+}
+html,body{height:100%;font-family:var(--sans);background:var(--off);color:var(--t1);overflow:hidden;}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;
+  background:var(--off);position:relative;}
+
+/* ── TOP HEADER ── */
+.top-header{
+  background:linear-gradient(135deg,var(--blue),var(--blue2));
+  padding:calc(14px + var(--safe-top)) 18px 0;
+  position:relative;overflow:hidden;flex-shrink:0;}
+.th-bg{position:absolute;inset:0;opacity:.06;
+  background-image:radial-gradient(circle,#fff 1px,transparent 1px);
+  background-size:20px 20px;}
+.th-top{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;position:relative;z-index:1;}
+.th-greet{color:rgba(255,255,255,.7);font-size:.75rem;}
+.th-name{color:#fff;font-size:1rem;font-weight:700;}
+.th-avatar{width:40px;height:40px;border-radius:50%;
+  background:var(--gold);display:flex;align-items:center;justify-content:center;
+  font-weight:800;color:#000;font-size:1rem;flex-shrink:0;}
+.th-notif{background:rgba(255,255,255,.15);border:none;border-radius:50%;
+  width:40px;height:40px;color:#fff;font-size:1.1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;}
+
+/* BALANCE CARD */
+.balance-card{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
+  border-radius:14px;padding:14px 16px;margin-bottom:0;
+  display:flex;align-items:center;justify-content:space-between;
+  position:relative;z-index:1;}
+.bc-left{}
+.bc-label{font-size:.7rem;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:4px;}
+.bc-school{font-size:.95rem;font-weight:800;color:#fff;margin-bottom:2px;}
+.bc-role{font-size:.68rem;color:rgba(255,255,255,.5);
+  background:rgba(255,255,255,.12);padding:2px 8px;border-radius:20px;
+  display:inline-block;}
+.bc-right{text-align:right;}
+.bc-stat-label{font-size:.65rem;color:rgba(255,255,255,.55);margin-bottom:2px;}
+.bc-stat-val{font-size:1.3rem;font-weight:900;color:#fff;font-family:var(--serif);}
+.bc-stat-sub{font-size:.65rem;color:rgba(255,255,255,.5);}
+
+/* BANNER CAROUSEL */
+.banner-wrap{
+  padding:14px 0 0;
+  position:relative;z-index:1;}
+.banner-track{
+  display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;
+  padding:0 18px 14px;scrollbar-width:none;}
+.banner-track::-webkit-scrollbar{display:none;}
+.banner-slide{
+  min-width:280px;height:130px;border-radius:14px;flex-shrink:0;
+  scroll-snap-align:start;position:relative;overflow:hidden;cursor:pointer;
+  transition:transform .2s;}
+.banner-slide:active{transform:scale(.97);}
+.bs-bg{position:absolute;inset:0;border-radius:14px;}
+.bs-content{position:relative;z-index:1;padding:16px 18px;height:100%;
+  display:flex;flex-direction:column;justify-content:space-between;}
+.bs-tag{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;
+  background:rgba(255,255,255,.2);padding:3px 9px;border-radius:20px;
+  display:inline-block;margin-bottom:4px;width:fit-content;}
+.bs-title{font-size:1rem;font-weight:800;color:#fff;line-height:1.3;}
+.bs-sub{font-size:.72rem;color:rgba(255,255,255,.75);}
+.bs-action{display:flex;align-items:center;justify-content:space-between;}
+.bs-btn{background:rgba(255,255,255,.2);border:none;border-radius:20px;
+  color:#fff;font-size:.72rem;font-weight:700;padding:5px 12px;cursor:pointer;}
+.bs-emoji{font-size:2rem;opacity:.6;}
+
+/* Carousel dots */
+.banner-dots{display:flex;justify-content:center;gap:5px;margin-top:0;padding:0 18px 10px;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--line2);transition:all .3s;}
+.dot.active{width:18px;border-radius:3px;background:var(--blue);}
+
+/* ── SCROLL CONTENT ── */
+.scroll-content{flex:1;overflow-y:auto;padding:4px 0 calc(80px + var(--safe-bot));}
+.scroll-content::-webkit-scrollbar{display:none;}
+
+/* QUICK ACTIONS */
+.section{padding:16px 18px 0;}
+.sec-title{font-size:.78rem;font-weight:800;color:var(--t3);text-transform:uppercase;
+  letter-spacing:.09em;margin-bottom:12px;}
+
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:4px;}
+.qa-item{background:var(--card);border-radius:12px;padding:14px 8px;
+  text-align:center;cursor:pointer;transition:all .2s;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.qa-item:active{transform:scale(.94);}
+.qa-ico{font-size:1.5rem;margin-bottom:6px;display:block;}
+.qa-label{font-size:.65rem;font-weight:700;color:var(--t2);line-height:1.3;}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 18px;margin-bottom:4px;}
+.stat-tile{background:var(--card);border-radius:14px;padding:16px;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);position:relative;overflow:hidden;}
+.stat-tile::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:3px 3px 0 0;}
+.st-blue::before{background:var(--bluem);}
+.st-gold::before{background:var(--gold);}
+.st-green::before{background:var(--green);}
+.st-red::before{background:var(--red);}
+.st-val{font-size:1.6rem;font-weight:900;font-family:var(--serif);color:var(--t1);}
+.st-label{font-size:.72rem;color:var(--t3);margin-top:2px;font-weight:600;}
+.st-change{font-size:.65rem;margin-top:6px;font-weight:700;}
+.st-up{color:var(--green);}
+.st-down{color:var(--red);}
+
+/* ACTIVITY FEED */
+.activity-list{padding:0 18px;}
+.act-item{background:var(--card);border-radius:12px;padding:13px 14px;
+  margin-bottom:8px;display:flex;align-items:center;gap:12px;
+  box-shadow:0 1px 3px rgba(0,0,0,.05);cursor:pointer;transition:all .2s;}
+.act-item:active{transform:scale(.98);}
+.act-ico{width:42px;height:42px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;flex-shrink:0;}
+.act-blue{background:#eff6ff;}
+.act-gold{background:#fefce8;}
+.act-green{background:#f0fdf4;}
+.act-red{background:#fff1f2;}
+.act-purple{background:#f5f3ff;}
+.act-info{flex:1;}
+.act-title{font-size:.88rem;font-weight:700;color:var(--t1);margin-bottom:2px;}
+.act-sub{font-size:.72rem;color:var(--t3);}
+.act-right{text-align:right;}
+.act-val{font-size:.82rem;font-weight:700;color:var(--t1);}
+.act-time{font-size:.65rem;color:var(--t4);}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:480px;
+  background:#fff;border-top:1px solid var(--line);
+  padding:8px 10px calc(8px + var(--safe-bot));
+  display:flex;gap:4px;z-index:50;
+  box-shadow:0 -4px 20px rgba(0,0,0,.08);}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 4px;border-radius:12px;cursor:pointer;transition:all .2s;border:none;background:none;}
+.bn:active{transform:scale(.93);}
+.bn.active{background:#eff6ff;}
+.bn-ico{font-size:1.3rem;line-height:1;}
+.bn-lbl{font-size:.58rem;font-weight:700;color:var(--t4);letter-spacing:.03em;}
+.bn.active .bn-lbl{color:var(--bluem);}
+.bn.active .bn-ico{filter:none;}
+
+/* AI FAB */
+.ai-fab{position:fixed;bottom:calc(72px + var(--safe-bot));right:16px;z-index:99;
+  width:50px;height:50px;border-radius:50%;
+  background:linear-gradient(135deg,var(--purple),var(--bluem));
+  border:none;cursor:pointer;font-size:1.2rem;
+  box-shadow:0 4px 16px rgba(139,92,246,.4);
+  display:flex;align-items:center;justify-content:center;}
+
+/* Slide-in animation */
+@keyframes slide-up{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+.section{animation:slide-up .3s ease both;}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TOP HEADER -->
+  <div class="top-header">
+    <div class="th-bg"></div>
+    <div class="th-top">
+      <div>
+        <div class="th-greet" id="th-greet">Good morning,</div>
+        <div class="th-name" id="th-name">Loading...</div>
+      </div>
+      <div style="display:flex;gap:9px;align-items:center;">
+        <button class="th-notif" onclick="showNotifs()">🔔</button>
+        <div class="th-avatar" id="th-av">?</div>
+      </div>
+    </div>
+
+    <!-- BALANCE / INFO CARD -->
+    <div class="balance-card">
+      <div class="bc-left">
+        <div class="bc-label" id="bc-label">School</div>
+        <div class="bc-school" id="bc-school">RSMS</div>
+        <div class="bc-role" id="bc-role">Loading...</div>
+      </div>
+      <div class="bc-right">
+        <div class="bc-stat-label" id="bc-stat-label">Term</div>
+        <div class="bc-stat-val" id="bc-stat-val">—</div>
+        <div class="bc-stat-sub" id="bc-stat-sub">2025/2026</div>
+      </div>
+    </div>
+
+    <!-- BANNER CAROUSEL -->
+    <div class="banner-wrap">
+      <div class="banner-track" id="banner-track" onscroll="onBannerScroll()"></div>
+      <div class="banner-dots" id="banner-dots"></div>
+    </div>
+  </div>
+
+  <!-- SCROLL CONTENT -->
+  <div class="scroll-content">
+
+    <!-- QUICK ACTIONS -->
+    <div class="section" style="animation-delay:.05s;">
+      <div class="sec-title">Quick Actions</div>
+      <div class="quick-grid" id="quick-grid"></div>
+    </div>
+
+    <!-- STATS -->
+    <div class="section" style="animation-delay:.1s;">
+      <div class="sec-title">Overview</div>
+      <div class="stats-row" id="stats-row"></div>
+    </div>
+
+    <!-- RECENT ACTIVITY -->
+    <div class="section" style="animation-delay:.15s;">
+      <div class="sec-title">Recent Activity</div>
+      <div class="activity-list" id="activity-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav" id="bottom-nav"></div>
+
+<button class="ai-fab" onclick="window.open('rsms-voice-ai.html','_blank')">🤖</button>
+
+<script>
+var DB = {
+  school:   JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School","term":"First Term","session":"2025/2026"}'),
+  students: JSON.parse(localStorage.getItem('rsms_students')||'[]'),
+  staff:    JSON.parse(localStorage.getItem('rsms_staff')||'[]'),
+  fees:     JSON.parse(localStorage.getItem('rsms_fees')||'[]'),
+  attendance: JSON.parse(localStorage.getItem('rsms_attendance')||'{}')
+};
+var user = JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"User","role":"admin"}');
+var role = (user.role||sessionStorage.getItem('rsms_role')||'admin').toLowerCase();
+
+// ── ROLE CONFIG ──
+var ROLES = {
+  admin: {
+    label:'Administrator',
+    statLabel:'Students',
+    statVal:function(){return DB.students.length;},
+    statSub:'Enrolled',
+    banners:[
+      {bg:'linear-gradient(135deg,#1a1f5e,#3b82f6)',tag:'Admin',title:'Manage Your School',sub:'Students, staff, fees & reports',action:'Open Admin Portal',link:'rsms-admin.html',emoji:'🏫'},
+      {bg:'linear-gradient(135deg,#065f46,#22c55e)',tag:'New',title:'Fee Collection',sub:'Track payments & defaulters',action:'Open Bursar',link:'rsms-bursar.html',emoji:'💰'},
+      {bg:'linear-gradient(135deg,#4c1d95,#8b5cf6)',tag:'Reports',title:'Generate Report Cards',sub:'Print-ready A4 result sheets',action:'Open Results',link:'rsms-results-print.html',emoji:'📄'},
+      {bg:'linear-gradient(135deg,#92400e,#d4a843)',tag:'Staff',title:'Staff Attendance',sub:'Clock in/out & activity log',action:'Open Clock',link:'rsms-clock.html',emoji:'⏱'}
+    ],
+    quickActions:[
+      {ico:'👨‍🎓',label:'Students',link:'rsms-admin.html'},
+      {ico:'👨‍🏫',label:'Staff',link:'rsms-admin.html'},
+      {ico:'💰',label:'Fees',link:'rsms-bursar.html'},
+      {ico:'📄',label:'Results',link:'rsms-results-print.html'},
+      {ico:'📱',label:'QR Codes',link:'rsms-qrcodes.html'},
+      {ico:'⏱',label:'Clock',link:'rsms-clock.html'},
+      {ico:'📣',label:'Notices',link:'rsms-vp.html'},
+      {ico:'⚙️',label:'Settings',link:'rsms-admin.html'}
+    ],
+    stats:[
+      {val:function(){return DB.students.length;},label:'Total Students',cls:'st-blue'},
+      {val:function(){return DB.staff.length;},label:'Teaching Staff',cls:'st-gold'},
+      {val:function(){
+        var t=DB.fees.reduce(function(s,f){return s+parseFloat(f.amount||0);},0);
+        return '₦'+Math.round(t/1000)+'k';
+      },label:'Fees Collected',cls:'st-green'},
+      {val:function(){
+        var cls=[...new Set(DB.students.map(function(s){return s.class||'';}))].filter(Boolean).length;
+        return cls;
+      },label:'Active Classes',cls:'st-red'}
+    ],
+    nav:[
+      {ico:'🏠',label:'Home',active:true,link:'rsms-dashboard.html'},
+      {ico:'👨‍🎓',label:'Students',link:'rsms-admin.html'},
+      {ico:'💰',label:'Finance',link:'rsms-bursar.html'},
+      {ico:'📊',label:'Reports',link:'rsms-results-print.html'},
+      {ico:'⚙️',label:'Settings',link:'rsms-admin.html'}
+    ]
+  },
+  bursar: {
+    label:'Bursar',
+    statLabel:'Collected',
+    statVal:function(){
+      var t=DB.fees.reduce(function(s,f){return s+parseFloat(f.amount||0);},0);
+      return '₦'+t.toLocaleString('en-NG');
+    },
+    statSub:'This Term',
+    banners:[
+      {bg:'linear-gradient(135deg,#065f46,#22c55e)',tag:'Finance',title:'Record Fee Payment',sub:'Search student, enter amount',action:'Record Payment',link:'rsms-bursar.html',emoji:'💰'},
+      {bg:'linear-gradient(135deg,#1a1f5e,#3b82f6)',tag:'Reports',title:'Fee Reports & Ledger',sub:'View all transactions',action:'View Ledger',link:'rsms-bursar.html',emoji:'📒'},
+      {bg:'linear-gradient(135deg,#92400e,#d4a843)',tag:'New',title:'Generate Receipt',sub:'Print official school receipt',action:'Open Generator',link:'rsms-receipt.html',emoji:'🧾'}
+    ],
+    quickActions:[
+      {ico:'💰',label:'Record Fee',link:'rsms-bursar.html'},
+      {ico:'🧾',label:'Receipt',link:'rsms-receipt.html'},
+      {ico:'📒',label:'Ledger',link:'rsms-bursar.html'},
+      {ico:'📊',label:'Reports',link:'rsms-bursar.html'}
+    ],
+    stats:[
+      {val:function(){var t=DB.fees.reduce(function(s,f){return s+parseFloat(f.amount||0);},0);return '₦'+Math.round(t/1000)+'k';},label:'Total Collected',cls:'st-green'},
+      {val:function(){return DB.fees.length;},label:'Receipts Issued',cls:'st-blue'},
+      {val:function(){return DB.students.length;},label:'Students',cls:'st-gold'},
+      {val:function(){
+        var paid=new Set(DB.fees.map(function(f){return f.stuId;})).size;
+        return DB.students.length-paid;
+      },label:'Defaulters',cls:'st-red'}
+    ],
+    nav:[
+      {ico:'🏠',label:'Home',active:true,link:'rsms-dashboard.html'},
+      {ico:'💰',label:'Record',link:'rsms-bursar.html'},
+      {ico:'📒',label:'Ledger',link:'rsms-bursar.html'},
+      {ico:'🧾',label:'Receipt',link:'rsms-receipt.html'},
+      {ico:'📊',label:'Reports',link:'rsms-bursar.html'}
+    ]
+  },
+  teacher: {
+    label:'Teacher',
+    statLabel:'My Students',
+    statVal:function(){return DB.students.length;},
+    statSub:'This Term',
+    banners:[
+      {bg:'linear-gradient(135deg,#1a1f5e,#3b82f6)',tag:'Attendance',title:'Mark Class Register',sub:'QR scan or manual entry',action:'Take Attendance',link:'rsms-classteacher.html',emoji:'✅'},
+      {bg:'linear-gradient(135deg,#4c1d95,#8b5cf6)',tag:'Scores',title:'Enter Student Scores',sub:'CA1, CA2 and Exam scores',action:'Enter Scores',link:'rsms-results-print.html',emoji:'📝'},
+      {bg:'linear-gradient(135deg,#065f46,#22c55e)',tag:'Notes',title:'Lesson Notes & Diary',sub:'Submit to HOD for review',action:'Open Diary',link:'rsms-classteacher.html',emoji:'📖'}
+    ],
+    quickActions:[
+      {ico:'✅',label:'Attendance',link:'rsms-classteacher.html'},
+      {ico:'📝',label:'Scores',link:'rsms-results-print.html'},
+      {ico:'📖',label:'Lesson Notes',link:'rsms-classteacher.html'},
+      {ico:'👨‍🎓',label:'Students',link:'rsms-classteacher.html'}
+    ],
+    stats:[
+      {val:function(){return DB.students.length;},label:'My Students',cls:'st-blue'},
+      {val:function(){return subjects||0;},label:'Subjects',cls:'st-gold'},
+      {val:function(){return '—';},label:'Avg Score',cls:'st-green'},
+      {val:function(){return '—';},label:'Attendance %',cls:'st-purple'}
+    ],
+    nav:[
+      {ico:'🏠',label:'Home',active:true,link:'rsms-dashboard.html'},
+      {ico:'✅',label:'Attendance',link:'rsms-classteacher.html'},
+      {ico:'📝',label:'Scores',link:'rsms-results-print.html'},
+      {ico:'📖',label:'Lessons',link:'rsms-classteacher.html'},
+      {ico:'👤',label:'Profile',link:'rsms-teacher.html'}
+    ]
+  },
+  student: {
+    label:'Student',
+    statLabel:'My Results',
+    statVal:function(){return '—';},
+    statSub:'This Term',
+    banners:[
+      {bg:'linear-gradient(135deg,#4c1d95,#8b5cf6)',tag:'Results',title:'View My Results',sub:'Check your term scores',action:'View Results',link:'rsms-student.html',emoji:'📊'},
+      {bg:'linear-gradient(135deg,#065f46,#22c55e)',tag:'Fees',title:'Fee Payment Status',sub:'Check what you owe',action:'Check Fees',link:'rsms-student.html',emoji:'💰'},
+      {bg:'linear-gradient(135deg,#1a1f5e,#3b82f6)',tag:'School',title:'School Activities',sub:'Notices & announcements',action:'View Notices',link:'rsms-student.html',emoji:'📣'}
+    ],
+    quickActions:[
+      {ico:'📊',label:'My Results',link:'rsms-student.html'},
+      {ico:'💰',label:'Fees',link:'rsms-student.html'},
+      {ico:'📅',label:'Timetable',link:'rsms-student.html'},
+      {ico:'📣',label:'Notices',link:'rsms-student.html'}
+    ],
+    stats:[
+      {val:function(){return '—';},label:'Average Score',cls:'st-blue'},
+      {val:function(){return '—';},label:'Position',cls:'st-gold'},
+      {val:function(){return '—';},label:'Attendance',cls:'st-green'},
+      {val:function(){return '—';},label:'Fees Status',cls:'st-red'}
+    ],
+    nav:[
+      {ico:'🏠',label:'Home',active:true,link:'rsms-dashboard.html'},
+      {ico:'📊',label:'Results',link:'rsms-student.html'},
+      {ico:'💰',label:'Fees',link:'rsms-student.html'},
+      {ico:'📣',label:'Notices',link:'rsms-student.html'},
+      {ico:'👤',label:'Profile',link:'rsms-student.html'}
+    ]
+  },
+  parent: {
+    label:'Parent',
+    statLabel:'My Child',
+    statVal:function(){return DB.students.length>0?DB.students[0].surname||'—':'—';},
+    statSub:'Enrolled',
+    banners:[
+      {bg:'linear-gradient(135deg,#4c1d95,#8b5cf6)',tag:'Results',title:"Child's Results",sub:'View term scores & position',action:'View Results',link:'rsms-parent.html',emoji:'📊'},
+      {bg:'linear-gradient(135deg,#065f46,#22c55e)',tag:'Fees',title:'Fee Payment',sub:'Check balance & receipts',action:'View Fees',link:'rsms-parent.html',emoji:'💰'},
+      {bg:'linear-gradient(135deg,#1a1f5e,#3b82f6)',tag:'Attendance',title:'Attendance Record',sub:'Daily presence tracking',action:'View Attendance',link:'rsms-parent.html',emoji:'✅'}
+    ],
+    quickActions:[
+      {ico:'📊',label:'Results',link:'rsms-parent.html'},
+      {ico:'💰',label:'Fees',link:'rsms-parent.html'},
+      {ico:'✅',label:'Attendance',link:'rsms-parent.html'},
+      {ico:'📣',label:'Notices',link:'rsms-parent.html'}
+    ],
+    stats:[
+      {val:function(){return '—';},label:'Average Score',cls:'st-blue'},
+      {val:function(){return '—';},label:'Position',cls:'st-gold'},
+      {val:function(){return '—';},label:'Attendance',cls:'st-green'},
+      {val:function(){return '—';},label:'Fees Due',cls:'st-red'}
+    ],
+    nav:[
+      {ico:'🏠',label:'Home',active:true,link:'rsms-dashboard.html'},
+      {ico:'📊',label:'Results',link:'rsms-parent.html'},
+      {ico:'💰',label:'Fees',link:'rsms-parent.html'},
+      {ico:'✅',label:'Attendance',link:'rsms-parent.html'},
+      {ico:'👤',label:'Profile',link:'rsms-parent.html'}
+    ]
+  }
+};
+
+// Normalize role
+if(role==='classteacher'||role==='hod')role='teacher';
+if(role==='vp')role='admin';
+var cfg = ROLES[role]||ROLES.admin;
+
+// ── BANNER CAROUSEL ──
+var currentSlide=0;
+function buildBanners(){
+  var track=document.getElementById('banner-track');
+  var dots=document.getElementById('banner-dots');
+  track.innerHTML='';dots.innerHTML='';
+  cfg.banners.forEach(function(b,i){
+    var slide=document.createElement('div');
+    slide.className='banner-slide';
+    slide.onclick=function(){window.location.href=b.link;};
+    slide.innerHTML=
+      '<div class="bs-bg" style="background:'+b.bg+';"></div>'+
+      '<div class="bs-content">'+
+        '<div>'+
+          '<div class="bs-tag">'+b.tag+'</div>'+
+          '<div class="bs-title">'+b.title+'</div>'+
+          '<div class="bs-sub">'+b.sub+'</div>'+
+        '</div>'+
+        '<div class="bs-action">'+
+          '<button class="bs-btn" onclick="event.stopPropagation();window.location.href=\''+b.link+'\'">'+b.action+' →</button>'+
+          '<div class="bs-emoji">'+b.emoji+'</div>'+
+        '</div>'+
+      '</div>';
+    track.appendChild(slide);
+    var dot=document.createElement('div');
+    dot.className='dot'+(i===0?' active':'');
+    dots.appendChild(dot);
+  });
+  // Auto-rotate
+  setInterval(function(){
+    currentSlide=(currentSlide+1)%cfg.banners.length;
+    var slides=track.querySelectorAll('.banner-slide');
+    if(slides[currentSlide]){
+      slides[currentSlide].scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'});
+    }
+    updateDots();
+  },4000);
+}
+function onBannerScroll(){
+  var track=document.getElementById('banner-track');
+  var idx=Math.round(track.scrollLeft/290);
+  currentSlide=idx;
+  updateDots();
+}
+function updateDots(){
+  document.querySelectorAll('.banner-dots .dot').forEach(function(d,i){
+    d.className='dot'+(i===currentSlide?' active':'');
+  });
+}
+
+// ── QUICK ACTIONS ──
+function buildQuickActions(){
+  var grid=document.getElementById('quick-grid');
+  grid.innerHTML='';
+  cfg.quickActions.forEach(function(a){
+    var item=document.createElement('div');
+    item.className='qa-item';
+    item.innerHTML='<span class="qa-ico">'+a.ico+'</span><div class="qa-label">'+a.label+'</div>';
+    item.onclick=function(){window.location.href=a.link;};
+    grid.appendChild(item);
+  });
+}
+
+// ── STATS ──
+function buildStats(){
+  var row=document.getElementById('stats-row');
+  row.innerHTML='';
+  cfg.stats.forEach(function(s){
+    var tile=document.createElement('div');
+    tile.className='stat-tile '+s.cls;
+    var val=typeof s.val==='function'?s.val():s.val;
+    tile.innerHTML='<div class="st-val">'+val+'</div><div class="st-label">'+s.label+'</div>';
+    row.appendChild(tile);
+  });
+}
+
+// ── ACTIVITY ──
+function buildActivity(){
+  var list=document.getElementById('activity-list');
+  var items=[];
+
+  if(role==='admin'||role==='bursar'){
+    DB.fees.slice(-5).reverse().forEach(function(f){
+      items.push({ico:'💰',icoClass:'act-green',title:f.student||'Payment',sub:f.type||'School Fee',val:'₦'+parseFloat(f.amount||0).toLocaleString(),time:f.date||'Today',link:'rsms-bursar.html'});
+    });
+  }
+  if(!items.length){
+    items=[
+      {ico:'🏫',icoClass:'act-blue',title:'Welcome to RSMS',sub:'Your school management system is ready',val:'',time:'Now',link:'rsms-admin.html'},
+      {ico:'👨‍🎓',icoClass:'act-gold',title:DB.students.length+' Students Enrolled',sub:'View and manage student records',val:DB.students.length,time:'',link:'rsms-admin.html'},
+      {ico:'💰',icoClass:'act-green',title:'Start Recording Fees',sub:'Track payments and generate receipts',val:'',time:'',link:'rsms-bursar.html'}
+    ];
+  }
+
+  list.innerHTML='';
+  items.forEach(function(a){
+    var item=document.createElement('div');
+    item.className='act-item';
+    item.onclick=function(){window.location.href=a.link;};
+    item.innerHTML=
+      '<div class="act-ico '+a.icoClass+'">'+a.ico+'</div>'+
+      '<div class="act-info">'+
+        '<div class="act-title">'+a.title+'</div>'+
+        '<div class="act-sub">'+a.sub+'</div>'+
+      '</div>'+
+      '<div class="act-right">'+
+        '<div class="act-val">'+a.val+'</div>'+
+        '<div class="act-time">'+a.time+'</div>'+
+      '</div>';
+    list.appendChild(item);
+  });
+}
+
+// ── BOTTOM NAV ──
+function buildNav(){
+  var nav=document.getElementById('bottom-nav');
+  nav.innerHTML='';
+  cfg.nav.forEach(function(n){
+    var btn=document.createElement('button');
+    btn.className='bn'+(n.active?' active':'');
+    btn.innerHTML='<span class="bn-ico">'+n.ico+'</span><span class="bn-lbl">'+n.lbl+'</span>';
+    // Fix - use label not lbl
+    btn.innerHTML='<span class="bn-ico">'+n.ico+'</span><span class="bn-lbl">'+n.label+'</span>';
+    btn.onclick=function(){if(n.link)window.location.href=n.link;};
+    nav.appendChild(btn);
+  });
+}
+
+// ── HEADER ──
+function buildHeader(){
+  var hr=new Date().getHours();
+  var greet=hr<12?'Good morning,':hr<17?'Good afternoon,':'Good evening,';
+  document.getElementById('th-greet').textContent=greet;
+  document.getElementById('th-name').textContent=user.name||'User';
+  document.getElementById('th-av').textContent=(user.name||'U').charAt(0).toUpperCase();
+  document.getElementById('bc-label').textContent=DB.school.name||'School';
+  document.getElementById('bc-school').textContent=DB.school.name||'RSMS';
+  document.getElementById('bc-role').textContent=cfg.label;
+  document.getElementById('bc-stat-label').textContent=cfg.statLabel;
+  document.getElementById('bc-stat-val').textContent=typeof cfg.statVal==='function'?cfg.statVal():cfg.statVal;
+  document.getElementById('bc-stat-sub').textContent=(DB.school.term||'First Term')+' · '+(DB.school.session||'2025/2026');
+}
+
+function showNotifs(){
+  alert('No new notifications');
+}
+
+// ── INIT ──
+window.addEventListener('load',function(){
+  buildHeader();
+  buildBanners();
+  buildQuickActions();
+  buildStats();
+  buildActivity();
+  buildNav();
+});
+</script>
+</body>
+</html>
