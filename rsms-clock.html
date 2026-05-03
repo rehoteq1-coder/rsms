@@ -782,6 +782,31 @@ window.addEventListener('load',function(){
   // Set today's date as default for history
   document.getElementById('hist-date').value=new Date().toISOString().slice(0,10);
 });
+
+// ── GPS LOCATION FOR CLOCK-IN ─────────────────────────────
+function getGPSLocation(callback){
+  if(!navigator.geolocation){callback(null,'GPS not supported');return;}
+  navigator.geolocation.getCurrentPosition(
+    function(pos){callback({lat:pos.coords.latitude,lng:pos.coords.longitude,acc:Math.round(pos.coords.accuracy)},null);},
+    function(err){callback(null,err.message);},
+    {timeout:8000,maximumAge:60000,enableHighAccuracy:true}
+  );
+}
+
+// Patch doClockIn to optionally capture GPS (Enterprise plan)
+var _origDoClockIn = doClockIn;
+function doClockIn(staffId, type){
+  var school = JSON.parse(localStorage.getItem('rsms_school')||'{}');
+  var plan = (school.plan||'').toLowerCase();
+  if(plan.includes('enterprise')){
+    getGPSLocation(function(loc, err){
+      _origDoClockIn(staffId, type, loc);
+    });
+  } else {
+    _origDoClockIn(staffId, type, null);
+  }
+}
+
 </script>
 </body>
 </html>

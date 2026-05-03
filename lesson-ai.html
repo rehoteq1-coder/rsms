@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rehoteq AI Lesson Studio — Lesson Plans, Notes, Tests & Mock Exams for Nigerian Teachers</title>
+<meta name="description" content="AI-powered lesson planning tool for Nigerian secondary school teachers. Generate lesson plans, lesson notes, test questions and mock exam papers instantly. WAEC/NECO aligned. Free trial units included."/>
+<link rel="canonical" href="https://rehoteq.com/lesson-ai.html"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://checkout.flutterwave.com/v3.js"></script>
+<style>
+:root{
+  --bg:#04050f;--card:#0c0e1e;--card2:#111328;
+  --border:rgba(255,255,255,0.07);
+  --gold:#c9a84c;--gold2:#f0c040;
+  --purple:#9b5cf6;--cyan:#06b6d4;--green:#10b981;--red:#ef4444;
+  --white:#f0f4ff;--muted:rgba(240,244,255,0.45);
+  --font:'Outfit',sans-serif;--serif:'Fraunces',serif;--mono:'DM Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--font);background:var(--bg);color:var(--white);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 50% at 20% 0%,rgba(155,92,246,0.07),transparent),
+             radial-gradient(ellipse 50% 40% at 80% 100%,rgba(201,168,76,0.05),transparent);}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
+  padding:13px 20px;background:rgba(4,5,15,0.92);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#8b6914,var(--gold),var(--gold2));
+  display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:0.85rem;font-weight:900;color:#000;}
+.nav-name{font-family:var(--serif);font-size:0.85rem;font-weight:700;color:var(--white);}
+.nav-name span{color:var(--gold);}
+.units-pill{background:rgba(155,92,246,0.12);border:1px solid rgba(155,92,246,0.3);border-radius:20px;
+  padding:5px 14px;font-size:0.72rem;font-weight:700;color:var(--purple);cursor:pointer;}
+.units-pill span{color:var(--white);}
+
+/* HERO */
+.hero{text-align:center;padding:56px 20px 40px;position:relative;z-index:1;}
+.hero-tag{display:inline-flex;align-items:center;gap:7px;background:rgba(155,92,246,0.1);
+  border:1px solid rgba(155,92,246,0.25);border-radius:100px;padding:5px 16px;
+  font-size:0.68rem;font-weight:700;color:var(--purple);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-family:var(--serif);font-size:clamp(1.9rem,5vw,2.9rem);font-weight:900;line-height:1.1;margin-bottom:12px;}
+.hero h1 em{color:var(--gold);font-style:normal;}
+.hero p{font-size:0.9rem;color:var(--muted);max-width:520px;margin:0 auto 20px;line-height:1.75;}
+.free-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,0.1);
+  border:1px solid rgba(16,185,129,0.25);border-radius:8px;padding:7px 16px;font-size:0.78rem;font-weight:700;color:var(--green);}
+
+/* MAIN */
+main{max-width:820px;margin:0 auto;padding:0 16px 80px;position:relative;z-index:1;}
+
+/* TOOL TABS */
+.tool-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;}
+.tool-tab{background:var(--card);border:2px solid var(--border);border-radius:14px;
+  padding:14px 10px;text-align:center;cursor:pointer;transition:all 0.2s;color:var(--white);font-family:var(--font);}
+.tool-tab:hover{border-color:rgba(155,92,246,0.3);}
+.tool-tab.active{border-color:var(--purple);background:rgba(155,92,246,0.1);}
+.tool-tab-icon{font-size:1.4rem;margin-bottom:6px;}
+.tool-tab-name{font-size:0.75rem;font-weight:700;color:var(--white);}
+.tool-tab-cost{font-size:0.6rem;color:var(--muted);margin-top:2px;}
+
+/* FORM CARD */
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:16px;}
+.form-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--white);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.form-title span{color:var(--purple);}
+.form-sub{font-size:0.74rem;color:var(--muted);margin-bottom:18px;line-height:1.5;}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.fg label{font-size:0.67rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+.fg select,.fg input,.fg textarea{background:var(--card2);border:1px solid var(--border);border-radius:9px;
+  padding:9px 12px;color:var(--white);font-size:0.82rem;outline:none;transition:border-color 0.2s;font-family:var(--font);}
+.fg select:focus,.fg input:focus,.fg textarea:focus{border-color:rgba(155,92,246,0.4);}
+.fg textarea{resize:vertical;min-height:80px;line-height:1.6;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-grid.three{grid-template-columns:1fr 1fr 1fr;}
+
+/* GENERATE BTN */
+.gen-btn{width:100%;padding:14px;border:none;border-radius:12px;cursor:pointer;
+  font-family:var(--font);font-size:0.95rem;font-weight:700;
+  background:linear-gradient(135deg,var(--purple),#7c3aed);color:#fff;
+  display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s;}
+.gen-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(155,92,246,0.35);}
+.gen-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+
+/* UNITS GATE */
+.gate-overlay{display:none;position:fixed;inset:0;background:rgba(4,5,15,0.9);
+  z-index:200;align-items:center;justify-content:center;padding:20px;}
+.gate-card{background:var(--card);border:1px solid rgba(155,92,246,0.3);border-radius:20px;
+  padding:28px;max-width:460px;width:100%;text-align:center;}
+.gate-icon{font-size:2.5rem;margin-bottom:12px;}
+.gate-title{font-family:var(--serif);font-size:1.3rem;font-weight:900;color:var(--white);margin-bottom:8px;}
+.gate-sub{font-size:0.82rem;color:var(--muted);margin-bottom:22px;line-height:1.65;}
+.bundle-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;}
+.bundle{background:var(--card2);border:2px solid var(--border);border-radius:12px;
+  padding:14px;cursor:pointer;transition:all 0.2s;text-align:center;}
+.bundle:hover,.bundle.selected{border-color:var(--purple);background:rgba(155,92,246,0.08);}
+.bundle-units{font-family:var(--serif);font-size:1.3rem;font-weight:900;color:var(--gold);}
+.bundle-label{font-size:0.65rem;color:var(--muted);margin:2px 0;}
+.bundle-price{font-size:0.88rem;font-weight:700;color:var(--white);}
+.bundle-per{font-size:0.6rem;color:var(--muted);}
+.pay-btn{width:100%;padding:13px;border:none;border-radius:11px;cursor:pointer;
+  font-family:var(--font);font-size:0.9rem;font-weight:700;
+  background:linear-gradient(135deg,#c9a84c,#f0c040);color:#000;margin-bottom:10px;}
+.gate-close{background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:var(--font);}
+
+/* EMAIL INPUT */
+.email-row{display:flex;gap:8px;margin-bottom:14px;}
+.email-row input{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:9px;
+  padding:9px 12px;color:var(--white);font-size:0.82rem;outline:none;}
+
+/* OUTPUT */
+#output-section{display:none;}
+.output-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:16px;}
+.output-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.output-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--gold);}
+.output-actions{display:flex;gap:8px;}
+.btn-dl{background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:8px;
+  padding:8px 16px;font-family:var(--font);font-size:0.75rem;font-weight:700;color:#000;cursor:pointer;}
+.btn-copy{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;
+  padding:8px 14px;font-family:var(--font);font-size:0.75rem;font-weight:600;color:var(--white);cursor:pointer;}
+#output-content{font-size:0.85rem;color:rgba(240,244,255,0.82);line-height:1.85;white-space:pre-wrap;}
+#output-content h2{font-family:var(--serif);font-size:1.1rem;color:var(--gold);margin:18px 0 8px;font-weight:700;}
+#output-content h3{font-family:var(--serif);font-size:0.95rem;color:var(--white);margin:14px 0 6px;font-weight:700;}
+#output-content strong{color:var(--white);}
+#output-content .section-block{background:rgba(255,255,255,0.02);border-left:3px solid var(--purple);border-radius:0 8px 8px 0;padding:10px 14px;margin:8px 0;}
+
+/* LOADING */
+.loading{display:none;text-align:center;padding:32px;}
+.spinner{width:36px;height:36px;border:3px solid rgba(155,92,246,0.2);border-top-color:var(--purple);
+  border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* UNIT COUNTER */
+.unit-bar{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.unit-info{font-size:0.78rem;color:var(--muted);}
+.unit-count{font-family:var(--serif);font-size:1.1rem;font-weight:900;color:var(--purple);}
+.buy-more{background:rgba(155,92,246,0.1);border:1px solid rgba(155,92,246,0.25);border-radius:8px;
+  padding:6px 14px;font-size:0.72rem;font-weight:700;color:var(--purple);cursor:pointer;border-width:1px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);
+  background:var(--card2);border:1px solid var(--border);border-radius:10px;
+  padding:12px 20px;font-size:0.82rem;color:var(--white);transition:transform 0.3s;z-index:999;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+footer{border-top:1px solid var(--border);padding:24px 16px;text-align:center;
+  font-size:0.7rem;color:var(--muted);position:relative;z-index:1;}
+footer a{color:var(--gold);text-decoration:none;}
+
+@media(max-width:520px){
+  .tool-tabs{grid-template-columns:1fr 1fr;}
+  .form-grid{grid-template-columns:1fr;}
+  .form-grid.three{grid-template-columns:1fr;}
+  .bundle-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="https://rehoteq.com" class="nav-logo">
+    <div class="nav-icon">R</div>
+    <div class="nav-name">Rehoteq <span>AI Studio</span></div>
+  </a>
+  <button class="units-pill" onclick="showGate()">⚡ Units: <span id="nav-units">—</span></button>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">🤖 AI-Powered · WAEC/NECO Aligned</div>
+  <h1>The AI Teaching Assistant<br/>Built for <em>Nigerian Teachers</em></h1>
+  <p>Generate lesson plans, lesson notes, test questions and full mock exam papers in seconds — aligned to the WAEC/NECO curriculum. Download straight to your phone.</p>
+  <div class="free-badge">🎁 2 Free Units Included — No Sign-up Needed</div>
+</div>
+
+<main>
+
+  <!-- UNIT BAR -->
+  <div class="unit-bar">
+    <div>
+      <div class="unit-info">Your available units</div>
+      <div class="unit-count" id="unit-display">— units</div>
+    </div>
+    <button class="buy-more" onclick="showGate()">+ Buy More Units</button>
+  </div>
+
+  <!-- TOOL TABS -->
+  <div class="tool-tabs">
+    <button class="tool-tab active" onclick="switchTool('plan',this)">
+      <div class="tool-tab-icon">📋</div>
+      <div class="tool-tab-name">Lesson Plan</div>
+      <div class="tool-tab-cost">1 unit</div>
+    </button>
+    <button class="tool-tab" onclick="switchTool('notes',this)">
+      <div class="tool-tab-icon">📝</div>
+      <div class="tool-tab-name">Lesson Notes</div>
+      <div class="tool-tab-cost">1 unit</div>
+    </button>
+    <button class="tool-tab" onclick="switchTool('test',this)">
+      <div class="tool-tab-icon">❓</div>
+      <div class="tool-tab-name">Test Questions</div>
+      <div class="tool-tab-cost">1 unit</div>
+    </button>
+    <button class="tool-tab" onclick="switchTool('mock',this)">
+      <div class="tool-tab-icon">📄</div>
+      <div class="tool-tab-name">Mock Exam</div>
+      <div class="tool-tab-cost">1 unit</div>
+    </button>
+  </div>
+
+  <!-- FORM -->
+  <div class="form-card">
+    <div class="form-title" id="form-title">📋 <span>Lesson Plan</span> Generator</div>
+    <div class="form-sub" id="form-sub">Fill in the details below and the AI will generate a complete, WAEC/NECO-aligned lesson plan ready to use in class.</div>
+
+    <div class="form-grid">
+      <div class="fg">
+        <label>Subject</label>
+        <select id="f-subject">
+          <optgroup label="── Science ──">
+            <option>Mathematics</option><option>Further Mathematics</option>
+            <option>Physics</option><option>Chemistry</option><option>Biology</option>
+            <option>Agricultural Science</option><option>Computer Studies</option>
+          </optgroup>
+          <optgroup label="── English & Arts ──">
+            <option>English Language</option><option>Literature in English</option>
+            <option>History</option><option>Government</option>
+            <option>Christian Religious Studies</option><option>Islamic Religious Studies</option>
+            <option>Yoruba Language</option><option>Igbo Language</option><option>Hausa Language</option>
+            <option>Fine Art</option><option>Music</option>
+          </optgroup>
+          <optgroup label="── Commerce ──">
+            <option>Economics</option><option>Commerce</option>
+            <option>Financial Accounting</option><option>Business Studies</option>
+            <option>Office Practice</option>
+          </optgroup>
+          <optgroup label="── Technical ──">
+            <option>Technical Drawing</option><option>Food & Nutrition</option>
+            <option>Home Economics</option><option>Physical & Health Education</option>
+            <option>Civic Education</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Class Level</label>
+        <select id="f-class">
+          <optgroup label="── Junior Secondary ──">
+            <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
+          </optgroup>
+          <optgroup label="── Senior Secondary ──">
+            <option>SS 1</option><option>SS 2</option><option value="SS 3" selected>SS 3</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-grid three">
+      <div class="fg">
+        <label>Term</label>
+        <select id="f-term">
+          <option>First Term</option><option>Second Term</option><option>Third Term</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Duration</label>
+        <select id="f-duration">
+          <option>40 minutes</option><option>45 minutes</option><option>80 minutes (double)</option>
+        </select>
+      </div>
+      <div class="fg" id="qcount-wrap">
+        <label>No. of Questions</label>
+        <select id="f-qcount" style="display:none;">
+          <option>10 questions</option><option>20 questions</option><option>30 questions</option><option>50 questions</option>
+        </select>
+        <select id="f-qtype" style="display:none;">
+          <option>Objective (MCQ)</option><option>Theory / Essay</option><option>Mixed (Obj + Theory)</option>
+        </select>
+        <input type="text" id="f-week" placeholder="e.g. Week 3" value="Week 1"/>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label>Topic</label>
+      <input type="text" id="f-topic" placeholder="e.g. Laws of Motion, Quadratic Equations, Cell Division..."/>
+    </div>
+
+    <div class="fg" id="taught-wrap" style="display:none;">
+      <label>What was taught in class? (for test/exam generation)</label>
+      <textarea id="f-taught" placeholder="Describe what you covered in class e.g. 'We covered Newton's three laws of motion with examples. Students practised F=ma calculations. We discussed real-life applications like car brakes and rocket propulsion.'"></textarea>
+    </div>
+
+    <div class="fg">
+      <label>Additional Instructions (optional)</label>
+      <input type="text" id="f-extra" placeholder="e.g. Include diagrams, emphasise practical examples, bilingual (English/Yoruba)..."/>
+    </div>
+
+    <button class="gen-btn" id="gen-btn" onclick="generate()">
+      🤖 Generate with AI — 1 Unit
+    </button>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div style="font-size:0.82rem;color:var(--muted);">AI is generating your content...<br/>This takes 10–20 seconds.</div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div id="output-section">
+    <div class="output-card">
+      <div class="output-header">
+        <div class="output-title" id="output-title">📋 Lesson Plan</div>
+        <div class="output-actions">
+          <button class="btn-copy" onclick="copyOutput()">📋 Copy</button>
+          <button class="btn-dl" onclick="downloadOutput()">⬇️ Download</button>
+        </div>
+      </div>
+      <div id="output-content"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- UNITS GATE OVERLAY -->
+<div class="gate-overlay" id="gate-overlay">
+  <div class="gate-card">
+    <div class="gate-icon">⚡</div>
+    <div class="gate-title">Buy AI Units</div>
+    <div class="gate-sub">Each unit generates one lesson plan, notes, test or exam paper. Units are tied to your email and never expire.</div>
+
+    <div class="email-row">
+      <input type="email" id="gate-email" placeholder="Enter your email to receive units"/>
+    </div>
+
+    <div class="bundle-grid" id="bundle-grid">
+      <div class="bundle selected" data-units="5" data-amount="1500" onclick="selectBundle(this)">
+        <div class="bundle-units">5</div>
+        <div class="bundle-label">units</div>
+        <div class="bundle-price">₦1,500</div>
+        <div class="bundle-per">₦300 per unit</div>
+      </div>
+      <div class="bundle" data-units="15" data-amount="3500" onclick="selectBundle(this)">
+        <div class="bundle-units">15</div>
+        <div class="bundle-label">units</div>
+        <div class="bundle-price">₦3,500</div>
+        <div class="bundle-per">₦233 per unit</div>
+      </div>
+      <div class="bundle" data-units="50" data-amount="8000" onclick="selectBundle(this)">
+        <div class="bundle-units">50</div>
+        <div class="bundle-label">units</div>
+        <div class="bundle-price">₦8,000</div>
+        <div class="bundle-per">₦160 per unit</div>
+      </div>
+      <div class="bundle" data-units="100" data-amount="12000" onclick="selectBundle(this)">
+        <div class="bundle-units">100</div>
+        <div class="bundle-label">units · Best Value</div>
+        <div class="bundle-price">₦12,000</div>
+        <div class="bundle-per">₦120 per unit</div>
+      </div>
+    </div>
+
+    <button class="pay-btn" onclick="payForUnits()">💳 Pay with Flutterwave</button>
+    <br/>
+    <button class="gate-close" onclick="closeGate()">✕ Close</button>
+  </div>
+</div>
+
+<footer>
+  <p style="margin-bottom:6px;"><a href="https://rehoteq.com">rehoteq.com</a> · Okitipupa, Ondo State · <a href="tel:+2347036302585">07036302585</a></p>
+  <p>© 2025 Rehoteq Technologies · <a href="/privacy.html">Privacy Policy</a> · <a href="/solar.html">Solar Calculator</a> · <a href="https://rehoteq1-coder.github.io/rms/">RMS</a></p>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────
+// AI requests routed through Cloudflare Worker proxy (rehoteqai-lesson.rehoteq.workers.dev)
+var FLW_KEY      = 'FLWPUBK-f33c828c210fbdcb4aea8ae3d9183861-X';
+var FREE_UNITS   = 2;
+var currentTool  = 'plan';
+var selectedBundle = { units:5, amount:1500 };
+var outputText   = '';
+
+// ── UNITS MANAGEMENT ─────────────────────────────────────────────
+function getUnits() {
+  // Check for RSMS gift token in URL
+  var params = new URLSearchParams(window.location.search);
+  var giftToken = params.get('rsms_gift');
+  var giftUnits = parseInt(params.get('units')||'0');
+  var teacherEmail = params.get('teacher')||'';
+  if(giftToken && giftUnits > 0){
+    var usedGifts = JSON.parse(localStorage.getItem('rsms_used_gifts')||'[]');
+    if(usedGifts.indexOf(giftToken) === -1){
+      var current = parseInt(localStorage.getItem('rms_ai_units')||'0');
+      if(current < 0) current = 0;
+      localStorage.setItem('rms_ai_units', current + giftUnits);
+      if(teacherEmail) localStorage.setItem('rms_ai_email', teacherEmail);
+      usedGifts.push(giftToken);
+      localStorage.setItem('rsms_used_gifts', JSON.stringify(usedGifts));
+      // Clean URL without reload
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setTimeout(function(){ alert('🎁 ' + giftUnits + ' AI units gifted by your school have been added to your account!'); }, 500);
+    }
+  }
+  var u = parseInt(localStorage.getItem('rms_ai_units') || '-1');
+  if (u === -1) {
+    // First visit — give free units
+    localStorage.setItem('rms_ai_units', FREE_UNITS);
+    localStorage.setItem('rms_ai_free_given', '1');
+    return FREE_UNITS;
+  }
+  return u;
+}
+function setUnits(n) {
+  localStorage.setItem('rms_ai_units', n);
+  updateUnitDisplay();
+}
+function deductUnit() {
+  var u = getUnits();
+  setUnits(Math.max(0, u - 1));
+}
+function addUnits(n) {
+  var u = getUnits();
+  setUnits(u + n);
+}
+function updateUnitDisplay() {
+  var u = getUnits();
+  document.getElementById('unit-display').textContent = u + (u === 1 ? ' unit' : ' units') + ' remaining';
+  document.getElementById('nav-units').textContent = u;
+}
+
+// ── TOOL SWITCHING ────────────────────────────────────────────────
+function switchTool(tool, btn) {
+  currentTool = tool;
+  document.querySelectorAll('.tool-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+
+  var titles = {
+    plan:  ['📋 <span>Lesson Plan</span> Generator', 'Fill in the details and the AI generates a complete WAEC/NECO-aligned lesson plan ready for class.'],
+    notes: ['📝 <span>Lesson Notes</span> Generator', 'Generate comprehensive student-facing lesson notes for any topic in the Nigerian curriculum.'],
+    test:  ['❓ <span>Test Questions</span> Generator', 'Describe what you taught in class and get relevant test questions with answers and marking scheme.'],
+    mock:  ['📄 <span>Mock Exam Paper</span> Generator', 'Generate a full mock exam paper with objective and theory sections, complete with marking scheme.'],
+  };
+  document.getElementById('form-title').innerHTML = titles[tool][0];
+  document.getElementById('form-sub').textContent   = titles[tool][1];
+
+  // Show/hide fields
+  var taughtWrap = document.getElementById('taught-wrap');
+  var qcountWrap = document.getElementById('qcount-wrap');
+  var fWeek      = document.getElementById('f-week');
+  var fQcount    = document.getElementById('f-qcount');
+  var fQtype     = document.getElementById('f-qtype');
+  var fDuration  = document.getElementById('f-duration').parentElement;
+
+  if (tool === 'test' || tool === 'mock') {
+    taughtWrap.style.display = '';
+    fQcount.style.display = '';
+    fQtype.style.display  = '';
+    fWeek.style.display   = 'none';
+    fDuration.style.display = tool === 'mock' ? '' : 'none';
+  } else {
+    taughtWrap.style.display = 'none';
+    fQcount.style.display = 'none';
+    fQtype.style.display  = 'none';
+    fWeek.style.display   = '';
+    fDuration.style.display = '';
+  }
+
+  // Hide output when switching tools
+  document.getElementById('output-section').style.display = 'none';
+}
+
+// ── PROMPT BUILDER ────────────────────────────────────────────────
+function buildPrompt() {
+  var subject  = document.getElementById('f-subject').value;
+  var cls      = document.getElementById('f-class').value;
+  var term     = document.getElementById('f-term').value;
+  var topic    = document.getElementById('f-topic').value.trim();
+  var duration = document.getElementById('f-duration').value;
+  var week     = document.getElementById('f-week').value.trim();
+  var extra    = document.getElementById('f-extra').value.trim();
+  var taught   = document.getElementById('f-taught').value.trim();
+  var qcount   = document.getElementById('f-qcount').value;
+  var qtype    = document.getElementById('f-qtype').value;
+
+  var extraLine = extra ? '\nAdditional instructions: ' + extra : '';
+
+  if (currentTool === 'plan') {
+    return 'You are an expert Nigerian secondary school curriculum specialist aligned with WAEC and NECO standards.\n\nGenerate a complete, professional lesson plan for the following:\n\nSubject: ' + subject + '\nClass: ' + cls + '\nTerm: ' + term + '\nWeek: ' + week + '\nTopic: ' + topic + '\nDuration: ' + duration + extraLine + '\n\nThe lesson plan must include:\n1. LESSON IDENTIFICATION (Subject, Class, Topic, Date, Duration, Term)\n2. LEARNING OBJECTIVES (3-5 specific, measurable objectives)\n3. ENTRY BEHAVIOUR / PRIOR KNOWLEDGE\n4. INSTRUCTIONAL MATERIALS (list all needed)\n5. REFERENCE MATERIALS (textbooks, WAEC syllabus)\n6. INTRODUCTION / SET INDUCTION (5 minutes)\n7. PRESENTATION / DEVELOPMENT (step-by-step, with teacher activities and student activities in two columns)\n8. EVALUATION QUESTIONS (5 questions to assess learning)\n9. CONCLUSION / SUMMARY\n10. ASSIGNMENT / HOMEWORK\n\nFormat it professionally. Use clear headings. Make it practical for a Nigerian classroom context.';
+  }
+
+  if (currentTool === 'notes') {
+    return 'You are an expert Nigerian secondary school teacher and curriculum specialist.\n\nWrite comprehensive, student-friendly lesson notes for:\n\nSubject: ' + subject + '\nClass: ' + cls + '\nTerm: ' + term + '\nTopic: ' + topic + extraLine + '\n\nThe lesson notes must:\n- Be written clearly for ' + cls + ' students in Nigeria\n- Cover all sub-topics under this topic as per the WAEC/NECO syllabus\n- Include definitions of key terms\n- Include worked examples where relevant\n- Include diagrams described in text where needed\n- End with a summary and 5 self-assessment questions\n- Use simple, clear English appropriate for Nigerian students\n\nFormat with clear headings and subheadings.';
+  }
+
+  if (currentTool === 'test') {
+    return 'You are an experienced Nigerian secondary school examiner.\n\nGenerate test questions based on what a teacher taught in class:\n\nSubject: ' + subject + '\nClass: ' + cls + '\nTopic: ' + topic + '\nWhat was taught: ' + (taught || topic) + '\nNumber of questions: ' + qcount + '\nQuestion type: ' + qtype + extraLine + '\n\nRequirements:\n- Questions must directly test what was taught (not go beyond)\n- For MCQ: provide 4 options (A-D) and mark the correct answer\n- For theory: provide model answers and mark allocation\n- For mixed: include both sections clearly labelled\n- Include a MARKING SCHEME at the end\n- Vary difficulty: 40% easy, 40% medium, 20% challenging\n- Format professionally as a real Nigerian school test paper\n\nInclude: School: _____________, Name: _____________, Class: _______, Date: _______, Time Allowed: ______ at the top.';
+  }
+
+  if (currentTool === 'mock') {
+    return 'You are an experienced Nigerian WAEC/NECO examiner.\n\nGenerate a full mock examination paper:\n\nSubject: ' + subject + '\nClass: ' + cls + '\nTerm: ' + term + '\nTopics covered: ' + (taught || topic) + '\nDuration: ' + duration + extraLine + '\n\nThe mock exam must follow WAEC/NECO format:\n\nSECTION A — OBJECTIVES (' + (qtype === 'Theory / Essay' ? '0' : '50') + ' questions, 1 mark each)\nMultiple choice questions covering all major topics, 4 options (A-D) each.\n\nSECTION B — THEORY (Answer any 5 questions, varying marks)\nEssay/structured questions requiring detailed answers.\n\nEnd with a complete MARKING SCHEME for both sections.\n\nFormat exactly like a real WAEC/NECO examination paper with proper headers:\nSUBJECT: ' + subject.toUpperCase() + '\nCLASS: ' + cls.toUpperCase() + '\nTIME ALLOWED: ' + duration + '\nINSTRUCTIONS TO CANDIDATES at the top.';
+  }
+}
+
+// ── GENERATE ──────────────────────────────────────────────────────
+async function generate() {
+  var topic = document.getElementById('f-topic').value.trim();
+  if (!topic) { showToast('Enter a topic first'); return; }
+
+  var units = getUnits();
+  if (units <= 0) { showGate(); return; }
+
+  var btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('output-section').style.display = 'none';
+
+  try {
+    var prompt = buildPrompt();
+    var res = await fetch('https://lesson-ai.rehoteq.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: prompt })
+    });
+
+    var data;
+    var rawText = await res.text();
+    try {
+      data = JSON.parse(rawText);
+    } catch(e) {
+      throw new Error('Worker returned invalid response: ' + rawText.substring(0, 100));
+    }
+
+    if (data.error) throw new Error(data.error.message || 'API error');
+
+    // Groq/OpenAI response format
+    var text = '';
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      text = data.choices[0].message.content;
+    } else if (data.candidates && data.candidates[0]) {
+      text = data.candidates[0].content.parts[0].text;
+    } else if (data.content && data.content[0]) {
+      text = data.content[0].text;
+    } else {
+      throw new Error('Empty response. Please try again.');
+    }
+    outputText = text;
+
+    // Deduct unit
+    deductUnit();
+
+    // Render
+    var toolLabels = { plan:'📋 Lesson Plan', notes:'📝 Lesson Notes', test:'❓ Test Questions', mock:'📄 Mock Exam Paper' };
+    document.getElementById('output-title').textContent = toolLabels[currentTool] + ' — ' + document.getElementById('f-subject').value + ' · ' + document.getElementById('f-class').value;
+    document.getElementById('output-content').innerHTML = formatOutput(text);
+    document.getElementById('output-section').style.display = 'block';
+    document.getElementById('output-section').scrollIntoView({ behavior:'smooth', block:'start' });
+    showToast('✅ Generated! 1 unit used.');
+
+  } catch(e) {
+    showToast('Error: ' + (e.message || 'Generation failed. Check internet.'));
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    document.getElementById('loading').style.display = 'none';
+  }
+}
+
+function formatOutput(text) {
+  // Convert markdown-ish to HTML
+  return text
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^(\d+\..+)$/gm, '<div style="padding:3px 0;">$1</div>')
+    .replace(/\n\n/g, '<br/><br/>')
+    .replace(/\n/g, '<br/>');
+}
+
+// ── DOWNLOAD ──────────────────────────────────────────────────────
+function downloadOutput() {
+  if (!outputText) return;
+  var subject  = document.getElementById('f-subject').value;
+  var cls      = document.getElementById('f-class').value;
+  var topic    = document.getElementById('f-topic').value;
+  var toolLabels = { plan:'Lesson-Plan', notes:'Lesson-Notes', test:'Test-Questions', mock:'Mock-Exam' };
+  var fname    = 'Rehoteq-' + toolLabels[currentTool] + '-' + subject.replace(/\s/g,'-') + '-' + cls.replace(/\s/g,'-') + '.txt';
+
+  var blob = new Blob([outputText], { type:'text/plain;charset=utf-8' });
+  var a    = document.createElement('a');
+  a.href   = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click();
+  showToast('⬇️ Downloading...');
+}
+
+function copyOutput() {
+  if (!outputText) return;
+  navigator.clipboard.writeText(outputText).then(function(){ showToast('📋 Copied to clipboard!'); });
+}
+
+// ── PAYMENT ───────────────────────────────────────────────────────
+function showGate() {
+  document.getElementById('gate-overlay').style.display = 'flex';
+}
+function closeGate() {
+  document.getElementById('gate-overlay').style.display = 'none';
+}
+function selectBundle(el) {
+  document.querySelectorAll('.bundle').forEach(function(b){ b.classList.remove('selected'); });
+  el.classList.add('selected');
+  selectedBundle = { units: parseInt(el.dataset.units), amount: parseInt(el.dataset.amount) };
+}
+function payForUnits() {
+  var email = document.getElementById('gate-email').value.trim();
+  if (!email || !email.includes('@')) { showToast('Enter a valid email address'); return; }
+
+  if (typeof FlutterwaveCheckout === 'undefined') { showToast('Payment system not loaded. Check internet.'); return; }
+
+  FlutterwaveCheckout({
+    public_key: FLW_KEY,
+    tx_ref:     'REHOTEQ-AI-' + Date.now(),
+    amount:     selectedBundle.amount,
+    currency:   'NGN',
+    customer:   { email: email, name: email },
+    customizations: {
+      title:       'Rehoteq AI Lesson Studio',
+      description: selectedBundle.units + ' AI Generation Units',
+      logo:        'https://rehoteq.com/favicon.ico'
+    },
+    callback: function(res) {
+      if (res.status === 'successful' || res.status === 'completed') {
+        addUnits(selectedBundle.units);
+        localStorage.setItem('rms_ai_email', email);
+        closeGate();
+        showToast('✅ ' + selectedBundle.units + ' units added! Thank you.');
+      } else {
+        showToast('Payment not completed. Please try again.');
+      }
+    },
+    onclose: function() { showToast('Payment cancelled.'); }
+  });
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+updateUnitDisplay();
+// Pre-fill email if returning user
+var savedEmail = localStorage.getItem('rms_ai_email');
+if (savedEmail) {
+  var emailInput = document.getElementById('gate-email');
+  if (emailInput) emailInput.value = savedEmail;
+}
+</script>
+</body>
+</html>

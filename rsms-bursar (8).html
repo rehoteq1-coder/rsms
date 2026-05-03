@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>RSMS — Bursar Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="rsms.css"/>
+<script src="rsms-core.js"></script>
+<style>
+.receipt-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);
+  padding:13px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.fee-student{font-weight:700;color:var(--text);font-size:.88rem;}
+.fee-type{font-size:.7rem;color:var(--text3);}
+.fee-amt{font-family:monospace;font-weight:700;color:var(--green);margin-left:auto;font-size:.9rem;}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-head">
+      <div class="sb-logo">
+        <div id="sb-logo-img" style="width:32px;height:32px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--gold);overflow:hidden;">R</div>
+        <div><div class="sb-school" id="sb-school">School</div><div style="font-size:.6rem;color:var(--text4);">RSMS Bursar</div></div>
+      </div>
+      <div class="sb-user">
+        <div class="sb-av" id="sb-av">B</div>
+        <div><div class="sb-uname" id="sb-uname">Bursar</div><div class="sb-urole">Finance Officer</div></div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Finance</div>
+      <a class="sbi active" href="#" data-page="dashboard" data-icon="💰" data-title="Financial Overview"><span class="ico">💰</span>Dashboard</a>
+      <a class="sbi" href="#" data-page="record" data-icon="➕" data-title="Record Payment"><span class="ico">➕</span>Record Payment</a>
+      <a class="sbi" href="#" data-page="receipts" data-icon="🧾" data-title="Receipts"><span class="ico">🧾</span>Receipts</a>
+      <a class="sbi" href="#" data-page="ledger" data-icon="📒" data-title="Student Ledger"><span class="ico">📒</span>Student Ledger</a>
+      <a class="sbi" href="#" data-page="cashbook" data-icon="📊" data-title="Cashbook"><span class="ico">📊</span>Cashbook</a>
+      <a class="sbi" href="#" data-page="schedule" data-icon="📋" data-title="Fee Schedule"><span class="ico">📋</span>Fee Schedule</a>
+      <a class="sbi" href="#" data-page="reports" data-icon="📈" data-title="Reports"><span class="ico">📈</span>Reports</a>
+      <div class="sb-section">Tools</div>
+      <a class="sbi" href="rsms-receipt.html" target="_blank"><span class="ico">🖨</span>Print Receipt</a>
+      <a class="sbi" href="rsms-admin.html"><span class="ico">🏫</span>Admin Portal</a>
+      <a class="sbi" href="#" onclick="RSMS.auth.logout()"><span class="ico">🚪</span>Logout</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="menu-btn" id="menu-btn">☰</button>
+      <span id="tb-icon" style="font-size:1.1rem;">💰</span>
+      <span class="tb-title" id="tb-title">Financial Overview</span>
+      <div class="tb-right">
+        <button class="btn btn-gold btn-sm" onclick="nav('record')" style="height:32px;padding:0 12px;font-size:.78rem;">+ Record Payment</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="pg-dashboard">
+        <div style="font-size:.82rem;color:var(--text3);margin-bottom:12px;" id="dash-sub">Loading...</div>
+        <div class="kpi-grid">
+          <div class="kpi kpi-green"><div class="kpi-ico">💰</div><div class="kpi-val" id="kpi-collected">₦0</div><div class="kpi-lbl">Collected This Term</div></div>
+          <div class="kpi kpi-red"><div class="kpi-ico">⏳</div><div class="kpi-val" id="kpi-outstanding">₦0</div><div class="kpi-lbl">Outstanding</div></div>
+          <div class="kpi kpi-teal"><div class="kpi-ico">📈</div><div class="kpi-val" id="kpi-rate">0%</div><div class="kpi-lbl">Collection Rate</div></div>
+          <div class="kpi kpi-gold"><div class="kpi-ico">🎓</div><div class="kpi-val" id="kpi-paid">0</div><div class="kpi-lbl">Fully Paid</div></div>
+        </div>
+        <!-- Recent receipts -->
+        <div class="card">
+          <div class="card-title">🧾 Recent Receipts
+            <a href="#" onclick="nav('receipts')" style="margin-left:auto;font-size:.75rem;color:var(--teal);text-decoration:none;">View all →</a>
+          </div>
+          <div id="recent-receipts"><div class="empty">No payments yet</div></div>
+        </div>
+        <!-- Defaulters -->
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">⚠️ Defaulters (Top 10)
+            <a href="#" onclick="nav('ledger')" style="margin-left:auto;font-size:.75rem;color:var(--teal);text-decoration:none;">Full list →</a>
+          </div>
+          <div id="defaulters-list"><div class="empty">Loading...</div></div>
+        </div>
+      </div>
+
+      <!-- RECORD PAYMENT -->
+      <div class="page" id="pg-record">
+        <div class="card">
+          <div class="card-title">➕ Record Fee Payment</div>
+          <!-- Student search -->
+          <div class="fg">
+            <label>Search Student *</label>
+            <input class="fi" id="pay-search" placeholder="Type student name or reg number..." oninput="searchPayStudent()"/>
+            <div id="pay-dropdown" style="display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r2);margin-top:4px;max-height:200px;overflow-y:auto;"></div>
+          </div>
+          <div id="pay-student-info" style="display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r2);padding:12px 14px;margin-bottom:12px;">
+            <div style="font-weight:700;color:var(--text);" id="pay-stu-name">—</div>
+            <div style="font-size:.72rem;color:var(--text3);" id="pay-stu-info">—</div>
+          </div>
+          <input type="hidden" id="pay-student-id"/>
+          <div class="f2">
+            <div class="fg"><label>Fee Type *</label>
+              <select class="fi" id="pay-type" style="height:44px;">
+                <option value="">— Select Fee —</option>
+                <option>School Fees</option><option>Examination Fee</option>
+                <option>Development Levy</option><option>PTA Levy</option>
+                <option>Sports Levy</option><option>Library Fee</option>
+                <option>Computer Levy</option><option>Bus Fee</option>
+                <option>Uniform Fee</option><option>Other</option>
+              </select>
+            </div>
+            <div class="fg"><label>Amount (₦) *</label>
+              <input class="fi" id="pay-amount" type="number" placeholder="0.00" min="0"/>
+            </div>
+          </div>
+          <div class="f2">
+            <div class="fg"><label>Payment Method</label>
+              <select class="fi" id="pay-method" style="height:44px;">
+                <option>Cash</option><option>Moniepoint Transfer</option>
+                <option>Bank Transfer</option><option>POS</option><option>Online Payment</option>
+              </select>
+            </div>
+            <div class="fg"><label>Date</label>
+              <input class="fi" id="pay-date" type="date"/>
+            </div>
+          </div>
+          <div class="fg"><label>Transaction Reference (optional)</label>
+            <input class="fi" id="pay-ref" placeholder="e.g. TXN123456789"/>
+          </div>
+          <div class="fg"><label>Term</label>
+            <select class="fi" id="pay-term" style="height:44px;">
+              <option>First Term</option><option>Second Term</option><option>Third Term</option>
+            </select>
+          </div>
+          <div class="btn-row" style="margin-top:8px;">
+            <button class="btn btn-ghost" onclick="clearPaymentForm()" style="flex:1;">Clear</button>
+            <button class="btn btn-green" onclick="recordPayment()" style="flex:2;">✅ Record Payment</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECEIPTS -->
+      <div class="page" id="pg-receipts">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-family:Fraunces,serif;font-size:1.1rem;font-weight:700;">🧾 Receipts</div>
+            <div style="font-size:.78rem;color:var(--text3);" id="receipts-count">0 receipts</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" onclick="exportReceipts()">⬇ Export CSV</button>
+            <button class="btn btn-ghost btn-sm" onclick="window.open('rsms-receipt.html','_blank')">🖨 Print Receipt</button>
+          </div>
+        </div>
+        <div class="f2" style="margin-bottom:12px;">
+          <input class="fi" id="receipt-search" placeholder="Search by name or receipt no..." oninput="renderReceipts()" style="height:40px;font-size:.82rem;"/>
+          <select class="fi" id="receipt-term-filter" onchange="renderReceipts()" style="height:40px;font-size:.82rem;">
+            <option value="">All Terms</option>
+            <option>First Term</option><option>Second Term</option><option>Third Term</option>
+          </select>
+        </div>
+        <div id="receipts-list"></div>
+      </div>
+
+      <!-- LEDGER -->
+      <div class="page" id="pg-ledger">
+        <div style="font-family:Fraunces,serif;font-size:1.1rem;font-weight:700;margin-bottom:14px;">📒 Student Ledger</div>
+        <div class="f2" style="margin-bottom:12px;">
+          <select class="fi" id="ledger-class" onchange="renderLedger()" style="height:40px;font-size:.82rem;">
+            <option value="">All Classes</option>
+          </select>
+          <select class="fi" id="ledger-term" onchange="renderLedger()" style="height:40px;font-size:.82rem;">
+            <option value="">All Terms</option>
+            <option>First Term</option><option>Second Term</option><option>Third Term</option>
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>Student</th><th>Class</th><th>Paid</th><th>Expected</th><th>Balance</th><th>Status</th></tr></thead>
+            <tbody id="ledger-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CASHBOOK -->
+      <div class="page" id="pg-cashbook">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+          <div style="font-family:Fraunces,serif;font-size:1.1rem;font-weight:700;">📊 Cashbook</div>
+          <button class="btn btn-ghost btn-sm" onclick="exportCashbook()">⬇ Export CSV</button>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>Date</th><th>Receipt No</th><th>Student</th><th>Fee Type</th><th>Method</th><th>Amount</th></tr></thead>
+            <tbody id="cashbook-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- FEE SCHEDULE -->
+      <div class="page" id="pg-schedule">
+        <div style="font-family:Fraunces,serif;font-size:1.1rem;font-weight:700;margin-bottom:14px;">📋 Fee Schedule</div>
+        <div class="card">
+          <div class="card-title">Set Expected Fee Per Class</div>
+          <div id="schedule-form"></div>
+          <button class="btn btn-primary" onclick="saveSchedule()" style="margin-top:10px;">💾 Save Schedule</button>
+        </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="page" id="pg-reports">
+        <div style="font-family:Fraunces,serif;font-size:1.1rem;font-weight:700;margin-bottom:14px;">📈 Financial Reports</div>
+        <div class="kpi-grid" id="report-kpis"></div>
+        <div class="card">
+          <div class="card-title">Collection by Fee Type</div>
+          <div id="report-by-type"></div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">Collection by Class</div>
+          <div id="report-by-class"></div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">📱 Send Reminders</div>
+          <button class="btn btn-primary" onclick="sendAllReminders()">📱 WhatsApp All Defaulters</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="sb-overlay" id="sb-overlay"></div>
+<button class="ai-fab" onclick="window.open('rsms-voice-ai.html','_blank')">🤖</button>
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+// RSMS BURSAR PORTAL — Clean build
+// ══════════════════════════════════════
+var DB = {};
+function reload(){
+  DB.school   = RSMS.db.school();
+  DB.students = RSMS.db.students();
+  DB.fees     = RSMS.db.fees();
+  DB.schedule = RSMS.db.get('fee_schedule',{});
+}
+
+// ── INIT ──
+window.addEventListener('load', function(){
+  if(!sessionStorage.getItem('rsms_auth')){
+    window.location.replace('rsms-login.html'); return;
+  }
+  // Token from URL
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('token');
+  if(token){
+    var tokens = RSMS.db.get('access_tokens',{});
+    var td = tokens[token];
+    if(td && td.active){
+      sessionStorage.setItem('rsms_user', JSON.stringify(td.user));
+      sessionStorage.setItem('rsms_role', td.role);
+      sessionStorage.setItem('rsms_auth','true');
+      sessionStorage.setItem('rsms_bursar_auth','true');
+      window.history.replaceState({},'',window.location.pathname);
+    }
+  }
+
+  RSMS.ui.initSidebar();
+  reload();
+
+  var school = DB.school;
+  var user   = RSMS.auth.user();
+
+  document.getElementById('sb-school').textContent = school.name||'School';
+  document.getElementById('sb-uname').textContent  = user.name||'Bursar';
+  document.getElementById('sb-av').textContent     = RSMS.fmt.initials(user.name||'Bursar');
+
+  var logo = localStorage.getItem('rsms_school_logo');
+  if(logo){ document.getElementById('sb-logo-img').innerHTML='<img src="'+logo+'" style="width:100%;height:100%;object-fit:contain;"/>'; }
+
+  document.getElementById('pay-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('pay-term').value = school.term||'First Term';
+
+  // Nav
+  document.querySelectorAll('.sbi[data-page]').forEach(function(a){
+    a.addEventListener('click', function(e){
+      e.preventDefault();
+      var pg = this.dataset.page;
+      RSMS.ui.showPage(pg, this);
+      RSMS.ui.setTopbar(this.dataset.icon, this.dataset.title);
+      if(pg==='dashboard') renderDashboard();
+      if(pg==='receipts')  renderReceipts();
+      if(pg==='ledger')    renderLedger();
+      if(pg==='cashbook')  renderCashbook();
+      if(pg==='schedule')  renderSchedule();
+      if(pg==='reports')   renderReports();
+    });
+  });
+
+  renderDashboard();
+});
+
+function nav(pg){
+  var a=document.querySelector('.sbi[data-page="'+pg+'"]');
+  if(a) a.click();
+}
+
+// ── DASHBOARD ──
+function renderDashboard(){
+  reload();
+  var school = DB.school;
+  document.getElementById('dash-sub').textContent = (school.name||'School')+' · '+(school.term||'First Term')+' '+(school.session||'2025/2026');
+
+  var totalCollected = DB.fees.reduce(function(s,f){return s+(parseFloat(f.amount)||0);},0);
+  var schedule = DB.schedule;
+  var totalExpected = 0;
+  var studentsPaid = new Set(DB.fees.map(function(f){return f.stuId;})).size;
+
+  // Calculate expected from schedule
+  DB.students.forEach(function(s){
+    var exp = schedule[s.class];
+    if(exp) totalExpected += parseFloat(exp)||0;
+  });
+  if(!totalExpected && DB.students.length) totalExpected = DB.students.length * 35000;
+
+  var outstanding = Math.max(0, totalExpected - totalCollected);
+  var rate = totalExpected > 0 ? Math.round(totalCollected/totalExpected*100) : 0;
+
+  document.getElementById('kpi-collected').textContent  = RSMS.fmt.money(totalCollected);
+  document.getElementById('kpi-outstanding').textContent= RSMS.fmt.money(outstanding);
+  document.getElementById('kpi-rate').textContent       = rate+'%';
+  document.getElementById('kpi-paid').textContent       = studentsPaid;
+
+  // Recent receipts
+  var recent = DB.fees.slice().reverse().slice(0,5);
+  var recEl = document.getElementById('recent-receipts');
+  if(!recent.length){ recEl.innerHTML='<div class="empty">No payments yet</div>'; }
+  else {
+    recEl.innerHTML='';
+    recent.forEach(function(f){
+      var div=document.createElement('div');
+      div.className='receipt-card';
+      div.innerHTML='<div>'+
+        '<div class="fee-student">'+(f.student||f.stuId||'Unknown')+'</div>'+
+        '<div class="fee-type">'+(f.type||'Fee')+' · '+(f.date||'—')+' · '+(f.receiptNo||'')+'</div>'+
+      '</div>'+
+      '<div class="fee-amt">'+RSMS.fmt.money(f.amount)+'</div>';
+      recEl.appendChild(div);
+    });
+  }
+
+  // Defaulters
+  renderDefaulters();
+}
+
+function renderDefaulters(){
+  var paidStudents = {};
+  DB.fees.forEach(function(f){
+    if(!paidStudents[f.stuId]) paidStudents[f.stuId] = 0;
+    paidStudents[f.stuId] += parseFloat(f.amount)||0;
+  });
+  var schedule = DB.schedule;
+  var defaulters = DB.students.filter(function(s){
+    var paid = paidStudents[s.id]||0;
+    var exp = parseFloat(schedule[s.class])||35000;
+    return paid < exp;
+  }).map(function(s){
+    var paid = paidStudents[s.id]||0;
+    var exp = parseFloat(schedule[s.class])||35000;
+    return {student:s, balance:exp-paid};
+  }).sort(function(a,b){return b.balance-a.balance;}).slice(0,10);
+
+  var el = document.getElementById('defaulters-list');
+  if(!defaulters.length){ el.innerHTML='<div class="empty">No defaulters 🎉</div>'; return; }
+  el.innerHTML='';
+  defaulters.forEach(function(d){
+    var div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);gap:10px;';
+    div.innerHTML='<div style="flex:1;">'+
+      '<div style="font-weight:700;color:var(--text);font-size:.85rem;">'+RSMS.fmt.name(d.student)+'</div>'+
+      '<div style="font-size:.7rem;color:var(--text3);">'+d.student.class+'</div>'+
+      '</div>'+
+      '<div style="color:var(--red);font-weight:700;font-family:monospace;">'+RSMS.fmt.money(d.balance)+'</div>';
+    var waBtn=document.createElement('button');
+    waBtn.className='btn btn-ghost btn-xs'; waBtn.textContent='📱';
+    var phone = d.student.parentPhone||'';
+    var msg = 'Dear Parent of '+RSMS.fmt.name(d.student)+', your child has an outstanding school fee balance of '+RSMS.fmt.money(d.balance)+'. Please pay at your earliest convenience. Thank you.';
+    waBtn.onclick=(function(p,m){return function(){
+      window.open('https://wa.me/'+(p||'')+'?text='+encodeURIComponent(m),'_blank');
+    };})(phone,msg);
+    div.appendChild(waBtn);
+    el.appendChild(div);
+  });
+}
+
+// ── STUDENT SEARCH FOR PAYMENT ──
+function searchPayStudent(){
+  var q = document.getElementById('pay-search').value.toLowerCase();
+  var dd = document.getElementById('pay-dropdown');
+  if(!q){ dd.style.display='none'; return; }
+  reload();
+  var matches = DB.students.filter(function(s){
+    return RSMS.fmt.name(s).toLowerCase().includes(q) || (s.reg||'').toLowerCase().includes(q);
+  }).slice(0,8);
+  if(!matches.length){ dd.style.display='none'; return; }
+  dd.style.display='block';
+  dd.innerHTML='';
+  matches.forEach(function(s){
+    var div=document.createElement('div');
+    div.style.cssText='padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;';
+    div.innerHTML='<strong style="color:var(--text);">'+RSMS.fmt.name(s)+'</strong> '+
+      '<span style="font-size:.72rem;color:var(--text3);">'+s.class+' · '+s.reg+'</span>';
+    div.onmouseenter=function(){this.style.background='var(--surface2)';};
+    div.onmouseleave=function(){this.style.background='';};
+    div.onclick=(function(st){return function(){selectPayStudent(st);};})(s);
+    dd.appendChild(div);
+  });
+}
+
+function selectPayStudent(s){
+  document.getElementById('pay-student-id').value = s.id;
+  document.getElementById('pay-search').value = RSMS.fmt.name(s);
+  document.getElementById('pay-dropdown').style.display='none';
+  document.getElementById('pay-stu-name').textContent = RSMS.fmt.name(s);
+  document.getElementById('pay-stu-info').textContent = s.class+' · '+s.reg;
+  document.getElementById('pay-student-info').style.display='block';
+  // Auto-fill amount from schedule
+  var schedule = RSMS.db.get('fee_schedule',{});
+  if(schedule[s.class]) document.getElementById('pay-amount').value = schedule[s.class];
+}
+
+// ── RECORD PAYMENT ──
+function recordPayment(){
+  var stuId = document.getElementById('pay-student-id').value;
+  var type  = document.getElementById('pay-type').value;
+  var amt   = parseFloat(document.getElementById('pay-amount').value||0);
+  if(!stuId){ RSMS.ui.toast('Search and select a student','e'); return; }
+  if(!type)  { RSMS.ui.toast('Select fee type','e'); return; }
+  if(!amt||amt<=0){ RSMS.ui.toast('Enter a valid amount','e'); return; }
+
+  var student = RSMS.db.students().find(function(s){return s.id===stuId;});
+  var fees = RSMS.db.fees();
+  var receipt = {
+    id:'f'+Date.now(),
+    receiptNo:'RCP/'+new Date().getFullYear()+'/'+(new Date().getMonth()<7?'1':'2')+'/'+String(fees.length+1).padStart(5,'0'),
+    stuId:stuId,
+    student: student ? RSMS.fmt.name(student) : stuId,
+    class: student ? student.class : '',
+    reg: student ? student.reg : '',
+    type:type,
+    amount:amt,
+    method:document.getElementById('pay-method').value,
+    ref:document.getElementById('pay-ref').value,
+    term:document.getElementById('pay-term').value,
+    session:RSMS.db.school().session||'2025/2026',
+    date:document.getElementById('pay-date').value,
+    recordedBy:RSMS.auth.user().name||'Bursar',
+    createdAt:new Date().toISOString()
+  };
+  fees.push(receipt);
+  RSMS.db.set('fees', fees);
+  clearPaymentForm();
+  RSMS.ui.toast('✅ Payment recorded — '+receipt.receiptNo,'s');
+  renderDashboard();
+  nav('receipts');
+}
+
+function clearPaymentForm(){
+  document.getElementById('pay-student-id').value='';
+  document.getElementById('pay-search').value='';
+  document.getElementById('pay-student-info').style.display='none';
+  document.getElementById('pay-type').value='';
+  document.getElementById('pay-amount').value='';
+  document.getElementById('pay-ref').value='';
+  document.getElementById('pay-dropdown').style.display='none';
+}
+
+// ── RECEIPTS ──
+function renderReceipts(){
+  reload();
+  var q    = (document.getElementById('receipt-search').value||'').toLowerCase();
+  var term = document.getElementById('receipt-term-filter').value||'';
+  var filtered = DB.fees.filter(function(f){
+    return (!q || (f.student||'').toLowerCase().includes(q) || (f.receiptNo||'').toLowerCase().includes(q)) &&
+           (!term || f.term===term);
+  }).slice().reverse();
+
+  document.getElementById('receipts-count').textContent = filtered.length+' receipts';
+  var el = document.getElementById('receipts-list');
+  if(!filtered.length){ el.innerHTML='<div class="empty">No receipts found</div>'; return; }
+  el.innerHTML='';
+  filtered.forEach(function(f){
+    var div=document.createElement('div');
+    div.className='receipt-card';
+    div.innerHTML=
+      '<div style="flex:1;">'+
+        '<div class="fee-student">'+(f.student||'Unknown')+'</div>'+
+        '<div class="fee-type">'+f.receiptNo+' · '+(f.type||'Fee')+' · '+f.method+'</div>'+
+        '<div style="font-size:.65rem;color:var(--text4);">'+(f.date||'—')+' · '+(f.term||'')+'</div>'+
+      '</div>'+
+      '<div class="fee-amt">'+RSMS.fmt.money(f.amount)+'</div>';
+    el.appendChild(div);
+  });
+}
+
+function exportReceipts(){
+  var fees = RSMS.db.fees().slice().reverse();
+  var csv = 'Receipt No,Student,Class,Reg,Fee Type,Amount,Method,Date,Term\n'+
+    fees.map(function(f){
+      return [f.receiptNo,f.student||'',f.class||'',f.reg||'',f.type||'',f.amount||0,f.method||'',f.date||'',f.term||''].join(',');
+    }).join('\n');
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='receipts.csv'; a.click();
+}
+
+// ── LEDGER ──
+function renderLedger(){
+  reload();
+  // Populate class filter
+  var classes=[...new Set(DB.students.map(function(s){return s.class||'';}))].filter(Boolean).sort();
+  var clsSel=document.getElementById('ledger-class');
+  if(clsSel&&clsSel.options.length<=1){
+    classes.forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;clsSel.appendChild(o);});
+  }
+  var filterCls = clsSel&&clsSel.value||'';
+  var filterTerm = document.getElementById('ledger-term')&&document.getElementById('ledger-term').value||'';
+  var schedule = DB.schedule;
+
+  var paidMap={};
+  DB.fees.filter(function(f){return !filterTerm||f.term===filterTerm;})
+    .forEach(function(f){
+      if(!paidMap[f.stuId]) paidMap[f.stuId]=0;
+      paidMap[f.stuId]+=parseFloat(f.amount)||0;
+    });
+
+  var students = DB.students.filter(function(s){return !filterCls||s.class===filterCls;});
+  var tbody=document.getElementById('ledger-tbody');
+  if(!students.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No students found</td></tr>';return;}
+  tbody.innerHTML='';
+  students.forEach(function(s){
+    var paid=(paidMap[s.id]||0);
+    var exp=parseFloat(schedule[s.class])||0;
+    var bal=exp-paid;
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td style="font-weight:700;color:var(--text);">'+RSMS.fmt.name(s)+'</td>'+
+      '<td><span class="badge badge-teal">'+s.class+'</span></td>'+
+      '<td style="color:var(--green);font-family:monospace;">'+RSMS.fmt.money(paid)+'</td>'+
+      '<td style="font-family:monospace;color:var(--text2);">'+(exp?RSMS.fmt.money(exp):'—')+'</td>'+
+      '<td style="font-family:monospace;color:'+(bal>0?'var(--red)':'var(--green)')+';">'+(exp?RSMS.fmt.money(Math.abs(bal)):'—')+'</td>'+
+      '<td><span class="badge '+(bal<=0?'badge-green':'badge-red')+'">'+(bal<=0?'Paid':'Owes')+'</span></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+// ── CASHBOOK ──
+function renderCashbook(){
+  reload();
+  var fees=DB.fees.slice().reverse();
+  var tbody=document.getElementById('cashbook-tbody');
+  if(!fees.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No transactions yet</td></tr>';return;}
+  tbody.innerHTML='';
+  fees.forEach(function(f){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td style="font-size:.78rem;color:var(--text2);">'+(f.date||'—')+'</td>'+
+      '<td style="font-family:monospace;font-size:.72rem;">'+(f.receiptNo||'—')+'</td>'+
+      '<td style="font-weight:700;color:var(--text);">'+(f.student||'—')+'</td>'+
+      '<td><span class="badge badge-muted">'+(f.type||'Fee')+'</span></td>'+
+      '<td style="font-size:.78rem;color:var(--text2);">'+(f.method||'—')+'</td>'+
+      '<td style="color:var(--green);font-family:monospace;font-weight:700;">'+RSMS.fmt.money(f.amount)+'</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function exportCashbook(){
+  var fees=RSMS.db.fees().slice().reverse();
+  var total=fees.reduce(function(s,f){return s+(parseFloat(f.amount)||0);},0);
+  var csv='Date,Receipt No,Student,Class,Fee Type,Method,Amount\n'+
+    fees.map(function(f){return [f.date||'',f.receiptNo||'',f.student||'',f.class||'',f.type||'',f.method||'',f.amount||0].join(',');}).join('\n')+
+    '\nTOTAL,,,,,,' + total;
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='cashbook.csv'; a.click();
+}
+
+// ── SCHEDULE ──
+function renderSchedule(){
+  reload();
+  var classes=[...new Set(DB.students.map(function(s){return s.class||'';}))].filter(Boolean).sort();
+  var el=document.getElementById('schedule-form');
+  if(!classes.length){el.innerHTML='<div class="empty">Add students first to set fee schedule</div>';return;}
+  el.innerHTML='<div class="f2">';
+  var html='<div class="f2">';
+  classes.forEach(function(cls){
+    var cur=DB.schedule[cls]||'';
+    html+='<div class="fg"><label>'+cls+'</label>'+
+      '<input class="fi" id="sch-'+cls.replace(/\s/g,'_')+'" type="number" placeholder="Expected fee ₦" value="'+cur+'"/></div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function saveSchedule(){
+  var students=RSMS.db.students();
+  var classes=[...new Set(students.map(function(s){return s.class||'';}))].filter(Boolean);
+  var schedule={};
+  classes.forEach(function(cls){
+    var el=document.getElementById('sch-'+cls.replace(/\s/g,'_'));
+    if(el&&el.value) schedule[cls]=parseFloat(el.value)||0;
+  });
+  RSMS.db.set('fee_schedule',schedule);
+  DB.schedule=schedule;
+  RSMS.ui.toast('✅ Fee schedule saved','s');
+}
+
+// ── REPORTS ──
+function renderReports(){
+  reload();
+  var total=DB.fees.reduce(function(s,f){return s+(parseFloat(f.amount)||0);},0);
+  var byType={}, byClass={};
+  DB.fees.forEach(function(f){
+    var t=f.type||'Other'; byType[t]=(byType[t]||0)+(parseFloat(f.amount)||0);
+    var c=f.class||'Unknown'; byClass[c]=(byClass[c]||0)+(parseFloat(f.amount)||0);
+  });
+
+  document.getElementById('report-kpis').innerHTML=[
+    {v:RSMS.fmt.money(total),l:'Grand Total Collected',c:'kpi-green'},
+    {v:DB.fees.length,l:'Total Transactions',c:'kpi-teal'},
+    {v:new Set(DB.fees.map(function(f){return f.stuId;})).size,l:'Students Paid',c:'kpi-gold'},
+    {v:Math.max(0,DB.students.length-new Set(DB.fees.map(function(f){return f.stuId;})).size),l:'Not Yet Paid',c:'kpi-red'}
+  ].map(function(k){return '<div class="kpi '+k.c+'"><div class="kpi-val">'+k.v+'</div><div class="kpi-lbl">'+k.l+'</div></div>';}).join('');
+
+  var typeEl=document.getElementById('report-by-type');
+  typeEl.innerHTML='';
+  Object.keys(byType).forEach(function(t){
+    var div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:.85rem;';
+    div.innerHTML='<span style="color:var(--text2);">'+t+'</span>'+
+      '<span style="font-weight:700;color:var(--green);font-family:monospace;">'+RSMS.fmt.money(byType[t])+'</span>';
+    typeEl.appendChild(div);
+  });
+  if(!Object.keys(byType).length) typeEl.innerHTML='<div class="empty">No data</div>';
+
+  var classEl=document.getElementById('report-by-class');
+  classEl.innerHTML='';
+  Object.keys(byClass).forEach(function(c){
+    var div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:.85rem;';
+    div.innerHTML='<span class="badge badge-teal">'+c+'</span>'+
+      '<span style="font-weight:700;color:var(--green);font-family:monospace;">'+RSMS.fmt.money(byClass[c])+'</span>';
+    classEl.appendChild(div);
+  });
+  if(!Object.keys(byClass).length) classEl.innerHTML='<div class="empty">No data</div>';
+}
+
+function sendAllReminders(){
+  var school=RSMS.db.school();
+  var paidMap={};
+  DB.fees.forEach(function(f){if(!paidMap[f.stuId])paidMap[f.stuId]=0;paidMap[f.stuId]+=(parseFloat(f.amount)||0);});
+  var defaulters=DB.students.filter(function(s){
+    var paid=paidMap[s.id]||0;
+    var exp=parseFloat(DB.schedule[s.class])||35000;
+    return paid<exp&&s.parentPhone;
+  });
+  if(!defaulters.length){RSMS.ui.toast('No defaulters with phone numbers','i');return;}
+  var msg='Dear Parent, this is a reminder from '+school.name+'. Your child has an outstanding fee balance. Please pay as soon as possible. Thank you.';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  RSMS.ui.toast('WhatsApp opened — send to '+defaulters.length+' defaulters','s');
+}
+</script>
+</body>
+</html>

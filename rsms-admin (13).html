@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0e1535"/>
+<title>RSMS — Admin Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="rsms.css"/>
+<script src="rsms-core.js"></script>
+<style>
+.pw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+.pw-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:14px;}
+.pw-label{font-size:.62rem;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px;}
+.pw-value{font-family:monospace;font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:8px;}
+.link-row{display:flex;align-items:center;gap:6px;padding:11px 12px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:var(--r2);margin-bottom:7px;}
+.link-info{flex:1;min-width:0;}
+.link-name{font-size:.85rem;font-weight:700;color:var(--text);}
+.link-role{font-size:.65rem;color:var(--text3);}
+.link-url{font-size:.6rem;color:var(--teal);font-family:monospace;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-head">
+      <div class="sb-logo">
+        <div id="sb-logo-img" style="width:32px;height:32px;border-radius:6px;background:var(--surface2);
+          display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--gold);overflow:hidden;">R</div>
+        <div><div class="sb-school" id="sb-school">School</div>
+          <div style="font-size:.6rem;color:var(--text4);">RSMS Admin</div></div>
+      </div>
+      <div class="sb-user">
+        <div class="sb-av" id="sb-av">A</div>
+        <div><div class="sb-uname" id="sb-uname">Administrator</div>
+          <div class="sb-urole">Admin</div></div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Overview</div>
+      <a class="sbi active" href="#" data-page="dashboard" data-icon="🏠" data-title="Dashboard"><span class="ico">🏠</span>Dashboard</a>
+      <div class="sb-section">Students & Staff</div>
+      <a class="sbi" href="#" data-page="students" data-icon="👨‍🎓" data-title="Students"><span class="ico">👨‍🎓</span>Students</a>
+      <a class="sbi" href="#" data-page="staff" data-icon="👨‍🏫" data-title="Staff"><span class="ico">👨‍🏫</span>Staff</a>
+      <a class="sbi" href="#" data-page="portfolio" data-icon="🗂" data-title="Portfolio Allocation"><span class="ico">🗂</span>Portfolio</a>
+      <div class="sb-section">Access & Security</div>
+      <a class="sbi" href="#" data-page="passwords" data-icon="🔐" data-title="Portal Passwords"><span class="ico">🔐</span>Portal Passwords</a>
+      <a class="sbi" href="#" data-page="links" data-icon="🔗" data-title="Link Generator"><span class="ico">🔗</span>Link Generator</a>
+      <div class="sb-section">Academic</div>
+      <a class="sbi" href="rsms-results-print.html" target="_blank"><span class="ico">📄</span>Results</a>
+      <a class="sbi" href="rsms-cbt-questions.html" target="_blank"><span class="ico">📚</span>CBT Questions</a>
+      <a class="sbi" href="rsms-progress-report.html" target="_blank"><span class="ico">📋</span>Progress Reports</a>
+      <div class="sb-section">Tools</div>
+      <a class="sbi" href="rsms-bursar.html"><span class="ico">💰</span>Bursar</a>
+      <a class="sbi" href="rsms-clock.html" target="_blank"><span class="ico">⏱</span>Staff Clock</a>
+      <a class="sbi" href="rsms-qrcodes.html" target="_blank"><span class="ico">📱</span>QR Codes</a>
+      <a class="sbi" href="#" data-page="settings" data-icon="⚙️" data-title="Settings"><span class="ico">⚙️</span>Settings</a>
+      <a class="sbi" href="#" onclick="RSMS.auth.logout()"><span class="ico">🚪</span>Logout</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="menu-btn" id="menu-btn">☰</button>
+      <span id="tb-icon" style="font-size:1.1rem;">🏠</span>
+      <span class="tb-title" id="tb-title">Dashboard</span>
+      <div class="tb-right">
+        <span style="font-size:.72rem;color:var(--text3);" id="tb-date"></span>
+        <span style="font-size:.72rem;background:var(--gold-dim);color:var(--gold);
+          border-radius:999px;padding:3px 10px;font-weight:700;" id="tb-term">—</span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="pg-dashboard">
+        <div class="kpi-grid" id="kpi-grid"></div>
+        <div class="card">
+          <div class="card-title">⚡ Quick Actions</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:9px;">
+            <button class="btn btn-primary btn-sm" onclick="nav('students')">👨‍🎓 Students</button>
+            <button class="btn btn-primary btn-sm" onclick="nav('staff')">👨‍🏫 Staff</button>
+            <button class="btn btn-gold btn-sm" onclick="nav('passwords')">🔐 Passwords</button>
+            <button class="btn btn-ghost btn-sm" onclick="nav('links')">🔗 Links</button>
+            <button class="btn btn-ghost btn-sm" onclick="window.open('rsms-bursar.html')">💰 Bursar</button>
+            <button class="btn btn-ghost btn-sm" onclick="window.open('rsms-cbt-questions.html')">📚 CBT</button>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">📋 Recent Activity</div>
+          <div id="recent-activity" class="empty">No recent activity</div>
+        </div>
+      </div>
+
+      <!-- STUDENTS -->
+      <div class="page" id="pg-students">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-family:Fraunces,serif;font-size:1.1rem;font-weight:700;">👨‍🎓 Students</div>
+            <div style="font-size:.78rem;color:var(--text3);" id="stu-count">0 students</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="RSMS.ui.openModal('m-student')">+ Add Student</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportStudents()">⬇ Export</button>
+          </div>
+        </div>
+        <!-- FILTERS -->
+        <div class="f2" style="margin-bottom:12px;">
+          <input class="fi" id="stu-search" placeholder="Search by name or reg..." oninput="renderStudents()" style="height:40px;font-size:.82rem;"/>
+          <select class="fi" id="stu-class-filter" onchange="renderStudents()" style="height:40px;font-size:.82rem;">
+            <option value="">All Classes</option>
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>Name</th><th>Reg No</th><th>Class</th><th>Gender</th><th>Action</th></tr></thead>
+            <tbody id="stu-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- STAFF -->
+      <div class="page" id="pg-staff">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-family:Fraunces,serif;font-size:1.1rem;font-weight:700;">👨‍🏫 Staff</div>
+            <div style="font-size:.78rem;color:var(--text3);" id="staff-count">0 staff</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="RSMS.ui.openModal('m-staff')">+ Add Staff</button>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>Name</th><th>Role</th><th>Class/Dept</th><th>Phone</th><th>Action</th></tr></thead>
+            <tbody id="staff-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PORTFOLIO -->
+      <div class="page" id="pg-portfolio">
+        <div style="font-family:Fraunces,serif;font-size:1.1rem;font-weight:700;margin-bottom:14px;">🗂 Portfolio Allocation</div>
+        <div class="card">
+          <div class="card-title">Assign subjects and duties to staff</div>
+          <div class="f2">
+            <div class="fg"><label>Select Staff *</label>
+              <select class="fi" id="pf-staff" style="height:44px;" onchange="loadStaffPortfolio()">
+                <option value="">— Select Staff —</option>
+              </select>
+            </div>
+            <div class="fg"><label>Department</label>
+              <select class="fi" id="pf-dept" style="height:44px;">
+                <option value="">— Select Dept —</option>
+                <option>Sciences</option><option>Arts</option><option>Commercial</option>
+                <option>Languages</option><option>Mathematics</option><option>Technical</option>
+                <option>Physical Education</option><option>Religious Studies</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg"><label>Subjects Taught</label>
+            <input class="fi" id="pf-subjects" placeholder="e.g. Mathematics, Further Maths"/></div>
+          <div class="fg"><label>Classes</label>
+            <input class="fi" id="pf-classes" placeholder="e.g. JSS 1-3, SS 2 Science"/></div>
+          <div class="fg"><label>Extra Duties / Responsibilities</label>
+            <input class="fi" id="pf-duties" placeholder="e.g. Sports Coordinator, Timetable Officer"/></div>
+          <button class="btn btn-gold" onclick="savePortfolio()" style="margin-top:4px;">💾 Save Portfolio</button>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">All Staff Portfolios</div>
+          <div id="portfolio-list"></div>
+        </div>
+      </div>
+
+      <!-- PASSWORDS -->
+      <div class="page" id="pg-passwords">
+        <div style="font-family:Fraunces,serif;font-size:1.1rem;font-weight:700;margin-bottom:6px;">🔐 Portal Passwords</div>
+        <div style="font-size:.82rem;color:var(--text3);margin-bottom:16px;">
+          Set the login password for each portal. Share privately with each person.
+        </div>
+        <!-- CURRENT PASSWORDS — VISIBLE AT A GLANCE -->
+        <div class="pw-grid" id="pw-grid"></div>
+        <!-- SET NEW PASSWORDS -->
+        <div class="card" style="margin-top:14px;">
+          <div class="card-title">Set / Change Passwords</div>
+          <div class="f2">
+            <div class="fg"><label>🏫 Admin</label><input class="fi" id="pw-admin" type="text" placeholder="New password"/></div>
+            <div class="fg"><label>🏦 Bursar</label><input class="fi" id="pw-bursar" type="text" placeholder="New password"/></div>
+            <div class="fg"><label>📚 HOD</label><input class="fi" id="pw-hod" type="text" placeholder="New password"/></div>
+            <div class="fg"><label>🎓 VP Academic</label><input class="fi" id="pw-vp" type="text" placeholder="New password"/></div>
+            <div class="fg"><label>👨‍🏫 Teacher Default</label><input class="fi" id="pw-teacher" type="text" placeholder="New password"/></div>
+            <div class="fg"><label>📋 Class Teacher</label><input class="fi" id="pw-ct" type="text" placeholder="New password"/></div>
+            <div class="fg"><label>👨‍🎓 Student Default</label><input class="fi" id="pw-student" type="text" placeholder="New password"/></div>
+            <div class="fg"><label>👪 Parent Default</label><input class="fi" id="pw-parent" type="text" placeholder="New password"/></div>
+          </div>
+          <div style="display:flex;gap:9px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="savePasswords()">🔐 Save All Passwords</button>
+            <button class="btn btn-ghost" onclick="sharePasswordsWA()">📱 Share via WhatsApp</button>
+            <button class="btn btn-ghost" onclick="resetPasswords()">↺ Reset to Defaults</button>
+          </div>
+        </div>
+        <!-- INDIVIDUAL STAFF PASSWORD -->
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">👤 Set Individual Staff Password</div>
+          <div class="f2">
+            <div class="fg"><label>Staff Member</label>
+              <select class="fi" id="ind-staff" style="height:44px;"><option value="">— Select —</option></select>
+            </div>
+            <div class="fg"><label>New Password</label>
+              <input class="fi" id="ind-pw" type="text" placeholder="Their personal password"/>
+            </div>
+          </div>
+          <button class="btn btn-gold btn-sm" onclick="saveIndPW()">💾 Save</button>
+        </div>
+      </div>
+
+      <!-- LINK GENERATOR -->
+      <div class="page" id="pg-links">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-family:Fraunces,serif;font-size:1.1rem;font-weight:700;">🔗 Portal Link Generator</div>
+            <div style="font-size:.78rem;color:var(--text3);">Generate personal login links for each staff, student and parent</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="genAllLinks()">⚡ Generate All Links</button>
+        </div>
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchLinkTab('staff',this)">👨‍🏫 Staff</button>
+          <button class="tab-btn" onclick="switchLinkTab('student',this)">👨‍🎓 Students</button>
+          <button class="tab-btn" onclick="switchLinkTab('parent',this)">👪 Parents</button>
+        </div>
+        <div id="link-staff-tab"><div id="staff-links-list" class="empty">Click "Generate All Links" first</div></div>
+        <div id="link-student-tab" style="display:none;">
+          <div class="fg" style="max-width:200px;margin-bottom:12px;">
+            <select class="fi" id="link-cls-filter" onchange="renderStudentLinks()" style="height:40px;font-size:.82rem;">
+              <option value="">All Classes</option>
+            </select>
+          </div>
+          <div id="student-links-list" class="empty">Click "Generate All Links" first</div>
+        </div>
+        <div id="link-parent-tab" style="display:none;">
+          <div id="parent-links-list" class="empty">Click "Generate All Links" first</div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="page" id="pg-settings">
+        <div style="font-family:Fraunces,serif;font-size:1.1rem;font-weight:700;margin-bottom:14px;">⚙️ School Settings</div>
+        <div class="card">
+          <div class="card-title">School Information</div>
+          <div class="f2">
+            <div class="fg"><label>School Name *</label><input class="fi" id="cfg-name" placeholder="School name"/></div>
+            <div class="fg"><label>School ID</label><input class="fi" id="cfg-id" placeholder="FC-COM-0001" readonly style="opacity:.6;"/></div>
+            <div class="fg"><label>Address</label><input class="fi" id="cfg-addr" placeholder="Full address"/></div>
+            <div class="fg"><label>Phone</label><input class="fi" id="cfg-phone" placeholder="Phone number"/></div>
+            <div class="fg"><label>Principal Name</label><input class="fi" id="cfg-principal" placeholder="Principal's full name"/></div>
+            <div class="fg"><label>Plan</label>
+              <select class="fi" id="cfg-plan" style="height:44px;">
+                <option>Starter</option><option>Standard</option><option>Premium</option>
+                <option>Enterprise</option><option>White Label</option>
+              </select>
+            </div>
+            <div class="fg"><label>Current Term</label>
+              <select class="fi" id="cfg-term" style="height:44px;">
+                <option>First Term</option><option>Second Term</option><option>Third Term</option>
+              </select>
+            </div>
+            <div class="fg"><label>Session</label><input class="fi" id="cfg-session" placeholder="2025/2026"/></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+        </div>
+        <!-- Logo upload -->
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">🖼 School Logo</div>
+          <input type="file" id="logo-upload" accept="image/*" onchange="uploadLogo(this)" style="display:none;"/>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <div id="logo-preview" style="width:72px;height:72px;border:1px solid var(--border);border-radius:10px;
+              background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+              <span style="color:var(--text4);font-size:.7rem;">No logo</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('logo-upload').click()">Upload Logo</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODALS -->
+<div class="modal-bg" id="m-student">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="stu-modal-title">Add Student</div>
+      <button class="modal-close" onclick="RSMS.ui.closeModal('m-student')">✕</button>
+    </div>
+    <input type="hidden" id="stu-edit-id"/>
+    <div class="f2">
+      <div class="fg"><label>Surname *</label><input class="fi" id="stu-surname" placeholder="Surname"/></div>
+      <div class="fg"><label>First Name *</label><input class="fi" id="stu-firstname" placeholder="First name"/></div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Class *</label>
+        <select class="fi" id="stu-class" style="height:44px;">
+          <option value="">— Select Class —</option>
+          <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
+          <option>SS 1 Science</option><option>SS 1 Commercial</option><option>SS 1 Art</option>
+          <option>SS 2 Science</option><option>SS 2 Commercial</option><option>SS 2 Art</option>
+          <option>SS 3 Science</option><option>SS 3 Commercial</option><option>SS 3 Art</option>
+          <option>Primary 1</option><option>Primary 2</option><option>Primary 3</option>
+          <option>Primary 4</option><option>Primary 5</option><option>Primary 6</option>
+          <option>Nursery 1</option><option>Nursery 2</option><option>KG 1</option><option>KG 2</option>
+        </select>
+      </div>
+      <div class="fg"><label>Gender</label>
+        <select class="fi" id="stu-gender" style="height:44px;">
+          <option>Male</option><option>Female</option>
+        </select>
+      </div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Reg Number</label><input class="fi" id="stu-reg" placeholder="Auto if blank"/></div>
+      <div class="fg"><label>Date of Birth</label><input class="fi" id="stu-dob" type="date"/></div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Parent Phone</label><input class="fi" id="stu-parent-phone" placeholder="Parent number"/></div>
+      <div class="fg"><label>Parent Email</label><input class="fi" id="stu-parent-email" placeholder="Parent email"/></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="RSMS.ui.closeModal('m-student')" style="flex:1;">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStudent()" style="flex:2;">✅ Save Student</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="m-staff">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="staff-modal-title">Add Staff</div>
+      <button class="modal-close" onclick="RSMS.ui.closeModal('m-staff')">✕</button>
+    </div>
+    <input type="hidden" id="staff-edit-id"/>
+    <div class="f2">
+      <div class="fg"><label>Full Name *</label><input class="fi" id="staff-name" placeholder="Full name"/></div>
+      <div class="fg"><label>Role *</label>
+        <select class="fi" id="staff-role" style="height:44px;">
+          <option value="">— Select Role —</option>
+          <option>Class Teacher</option><option>Subject Teacher</option><option>HOD</option>
+          <option>Vice Principal Academic</option><option>Vice Principal Admin</option>
+          <option>Bursar</option><option>Admin Staff</option><option>Security</option><option>Librarian</option>
+        </select>
+      </div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Phone</label><input class="fi" id="staff-phone" placeholder="Phone number"/></div>
+      <div class="fg"><label>Email</label><input class="fi" id="staff-email" placeholder="Email address"/></div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Staff ID</label><input class="fi" id="staff-sid" placeholder="e.g. SID-001"/></div>
+      <div class="fg"><label>My Class (for Class Teacher)</label>
+        <select class="fi" id="staff-myclass" style="height:44px;">
+          <option value="">— None / N/A —</option>
+          <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
+          <option>SS 1 Science</option><option>SS 1 Commercial</option><option>SS 1 Art</option>
+          <option>SS 2 Science</option><option>SS 2 Commercial</option><option>SS 2 Art</option>
+          <option>SS 3 Science</option><option>SS 3 Commercial</option><option>SS 3 Art</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="RSMS.ui.closeModal('m-staff')" style="flex:1;">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStaff()" style="flex:2;">✅ Save Staff</button>
+    </div>
+  </div>
+</div>
+
+<div class="sb-overlay" id="sb-overlay"></div>
+<button class="ai-fab" onclick="window.open('rsms-voice-ai.html','_blank')" title="AI Assistant">🤖</button>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── INIT ──────────────────────────────────────────
+var DB = {};
+
+function reload(){
+  DB.school   = RSMS.db.school();
+  DB.students = RSMS.db.students();
+  DB.staff    = RSMS.db.staff();
+  DB.fees     = RSMS.db.fees();
+}
+
+window.addEventListener('load', function(){
+  // Auth check
+  var auth = RSMS.auth.init('admin');
+  // Also allow if no strict role enforcement
+  if(!sessionStorage.getItem('rsms_auth')){
+    // Not logged in
+    window.location.replace('rsms-login.html');
+    return;
+  }
+
+  RSMS.ui.initSidebar();
+  reload();
+
+  var school = DB.school;
+  var user   = RSMS.auth.user();
+
+  // Topbar
+  document.getElementById('tb-date').textContent = new Date().toLocaleDateString('en-NG',{weekday:'short',day:'numeric',month:'short'});
+  document.getElementById('tb-term').textContent = school.term || 'First Term';
+
+  // Sidebar
+  document.getElementById('sb-school').textContent = school.name || 'School';
+  document.getElementById('sb-uname').textContent  = user.name  || 'Admin';
+  document.getElementById('sb-av').textContent     = RSMS.fmt.initials(user.name || 'Admin');
+
+  // Logo
+  var logo = localStorage.getItem('rsms_school_logo');
+  if(logo){
+    var li = document.getElementById('sb-logo-img');
+    li.innerHTML = '<img src="'+logo+'" style="width:100%;height:100%;object-fit:contain;"/>';
+    var lp = document.getElementById('logo-preview');
+    if(lp) lp.innerHTML = '<img src="'+logo+'" style="width:100%;height:100%;object-fit:contain;"/>';
+  }
+
+  // Sidebar navigation
+  document.querySelectorAll('.sbi[data-page]').forEach(function(a){
+    a.addEventListener('click', function(e){
+      e.preventDefault();
+      var pg = this.dataset.page;
+      RSMS.ui.showPage(pg, this);
+      RSMS.ui.setTopbar(this.dataset.icon, this.dataset.title);
+      if(pg==='dashboard')   renderDashboard();
+      if(pg==='students')    renderStudents();
+      if(pg==='staff')       renderStaff();
+      if(pg==='portfolio')   renderPortfolio();
+      if(pg==='passwords')   renderPasswords();
+      if(pg==='links')       renderLinks();
+      if(pg==='settings')    loadSettings();
+    });
+  });
+
+  renderDashboard();
+});
+
+// ── NAVIGATION ──
+function nav(page){
+  var a = document.querySelector('.sbi[data-page="'+page+'"]');
+  if(a) a.click();
+}
+
+// ── DASHBOARD ──
+function renderDashboard(){
+  reload();
+  document.getElementById('kpi-grid').innerHTML = [
+    {v:DB.students.length, l:'Total Students', c:'kpi-teal', i:'👨‍🎓'},
+    {v:DB.staff.length,    l:'Staff Members',  c:'kpi-gold', i:'👨‍🏫'},
+    {v:DB.fees.length,     l:'Fee Records',    c:'kpi-green',i:'💰'},
+    {v:[...new Set(DB.students.map(function(s){return s.class||'';}))].filter(Boolean).length,
+       l:'Active Classes', c:'kpi-purple',i:'🏫'}
+  ].map(function(k){
+    return '<div class="kpi '+k.c+'"><div class="kpi-ico">'+k.i+'</div>'+
+      '<div class="kpi-val">'+k.v+'</div><div class="kpi-lbl">'+k.l+'</div></div>';
+  }).join('');
+
+  var feeTotal = DB.fees.reduce(function(s,f){return s+(parseFloat(f.amount)||0);},0);
+  document.getElementById('recent-activity').innerHTML =
+    '<div style="font-size:.85rem;color:var(--text2);padding:4px 0;">'+
+    '💰 Total fees collected: <strong style="color:var(--green);">'+RSMS.fmt.money(feeTotal)+'</strong></div>'+
+    '<div style="font-size:.85rem;color:var(--text2);padding:4px 0;margin-top:4px;">'+
+    '👨‍🎓 Last student added: <strong>'+(DB.students.length?RSMS.fmt.name(DB.students[DB.students.length-1]):'None')+'</strong></div>';
+}
+
+// ── STUDENTS ──
+function renderStudents(){
+  reload();
+  var q   = (document.getElementById('stu-search')&&document.getElementById('stu-search').value||'').toLowerCase();
+  var cls = document.getElementById('stu-class-filter')&&document.getElementById('stu-class-filter').value||'';
+
+  // Populate class filter
+  var classes = [...new Set(DB.students.map(function(s){return s.class||'';}))].filter(Boolean).sort();
+  var clsSel = document.getElementById('stu-class-filter');
+  if(clsSel && clsSel.options.length <= 1){
+    classes.forEach(function(c){
+      var o = document.createElement('option'); o.value=c; o.textContent=c;
+      clsSel.appendChild(o);
+    });
+  }
+
+  var filtered = DB.students.filter(function(s){
+    var name = RSMS.fmt.name(s).toLowerCase();
+    return (!q || name.includes(q) || (s.reg||'').toLowerCase().includes(q)) &&
+           (!cls || s.class===cls);
+  });
+
+  document.getElementById('stu-count').textContent = filtered.length+' of '+DB.students.length+' students';
+
+  var tbody = document.getElementById('stu-tbody');
+  if(!filtered.length){
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">No students found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  filtered.forEach(function(s){
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td style="font-weight:700;color:var(--text);">'+RSMS.fmt.name(s)+'</td>'+
+      '<td style="font-family:monospace;font-size:.78rem;">'+s.reg+'</td>'+
+      '<td><span class="badge badge-teal">'+s.class+'</span></td>'+
+      '<td style="color:var(--text2);">'+s.gender+'</td><td></td>';
+    var editBtn = document.createElement('button');
+    editBtn.className='btn btn-ghost btn-xs'; editBtn.textContent='✏️';
+    editBtn.onclick = (function(st){return function(){openEditStudent(st);};})(s);
+    var delBtn = document.createElement('button');
+    delBtn.className='btn btn-red btn-xs'; delBtn.textContent='✕';
+    delBtn.style.marginLeft='4px';
+    delBtn.onclick = (function(id){return function(){deleteStudent(id);};})(s.id);
+    tr.lastElementChild.appendChild(editBtn);
+    tr.lastElementChild.appendChild(delBtn);
+    tbody.appendChild(tr);
+  });
+}
+
+function openEditStudent(s){
+  document.getElementById('stu-modal-title').textContent = 'Edit Student';
+  document.getElementById('stu-edit-id').value   = s.id;
+  document.getElementById('stu-surname').value    = s.surname||'';
+  document.getElementById('stu-firstname').value  = s.firstname||'';
+  document.getElementById('stu-class').value      = s.class||'';
+  document.getElementById('stu-gender').value     = s.gender||'Male';
+  document.getElementById('stu-reg').value        = s.reg||'';
+  document.getElementById('stu-dob').value        = s.dob||'';
+  document.getElementById('stu-parent-phone').value = s.parentPhone||'';
+  document.getElementById('stu-parent-email').value = s.parentEmail||'';
+  RSMS.ui.openModal('m-student');
+}
+
+function saveStudent(){
+  var surname   = document.getElementById('stu-surname').value.trim();
+  var firstname = document.getElementById('stu-firstname').value.trim();
+  var cls       = document.getElementById('stu-class').value;
+  if(!surname||!firstname||!cls){RSMS.ui.toast('Fill name and class','e');return;}
+
+  var editId = document.getElementById('stu-edit-id').value;
+  var students = RSMS.db.students();
+  var reg = document.getElementById('stu-reg').value.trim() ||
+    (cls.replace(/\s/g,'').toUpperCase().slice(0,4)+'-'+String(students.length+1).padStart(3,'0'));
+
+  if(editId){
+    var idx = students.findIndex(function(s){return s.id===editId;});
+    if(idx>-1){
+      students[idx].surname=surname; students[idx].firstname=firstname;
+      students[idx].class=cls; students[idx].gender=document.getElementById('stu-gender').value;
+      students[idx].reg=reg; students[idx].dob=document.getElementById('stu-dob').value;
+      students[idx].parentPhone=document.getElementById('stu-parent-phone').value;
+      students[idx].parentEmail=document.getElementById('stu-parent-email').value;
+    }
+  } else {
+    students.push({
+      id:'s'+Date.now(), surname:surname, firstname:firstname, class:cls, reg:reg,
+      gender:document.getElementById('stu-gender').value,
+      dob:document.getElementById('stu-dob').value,
+      parentPhone:document.getElementById('stu-parent-phone').value,
+      parentEmail:document.getElementById('stu-parent-email').value
+    });
+  }
+  RSMS.db.set('students', students);
+  RSMS.ui.closeModal('m-student');
+  document.getElementById('stu-edit-id').value='';
+  document.getElementById('stu-modal-title').textContent='Add Student';
+  renderStudents();
+  RSMS.ui.toast('✅ Student saved','s');
+}
+
+function deleteStudent(id){
+  if(!confirm('Delete this student?'))return;
+  RSMS.db.set('students', RSMS.db.students().filter(function(s){return s.id!==id;}));
+  renderStudents();
+  RSMS.ui.toast('Student removed','i');
+}
+
+function exportStudents(){
+  var students = RSMS.db.students();
+  var csv = 'Name,Surname,Firstname,Class,Reg,Gender,DOB\n' +
+    students.map(function(s){
+      return [RSMS.fmt.name(s),s.surname,s.firstname,s.class,s.reg,s.gender,s.dob||''].join(',');
+    }).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download = 'students_'+(RSMS.db.school().name||'School').replace(/\s/g,'_')+'.csv';
+  a.click();
+}
+
+// ── STAFF ──
+function renderStaff(){
+  reload();
+  var staff = DB.staff;
+  document.getElementById('staff-count').textContent = staff.length+' staff members';
+  // Populate staff select for passwords
+  var indSel = document.getElementById('ind-staff');
+  if(indSel){
+    indSel.innerHTML = '<option value="">— Select —</option>' +
+      staff.map(function(s){return '<option value="'+s.id+'">'+s.name+' ('+s.role+')</option>';}).join('');
+  }
+  var pfSel = document.getElementById('pf-staff');
+  if(pfSel){
+    pfSel.innerHTML = '<option value="">— Select Staff —</option>' +
+      staff.map(function(s){return '<option value="'+s.id+'">'+s.name+'</option>';}).join('');
+  }
+  var tbody = document.getElementById('staff-tbody');
+  if(!staff.length){
+    tbody.innerHTML='<tr><td colspan="5" class="empty">No staff added yet</td></tr>'; return;
+  }
+  tbody.innerHTML='';
+  staff.forEach(function(s){
+    var tr = document.createElement('tr');
+    tr.innerHTML='<td style="font-weight:700;color:var(--text);">'+s.name+'</td>'+
+      '<td><span class="badge badge-gold">'+s.role+'</span></td>'+
+      '<td style="color:var(--text2);">'+(s.myClass||s.dept||'—')+'</td>'+
+      '<td style="color:var(--text3);">'+(s.phone||'—')+'</td><td></td>';
+    var delBtn=document.createElement('button');
+    delBtn.className='btn btn-red btn-xs';delBtn.textContent='✕';
+    delBtn.onclick=(function(id){return function(){deleteStaff(id);};})(s.id);
+    tr.lastElementChild.appendChild(delBtn);
+    tbody.appendChild(tr);
+  });
+}
+
+function saveStaff(){
+  var name = document.getElementById('staff-name').value.trim();
+  var role = document.getElementById('staff-role').value;
+  if(!name||!role){RSMS.ui.toast('Enter name and role','e');return;}
+  var staff = RSMS.db.staff();
+  staff.push({
+    id:'t'+Date.now(), name:name, role:role,
+    phone:document.getElementById('staff-phone').value,
+    email:document.getElementById('staff-email').value,
+    staffId:document.getElementById('staff-sid').value||('SID-'+String(staff.length+1).padStart(3,'0')),
+    myClass:document.getElementById('staff-myclass').value,
+    pw: localStorage.getItem('rsms_'+role.toLowerCase().replace(/\s/g,'_')+'_pw')||'teacher123'
+  });
+  RSMS.db.set('staff', staff);
+  RSMS.ui.closeModal('m-staff');
+  renderStaff();
+  RSMS.ui.toast('✅ Staff saved','s');
+}
+
+function deleteStaff(id){
+  if(!confirm('Delete this staff?'))return;
+  RSMS.db.set('staff', RSMS.db.staff().filter(function(s){return s.id!==id;}));
+  renderStaff();
+  RSMS.ui.toast('Staff removed','i');
+}
+
+// ── PORTFOLIO ──
+function renderPortfolio(){
+  var staff = RSMS.db.staff();
+  var pfSel=document.getElementById('pf-staff');
+  if(pfSel){
+    pfSel.innerHTML='<option value="">— Select Staff —</option>'+
+      staff.map(function(s){return '<option value="'+s.id+'">'+s.name+' ('+s.role+')</option>';}).join('');
+  }
+  var list=document.getElementById('portfolio-list');
+  if(!list)return;
+  if(!staff.length){list.innerHTML='<div class="empty">No staff added yet</div>';return;}
+  list.innerHTML='';
+  staff.forEach(function(s){
+    var pf=JSON.parse(localStorage.getItem('rsms_portfolio_'+s.id)||'{}');
+    var div=document.createElement('div');
+    div.style.cssText='padding:11px 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;';
+    div.innerHTML='<div style="flex:1;min-width:120px;">'+
+      '<div style="font-weight:700;color:var(--text);font-size:.85rem;">'+s.name+'</div>'+
+      '<div style="font-size:.68rem;color:var(--text3);">'+s.role+'</div></div>'+
+      '<div style="font-size:.78rem;color:var(--text2);">'+
+        (pf.subjects||s.subjects||'No subjects assigned')+
+        (pf.classes?'<div style="font-size:.7rem;color:var(--text3);">Classes: '+pf.classes+'</div>':'')+
+        (pf.duties?'<div style="font-size:.7rem;color:var(--text3);">Duties: '+pf.duties+'</div>':'')+
+      '</div>';
+    list.appendChild(div);
+  });
+}
+
+function loadStaffPortfolio(){
+  var id=document.getElementById('pf-staff').value;
+  if(!id)return;
+  var pf=JSON.parse(localStorage.getItem('rsms_portfolio_'+id)||'{}');
+  var s=RSMS.db.staff().find(function(x){return x.id===id;});
+  document.getElementById('pf-subjects').value=pf.subjects||s&&s.subjects||'';
+  document.getElementById('pf-classes').value=pf.classes||s&&(s.myClass||s.hodClasses)||'';
+  document.getElementById('pf-duties').value=pf.duties||'';
+  document.getElementById('pf-dept').value=pf.dept||s&&s.dept||'';
+}
+
+function savePortfolio(){
+  var id=document.getElementById('pf-staff').value;
+  if(!id){RSMS.ui.toast('Select a staff member','e');return;}
+  var pf={
+    subjects:document.getElementById('pf-subjects').value,
+    classes:document.getElementById('pf-classes').value,
+    duties:document.getElementById('pf-duties').value,
+    dept:document.getElementById('pf-dept').value,
+    updatedAt:new Date().toISOString()
+  };
+  localStorage.setItem('rsms_portfolio_'+id,JSON.stringify(pf));
+  var staff=RSMS.db.staff();
+  var idx=staff.findIndex(function(s){return s.id===id;});
+  if(idx>-1){staff[idx].subjects=pf.subjects;staff[idx].dept=pf.dept;RSMS.db.set('staff',staff);}
+  renderPortfolio();
+  RSMS.ui.toast('Portfolio saved','s');
+}
+
+// ── PASSWORDS ──
+var PW_LIST=[
+  {id:'pw-admin',   key:'rsms_admin_pw',   label:'🏫 Admin',         def:'admin123'},
+  {id:'pw-bursar',  key:'rsms_bursar_pw',  label:'🏦 Bursar',        def:'bursar123'},
+  {id:'pw-hod',     key:'rsms_hod_pw',     label:'📚 HOD',           def:'hod123'},
+  {id:'pw-vp',      key:'rsms_vp_pw',      label:'🎓 VP Academic',   def:'vp123'},
+  {id:'pw-teacher', key:'rsms_teacher_pw', label:'👨‍🏫 Teacher',       def:'teacher123'},
+  {id:'pw-ct',      key:'rsms_ct_pw',      label:'📋 Class Teacher', def:'ct123'},
+  {id:'pw-student', key:'rsms_student_pw', label:'👨‍🎓 Student',       def:'student123'},
+  {id:'pw-parent',  key:'rsms_parent_pw',  label:'👪 Parent',        def:'parent123'}
+];
+
+function renderPasswords(){
+  var grid=document.getElementById('pw-grid');
+  grid.innerHTML='';
+  PW_LIST.forEach(function(p){
+    var cur=localStorage.getItem(p.key)||p.def;
+    var div=document.createElement('div');
+    div.className='pw-card';
+    div.innerHTML='<div class="pw-label">'+p.label+'</div>'+
+      '<div class="pw-value">'+cur+'</div>';
+    var copyBtn=document.createElement('button');
+    copyBtn.className='btn btn-ghost btn-xs';copyBtn.textContent='📋 Copy';
+    copyBtn.onclick=(function(pw){return function(){
+      navigator.clipboard.writeText(pw).then(function(){RSMS.ui.toast('Copied!','s');});
+    };})(cur);
+    div.appendChild(copyBtn);
+    grid.appendChild(div);
+  });
+  // Populate ind-staff
+  renderStaff();
+}
+
+function savePasswords(){
+  var saved=0;
+  PW_LIST.forEach(function(p){
+    var el=document.getElementById(p.id);
+    if(el&&el.value.trim()){localStorage.setItem(p.key,el.value.trim());el.value='';saved++;}
+  });
+  if(!saved){RSMS.ui.toast('Enter at least one new password','e');return;}
+  renderPasswords();
+  RSMS.ui.toast('✅ '+saved+' password'+(saved>1?'s':'')+' saved','s');
+}
+
+function saveIndPW(){
+  var id=document.getElementById('ind-staff').value;
+  var pw=document.getElementById('ind-pw').value.trim();
+  if(!id||!pw){RSMS.ui.toast('Select staff and enter password','e');return;}
+  var staff=RSMS.db.staff();
+  var idx=staff.findIndex(function(s){return s.id===id;});
+  if(idx>-1){staff[idx].pw=pw;RSMS.db.set('staff',staff);}
+  document.getElementById('ind-pw').value='';
+  RSMS.ui.toast('✅ Password saved for '+staff[idx].name,'s');
+}
+
+function resetPasswords(){
+  if(!confirm('Reset ALL passwords to factory defaults?'))return;
+  PW_LIST.forEach(function(p){localStorage.setItem(p.key,p.def);});
+  renderPasswords();
+  RSMS.ui.toast('Passwords reset to defaults','i');
+}
+
+function sharePasswordsWA(){
+  var school=RSMS.db.school();
+  var parts=[school.name+' — RSMS Portal Passwords'];
+  PW_LIST.forEach(function(p){
+    parts.push(p.label.replace(/[^ -~]/g,'').trim()+': '+(localStorage.getItem(p.key)||p.def));
+  });
+  parts.push('Login at: rsms.rehoteq.com');
+  window.open('https://wa.me/?text='+encodeURIComponent(parts.join('\n')),'_blank');
+}
+
+// ── LINK GENERATOR ──
+function genAllLinks(){
+  RSMS.links.registerAll();
+  renderLinks();
+  RSMS.ui.toast('✅ All links generated','s');
+}
+
+function renderLinks(){
+  renderStaffLinks();
+  renderStudentLinks();
+  renderParentLinks();
+  // Populate class filter
+  var classes=[...new Set(RSMS.db.students().map(function(s){return s.class||'';}))].filter(Boolean).sort();
+  var clsSel=document.getElementById('link-cls-filter');
+  if(clsSel&&clsSel.options.length<=1){
+    classes.forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;clsSel.appendChild(o);});
+  }
+}
+
+function renderStaffLinks(){
+  var el=document.getElementById('staff-links-list');
+  if(!el)return;
+  var staff=RSMS.db.staff();
+  if(!staff.length){el.innerHTML='<div class="empty">No staff added yet</div>';return;}
+  el.innerHTML='';
+  staff.forEach(function(s){
+    var link=RSMS.links.forStaff(s);
+    var row=document.createElement('div');
+    row.className='link-row';
+    row.innerHTML='<div class="link-info">'+
+      '<div class="link-name">'+s.name+'</div>'+
+      '<div class="link-role">'+s.role+(s.myClass?' — '+s.myClass:'')+'</div>'+
+      '<div class="link-url">'+link+'</div></div>'+
+      '<div style="display:flex;gap:5px;flex-shrink:0;"></div>';
+    var btnCopy=document.createElement('button');
+    btnCopy.className='btn btn-ghost btn-xs';btnCopy.textContent='📋';
+    btnCopy.onclick=(function(l){return function(){
+      navigator.clipboard.writeText(l).then(function(){RSMS.ui.toast('Link copied','s');});
+    };})(link);
+    var btnWA=document.createElement('button');
+    btnWA.className='btn btn-primary btn-xs';btnWA.textContent='📱';
+    var waMsg='Hello '+s.name+'! Your RSMS portal link: '+link;
+    btnWA.onclick=(function(m){return function(){
+      window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');
+    };})(waMsg);
+    row.lastElementChild.appendChild(btnCopy);
+    row.lastElementChild.appendChild(btnWA);
+    el.appendChild(row);
+  });
+}
+
+function renderStudentLinks(){
+  var el=document.getElementById('student-links-list');
+  if(!el)return;
+  var cls=document.getElementById('link-cls-filter')&&document.getElementById('link-cls-filter').value||'';
+  var students=RSMS.db.students().filter(function(s){return !cls||s.class===cls;});
+  if(!students.length){el.innerHTML='<div class="empty">No students found</div>';return;}
+  el.innerHTML='';
+  students.forEach(function(s){
+    var link=RSMS.links.forStudent(s);
+    var name=RSMS.fmt.name(s);
+    var row=document.createElement('div');
+    row.className='link-row';
+    row.innerHTML='<div class="link-info">'+
+      '<div class="link-name">'+name+'</div>'+
+      '<div class="link-role">'+s.class+'</div>'+
+      '<div class="link-url">'+link+'</div></div>'+
+      '<div style="display:flex;gap:5px;flex-shrink:0;"></div>';
+    var btnWA=document.createElement('button');
+    btnWA.className='btn btn-primary btn-xs';btnWA.textContent='📱 Send';
+    var waMsg='Hello! RSMS student link for '+name+': '+link;
+    btnWA.onclick=(function(m){return function(){
+      window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');
+    };})(waMsg);
+    row.lastElementChild.appendChild(btnWA);
+    el.appendChild(row);
+  });
+}
+
+function renderParentLinks(){
+  var el=document.getElementById('parent-links-list');
+  if(!el)return;
+  var students=RSMS.db.students();
+  if(!students.length){el.innerHTML='<div class="empty">No students yet</div>';return;}
+  el.innerHTML='';
+  students.forEach(function(s){
+    var link=RSMS.links.forParent(s);
+    var childName=RSMS.fmt.name(s);
+    var row=document.createElement('div');
+    row.className='link-row';
+    row.innerHTML='<div class="link-info">'+
+      '<div class="link-name">Parent of '+childName+'</div>'+
+      '<div class="link-role">'+s.class+'</div>'+
+      '<div class="link-url">'+link+'</div></div>'+
+      '<div style="display:flex;gap:5px;flex-shrink:0;"></div>';
+    var btnWA=document.createElement('button');
+    btnWA.className='btn btn-primary btn-xs';btnWA.textContent='📱 Send';
+    var waMsg='Dear Parent of '+childName+', your RSMS parent portal: '+link;
+    btnWA.onclick=(function(m){return function(){
+      window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');
+    };})(waMsg);
+    row.lastElementChild.appendChild(btnWA);
+    el.appendChild(row);
+  });
+}
+
+function switchLinkTab(tab, btn){
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById('link-staff-tab').style.display=tab==='staff'?'block':'none';
+  document.getElementById('link-student-tab').style.display=tab==='student'?'block':'none';
+  document.getElementById('link-parent-tab').style.display=tab==='parent'?'block':'none';
+}
+
+// ── SETTINGS ──
+function loadSettings(){
+  var s=RSMS.db.school();
+  document.getElementById('cfg-name').value=s.name||'';
+  document.getElementById('cfg-id').value=s.schoolId||'';
+  document.getElementById('cfg-addr').value=s.address||'';
+  document.getElementById('cfg-phone').value=s.phone||'';
+  document.getElementById('cfg-principal').value=s.principal||'';
+  document.getElementById('cfg-plan').value=s.plan||'Standard';
+  document.getElementById('cfg-term').value=s.term||'First Term';
+  document.getElementById('cfg-session').value=s.session||'2025/2026';
+}
+
+function saveSettings(){
+  var school=RSMS.db.school();
+  school.name=document.getElementById('cfg-name').value;
+  school.address=document.getElementById('cfg-addr').value;
+  school.phone=document.getElementById('cfg-phone').value;
+  school.principal=document.getElementById('cfg-principal').value;
+  school.plan=document.getElementById('cfg-plan').value;
+  school.term=document.getElementById('cfg-term').value;
+  school.session=document.getElementById('cfg-session').value;
+  RSMS.db.set('school',school);
+  document.getElementById('sb-school').textContent=school.name;
+  document.getElementById('tb-term').textContent=school.term;
+  RSMS.ui.toast('✅ Settings saved','s');
+}
+
+function uploadLogo(input){
+  var file=input.files[0]; if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    localStorage.setItem('rsms_school_logo',e.target.result);
+    document.getElementById('logo-preview').innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:contain;"/>';
+    RSMS.ui.toast('Logo saved','s');
+  };
+  reader.readAsDataURL(file);
+}
+// ── ADMIN: LESSON AI PAGE ─────────────────────────────
+function renderLessonAI(){
+  var school = RSMS.school;
+  var plan = school.plan||'Standard';
+  var term = school.term||'First Term';
+  var el = document.getElementById('ai-plan-label');
+  if(el) el.textContent = plan+' Plan';
+  var tel = document.getElementById('ai-term-label');
+  if(tel) tel.textContent = term;
+  // Populate teacher dropdown
+  var sel = document.getElementById('ai-teacher-sel');
+  if(sel){
+    var teachers = RSMS.staff().filter(function(s){
+      var r=(s.role||'').toLowerCase();
+      return r.includes('teacher')||r.includes('hod');
+    });
+    sel.innerHTML = '<option value="">-- Select Teacher --</option>'+
+      teachers.map(function(t){
+        return '<option value="'+t.id+'">'+t.name+' ('+t.role+')</option>';
+      }).join('');
+  }
+  renderGiftLog();
+}
+
+window.onPage_lessonai = renderLessonAI;
+
+function giftAllTeachers(){
+  var plan = (RSMS.school.plan||'').toLowerCase();
+  if(!plan.includes('enterprise')){
+    toast('Lesson AI gifting is for Enterprise plan only','error'); return;
+  }
+  var result = LESSON_AI.giftAll();
+  if(result.alreadyDone){
+    toast('Units already gifted this term','info'); return;
+  }
+  if(!result.teachers.length){
+    toast('No teachers found in staff list','error'); return;
+  }
+  var log = document.getElementById('ai-gift-log');
+  if(log){
+    log.innerHTML = '';
+    result.teachers.forEach(function(t){
+      var link = LESSON_AI.giftLink(t);
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);';
+      row.innerHTML = '<div><div style="font-weight:700;font-size:.85rem;">'+t.name+'</div>'+
+        '<div style="font-size:.72rem;color:var(--t3);">'+t.role+'</div></div>';
+      var btn = document.createElement('button');
+      btn.className = 'btn btn-teal btn-xs';
+      btn.textContent = 'Send Gift';
+      btn.onclick = (function(name,lnk){
+        return function(){
+          var msg = 'Hello '+name+'! Your school has gifted you '+LESSON_AI.UNITS_PER_TERM+
+            ' AI Lesson Studio units for this term. Click to activate: '+lnk;
+          window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+        };
+      })(t.name, link);
+      row.appendChild(btn);
+      log.appendChild(row);
+    });
+  }
+  toast('Gift links ready for '+result.count+' teachers below','success');
+}
+
+function sendAIGiftLink(){
+  var id = document.getElementById('ai-teacher-sel').value;
+  if(!id){toast('Select a teacher first','error');return;}
+  var t = RSMS.staff().find(function(s){return s.id===id;});
+  if(!t){toast('Teacher not found','error');return;}
+  var link = LESSON_AI.giftLink(t);
+  var msg = 'Hello '+t.name+'! Your school has gifted you '+LESSON_AI.UNITS_PER_TERM+
+    ' AI Lesson Studio units for this term. Click to activate: '+link;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+function renderGiftLog(){
+  var log = document.getElementById('ai-gift-log');
+  if(!log) return;
+  var school = RSMS.school;
+  var term = school.term||'First Term';
+  var session = school.session||'2025/2026';
+  var key = 'gift_'+term.replace(/\s+/g,'_')+'_'+session.replace('/','_');
+  var done = localStorage.getItem(key)==='done';
+  if(!done) log.innerHTML = '<div class="text-muted">No gifts sent yet this term. Click the button above to begin.</div>';
+}
+
+// ── ADMIN: LESSON AI PAGE ─────────────────────────────
+function renderLessonAI(){
+  var school = RSMS.school;
+  var plan = school.plan||'Standard';
+  var term = school.term||'First Term';
+  var el = document.getElementById('ai-plan-label');
+  if(el) el.textContent = plan+' Plan';
+  var tel = document.getElementById('ai-term-label');
+  if(tel) tel.textContent = term;
+  // Populate teacher dropdown
+  var sel = document.getElementById('ai-teacher-sel');
+  if(sel){
+    var teachers = RSMS.staff().filter(function(s){
+      var r=(s.role||'').toLowerCase();
+      return r.includes('teacher')||r.includes('hod');
+    });
+    sel.innerHTML = '<option value="">-- Select Teacher --</option>'+
+      teachers.map(function(t){
+        return '<option value="'+t.id+'">'+t.name+' ('+t.role+')</option>';
+      }).join('');
+  }
+  renderGiftLog();
+}
+
+window.onPage_lessonai = renderLessonAI;
+
+function giftAllTeachers(){
+  var plan = (RSMS.school.plan||'').toLowerCase();
+  if(!plan.includes('enterprise')){
+    toast('Lesson AI gifting is for Enterprise plan only','error'); return;
+  }
+  var result = LESSON_AI.giftAll();
+  if(result.alreadyDone){
+    toast('Units already gifted this term','info'); return;
+  }
+  if(!result.teachers.length){
+    toast('No teachers found in staff list','error'); return;
+  }
+  var log = document.getElementById('ai-gift-log');
+  if(log){
+    log.innerHTML = '';
+    result.teachers.forEach(function(t){
+      var link = LESSON_AI.giftLink(t);
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);';
+      row.innerHTML = '<div><div style="font-weight:700;font-size:.85rem;">'+t.name+'</div>'+
+        '<div style="font-size:.72rem;color:var(--t3);">'+t.role+'</div></div>';
+      var btn = document.createElement('button');
+      btn.className = 'btn btn-teal btn-xs';
+      btn.textContent = 'Send Gift';
+      btn.onclick = (function(name,lnk){
+        return function(){
+          var msg = 'Hello '+name+'! Your school has gifted you '+LESSON_AI.UNITS_PER_TERM+
+            ' AI Lesson Studio units for this term. Click to activate: '+lnk;
+          window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+        };
+      })(t.name, link);
+      row.appendChild(btn);
+      log.appendChild(row);
+    });
+  }
+  toast('Gift links ready for '+result.count+' teachers below','success');
+}
+
+function sendAIGiftLink(){
+  var id = document.getElementById('ai-teacher-sel').value;
+  if(!id){toast('Select a teacher first','error');return;}
+  var t = RSMS.staff().find(function(s){return s.id===id;});
+  if(!t){toast('Teacher not found','error');return;}
+  var link = LESSON_AI.giftLink(t);
+  var msg = 'Hello '+t.name+'! Your school has gifted you '+LESSON_AI.UNITS_PER_TERM+
+    ' AI Lesson Studio units for this term. Click to activate: '+link;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+function renderGiftLog(){
+  var log = document.getElementById('ai-gift-log');
+  if(!log) return;
+  var school = RSMS.school;
+  var term = school.term||'First Term';
+  var session = school.session||'2025/2026';
+  var key = 'gift_'+term.replace(/\s+/g,'_')+'_'+session.replace('/','_');
+  var done = localStorage.getItem(key)==='done';
+  if(!done) log.innerHTML = '<div class="text-muted">No gifts sent yet this term. Click the button above to begin.</div>';
+}
+
+</script>
+</body>
+</html>
+<!-- LESSON AI PAGE -->
+<div class="page" id="pg-lessonai">
+  <div class="page-hd-title" style="margin-bottom:4px;">&#129302; Lesson AI Units</div>
+  <div class="page-hd-sub" style="margin-bottom:14px;">Gift 10 AI units per term to teachers. Enterprise plan only.</div>
+  <div class="card" style="background:linear-gradient(135deg,var(--navy),var(--navy2));border:none;margin-bottom:12px;">
+    <div style="color:rgba(255,255,255,.55);font-size:.72rem;margin-bottom:4px;">Current Plan</div>
+    <div style="font-family:var(--serif);font-size:1.5rem;font-weight:900;color:#fff;" id="ai-plan-label">Standard</div>
+    <div style="font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:12px;" id="ai-term-label">First Term</div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap;">
+      <button class="btn btn-gold btn-sm" onclick="giftAllTeachers()">&#127873; Gift All Teachers This Term</button>
+      <a class="btn btn-ghost btn-sm" href="https://rehoteq.com/lesson-ai.html" target="_blank" style="color:#fff;border-color:rgba(255,255,255,.3);">Open Studio</a>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">Send Individual Gift</div>
+    <div class="fg" style="margin-bottom:10px;"><label>Select Teacher</label>
+      <select class="fi" id="ai-teacher-sel" style="height:46px;font-size:.85rem;"><option value="">-- Select --</option></select></div>
+    <button class="btn btn-navy btn-sm" onclick="sendAIGiftLink()">&#128241; Send via WhatsApp</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Gift Log — This Term</div>
+    <div id="ai-gift-log"><div class="text-muted">No gifts sent yet.</div></div>
+  </div>
+</div>
+
+

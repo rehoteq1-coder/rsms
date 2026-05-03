@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0f1535"/>
+<title>RSMS &#8212; Student Portal</title>
+<link rel="stylesheet" href="rsms-core.css"/>
+<script src="rsms-core.js"></script>
+</head>
+<body>
+<div class="app-shell">
+<div class="sb-overlay" id="sb-ov" onclick="closeSb()"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <img class="sb-logo" id="sb-logo" src="" alt="" onerror="this.style.display='none'"/>
+    <div><div class="sb-school" id="sb-school">School</div><div class="sb-tagline">Student Portal</div></div>
+  </div>
+  <div class="sb-user">
+    <div class="sb-av" id="sb-av">?</div>
+    <div><div class="sb-uname" id="sb-name">Loading</div><div class="sb-urole" id="sb-role">Student Portal</div></div>
+  </div>
+  <div class="sb-section">MY PORTAL</div>
+  <div class="sb-item active" onclick="showPage('home',this)">&#127968; Dashboard</div>
+  <div class="sb-item" onclick="showPage('assignments',this)">&#128203; Assignments</div>
+  <div class="sb-item" onclick="showPage('results',this)">&#128196; My Results</div>
+  <div class="sb-item" onclick="showPage('fees',this)">&#128176; Fee Status</div>
+  <div class="sb-section">SYSTEM</div>
+  <div class="sb-item" onclick="confirmAction('Logout?',RSMS.logout)">&#128682; Logout</div>
+  <div class="sb-footer">RSMS &#8212; Rehoteq Technologies</div>
+</aside>
+<div class="main-area">
+  <header class="topbar">
+    <button class="menu-btn" onclick="openSb()">&#9776;</button>
+    <div class="topbar-title">Student Portal</div>
+    <div class="topbar-right">
+      <button class="tb-notif" onclick="toast('No new notifications','info')">&#128276;</button>
+      <div class="tb-av" id="hd-av">?</div>
+    </div>
+  </header>
+  <div class="main-scroll">
+
+<div class="page active" id="pg-home">
+  <div class="hero-card" style="margin:16px 16px 0;">
+    <div class="hc-label">Welcome back,</div>
+    <div class="hc-val" data-student-name="" style="font-size:1.4rem;">Student</div>
+    <div class="hc-row" style="margin-top:8px;">
+      <div class="hc-badge" data-student-class="">Class</div>
+    </div>
+  </div>
+  <div id="s-pending-alert" style="display:none;margin:12px 16px 0;background:rgba(244,63,94,.1);border:1px solid var(--red);border-radius:var(--r2);padding:10px 14px;font-size:.82rem;color:var(--red);"></div>
+  <div class="section" style="margin-top:14px;">
+    <div class="sec-hd"><div class="sec-title">Overview</div></div>
+    <div class="stat-grid" id="s-stats"></div>
+  </div>
+  <div class="section">
+    <div class="qa-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="qa-item" onclick="showPage('assignments')"><span class="qa-ico">&#128203;</span><div class="qa-lbl">Assignments</div></div>
+      <div class="qa-item" onclick="showPage('results')"><span class="qa-ico">&#128196;</span><div class="qa-lbl">Results</div></div>
+      <div class="qa-item" onclick="showPage('fees')"><span class="qa-ico">&#128176;</span><div class="qa-lbl">Fees</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="sec-hd"><div class="sec-title">Recent Assignments</div><div class="sec-action" onclick="showPage('assignments')">View all &rarr;</div></div>
+    <div class="card" id="s-assign-preview"></div>
+  </div>
+</div>
+
+<div class="page" id="pg-assignments">
+  <div class="page-hd-title" style="margin-bottom:14px;">My Assignments</div>
+  <div id="s-assign-list"></div>
+</div>
+
+<div class="page" id="pg-results">
+  <div class="page-hd-title" style="margin-bottom:14px;">My Results</div>
+  <div id="s-results-list"></div>
+</div>
+
+<div class="page" id="pg-fees">
+  <div class="page-hd-title" style="margin-bottom:14px;">Fee Status</div>
+  <div id="s-fees-list"></div>
+</div>
+
+  </div>
+</div>
+</div>
+
+<div class="toast" id="rsms-toast"></div>
+<script>
+window.addEventListener('load',function(){ checkToken(); setHeaderInfo(); if(window.initPortal)initPortal(); });
+var ME = {}, MY_NAME = '', MY_CLASS = '', MY_ID = '';
+
+function initPortal(){
+  ME = RSMS.user||{};
+  MY_NAME = (ME.name||((ME.surname||'')+' '+(ME.firstname||'')).trim()||'Student').trim();
+  MY_CLASS = ME.class||ME.myClass||'';
+  MY_ID = ME.id||ME.stuId||'';
+  // Stamp name everywhere
+  document.querySelectorAll('[data-student-name]').forEach(function(el){el.textContent=MY_NAME;});
+  document.querySelectorAll('[data-student-class]').forEach(function(el){el.textContent=MY_CLASS;});
+  renderDash();
+}
+
+window.onPage_home        = renderDash;
+window.onPage_assignments = renderAssignments;
+window.onPage_results     = renderResults;
+window.onPage_fees        = renderFees;
+
+function myAssignments(){
+  return JSON.parse(localStorage.getItem('rsms_assignments')||'[]')
+    .filter(function(a){return !a.cls||a.cls===MY_CLASS;});
+}
+function myResults(){
+  return JSON.parse(localStorage.getItem('rsms_results')||'[]')
+    .filter(function(r){return r.stuId===MY_ID||r.student===MY_NAME;});
+}
+function myFees(){
+  return RSMS.fees().filter(function(f){return f.stuId===MY_ID||f.student===MY_NAME;});
+}
+
+function renderDash(){
+  var assigns = myAssignments();
+  var pending = assigns.filter(function(a){
+    return !(a.submissions||[]).some(function(s){return s.stuId===MY_ID||s.name===MY_NAME;});
+  }).length;
+  var fees = myFees();
+  var fTotal = fees.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  var el = document.getElementById('s-stats');
+  if(el) el.innerHTML=[
+    {v:MY_CLASS||'--',l:'My Class',cls:'s-teal'},
+    {v:assigns.length,l:'Assignments',cls:'s-gold'},
+    {v:pending,l:'Pending',cls:'s-red'},
+    {v:'\u20a6'+fTotal.toLocaleString('en-NG'),l:'Fees Paid',cls:'s-green'}
+  ].map(function(s){return '<div class="stat-tile '+s.cls+'"><div class="stat-v">'+s.v+'</div><div class="stat-l">'+s.l+'</div></div>';}).join('');
+
+  var al = document.getElementById('s-pending-alert');
+  if(al) al.style.display = pending>0?'block':'none';
+  if(al&&pending>0) al.textContent = pending+' assignment'+(pending>1?'s are':' is')+' pending submission.';
+
+  var prev = document.getElementById('s-assign-preview');
+  if(prev){
+    var recent = assigns.slice(-3).reverse();
+    if(!recent.length){prev.innerHTML='<div class="empty-state">No assignments yet</div>';return;}
+    prev.innerHTML='';
+    recent.forEach(function(a){
+      var done = (a.submissions||[]).some(function(s){return s.stuId===MY_ID||s.name===MY_NAME;});
+      var div=document.createElement('div'); div.className='act-item';
+      div.innerHTML='<div class="act-ico '+(done?'c-green':'c-gold')+'">&#128203;</div>'+
+        '<div class="act-info"><div class="act-title">'+a.title+'</div>'+
+        '<div class="act-sub">'+a.subject+' \u00b7 Due: '+a.dueDate+'</div></div>'+
+        '<div class="act-right"><span class="badge '+(done?'bg-green':'bg-red')+'" style="font-size:.6rem;">'+(done?'Done':'Pending')+'</span></div>';
+      prev.appendChild(div);
+    });
+  }
+}
+
+function renderAssignments(){
+  var el = document.getElementById('s-assign-list'); if(!el)return;
+  var assigns = myAssignments();
+  if(!assigns.length){el.innerHTML='<div class="empty-state">No assignments yet</div>';return;}
+  el.innerHTML='';
+  assigns.slice().reverse().forEach(function(a){
+    var done = (a.submissions||[]).some(function(s){return s.stuId===MY_ID||s.name===MY_NAME;});
+    var div=document.createElement('div'); div.className='card'; div.style.marginBottom='12px';
+    div.innerHTML='<div class="flex-between" style="margin-bottom:8px;">'+
+      '<div><div style="font-weight:700;color:var(--t1);">'+a.title+'</div>'+
+      '<div style="font-size:.73rem;color:var(--t3);">'+a.subject+' \u00b7 Due: '+a.dueDate+'</div></div>'+
+      '<span class="badge '+(done?'bg-green':'bg-red')+'" style="font-size:.6rem;">'+(done?'Submitted':'Pending')+'</span></div>'+
+      '<div style="font-size:.85rem;color:var(--t2);line-height:1.65;margin-bottom:10px;">'+a.content+'</div>';
+    if(!done){
+      var wrap=document.createElement('div');
+      var ta=document.createElement('textarea');
+      ta.className='fi'; ta.id='ans-'+a.id; ta.rows=4;
+      ta.placeholder='Type your answer here...'; ta.style.marginBottom='8px';
+      var btn=document.createElement('button'); btn.className='btn btn-navy btn-sm';
+      btn.textContent='Submit Answer';
+      btn.onclick=(function(asgn){return function(){
+        var ans=(document.getElementById('ans-'+asgn.id)||{value:''}).value.trim();
+        if(!ans){toast('Write your answer first','error');return;}
+        var all=JSON.parse(localStorage.getItem('rsms_assignments')||'[]');
+        var idx=all.findIndex(function(x){return x.id===asgn.id;});
+        if(idx>-1){
+          if(!all[idx].submissions) all[idx].submissions=[];
+          all[idx].submissions.push({stuId:MY_ID,name:MY_NAME,answer:ans,submittedAt:new Date().toISOString()});
+          localStorage.setItem('rsms_assignments',JSON.stringify(all));
+          renderAssignments(); renderDash(); toast('Assignment submitted!','success');
+        }
+      };})(a);
+      wrap.appendChild(ta); wrap.appendChild(btn); div.appendChild(wrap);
+    }
+    el.appendChild(div);
+  });
+}
+
+function renderResults(){
+  var el = document.getElementById('s-results-list'); if(!el)return;
+  var results = myResults();
+  if(!results.length){el.innerHTML='<div class="empty-state">No results available yet</div>';return;}
+  el.innerHTML='';
+  results.forEach(function(r){
+    var div=document.createElement('div'); div.className='card'; div.style.marginBottom='14px';
+    div.innerHTML='<div style="font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:4px;">'+(r.term||'Term')+' '+r.session+'</div>'+
+      '<div style="font-size:.78rem;color:var(--t3);margin-bottom:10px;">'+(r.class||MY_CLASS)+
+      (r.position?' \u00b7 Position: <strong>'+r.position+'</strong> of '+r.total:'')+'</div>';
+    if(r.scores&&r.scores.length){
+      var tbl=document.createElement('div'); tbl.className='tbl-wrap';
+      tbl.innerHTML='<table class="tbl"><thead><tr><th>Subject</th><th>CA</th><th>Exam</th><th>Total</th><th>Grade</th></tr></thead><tbody>'+
+        r.scores.map(function(s){
+          var total=parseFloat(s.score||s.total||0);
+          var g=grade(total); var gc=gradeColor(total);
+          return '<tr><td>'+s.subject+'</td><td>'+(s.ca||'--')+'</td><td>'+(s.exam||'--')+'</td>'+
+            '<td style="font-weight:700;">'+total+'</td>'+
+            '<td><span class="badge bg-'+gc+'" style="font-size:.6rem;">'+g+'</span></td></tr>';
+        }).join('')+'</tbody></table>';
+      div.appendChild(tbl);
+    }
+    el.appendChild(div);
+  });
+}
+
+function grade(s){
+  if(s>=75)return 'A1'; if(s>=70)return 'B2'; if(s>=65)return 'B3';
+  if(s>=60)return 'C4'; if(s>=55)return 'C5'; if(s>=50)return 'C6';
+  if(s>=45)return 'D7'; if(s>=40)return 'E8'; return 'F9';
+}
+function gradeColor(s){
+  if(s>=50)return 'green'; if(s>=45)return 'gold'; return 'red';
+}
+
+function renderFees(){
+  var el = document.getElementById('s-fees-list'); if(!el)return;
+  var fees = myFees();
+  if(!fees.length){el.innerHTML='<div class="empty-state">No payment records yet</div>';return;}
+  var total = fees.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  el.innerHTML='';
+  var hero=document.createElement('div');
+  hero.style.cssText='background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:var(--r);padding:16px;margin-bottom:12px;';
+  hero.innerHTML='<div style="color:rgba(255,255,255,.55);font-size:.72rem;margin-bottom:4px;">Total Paid This Term</div>'+
+    '<div style="font-family:var(--serif);font-size:1.8rem;font-weight:900;color:#fff;">\u20a6'+total.toLocaleString('en-NG')+'</div>'+
+    '<div style="font-size:.75rem;color:rgba(255,255,255,.4);margin-top:4px;">'+(RSMS.school.term||'First Term')+'</div>';
+  el.appendChild(hero);
+  fees.slice().reverse().forEach(function(f){
+    var div=document.createElement('div'); div.className='card'; div.style.marginBottom='8px';
+    div.innerHTML='<div class="flex-between">'+
+      '<div><div style="font-weight:700;">'+f.type+'</div>'+
+      '<div style="font-size:.73rem;color:var(--t3);">'+f.receiptNo+' \u00b7 '+f.date+' \u00b7 '+f.method+'</div></div>'+
+      '<div style="font-weight:700;color:var(--green);">\u20a6'+parseFloat(f.amount||0).toLocaleString()+'</div></div>';
+    el.appendChild(div);
+  });
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0f1535"/>
+<title>RSMS -- HOD Portal</title>
+<link rel="stylesheet" href="rsms-core.css"/>
+<script src="rsms-core.js"></script>
+</head>
+<body>
+<div class="app-shell">
+<div class="sb-overlay" id="sb-ov" onclick="closeSb()"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <img class="sb-logo" id="sb-logo" src="" alt="" onerror="this.style.display='none'"/>
+    <div><div class="sb-school" id="sb-school">School</div><div class="sb-tagline">HOD Portal</div></div>
+  </div>
+  <div class="sb-user">
+    <div class="sb-av" id="sb-av">H</div>
+    <div><div class="sb-uname" id="sb-name">HOD</div><div class="sb-urole">Head of Department</div></div>
+  </div>
+  <div class="sb-section">OVERVIEW</div>
+  <div class="sb-item active" onclick="showPage('home',this)">&#127968; Dashboard</div>
+  <div class="sb-section">ACADEMIC REVIEW</div>
+  <div class="sb-item" onclick="showPage('review',this)">
+    &#128220; Pending Reviews
+    <span class="sb-badge" id="hod-pending-badge" style="display:none;">0</span>
+  </div>
+  <div class="sb-item" onclick="showPage('history',this)">&#9989; Approved Docs</div>
+  <div class="sb-section">MY DEPT</div>
+  <div class="sb-item" onclick="showPage('teachers',this)">&#128104;&#8205;&#127979; My Teachers</div>
+  <div class="sb-item" onclick="window.open('rsms-results-print.html','_blank')">&#128196; Results</div>
+  <div class="sb-item" onclick="window.open('rsms-cbt-questions.html','_blank')">&#128218; CBT Bank</div>
+  <div class="sb-item" onclick="window.open('https://rehoteq.com/lesson-ai.html','_blank')">&#129302; AI Studio</div>
+  <div class="sb-section">SYSTEM</div>
+  <div class="sb-item" onclick="confirmAction('Logout?',RSMS.logout)">&#128682; Logout</div>
+  <div class="sb-footer">RSMS - Rehoteq Technologies</div>
+</aside>
+  <div class="main-area">
+    <header class="topbar">
+      <button class="menu-btn" onclick="openSb()">&#9776;</button>
+      <div class="topbar-title">HOD Portal</div>
+      <div class="topbar-right">
+        <button class="tb-notif" onclick="showPage('review')" style="position:relative;">
+          &#128276;
+          <span id="tb-badge" style="position:absolute;top:2px;right:2px;width:8px;height:8px;background:var(--red);border-radius:50%;display:none;"></span>
+        </button>
+        <div class="tb-av" id="hd-av">H</div>
+      </div>
+    </header>
+    <div class="main-scroll">
+
+<!-- DASHBOARD -->
+<div class="page active" id="pg-home">
+  <div class="hero-card" style="margin:16px 16px 0;">
+    <div class="hc-label" id="sb-name-hero">HOD</div>
+    <div class="hc-val" id="hod-pending-hero">0</div>
+    <div class="hc-sub">Documents pending your review</div>
+    <div class="hc-row" style="margin-top:10px;">
+      <div class="hc-badge" id="sb-school-h">School</div>
+      <button onclick="showPage('review')" class="btn btn-gold btn-xs" style="height:28px;">Review Now</button>
+    </div>
+  </div>
+  <div style="margin-top:14px;" class="carousel-wrap">
+    <div class="carousel-track" id="hod-carousel"></div>
+    <div class="carousel-dots" id="hod-dots"></div>
+  </div>
+  <div class="section">
+    <div class="qa-grid" style="grid-template-columns:repeat(4,1fr);">
+      <div class="qa-item" onclick="showPage('review')"><span class="qa-ico">&#128220;</span><div class="qa-lbl">Review</div></div>
+      <div class="qa-item" onclick="showPage('history')"><span class="qa-ico">&#9989;</span><div class="qa-lbl">Approved</div></div>
+      <div class="qa-item" onclick="showPage('teachers')"><span class="qa-ico">&#128104;&#8205;&#127979;</span><div class="qa-lbl">Teachers</div></div>
+      <div class="qa-item" onclick="window.open('rsms-results-print.html','_blank')"><span class="qa-ico">&#128196;</span><div class="qa-lbl">Results</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="sec-hd"><div class="sec-title">Stats</div></div>
+    <div class="stat-grid" id="hod-stats"></div>
+  </div>
+  <div class="section">
+    <div class="sec-hd"><div class="sec-title">Recent Activity</div></div>
+    <div class="card" id="hod-recent"></div>
+  </div>
+</div>
+
+<!-- REVIEW -->
+<div class="page" id="pg-review">
+  <div class="page-hd-title" style="margin-bottom:12px;">Pending Reviews</div>
+  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+    <button class="btn btn-navy btn-sm" id="hod-tab-plans" onclick="renderPendingDocs('plans')">Lesson Plans</button>
+    <button class="btn btn-ghost btn-sm" id="hod-tab-notes" onclick="renderPendingDocs('notes')">Lesson Notes</button>
+    <button class="btn btn-ghost btn-sm" id="hod-tab-exams" onclick="renderPendingDocs('exams')">Exam Questions</button>
+  </div>
+  <div id="hod-plans-tab"><div id="hod-doc-list-plans"></div></div>
+  <div id="hod-notes-tab" style="display:none;"><div id="hod-doc-list-notes"></div></div>
+  <div id="hod-exams-tab" style="display:none;"><div id="hod-doc-list-exams"></div></div>
+</div>
+
+<!-- APPROVED HISTORY -->
+<div class="page" id="pg-history">
+  <div class="page-hd-title" style="margin-bottom:14px;">Approved Documents</div>
+  <div id="hod-approved-list"></div>
+</div>
+
+<!-- TEACHERS -->
+<div class="page" id="pg-teachers">
+  <div class="page-hd-title" style="margin-bottom:14px;">My Teachers</div>
+  <div id="hod-teachers-list"></div>
+</div>
+
+    </div>
+  </div>
+</div>
+
+<!-- HOD REVIEW MODAL -->
+<div class="modal-ov" id="m-hod-review">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="hod-review-title">Review Document</div>
+    <div id="hod-review-content" style="background:var(--card2);border:1px solid var(--line);border-radius:var(--r2);padding:14px;max-height:45vh;overflow-y:auto;font-size:.8rem;color:var(--t2);white-space:pre-wrap;font-family:var(--mono);margin-bottom:14px;line-height:1.7;"></div>
+    <div class="fg">
+      <label>HOD Review Comment / Note</label>
+      <textarea class="fi" id="hod-review-note" rows="3" placeholder="Add approval note, corrections or reason for return..."></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-red" onclick="hodAction('return')" style="flex:1;">Return to Teacher</button>
+      <button class="btn btn-green" onclick="hodAction('approve')" style="flex:2;">Approve and Forward to VP</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="rsms-toast"></div>
+<script>
+window.addEventListener('load',function(){ checkToken(); setHeaderInfo(); if(window.initPortal)initPortal(); });
+// HOD Portal JS
+var ME = {};
+var REVIEW_DOC = null;
+var REVIEW_TYPE = null;
+
+function initPortal(){
+  ME = RSMS.user || {};
+  renderDash();
+  updatePendingBadge();
+}
+
+window.onPage_home    = renderDash;
+window.onPage_review  = function(){ updatePendingBadge(); renderPendingDocs('plans'); };
+window.onPage_history = renderApproved;
+window.onPage_teachers = renderMyTeachers;
+
+function updatePendingBadge(){
+  var count = WF.pending('hod');
+  var badge = document.getElementById('hod-pending-badge');
+  if(badge){ badge.textContent=count||'0'; badge.style.display=count>0?'inline':'none'; }
+}
+
+function renderDash(){
+  ME = RSMS.user || {};
+  var pending = WF.pending('hod');
+  var all = WF.getAll('plans').concat(WF.getAll('notes')).concat(WF.getAll('exams'));
+  var approved = all.filter(function(d){return d.status==='hod_reviewed'||d.status==='vp_approved';}).length;
+  var el = document.getElementById('hod-stats');
+  if(el) el.innerHTML = [
+    {v:pending, l:'Pending Review', cls:'s-gold'},
+    {v:approved, l:'Approved', cls:'s-green'},
+    {v:all.filter(function(d){return d.status==='returned';}).length, l:'Returned', cls:'s-red'},
+    {v:RSMS.students().length, l:'Students', cls:'s-teal'}
+  ].map(function(s){return '<div class="stat-tile '+s.cls+'"><div class="stat-v">'+s.v+'</div><div class="stat-l">'+s.l+'</div></div>';}).join('');
+  var al = document.getElementById('hod-recent');
+  if(al){
+    var recent = all.slice(-5).reverse();
+    if(!recent.length){al.innerHTML='<div class="empty-state">No submissions yet</div>';return;}
+    al.innerHTML='';
+    recent.forEach(function(d){
+      var div=document.createElement('div'); div.className='act-item';
+      var typeLabel=d.docType==='plan'?'Lesson Plan':d.docType==='note'?'Lesson Note':'Exam Questions';
+      div.innerHTML='<div class="act-ico c-blue">\ud83d\udcca</div>'+
+        '<div class="act-info"><div class="act-title">'+(d.topic||d.subject+' '+d.examType)+'</div>'+
+        '<div class="act-sub">'+typeLabel+' by '+(d.by||'Teacher')+'</div></div>'+
+        '<div class="act-right">'+WF.badge(d.status)+'</div>';
+      al.appendChild(div);
+    });
+  }
+  initCarousel([
+    {bg:'linear-gradient(135deg,#0f1535,#1a2347)',tag:'Review',title:pending+' Pending Reviews',sub:'Lesson plans, notes and exams',btn:'Review Now',ico:'\ud83d\udcca',link:'#'},
+    {bg:'linear-gradient(135deg,#14532d,#22c55e)',tag:'Results',title:'Student Results',sub:'View and approve results',btn:'Open Results',ico:'\ud83d\udcdc',link:'rsms-results-print.html'},
+    {bg:'linear-gradient(135deg,#4c1d95,#8b5cf6)',tag:'AI Studio',title:'Lesson AI Studio',sub:'10 units gifted per term',btn:'Open Studio',ico:'\ud83e\udd16',link:'https://rehoteq.com/lesson-ai.html'}
+  ],'hod-carousel','hod-dots');
+}
+
+function renderPendingDocs(type){
+  ['plans','notes','exams'].forEach(function(t){
+    var tab=document.getElementById('hod-'+t+'-tab');
+    var btn=document.getElementById('hod-tab-'+t);
+    if(tab) tab.style.display=t===type?'block':'none';
+    if(btn) btn.className=t===type?'btn btn-navy btn-sm':'btn btn-ghost btn-sm';
+  });
+  var el=document.getElementById('hod-doc-list-'+type); if(!el)return;
+  var all=WF.getAll(type).filter(function(d){return d.status==='submitted';});
+  if(!all.length){el.innerHTML='<div class="empty-state">No pending '+type+' to review</div>';return;}
+  el.innerHTML='';
+  all.forEach(function(d){
+    var div=document.createElement('div'); div.className='card'; div.style.marginBottom='10px';
+    div.innerHTML='<div class="flex-between" style="margin-bottom:6px;">'+
+      '<div><div style="font-weight:700;color:var(--t1);">'+(d.topic||d.subject+' '+d.examType)+'</div>'+
+      '<div style="font-size:.72rem;color:var(--t3);">'+d.subject+(d.cls?' \u00b7 '+d.cls:'')+(d.week?' \u00b7 '+d.week:'')+(d.by?' \u00b7 By: '+d.by:'')+'</div></div>'+
+      WF.badge(d.status)+'</div>';
+    var row=document.createElement('div'); row.className='flex-gap'; row.style.marginTop='8px';
+    var viewBtn=document.createElement('button'); viewBtn.className='btn btn-light btn-xs'; viewBtn.textContent='View Content';
+    viewBtn.onclick=(function(doc,t){return function(){openReviewModal(doc,t);};})(d,type);
+    var reviewBtn=document.createElement('button'); reviewBtn.className='btn btn-gold btn-xs'; reviewBtn.textContent='Review';
+    reviewBtn.onclick=(function(doc,t){return function(){openReviewModal(doc,t);};})(d,type);
+    row.appendChild(viewBtn); row.appendChild(reviewBtn);
+    div.appendChild(row); el.appendChild(div);
+  });
+}
+
+function openReviewModal(doc, type){
+  REVIEW_DOC=doc; REVIEW_TYPE=type;
+  var title=doc.topic||(doc.subject+' - '+(doc.examType||'Document'));
+  document.getElementById('hod-review-title').textContent='Review: '+title;
+  var content='';
+  if(doc.docType==='plan'){
+    content='SUBJECT: '+doc.subject+'\nCLASS: '+(doc.cls||'')+'\nTOPIC: '+doc.topic+'\nWEEK: '+(doc.week||'')+'\nDURATION: '+(doc.duration||'')+
+      '\n\nLEARNING OBJECTIVES:\n'+(doc.objectives||'')+'\n\nMATERIALS: '+(doc.materials||'')+
+      '\n\nCONTENT:\n'+(doc.content||'')+'\n\nREFERENCES: '+(doc.references||'');
+  } else if(doc.docType==='note'){
+    content='SUBJECT: '+doc.subject+'\nCLASS: '+(doc.cls||'')+'\nTOPIC: '+doc.topic+'\nDATE: '+(doc.date||'')+'\nWEEK: '+(doc.week||'')+
+      '\n\nNOTE CONTENT:\n'+(doc.content||'')+'\n\nATTENDANCE: '+(doc.attendance||'')+'\n\nREFLECTION: '+(doc.reflection||'');
+  } else {
+    content='SUBJECT: '+doc.subject+'\nCLASS: '+(doc.cls||'')+'\nEXAM TYPE: '+(doc.examType||'')+'\nDURATION: '+(doc.duration||'')+'\nTOTAL MARKS: '+(doc.totalMarks||'')+
+      '\n\nINSTRUCTIONS: '+(doc.instructions||'')+'\n\nSECTION A:\n'+(doc.sectionA||'')+
+      '\n\nSECTION B:\n'+(doc.sectionB||'')+'\n\nMARKING SCHEME:\n'+(doc.markingScheme||'');
+  }
+  document.getElementById('hod-review-content').textContent=content;
+  document.getElementById('hod-review-note').value=doc.hodNote||'';
+  openModal('m-hod-review');
+}
+
+function hodAction(action){
+  if(!REVIEW_DOC||!REVIEW_TYPE)return;
+  var note=(document.getElementById('hod-review-note').value||'').trim();
+  var result=WF.review(REVIEW_TYPE, REVIEW_DOC.id, action, note, ME.name||'HOD');
+  closeModal('m-hod-review');
+  renderPendingDocs(REVIEW_TYPE);
+  updatePendingBadge();
+  renderDash();
+  toast(action==='approve'?'Approved and forwarded to VP Academic':'Returned to teacher', action==='approve'?'success':'info');
+}
+
+function renderApproved(){
+  var el=document.getElementById('hod-approved-list'); if(!el)return;
+  var all=WF.getAll('plans').concat(WF.getAll('notes')).concat(WF.getAll('exams'))
+    .filter(function(d){return d.status==='hod_reviewed'||d.status==='vp_approved';});
+  if(!all.length){el.innerHTML='<div class="empty-state">No approved documents yet</div>';return;}
+  el.innerHTML='';
+  all.slice().reverse().forEach(function(d){
+    var div=document.createElement('div'); div.className='card'; div.style.marginBottom='8px';
+    div.innerHTML='<div class="flex-between">'+
+      '<div><div style="font-weight:700;font-size:.88rem;">'+(d.topic||d.subject+' '+d.examType)+'</div>'+
+      '<div style="font-size:.72rem;color:var(--t3);">'+(d.docType==='plan'?'Lesson Plan':d.docType==='note'?'Lesson Note':'Exam')+' \u00b7 '+(d.by||'')+'</div></div>'+
+      WF.badge(d.status)+'</div>';
+    el.appendChild(div);
+  });
+}
+
+function renderMyTeachers(){
+  var el=document.getElementById('hod-teachers-list'); if(!el)return;
+  var teachers=RSMS.staff().filter(function(s){
+    var r=(s.role||'').toLowerCase(); return r.includes('teacher');
+  });
+  if(!teachers.length){el.innerHTML='<div class="empty-state">No teachers found</div>';return;}
+  el.innerHTML='';
+  teachers.forEach(function(t){
+    var plans=WF.getAll('plans').filter(function(d){return d.by===t.name;});
+    var div=document.createElement('div'); div.className='card'; div.style.marginBottom='8px';
+    div.innerHTML='<div class="flex-between">'+
+      '<div><div style="font-weight:700;">'+t.name+'</div>'+
+      '<div style="font-size:.73rem;color:var(--t3);">'+t.role+(t.myClass?' \u00b7 '+t.myClass:'')+'</div></div>'+
+      '<div style="font-size:.75rem;color:var(--t3);">'+plans.length+' plans</div></div>';
+    el.appendChild(div);
+  });
+}
+
+</script>
+</body>
+</html>
