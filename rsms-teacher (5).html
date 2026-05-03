@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0f1535"/>
+<title>RSMS &#8212; Teacher Portal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+/* ═══════════════════════════════════════════════════
+   RSMS CORE CSS — Include in every portal
+   Single source of truth for all shared styles
+═══════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Brand */
+  --navy:   #0f1535;
+  --navy2:  #1a2347;
+  --navy3:  #232d5a;
+  --gold:   #d4a843;
+  --goldl:  rgba(212,168,67,.12);
+  --goldb:  rgba(212,168,67,.06);
+  --teal:   #0ea5e9;
+  --teall:  rgba(14,165,233,.1);
+  --green:  #22c55e;
+  --greenl: rgba(34,197,94,.1);
+  --red:    #f43f5e;
+  --redl:   rgba(244,63,94,.1);
+  --orange: #f97316;
+  --orangel:rgba(249,115,22,.1);
+  --purple: #8b5cf6;
+  --purplel:rgba(139,92,246,.1);
+
+  /* Light page bg */
+  --bg:    #0d1117;
+  --bg2:   #111827;
+  --card:  #1a2236;
+  --card2: #1e2a45;
+
+  /* Text */
+  --t1: #f0f6ff;
+  --t2: #c9d6f0;
+  --t3: #8899bb;
+  --t4: #566280;
+
+  /* Borders */
+  --line:  rgba(255,255,255,.08);
+  --line2: rgba(255,255,255,.12);
+
+  /* Fonts */
+  --sans:  'Outfit', sans-serif;
+  --serif: 'Fraunces', serif;
+  --mono:  'DM Mono', monospace;
+
+  /* Layout */
+  --sb-w:  230px;
+  --r:     14px;
+  --r2:    10px;
+  --r3:    7px;
+
+  /* Safe areas */
+  --safe-top: env(safe-area-inset-top);
+  --safe-bot: env(safe-area-inset-bottom);
+}
+
+/* ── RESET ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; font-family:var(--sans); background:var(--bg); color:var(--t1); }
+
+/* ── LAYOUT ── */
+.app-shell { display:flex; height:100vh; overflow:hidden; }
+
+/* Sidebar */
+.sidebar {
+  width:var(--sb-w); flex-shrink:0;
+  background:var(--navy);
+  display:flex; flex-direction:column;
+  height:100vh; overflow-y:auto; overflow-x:hidden;
+  transition:transform .28s ease;
+  z-index:200;
+}
+.sidebar::-webkit-scrollbar { display:none; }
+
+/* Main */
+.main-area {
+  flex:1; display:flex; flex-direction:column;
+  overflow:hidden; min-width:0;
+}
+.main-scroll {
+  flex:1; overflow-y:auto;
+  padding-bottom:calc(70px + var(--safe-bot));
+}
+.main-scroll::-webkit-scrollbar { width:4px; }
+.main-scroll::-webkit-scrollbar-thumb { background:var(--line2); border-radius:2px; }
+
+/* ── MOBILE ── */
+@media (max-width:899px) {
+  .sidebar {
+    position:fixed; left:0; top:0;
+    transform:translateX(-100%);
+    box-shadow:4px 0 32px rgba(0,0,0,.3);
+  }
+  .sidebar.open { transform:translateX(0); }
+  .sb-overlay {
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.55);
+    z-index:190;
+    display:none;
+  }
+  .sb-overlay.show { display:block; }
+}
+@media (min-width:900px) {
+  .menu-btn { display:none !important; }
+  .sb-overlay { display:none !important; }
+  .bottom-nav { display:none !important; }
+}
+
+/* ── SIDEBAR INTERNALS ── */
+.sb-brand {
+  padding:calc(16px + var(--safe-top)) 16px 14px;
+  display:flex; align-items:center; gap:10px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.sb-logo { width:36px; height:36px; border-radius:10px; object-fit:contain; flex-shrink:0; background:rgba(255,255,255,.1); }
+.sb-school { font-family:var(--serif); font-size:.9rem; font-weight:700; color:#fff; line-height:1.2; }
+.sb-tagline { font-size:.65rem; color:rgba(255,255,255,.4); }
+
+.sb-user {
+  margin:10px 12px; padding:10px 12px;
+  background:rgba(255,255,255,.06); border-radius:var(--r2);
+  display:flex; align-items:center; gap:9px;
+}
+.sb-av {
+  width:36px; height:36px; border-radius:50%;
+  background:var(--gold); color:#000; font-weight:800; font-size:.9rem;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.sb-uname { font-size:.82rem; font-weight:700; color:#fff; }
+.sb-urole { font-size:.63rem; color:rgba(255,255,255,.4); }
+
+.sb-section {
+  padding:10px 16px 4px;
+  font-size:.58rem; font-weight:800; color:rgba(255,255,255,.3);
+  text-transform:uppercase; letter-spacing:.12em;
+}
+
+.sb-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 16px; cursor:pointer;
+  font-size:.82rem; font-weight:600; color:rgba(255,255,255,.6);
+  transition:all .18s; border-left:3px solid transparent;
+  user-select:none;
+}
+.sb-item:hover { background:rgba(255,255,255,.06); color:#fff; }
+.sb-item.active { background:rgba(212,168,67,.1); color:var(--gold); border-left-color:var(--gold); }
+.sb-item .ico { font-size:1.1rem; width:22px; text-align:center; flex-shrink:0; }
+.sb-badge {
+  margin-left:auto; background:var(--red); color:#fff;
+  border-radius:20px; padding:1px 7px; font-size:.6rem; font-weight:800;
+}
+
+.sb-footer {
+  margin-top:auto; padding:12px 16px;
+  border-top:1px solid rgba(255,255,255,.06);
+  font-size:.72rem; color:rgba(255,255,255,.25);
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  background:var(--navy);
+  padding:calc(12px + var(--safe-top)) 16px 12px;
+  display:flex; align-items:center; gap:12px;
+  flex-shrink:0; position:relative; z-index:10;
+}
+.menu-btn {
+  background:none; border:none; color:rgba(255,255,255,.7);
+  font-size:1.3rem; cursor:pointer; padding:4px; line-height:1;
+}
+.topbar-title { font-family:var(--serif); font-size:1rem; font-weight:700; color:#fff; flex:1; }
+.topbar-right { display:flex; align-items:center; gap:8px; }
+.tb-notif {
+  background:rgba(255,255,255,.1); border:none; border-radius:50%;
+  width:36px; height:36px; color:#fff; cursor:pointer; font-size:1rem;
+  display:flex; align-items:center; justify-content:center;
+}
+.tb-av {
+  width:36px; height:36px; border-radius:50%;
+  background:var(--gold); color:#000; font-weight:800; font-size:.85rem;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+
+/* ── STAT HERO CARD ── */
+.hero-card {
+  background:linear-gradient(135deg, var(--navy), var(--navy2));
+  margin:0 16px 16px; border-radius:var(--r);
+  padding:16px; position:relative; overflow:hidden;
+}
+.hero-card::before {
+  content:''; position:absolute; inset:0; opacity:.04;
+  background-image:radial-gradient(circle,#fff 1px,transparent 1px);
+  background-size:18px 18px;
+}
+.hc-label { font-size:.7rem; color:rgba(255,255,255,.5); font-weight:600; margin-bottom:4px; }
+.hc-val { font-family:var(--serif); font-size:1.8rem; font-weight:900; color:#fff; margin-bottom:2px; }
+.hc-sub { font-size:.72rem; color:rgba(255,255,255,.5); }
+.hc-row { display:flex; align-items:center; justify-content:space-between; }
+.hc-badge {
+  background:rgba(255,255,255,.12); border-radius:20px;
+  padding:4px 12px; font-size:.72rem; color:rgba(255,255,255,.7); font-weight:600;
+}
+
+/* ── BANNER CAROUSEL ── */
+.carousel-wrap { padding:0 16px 4px; }
+.carousel-track {
+  display:flex; gap:12px;
+  overflow-x:auto; scroll-snap-type:x mandatory;
+  scroll-behavior:smooth; scrollbar-width:none;
+  padding-bottom:4px;
+}
+.carousel-track::-webkit-scrollbar { display:none; }
+.banner {
+  min-width:calc(100% - 32px); height:120px;
+  border-radius:var(--r); flex-shrink:0;
+  scroll-snap-align:start; position:relative;
+  overflow:hidden; cursor:pointer;
+}
+@media (min-width:600px) { .banner { min-width:280px; } }
+.banner-bg { position:absolute; inset:0; }
+.banner-content {
+  position:relative; z-index:1; padding:14px 16px;
+  height:100%; display:flex; flex-direction:column; justify-content:space-between;
+}
+.banner-tag {
+  background:rgba(255,255,255,.2); border-radius:20px;
+  padding:2px 9px; font-size:.6rem; font-weight:800;
+  color:#fff; display:inline-block; width:fit-content;
+}
+.banner-title { font-size:.95rem; font-weight:800; color:#fff; line-height:1.3; }
+.banner-sub { font-size:.7rem; color:rgba(255,255,255,.75); }
+.banner-btn {
+  background:rgba(255,255,255,.18); border:none; border-radius:20px;
+  color:#fff; font-size:.7rem; font-weight:700; padding:5px 12px;
+  cursor:pointer; font-family:var(--sans);
+}
+.carousel-dots { display:flex; justify-content:center; gap:5px; padding:6px 0 12px; }
+.dot { width:6px; height:6px; border-radius:50%; background:var(--line2); transition:all .3s; }
+.dot.active { width:18px; border-radius:3px; background:var(--navy); }
+
+/* ── QUICK ACTIONS ── */
+.qa-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.qa-item {
+  background:var(--card); border-radius:12px;
+  padding:14px 6px; text-align:center;
+  cursor:pointer; transition:all .18s;
+  box-shadow:0 1px 4px rgba(0,0,0,.06); border:1px solid var(--line);
+}
+.qa-item:active { transform:scale(.93); background:var(--card2); }
+.qa-ico { font-size:1.5rem; display:block; margin-bottom:5px; }
+.qa-lbl { font-size:.62rem; font-weight:700; color:var(--t2); line-height:1.3; }
+
+/* ── SECTION ── */
+.section { padding:0 16px 16px; }
+.sec-hd {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:10px;
+}
+.sec-title { font-size:.75rem; font-weight:800; color:var(--t3); text-transform:uppercase; letter-spacing:.09em; }
+.sec-action { font-size:.75rem; font-weight:700; color:var(--teal); cursor:pointer; }
+
+/* ── CARDS ── */
+.card {
+  background:var(--card); border-radius:var(--r);
+  border:1px solid var(--line);
+  padding:16px; margin-bottom:12px;
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.card-title {
+  font-size:.88rem; font-weight:700; color:var(--t1);
+  display:flex; align-items:center; gap:8px; margin-bottom:14px;
+}
+.card-body { font-size:.85rem; color:var(--t2); line-height:1.6; }
+
+/* ── STAT TILES ── */
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.stat-tile {
+  background:var(--card); border-radius:var(--r2);
+  padding:14px; border:1px solid var(--line);
+  border-top:3px solid var(--line2);
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.stat-tile.s-blue  { border-top-color:var(--teal); }
+.stat-tile.s-gold  { border-top-color:var(--gold); }
+.stat-tile.s-green { border-top-color:var(--green); }
+.stat-tile.s-red   { border-top-color:var(--red); }
+.stat-v { font-family:var(--serif); font-size:1.6rem; font-weight:900; color:var(--t1); }
+.stat-l { font-size:.7rem; color:var(--t3); font-weight:600; margin-top:2px; }
+
+/* ── ACTIVITY LIST ── */
+.act-item {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 0; border-bottom:1px solid var(--line);
+  cursor:pointer;
+}
+.act-item:last-child { border-bottom:none; }
+.act-ico {
+  width:40px; height:40px; border-radius:12px;
+  display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;
+}
+.act-ico.c-blue   { background:#eff6ff; }
+.act-ico.c-gold   { background:#fefce8; }
+.act-ico.c-green  { background:#f0fdf4; }
+.act-ico.c-red    { background:#fff1f2; }
+.act-ico.c-purple { background:#f5f3ff; }
+.act-info { flex:1; min-width:0; }
+.act-title { font-size:.85rem; font-weight:700; color:var(--t1); }
+.act-sub { font-size:.72rem; color:var(--t3); }
+.act-right { text-align:right; flex-shrink:0; }
+.act-val { font-size:.82rem; font-weight:700; color:var(--t1); }
+.act-time { font-size:.65rem; color:var(--t4); }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0;
+  background:var(--card); border-top:1px solid var(--line);
+  padding:8px 4px calc(8px + var(--safe-bot));
+  display:flex; z-index:100;
+  box-shadow:0 -4px 20px rgba(0,0,0,.08);
+}
+.bn-item {
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:5px 2px; border-radius:10px; cursor:pointer;
+  transition:all .18s; border:none; background:none;
+}
+.bn-item:active { transform:scale(.9); }
+.bn-item.active { background:#eff6ff; }
+.bn-ico { font-size:1.25rem; line-height:1; }
+.bn-lbl { font-size:.57rem; font-weight:700; color:var(--t4); }
+.bn-item.active .bn-lbl { color:var(--teal); }
+
+/* ── FORMS ── */
+.fg { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+.fg label { font-size:.63rem; font-weight:800; color:var(--t3); text-transform:uppercase; letter-spacing:.08em; }
+.fi {
+  background:var(--card2); border:1.5px solid var(--line2); border-radius:var(--r2);
+  padding:0 14px; color:var(--t1); font-size:.9rem; font-family:var(--sans);
+  outline:none; width:100%; height:46px; transition:all .2s;
+}
+.fi:focus { border-color:var(--teal); background:#fff; }
+select.fi { cursor:pointer; }
+textarea.fi { padding:12px 14px; height:auto; resize:vertical; }
+.f2 { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+.f3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px; }
+@media(max-width:600px) { .f2, .f3 { grid-template-columns:1fr; } }
+
+/* ── BUTTONS ── */
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  height:44px; padding:0 18px; border:none; border-radius:var(--r2);
+  cursor:pointer; font-family:var(--sans); font-size:.85rem; font-weight:700;
+  transition:all .18s; text-decoration:none; white-space:nowrap;
+}
+.btn:active { transform:scale(.96); }
+.btn-navy   { background:var(--navy); color:#fff; }
+.btn-gold   { background:var(--gold); color:#000; }
+.btn-teal   { background:var(--teal); color:#fff; }
+.btn-green  { background:var(--green); color:#fff; }
+.btn-red    { background:var(--red); color:#fff; }
+.btn-ghost  { background:transparent; border:1.5px solid var(--line2); color:var(--t2); }
+.btn-light  { background:var(--card2); border:1px solid var(--line); color:var(--t2); }
+.btn-sm { height:36px; padding:0 13px; font-size:.78rem; }
+.btn-xs { height:30px; padding:0 10px; font-size:.72rem; }
+.btn-full { width:100%; }
+
+/* ── BADGES ── */
+.badge {
+  display:inline-flex; align-items:center; padding:3px 10px;
+  border-radius:20px; font-size:.63rem; font-weight:700;
+}
+.bg-navy   { background:rgba(15,21,53,.1); color:var(--navy); }
+.bg-gold   { background:var(--goldl); color:#92650a; }
+.bg-teal   { background:var(--teall); color:#0369a1; }
+.bg-green  { background:var(--greenl); color:#15803d; }
+.bg-red    { background:var(--redl); color:#be123c; }
+.bg-orange { background:var(--orangel); color:#c2410c; }
+.bg-gray   { background:#f3f4f6; color:var(--t3); }
+
+/* ── TABLE ── */
+.tbl-wrap { overflow-x:auto; border-radius:var(--r2); border:1px solid var(--line); }
+.tbl { width:100%; border-collapse:collapse; font-size:.83rem; }
+.tbl th {
+  background:var(--card2); color:var(--t3); font-size:.62rem; font-weight:800;
+  text-transform:uppercase; letter-spacing:.07em; padding:10px 12px;
+  border-bottom:1px solid var(--line); white-space:nowrap; text-align:left;
+}
+.tbl td { padding:11px 12px; border-bottom:1px solid var(--line); color:var(--t2); vertical-align:middle; }
+.tbl tr:last-child td { border-bottom:none; }
+.tbl tr:hover td { background:rgba(255,255,255,.04); }
+
+/* ── MODAL ── */
+.modal-ov {
+  position:fixed; inset:0; background:rgba(15,21,53,.6);
+  z-index:500; display:none; align-items:flex-end; justify-content:center;
+  backdrop-filter:blur(6px); padding:0;
+}
+.modal-ov.open { display:flex; }
+@media(min-width:600px) { .modal-ov { align-items:center; padding:16px; } }
+.modal {
+  background:#fff; border-radius:22px 22px 0 0;
+  padding:20px; width:100%; max-height:92vh; overflow-y:auto;
+}
+@media(min-width:600px) { .modal { border-radius:22px; max-width:520px; } }
+.modal-handle { width:40px; height:4px; background:var(--line2); border-radius:2px; margin:0 auto 16px; }
+.modal-title { font-family:var(--serif); font-size:1.1rem; font-weight:700; color:var(--t1); margin-bottom:16px; }
+.btn-row { display:flex; gap:9px; margin-top:4px; }
+
+/* ── PAGE SYSTEM ── */
+.page { display:none; }
+.page.active { display:block; padding:16px; }
+
+/* ── PAGE HEADER ── */
+.page-hd { margin-bottom:16px; }
+.page-hd-title { font-family:var(--serif); font-size:1.2rem; font-weight:900; color:var(--t1); }
+.page-hd-sub { font-size:.8rem; color:var(--t3); margin-top:2px; }
+.page-hd-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:calc(80px + var(--safe-bot)); left:50%;
+  transform:translateX(-50%) translateY(60px);
+  background:#1e293b; color:#fff; border-radius:var(--r2);
+  padding:10px 20px; font-size:.84rem; z-index:9999;
+  transition:transform .28s; pointer-events:none;
+  display:flex; align-items:center; gap:8px; white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,0,0,.2);
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+.toast.ok   { background:#14532d; border-left:3px solid var(--green); }
+.toast.err  { background:#4c0519; border-left:3px solid var(--red); }
+.toast.info { background:#0c1a2e; border-left:3px solid var(--teal); }
+
+/* ── STATUS BADGES ── */
+.status-draft        { background:#f3f4f6; color:var(--t3); }
+.status-submitted    { background:#eff6ff; color:#1d4ed8; }
+.status-hod_reviewed { background:#fefce8; color:#92400e; }
+.status-vp_approved  { background:#f0fdf4; color:#15803d; }
+.status-returned     { background:#fff1f2; color:#be123c; }
+
+/* ── UTILS ── */
+.flex-center { display:flex; align-items:center; justify-content:center; }
+.flex-between { display:flex; align-items:center; justify-content:space-between; }
+.flex-gap { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.text-muted { color:var(--t3); font-size:.8rem; }
+.empty-state { text-align:center; padding:40px 20px; color:var(--t4); font-size:.85rem; }
+.divider { border:none; border-top:1px solid var(--line); margin:12px 0; }
+.mt8 { margin-top:8px; }
+.mt12 { margin-top:12px; }
+
+/* ── ANIMATIONS ── */
+@keyframes fade-up { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:none;} }
+.fade-up { animation:fade-up .28s ease both; }
+
+/* ── STATUS PILL ── */
+.pill {
+  display:inline-flex; align-items:center; padding:3px 10px;
+  border-radius:20px; font-size:.63rem; font-weight:700;
+}
+
+
+/* ═══ DARK MODE ELEMENT OVERRIDES ═══ */
+body { background: var(--bg); }
+.main-scroll { background: var(--bg); }
+.card { background: var(--card); border-color: var(--line); box-shadow: 0 1px 8px rgba(0,0,0,.3); }
+.fi { background: var(--card2); border-color: var(--line2); color: var(--t1); }
+.fi:focus { background: var(--card); border-color: var(--teal); }
+.fi::placeholder { color: var(--t4); }
+.tbl th { background: var(--card2); color: var(--t3); border-bottom-color: var(--line); }
+.tbl td { border-bottom-color: var(--line); color: var(--t2); }
+.tbl tr:hover td { background: rgba(255,255,255,.03); }
+.modal { background: var(--card); }
+.stat-tile { background: var(--card); border-color: var(--line); }
+.stat-v { color: var(--t1); }
+.stat-l { color: var(--t3); }
+.qa-item { background: var(--card); border-color: var(--line); }
+.qa-lbl { color: var(--t2); }
+.qa-item:active { background: var(--card2); }
+.act-item { border-bottom-color: var(--line); }
+.act-title { color: var(--t1); }
+.act-sub { color: var(--t3); }
+.act-val { color: var(--t1); }
+.act-time { color: var(--t4); }
+.act-ico.c-green { background: rgba(34,197,94,.12); }
+.act-ico.c-red { background: rgba(244,63,94,.12); }
+.act-ico.c-gold { background: rgba(212,168,67,.12); }
+.act-ico.c-blue { background: rgba(59,130,246,.12); }
+.act-ico.c-purple { background: rgba(139,92,246,.12); }
+.page-hd-title { color: var(--t1); }
+.page-hd-sub { color: var(--t3); }
+.sec-title { color: var(--t3); }
+.card-title { color: var(--t1); }
+.card-body { color: var(--t2); }
+.btn-ghost { background: rgba(255,255,255,.06); border-color: var(--line2); color: var(--t2); }
+.btn-ghost:hover { background: rgba(255,255,255,.1); }
+.btn-light { background: var(--card2); border-color: var(--line); color: var(--t2); }
+.bottom-nav { background: var(--card); border-top-color: var(--line); }
+.bn-lbl { color: var(--t4); }
+.divider { border-top-color: var(--line); }
+.empty-state { color: var(--t4); }
+.text-muted { color: var(--t3); }
+select.fi option { background: var(--card); color: var(--t1); }
+.dd-item { border-bottom-color: var(--line); color: var(--t1); }
+.dd-item:hover { background: var(--card2); }
+.dd-meta { color: var(--t3); }
+.badge.bg-gray { background: rgba(255,255,255,.08); color: var(--t3); }
+.badge.bg-navy { background: rgba(99,131,255,.15); color: #99b0ff; }
+.tbl-wrap { border-color: var(--line); }
+
+</style>
+<script>
+/* rsms-core.js — embedded */
+// ═══════════════════════════════════════════════════
+// RSMS CORE — Shared utilities for all portals
+// ═══════════════════════════════════════════════════
+
+// ── AUTH ──
+var RSMS = RSMS || {};
+
+RSMS.auth = {
+  // Check token in URL or sessionStorage
+  init: function(requiredRole) {
+    var params = new URLSearchParams(window.location.search);
+    var token = params.get('token');
+    if (token) {
+      var tokens = JSON.parse(localStorage.getItem('rsms_access_tokens') || '{}');
+      var td = tokens[token];
+      if (td && td.active) {
+        sessionStorage.setItem('rsms_user', JSON.stringify(td.user));
+        sessionStorage.setItem('rsms_role', td.role);
+        sessionStorage.setItem('rsms_auth', 'true');
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+    var user = JSON.parse(sessionStorage.getItem('rsms_user') || 'null');
+    var role = sessionStorage.getItem('rsms_role') || '';
+    var auth = sessionStorage.getItem('rsms_auth') === 'true';
+    // Admin can access any portal
+    var adminAuth = role === 'admin' || role === 'superadmin';
+    if (!auth) {
+      window.location.replace('rsms-login.html');
+      return null;
+    }
+    if (requiredRole && role !== requiredRole && !adminAuth) {
+      window.location.replace('rsms-login.html');
+      return null;
+    }
+    return { user: user, role: role };
+  },
+
+  user: function() { return JSON.parse(sessionStorage.getItem('rsms_user') || '{}'); },
+  role: function() { return sessionStorage.getItem('rsms_role') || ''; },
+
+  logout: function() {
+    sessionStorage.removeItem('rsms_auth');
+    sessionStorage.removeItem('rsms_user');
+    sessionStorage.removeItem('rsms_role');
+    window.location.href = 'rsms-login.html';
+  }
+};
+
+// ── DATA ──
+RSMS.db = {
+  get: function(key, def) {
+    try { return JSON.parse(localStorage.getItem('rsms_' + key) || 'null') || def; }
+    catch(e) { return def; }
+  },
+  set: function(key, val) {
+    localStorage.setItem('rsms_' + key, JSON.stringify(val));
+  },
+  school:    function() { return RSMS.db.get('school', {name:'School', term:'First Term', session:'2025/2026'}); },
+  students:  function() { return RSMS.db.get('students', []); },
+  staff:     function() { return RSMS.db.get('staff', []); },
+  fees:      function() { return RSMS.db.get('fees', []); }
+};
+
+// ── SUBJECTS ──
+RSMS.subjects = {
+  JSS: ["English Language","Mathematics","Basic Science & Technology","Social Studies",
+    "Civic Education","Cultural & Creative Arts","Physical & Health Education",
+    "Computer Studies/ICT","Agricultural Science","Home Economics","Business Studies",
+    "French Language","Yoruba Language","Christian Religious Studies",
+    "Islamic Religious Studies","Security Education","Basic Technology"],
+  SS_SCIENCE: ["English Language","Mathematics","Physics","Chemistry","Biology",
+    "Further Mathematics","Agricultural Science","Computer Studies","Technical Drawing",
+    "Food & Nutrition","Christian Religious Studies","Islamic Religious Studies",
+    "Civic Education","Physical & Health Education","Yoruba Language"],
+  SS_COMMERCIAL: ["English Language","Mathematics","Economics","Commerce","Accounting",
+    "Business Studies","Office Practice","Computer Studies","Salesmanship",
+    "Christian Religious Studies","Islamic Religious Studies",
+    "Civic Education","Physical & Health Education","Yoruba Language","Literature in English"],
+  SS_ARTS: ["English Language","Mathematics","Literature in English","Government","History",
+    "Christian Religious Studies","Islamic Religious Studies","Yoruba Language",
+    "French Language","Fine Arts","Music","Geography","Economics",
+    "Civic Education","Physical & Health Education"],
+  PRIMARY: ["English Language","Mathematics","Basic Science","Social Studies",
+    "Civic Education","Cultural & Creative Arts","Physical & Health Education",
+    "Computer Studies","Agricultural Science","Home Economics","Yoruba Language",
+    "Christian Religious Studies","Islamic Religious Studies",
+    "Verbal Reasoning","Quantitative Reasoning"],
+
+  forClass: function(cls) {
+    var c = (cls || '').toLowerCase();
+    if (c.includes('science'))    return RSMS.subjects.SS_SCIENCE;
+    if (c.includes('commercial')) return RSMS.subjects.SS_COMMERCIAL;
+    if (c.includes('art'))        return RSMS.subjects.SS_ARTS;
+    if (c.includes('ss ') || c.includes('senior') || c.startsWith('ss'))
+                                   return RSMS.subjects.SS_SCIENCE;
+    if (c.includes('primary'))    return RSMS.subjects.PRIMARY;
+    return RSMS.subjects.JSS;
+  },
+
+  fill: function(selId, cls, selected) {
+    var sel = document.getElementById(selId);
+    if (!sel) return;
+    var list = RSMS.subjects.forClass(cls);
+    sel.innerHTML = '<option value="">— Select Subject —</option>' +
+      list.map(function(s) {
+        return '<option value="' + s + '"' + (s === selected ? ' selected' : '') + '>' + s + '</option>';
+      }).join('');
+  }
+};
+
+// ── UI ──
+RSMS.ui = {
+  _toastTimer: null,
+  toast: function(msg, type) {
+    var el = document.getElementById('toast');
+    if (!el) return;
+    el.className = 'toast show toast-' + (type || 'i');
+    el.textContent = msg;
+    clearTimeout(RSMS.ui._toastTimer);
+    RSMS.ui._toastTimer = setTimeout(function() { el.classList.remove('show'); }, 3500);
+  },
+  openModal: function(id) { document.getElementById(id).classList.add('open'); },
+  closeModal: function(id) { document.getElementById(id).classList.remove('open'); },
+
+  initSidebar: function() {
+    var sb    = document.getElementById('sidebar');
+    var ov    = document.getElementById('sb-overlay');
+    var mbtn  = document.getElementById('menu-btn');
+    if (!sb) return;
+    if (mbtn) mbtn.onclick = function() {
+      sb.classList.toggle('open');
+      if (ov) ov.classList.toggle('show');
+    };
+    if (ov) ov.onclick = function() {
+      sb.classList.remove('open');
+      ov.classList.remove('show');
+    };
+  },
+
+  showPage: function(name, el) {
+    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+    var pg = document.getElementById('pg-' + name);
+    if (pg) pg.classList.add('active');
+    document.querySelectorAll('.sbi').forEach(function(s) { s.classList.remove('active'); });
+    if (el) el.classList.add('active');
+    // Close sidebar on mobile
+    var sb = document.getElementById('sidebar');
+    var ov = document.getElementById('sb-overlay');
+    if (sb) sb.classList.remove('open');
+    if (ov) ov.classList.remove('show');
+    return pg;
+  },
+
+  setTopbar: function(icon, title) {
+    var ti = document.getElementById('tb-icon');
+    var tt = document.getElementById('tb-title');
+    if (ti) ti.textContent = icon || '';
+    if (tt) tt.textContent = title || '';
+  },
+
+  avatar: function(name) {
+    return (name || '?').charAt(0).toUpperCase();
+  },
+
+  fillSelect: function(selId, items, emptyLabel) {
+    var sel = document.getElementById(selId);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">' + (emptyLabel || '— Select —') + '</option>' +
+      items.map(function(i) {
+        if (typeof i === 'string') return '<option value="' + i + '">' + i + '</option>';
+        return '<option value="' + i.v + '">' + i.l + '</option>';
+      }).join('');
+  }
+};
+
+// ── WORKFLOW ──
+RSMS.workflow = {
+  TYPES: { plan:'lesson_plans', note:'lesson_notes', exam:'exam_questions' },
+  STATUS: {
+    draft:     { label:'Draft',         cls:'status-draft' },
+    submitted: { label:'Submitted',     cls:'status-submitted' },
+    reviewed:  { label:'HOD Reviewed',  cls:'status-reviewed' },
+    approved:  { label:'VP Approved ✅',cls:'status-approved' },
+    returned:  { label:'Returned ↩',   cls:'status-returned' }
+  },
+  badge: function(status) {
+    var s = RSMS.workflow.STATUS[status] || RSMS.workflow.STATUS.draft;
+    return '<span class="badge ' + s.cls + '">' + s.label + '</span>';
+  },
+  get: function(type) {
+    return RSMS.db.get(RSMS.workflow.TYPES[type], []);
+  },
+  save: function(type, docs) {
+    RSMS.db.set(RSMS.workflow.TYPES[type], docs);
+  },
+  upsert: function(type, doc) {
+    var all = RSMS.workflow.get(type);
+    var idx = all.findIndex(function(d) { return d.id === doc.id; });
+    if (idx > -1) all[idx] = doc; else all.push(doc);
+    RSMS.workflow.save(type, all);
+    return doc;
+  },
+  action: function(type, docId, status, note, byUser) {
+    var all = RSMS.workflow.get(type);
+    var idx = all.findIndex(function(d) { return d.id === docId; });
+    if (idx < 0) return null;
+    all[idx].status = status;
+    all[idx].lastNote = note || '';
+    all[idx].lastActionBy = (byUser && byUser.name) || 'Unknown';
+    all[idx].lastActionAt = new Date().toISOString();
+    all[idx].history = all[idx].history || [];
+    all[idx].history.push({ status:status, by:all[idx].lastActionBy, at:all[idx].lastActionAt, note:note });
+    RSMS.workflow.save(type, all);
+    return all[idx];
+  },
+  pendingForHOD: function() {
+    var n = 0;
+    ['plan','note','exam'].forEach(function(t) {
+      n += RSMS.workflow.get(t).filter(function(d) { return d.status === 'submitted'; }).length;
+    });
+    return n;
+  },
+  pendingForVP: function() {
+    var n = 0;
+    ['plan','note','exam'].forEach(function(t) {
+      n += RSMS.workflow.get(t).filter(function(d) { return d.status === 'reviewed'; }).length;
+    });
+    return n;
+  }
+};
+
+// ── LESSON AI UNITS ──
+RSMS.lessonAI = {
+  URL: 'https://rehoteq.com/lesson-ai.html',
+  UNITS_PER_TERM: 10,
+  buildGiftLink: function(teacher) {
+    var raw = (teacher.id || '') + '|' + (teacher.email || teacher.name) + '|' + Date.now();
+    var token = btoa(unescape(encodeURIComponent(raw))).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+    var email = encodeURIComponent(teacher.email || teacher.name + '@rsms');
+    return RSMS.lessonAI.URL + '?rsms_gift=' + token + '&units=' + RSMS.lessonAI.UNITS_PER_TERM + '&teacher=' + email;
+  },
+  giftAllTeachers: function() {
+    var school = RSMS.db.school();
+    var staff  = RSMS.db.staff();
+    var isEnt  = (school.plan || '').toLowerCase() === 'enterprise';
+    if (!isEnt) return { ok:false, msg:'Only Enterprise plan schools can gift Lesson AI units.' };
+    var term = school.term || 'First Term';
+    var session = school.session || '2025/2026';
+    var key = 'lesson_gifts';
+    var gifts = RSMS.db.get(key, []);
+    var giftId = term + '_' + session;
+    if (gifts.indexOf(giftId) > -1) return { ok:false, msg:'Already gifted for ' + term + ' ' + session };
+    var teachers = staff.filter(function(s) {
+      var r = (s.role || '').toLowerCase();
+      return r.includes('teacher') || r.includes('hod') || r.includes('principal');
+    });
+    gifts.push(giftId);
+    RSMS.db.set(key, gifts);
+    return { ok:true, count:teachers.length, teachers:teachers, term:term };
+  }
+};
+
+// ── LINK GENERATOR ──
+RSMS.links = {
+  BASE: 'https://rsms.rehoteq.com/',
+  PORTALS: {
+    admin:'rsms-admin.html', bursar:'rsms-bursar.html',
+    teacher:'rsms-teacher.html', classteacher:'rsms-classteacher.html',
+    hod:'rsms-hod.html', vp:'rsms-vp.html',
+    student:'rsms-student.html', parent:'rsms-parent.html',
+    security:'rsms-clock.html'
+  },
+  ROLE_PORTAL: {
+    'Class Teacher':'classteacher', 'Subject Teacher':'teacher',
+    'HOD':'hod', 'Vice Principal Academic':'vp', 'Vice Principal Admin':'vp',
+    'Bursar':'bursar', 'Admin Staff':'admin', 'Security':'security',
+    'Librarian':'teacher', 'Teacher':'teacher'
+  },
+  token: function(id, role) {
+    return btoa(unescape(encodeURIComponent(id + '|' + role + '|' + RSMS.db.school().schoolId)))
+      .replace(/[^a-zA-Z0-9]/g,'').slice(0,18);
+  },
+  registerAll: function() {
+    var tokens = RSMS.db.get('access_tokens', {});
+    RSMS.db.staff().forEach(function(s) {
+      var roleCode = RSMS.links.ROLE_PORTAL[s.role] || 'teacher';
+      var tk = RSMS.links.token(s.id, s.role);
+      tokens[tk] = { role:roleCode, user:{name:s.name, email:s.email||'', role:s.role, staffId:s.staffId}, active:true, id:s.id };
+    });
+    RSMS.db.students().forEach(function(s) {
+      var tk = RSMS.links.token(s.id, 'student');
+      tokens[tk] = { role:'student', user:{name:(s.surname||'')+' '+(s.firstname||''), reg:s.reg, class:s.class, role:'student', id:s.id}, active:true, id:s.id };
+      var ptk = RSMS.links.token(s.id + '_parent', 'parent');
+      tokens[ptk] = { role:'parent', user:{name:'Parent of '+(s.surname||''), child:s.id, childName:(s.surname||'')+' '+(s.firstname||''), role:'parent'}, active:true };
+    });
+    RSMS.db.set('access_tokens', tokens);
+    return tokens;
+  },
+  forStaff: function(s) {
+    var rc = RSMS.links.ROLE_PORTAL[s.role] || 'teacher';
+    var tk = RSMS.links.token(s.id, s.role);
+    return RSMS.links.BASE + (RSMS.links.PORTALS[rc] || 'rsms-teacher.html') + '?token=' + tk;
+  },
+  forStudent: function(s) {
+    return RSMS.links.BASE + 'rsms-student.html?token=' + RSMS.links.token(s.id, 'student');
+  },
+  forParent: function(s) {
+    return RSMS.links.BASE + 'rsms-parent.html?token=' + RSMS.links.token(s.id + '_parent', 'parent');
+  }
+};
+
+// ── HELPERS ──
+RSMS.fmt = {
+  money: function(n) { return '₦' + (parseFloat(n)||0).toLocaleString(); },
+  date:  function(d) { return d ? new Date(d).toLocaleDateString() : '—'; },
+  name:  function(s) { return ((s.surname||'') + ' ' + (s.firstname||'')).trim(); },
+  initials: function(name) { return (name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase(); }
+};
+
+console.log('[RSMS Core] loaded');
+// ── WORKFLOW ENGINE ───────────────────────────────────
+var WF = {
+  getAll: function(type){ return JSON.parse(localStorage.getItem('rsms_wf_'+type)||'[]'); },
+  saveAll: function(type,data){ localStorage.setItem('rsms_wf_'+type,JSON.stringify(data)); },
+  STATUS: {
+    draft:        {label:'Draft',     cls:'bg-gray'},
+    submitted:    {label:'Submitted', cls:'bg-teal'},
+    hod_reviewed: {label:'HOD OK',    cls:'bg-gold'},
+    vp_approved:  {label:'VP Approved',cls:'bg-green'},
+    returned:     {label:'Returned',  cls:'bg-red'}
+  },
+  badge: function(status){
+    var s=WF.STATUS[status]||WF.STATUS.draft;
+    return '<span class="badge '+s.cls+'" style="font-size:.6rem;">'+s.label+'</span>';
+  },
+  submit: function(type, doc){
+    var all=WF.getAll(type);
+    doc.id = doc.id||('wf'+Date.now()+Math.random().toString(36).slice(2,6));
+    doc.status='submitted';
+    doc.submittedAt=new Date().toISOString();
+    doc.history=doc.history||[];
+    doc.history.push({action:'submitted',by:doc.by,at:new Date().toISOString()});
+    var i=all.findIndex(function(d){return d.id===doc.id;});
+    if(i>-1) all[i]=doc; else all.push(doc);
+    WF.saveAll(type,all);
+    return doc;
+  },
+  review: function(type, id, action, note, by){
+    var all=WF.getAll(type);
+    var i=all.findIndex(function(d){return d.id===id;}); if(i<0)return false;
+    all[i].status = action==='approve'?'hod_reviewed':'returned';
+    all[i].hodNote=note; all[i].hodBy=by; all[i].hodAt=new Date().toISOString();
+    all[i].history=all[i].history||[];
+    all[i].history.push({action:all[i].status,by:by,at:new Date().toISOString(),note:note});
+    WF.saveAll(type,all); return all[i];
+  },
+  vpApprove: function(type, id, action, note, by){
+    var all=WF.getAll(type);
+    var i=all.findIndex(function(d){return d.id===id;}); if(i<0)return false;
+    all[i].status = action==='approve'?'vp_approved':'returned';
+    all[i].vpNote=note; all[i].vpBy=by; all[i].vpAt=new Date().toISOString();
+    all[i].history=all[i].history||[];
+    all[i].history.push({action:all[i].status,by:by,at:new Date().toISOString(),note:note});
+    WF.saveAll(type,all); return all[i];
+  },
+  pending: function(role){
+    var count=0;
+    ['plans','notes','exams'].forEach(function(t){
+      var all=WF.getAll(t);
+      if(role==='hod') count+=all.filter(function(d){return d.status==='submitted';}).length;
+      if(role==='vp')  count+=all.filter(function(d){return d.status==='hod_reviewed';}).length;
+    });
+    return count;
+  }
+};
+
+// ── LESSON AI UNITS ───────────────────────────────────
+var LESSON_AI = {
+  URL: 'https://rehoteq.com/lesson-ai.html',
+  UNITS_PER_TERM: 10,
+  giftLink: function(teacher){
+    var token = btoa((teacher.id||teacher.name)+'|'+(teacher.email||'')+'|'+Date.now())
+                  .replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+    var email = encodeURIComponent(teacher.email||(teacher.name.replace(/\s+/g,''))+'@rsms.school');
+    return LESSON_AI.URL+'?rsms_gift='+token+'&units='+LESSON_AI.UNITS_PER_TERM+'&teacher='+email;
+  },
+  giftAll: function(){
+    var school=RSMS.school;
+    var term=school.term||'First Term';
+    var session=school.session||'2025/2026';
+    var key='gift_'+term.replace(/\s+/g,'_')+'_'+session.replace('/','_');
+    var alreadyDone = localStorage.getItem(key)==='done';
+    var teachers=RSMS.staff().filter(function(s){
+      var r=(s.role||'').toLowerCase();
+      return r.includes('teacher')||r.includes('hod');
+    });
+    if(!alreadyDone) localStorage.setItem(key,'done');
+    return {alreadyDone:alreadyDone, teachers:teachers, count:teachers.length};
+  }
+};
+
+// ── LINK GENERATOR ────────────────────────────────────
+var LINKS = {
+  BASE: 'https://rsms.rehoteq.com/',
+  PORTAL: {
+    'Class Teacher':          'rsms-classteacher.html',
+    'Subject Teacher':        'rsms-teacher.html',
+    'Teacher':                'rsms-teacher.html',
+    'HOD':                    'rsms-hod.html',
+    'Vice Principal Academic':'rsms-vp.html',
+    'Vice Principal Admin':   'rsms-vp.html',
+    'Bursar':                 'rsms-bursar.html',
+    'Admin Staff':            'rsms-admin.html',
+    'Security':               'rsms-clock.html'
+  },
+  _token: function(seed){
+    return btoa(seed+'|'+Date.now()).replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
+  },
+  _save: function(token, data){
+    var tokens=JSON.parse(localStorage.getItem('rsms_tokens')||'{}');
+    tokens[token]=data;
+    localStorage.setItem('rsms_tokens',JSON.stringify(tokens));
+  },
+  staff: function(s){
+    var token=LINKS._token(s.id||s.name);
+    var portal=LINKS.PORTAL[s.role]||'rsms-teacher.html';
+    LINKS._save(token,{role:s.role,name:s.name,id:s.id,email:s.email||'',
+      myClass:s.myClass||'',subjects:s.subjects||'',staffId:s.staffId||''});
+    return LINKS.BASE+portal+'?token='+token;
+  },
+  student: function(s){
+    var token=LINKS._token(s.id||s.reg);
+    LINKS._save(token,{role:'student',name:(s.surname||'')+' '+(s.firstname||''),
+      id:s.id,stuId:s.id,class:s.class,reg:s.reg,
+      parentPhone:s.parentPhone||''});
+    return LINKS.BASE+'rsms-student.html?token='+token;
+  },
+  parent: function(s){
+    var token=LINKS._token('p'+(s.id||s.reg));
+    LINKS._save(token,{role:'parent',childId:s.id,
+      childName:(s.surname||'')+' '+(s.firstname||''),
+      class:s.class,parentPhone:s.parentPhone||''});
+    return LINKS.BASE+'rsms-parent.html?token='+token;
+  }
+};
+
+// ── POPULATE SELECT (subject dropdown) ──────────────────────
+function populateSelect(selId, cls, selected){
+  var sel=document.getElementById(selId); if(!sel)return;
+  var subjects=getSubjects(cls);
+  sel.innerHTML='<option value="">-- Select Subject --</option>'+
+    subjects.map(function(s){
+      return '<option value="'+s+'"'+(s===selected?' selected':'')+'>'+s+'</option>';
+    }).join('');
+}
+// alias used in some portals
+function getStudents(cls){
+  var all=RSMS.students();
+  if(!cls)return all;
+  return all.filter(function(s){return (s.class||'')===cls;});
+}
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+<div class="sb-overlay" id="sb-ov" onclick="closeSb()"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <img class="sb-logo" id="sb-logo" src="" alt="" onerror="this.style.display='none'"/>
+    <div><div class="sb-school" id="sb-school">School</div><div class="sb-tagline">Teacher Portal</div></div>
+  </div>
+  <div class="sb-user">
+    <div class="sb-av" id="sb-av">T</div>
+    <div><div class="sb-uname" id="sb-name">Teacher</div><div class="sb-urole" id="sb-role">Teacher</div></div>
+  </div>
+  <div class="sb-section">OVERVIEW</div>
+  <div class="sb-item active" onclick="showPage('home',this)">&#127968; Dashboard</div>
+  <div class="sb-section">MY CLASS</div>
+  <div class="sb-item" onclick="showPage('students',this)">&#128104;&#8205;&#127979; My Students</div>
+  <div class="sb-item" onclick="showPage('assignments',this)">&#128203; Assignments</div>
+  <div class="sb-section">ACADEMIC WORKFLOW</div>
+  <div class="sb-item" onclick="showPage('lessonplan',this)">&#128203; Lesson Plans</div>
+  <div class="sb-item" onclick="showPage('lessonnote',this)">&#128221; Lesson Notes</div>
+  <div class="sb-item" onclick="showPage('examsubmit',this)">&#128196; Exam Questions</div>
+  <div class="sb-item" onclick="showPage('myworkflow',this)">&#10004; My Submissions</div>
+  <div class="sb-section">TOOLS</div>
+  <div class="sb-item" onclick="window.open('https://rehoteq.com/lesson-ai.html','_blank')">&#129302; AI Lesson Studio</div>
+  <div class="sb-item" onclick="window.open('rsms-cbt-questions.html','_blank')">&#128218; CBT Bank</div>
+  <div class="sb-item" onclick="window.open('rsms-results-print.html','_blank')">&#128196; Result Sheets</div>
+  <div class="sb-section">SYSTEM</div>
+  <div class="sb-item" onclick="confirmAction('Logout?',RSMS.logout)">&#128682; Logout</div>
+  <div class="sb-footer">RSMS &#8212; Rehoteq Technologies</div>
+</aside>
+<div class="main-area">
+  <header class="topbar">
+    <button class="menu-btn" onclick="openSb()">&#9776;</button>
+    <div class="topbar-title">Teacher Portal</div>
+    <div class="topbar-right">
+      <button class="tb-notif" onclick="showPage('myworkflow')">&#128276;</button>
+      <div class="tb-av" id="hd-av">T</div>
+    </div>
+  </header>
+  <div class="main-scroll">
+
+<div class="page active" id="pg-home">
+  <div class="hero-card" style="margin:16px 16px 0;">
+    <div class="hc-label" id="t-hero-name">Teacher</div>
+    <div class="hc-val" id="t-hero-term">First Term</div>
+    <div class="hc-row" style="margin-top:10px;">
+      <div class="hc-badge" id="sb-school-t">School</div>
+      <a href="https://rehoteq.com/lesson-ai.html" target="_blank" class="btn btn-gold btn-xs" style="height:28px;font-size:.7rem;">AI Studio</a>
+    </div>
+  </div>
+  <div id="t-alert" style="display:none;margin:12px 16px 0;background:rgba(244,63,94,.1);border:1px solid var(--red);border-radius:var(--r2);padding:10px 14px;font-size:.82rem;color:var(--red);"></div>
+  <div style="margin-top:14px;" class="carousel-wrap">
+    <div class="carousel-track" id="t-carousel"></div>
+    <div class="carousel-dots" id="t-dots"></div>
+  </div>
+  <div class="section">
+    <div class="qa-grid">
+      <div class="qa-item" onclick="showPage('students')"><span class="qa-ico">&#128104;&#8205;&#127979;</span><div class="qa-lbl">Students</div></div>
+      <div class="qa-item" onclick="showPage('lessonplan')"><span class="qa-ico">&#128203;</span><div class="qa-lbl">Lesson Plan</div></div>
+      <div class="qa-item" onclick="showPage('lessonnote')"><span class="qa-ico">&#128221;</span><div class="qa-lbl">Lesson Note</div></div>
+      <div class="qa-item" onclick="showPage('examsubmit')"><span class="qa-ico">&#128196;</span><div class="qa-lbl">Exam Q.</div></div>
+      <div class="qa-item" onclick="showPage('assignments')"><span class="qa-ico">&#128203;</span><div class="qa-lbl">Assignments</div></div>
+      <div class="qa-item" onclick="showPage('myworkflow')"><span class="qa-ico">&#10004;</span><div class="qa-lbl">My Docs</div></div>
+      <div class="qa-item" onclick="window.open('https://rehoteq.com/lesson-ai.html','_blank')"><span class="qa-ico">&#129302;</span><div class="qa-lbl">AI Studio</div></div>
+      <div class="qa-item" onclick="window.open('rsms-cbt-questions.html','_blank')"><span class="qa-ico">&#128218;</span><div class="qa-lbl">CBT Bank</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="stat-grid" id="t-stats"></div>
+  </div>
+</div>
+
+<div class="page" id="pg-students">
+  <div class="page-hd-row" style="margin-bottom:12px;">
+    <div><div class="page-hd-title">My Students</div><div class="page-hd-sub" id="t-stu-count"></div></div>
+  </div>
+  <div id="my-students-list"></div>
+</div>
+
+<div class="page" id="pg-assignments">
+  <div class="page-hd-row" style="margin-bottom:14px;">
+    <div class="page-hd-title">Assignments</div>
+    <button class="btn btn-navy btn-sm" onclick="openModal('m-add-assignment')">+ New</button>
+  </div>
+  <div id="assign-list"></div>
+</div>
+
+<div class="page" id="pg-lessonplan">
+  <div class="page-hd-row" style="margin-bottom:12px;">
+    <div><div class="page-hd-title">Lesson Plans</div><div class="page-hd-sub">WAEC/NECO aligned template</div></div>
+    <button class="btn btn-navy btn-sm" onclick="toggleForm('lp-form')">+ New</button>
+  </div>
+  <div id="lp-form" style="display:none;" class="card">
+    <div class="card-title">New Lesson Plan</div>
+    <div class="f2">
+      <div class="fg"><label>Subject *</label><select class="fi" id="lp-subject" style="height:46px;"><option value="">-- Select --</option></select></div>
+      <div class="fg"><label>Week</label><select class="fi" id="lp-week" style="height:46px;"><option>Week 1</option><option>Week 2</option><option>Week 3</option><option>Week 4</option><option>Week 5</option><option>Week 6</option><option>Week 7</option><option>Week 8</option><option>Week 9</option><option>Week 10</option><option>Week 11</option><option>Week 12</option><option>Week 13</option></select></div>
+    </div>
+    <div class="fg"><label>Topic *</label><input class="fi" id="lp-topic" placeholder="e.g. Quadratic Equations"/></div>
+    <div class="f2">
+      <div class="fg"><label>Duration</label>
+        <select class="fi" id="lp-duration" style="height:46px;"><option>40 minutes</option><option>45 minutes</option><option>80 minutes (double)</option></select></div>
+      <div class="fg"><label>Entry Behaviour</label><input class="fi" id="lp-prev" placeholder="Students previously learned..."/></div>
+    </div>
+    <div class="fg"><label>Objectives</label>
+      <textarea class="fi" id="lp-objectives" rows="3" placeholder="By end students should:&#10;1. &#10;2. &#10;3. "></textarea></div>
+    <div class="fg"><label>Materials</label><input class="fi" id="lp-materials" value="Textbook, Chalk/Marker, Chart"/></div>
+    <div class="fg"><label>Lesson Content and Steps</label>
+      <textarea class="fi" id="lp-content" rows="8" placeholder="INTRODUCTION:&#10;&#10;STEP 1:&#10;&#10;STEP 2:&#10;&#10;CLASS ACTIVITY:&#10;&#10;EVALUATION:&#10;1. &#10;2. &#10;&#10;ASSIGNMENT:&#10;"></textarea></div>
+    <div class="fg"><label>References</label><input class="fi" id="lp-references" value="NERDC Curriculum, WAEC Syllabus"/></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="saveLessonPlan('draft')" style="flex:1;">Save Draft</button>
+      <button class="btn btn-navy" onclick="saveLessonPlan('submit')" style="flex:2;">Submit to HOD</button>
+    </div>
+  </div>
+  <div id="lp-list-wrap"><div class="empty-state">No lesson plans yet.</div></div>
+</div>
+
+<div class="page" id="pg-lessonnote">
+  <div class="page-hd-row" style="margin-bottom:12px;">
+    <div><div class="page-hd-title">Lesson Notes</div><div class="page-hd-sub">Weekly notes for HOD review</div></div>
+    <button class="btn btn-navy btn-sm" onclick="toggleForm('ln-form')">+ New</button>
+  </div>
+  <div id="ln-form" style="display:none;" class="card">
+    <div class="card-title">New Lesson Note</div>
+    <div class="f3">
+      <div class="fg"><label>Subject *</label><select class="fi" id="ln-subject" style="height:46px;"><option value="">-- Select --</option></select></div>
+      <div class="fg"><label>Week</label><select class="fi" id="ln-week" style="height:46px;"><option>Week 1</option><option>Week 2</option><option>Week 3</option><option>Week 4</option><option>Week 5</option><option>Week 6</option><option>Week 7</option><option>Week 8</option><option>Week 9</option><option>Week 10</option><option>Week 11</option><option>Week 12</option><option>Week 13</option></select></div>
+      <div class="fg"><label>Date</label><input class="fi" id="ln-date" type="date" style="height:46px;"/></div>
+    </div>
+    <div class="fg"><label>Topic *</label><input class="fi" id="ln-topic" placeholder="Topic covered this week"/></div>
+    <div class="fg"><label>Lesson Content</label>
+      <textarea class="fi" id="ln-content" rows="10" placeholder="INTRODUCTION:&#10;&#10;BODY:&#10;&#10;EXAMPLES:&#10;1. &#10;2. &#10;&#10;CLASSWORK:&#10;&#10;ASSIGNMENT:&#10;"></textarea></div>
+    <div class="f2">
+      <div class="fg"><label>Attendance</label><input class="fi" id="ln-attendance" placeholder="35/38"/></div>
+      <div class="fg"><label>Reflection</label><input class="fi" id="ln-reflection" placeholder="What went well..."/></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="saveLessonNote('draft')" style="flex:1;">Save Draft</button>
+      <button class="btn btn-navy" onclick="saveLessonNote('submit')" style="flex:2;">Submit to HOD</button>
+    </div>
+  </div>
+  <div id="ln-list-wrap"><div class="empty-state">No lesson notes yet.</div></div>
+</div>
+
+<div class="page" id="pg-examsubmit">
+  <div class="page-hd-row" style="margin-bottom:12px;">
+    <div><div class="page-hd-title">Exam Questions</div><div class="page-hd-sub">Submit for HOD and VP approval</div></div>
+    <button class="btn btn-navy btn-sm" onclick="toggleForm('eq-form')">+ New</button>
+  </div>
+  <div id="eq-form" style="display:none;" class="card">
+    <div class="card-title">Submit Exam Questions</div>
+    <div class="f2">
+      <div class="fg"><label>Subject *</label><select class="fi" id="eq-subject" style="height:46px;"><option value="">-- Select --</option></select></div>
+      <div class="fg"><label>Exam Type</label>
+        <select class="fi" id="eq-type" style="height:46px;"><option>First Term Examination</option><option>Second Term Examination</option><option>Third Term Examination</option><option>Mid-Term Test</option><option>CA Test 1</option><option>CA Test 2</option></select></div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Duration</label>
+        <select class="fi" id="eq-duration" style="height:46px;"><option>1 hour</option><option>1 hour 30 minutes</option><option>2 hours</option><option>2 hours 30 minutes</option><option>3 hours</option></select></div>
+      <div class="fg"><label>Total Marks</label><input class="fi" id="eq-marks" type="number" value="100"/></div>
+    </div>
+    <div class="fg"><label>Instructions</label><input class="fi" id="eq-instructions" value="Answer ALL in Section A and ANY THREE in Section B."/></div>
+    <div class="fg"><label>Section A &#8212; Objective (40 marks)</label>
+      <textarea class="fi" id="eq-section-a" rows="7" placeholder="1. &#10;(A)  (B)  (C)  (D)&#10;&#10;2. &#10;(A)  (B)  (C)  (D)"></textarea></div>
+    <div class="fg"><label>Section B &#8212; Theory (60 marks)</label>
+      <textarea class="fi" id="eq-section-b" rows="7" placeholder="1(a) &#10; (b) &#10;&#10;2(a) &#10; (b) "></textarea></div>
+    <div class="fg"><label>Marking Scheme (HOD/VP only)</label>
+      <textarea class="fi" id="eq-marking" rows="3" placeholder="Obj: 1-A, 2-C...&#10;Theory guide..."></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="saveExamQuestions('draft')" style="flex:1;">Save Draft</button>
+      <button class="btn btn-navy" onclick="saveExamQuestions('submit')" style="flex:2;">Submit to HOD</button>
+    </div>
+  </div>
+  <div id="eq-list-wrap"><div class="empty-state">No exam submissions yet.</div></div>
+</div>
+
+<div class="page" id="pg-myworkflow">
+  <div class="page-hd-title" style="margin-bottom:14px;">My Submissions</div>
+  <div id="wf-list"></div>
+</div>
+
+  </div>
+</div>
+</div>
+
+<div class="modal-ov" id="m-add-assignment">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">New Assignment</div>
+    <div class="fg"><label>Title *</label><input class="fi" id="asgn-title" placeholder="e.g. Mathematics Homework Week 3"/></div>
+    <div class="f2">
+      <div class="fg"><label>Subject *</label><select class="fi" id="asgn-subject" style="height:46px;"><option value="">-- Select --</option></select></div>
+      <div class="fg"><label>Class</label><input class="fi" id="asgn-class" placeholder="e.g. SS 2 Science"/></div>
+    </div>
+    <div class="fg"><label>Content *</label>
+      <textarea class="fi" id="asgn-content" rows="5" placeholder="Write questions here..."></textarea></div>
+    <div class="fg"><label>Due Date</label><input class="fi" id="asgn-due" type="date"/></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeModal('m-add-assignment')" style="flex:1;">Cancel</button>
+      <button class="btn btn-navy" onclick="createAssignment()" style="flex:2;">Send to Students</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="rsms-toast"></div>
+<script>
+function toggleForm(id){var el=document.getElementById(id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+window.addEventListener('load',function(){ checkToken(); setHeaderInfo(); if(window.initPortal)initPortal(); });
+// Teacher Portal JS
+var ME = {};
+var MY_CLASS = '';
+var MY_SUBJECTS = [];
+
+function initPortal(){
+  ME = RSMS.user || {};
+  MY_CLASS = ME.myClass || ME.class || '';
+  MY_SUBJECTS = (ME.subjects||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+  renderDash();
+  initCarousel([
+    {bg:'linear-gradient(135deg,#0f1535,#1a2347)',tag:'My Class',title:MY_CLASS||'My Class',sub:'Students and attendance',btn:'My Students',ico:'\ud83d\udc68\u200d\ud83c\udfeb',link:'#'},
+    {bg:'linear-gradient(135deg,#14532d,#22c55e)',tag:'Workflow',title:'Submit Lesson Plans',sub:'Plans, notes and exams',btn:'Submit Now',ico:'\ud83d\udccb',link:'#'},
+    {bg:'linear-gradient(135deg,#4c1d95,#8b5cf6)',tag:'AI Studio',title:'Rehoteq AI Lesson Studio',sub:'Generate lessons with AI',btn:'Open Studio',ico:'\ud83e\udd16',link:'https://rehoteq.com/lesson-ai.html'}
+  ],'t-carousel','t-dots');
+}
+
+window.onPage_home        = renderDash;
+window.onPage_students    = renderMyStudents;
+window.onPage_assignments = renderAssignments;
+window.onPage_lessonplan  = initLessonPlanPage;
+window.onPage_lessonnote  = initLessonNotePage;
+window.onPage_examsubmit  = initExamPage;
+window.onPage_myworkflow  = renderMyWorkflow;
+
+function renderDash(){
+  ME = RSMS.user || {};
+  MY_CLASS = ME.myClass || ME.class || ME.myclass || '';
+  var students = RSMS.students();
+  var myStudents = MY_CLASS ? students.filter(function(s){return s.class===MY_CLASS;}) : [];
+  var plans = WF.getAll('plans').filter(function(d){return d.by===ME.name;});
+  var notes = WF.getAll('notes').filter(function(d){return d.by===ME.name;});
+  var exams = WF.getAll('exams').filter(function(d){return d.by===ME.name;});
+  var el = document.getElementById('t-stats');
+  if(el) el.innerHTML = [
+    {v:myStudents.length, l:'My Students', cls:'s-teal'},
+    {v:plans.length, l:'Lesson Plans', cls:'s-gold'},
+    {v:notes.length, l:'Lesson Notes', cls:'s-green'},
+    {v:exams.filter(function(d){return d.status==='vp_approved';}).length, l:'Approved Exams', cls:'s-blue'}
+  ].map(function(s){return '<div class="stat-tile '+s.cls+'"><div class="stat-v">'+s.v+'</div><div class="stat-l">'+s.l+'</div></div>';}).join('');
+
+  // Quick workflow status
+  var all = plans.concat(notes).concat(exams);
+  var pending = all.filter(function(d){return d.status==='returned';}).length;
+  if(pending > 0){
+    var alert = document.getElementById('t-alert');
+    if(alert){alert.style.display='block'; alert.textContent=pending+' document(s) returned by HOD. Please review and resubmit.';}
+  }
+
+  var school = RSMS.school;
+  var hdEl = document.getElementById('t-hero-name');
+  if(hdEl) hdEl.textContent = (ME.name||'Teacher')+' \u2014 '+(MY_CLASS||'Subject Teacher');
+  var termEl = document.getElementById('t-hero-term');
+  if(termEl) termEl.textContent = (school.term||'First Term')+' \u00b7 '+(school.session||'2025/2026');
+}
+
+function renderMyStudents(){
+  ME = RSMS.user || {};
+  MY_CLASS = ME.myClass || ME.class || ME.myclass || '';
+  var el = document.getElementById('my-students-list');
+  if(!el)return;
+  var students = MY_CLASS ? RSMS.students().filter(function(s){return s.class===MY_CLASS;}) : RSMS.students();
+  var cls = document.getElementById('t-cls-filter');
+  if(cls && cls.value) students = RSMS.students().filter(function(s){return s.class===cls.value;});
+  var lbl = document.getElementById('t-stu-count');
+  if(lbl) lbl.textContent = students.length+' students'+(MY_CLASS?' in '+MY_CLASS:'');
+  if(!students.length){el.innerHTML='<div class="empty-state">No students in your class yet</div>';return;}
+  el.innerHTML='';
+  students.forEach(function(s,i){
+    var name = (s.surname||'')+' '+(s.firstname||'');
+    var div = document.createElement('div'); div.className='card'; div.style.cssText='margin-bottom:8px;display:flex;align-items:center;gap:12px;';
+    div.innerHTML='<div style="width:36px;height:36px;border-radius:50%;background:var(--goldl);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;color:var(--navy);flex-shrink:0;">'+(i+1)+'</div>'+
+      '<div style="flex:1;"><div style="font-weight:700;color:var(--t1);">'+name+'</div>'+
+      '<div style="font-size:.72rem;color:var(--t3);">'+s.reg+' \u00b7 '+(s.class||'--')+'</div></div>';
+    el.appendChild(div);
+  });
+}
+
+// ── LESSON PLAN ──
+function initLessonPlanPage(){
+  populateSelect('lp-subject', MY_CLASS);
+}
+
+function saveLessonPlan(action){
+  var subject = document.getElementById('lp-subject').value;
+  var topic = (document.getElementById('lp-topic').value||'').trim();
+  if(!subject||!topic){toast('Select subject and enter topic','error');return;}
+  var doc = {
+    docType:'plan', subject:subject, cls:MY_CLASS,
+    topic:topic, week:document.getElementById('lp-week').value,
+    duration:document.getElementById('lp-duration').value,
+    prevKnowledge:document.getElementById('lp-prev').value,
+    objectives:document.getElementById('lp-objectives').value,
+    materials:document.getElementById('lp-materials').value,
+    content:document.getElementById('lp-content').value,
+    references:document.getElementById('lp-references').value,
+    by:ME.name||'Teacher', term:RSMS.school.term, session:RSMS.school.session,
+    createdAt:new Date().toISOString()
+  };
+  if(action==='submit'){
+    WF.submit('plans', doc);
+    toast('Lesson plan submitted to HOD','success');
+  } else {
+    doc.id='lp'+Date.now(); doc.status='draft';
+    var all=WF.getAll('plans'); all.push(doc); WF.saveAll('plans',all);
+    toast('Lesson plan saved as draft','info');
+  }
+  renderMyWorkflow();
+  document.getElementById('lp-form').style.display='none';
+}
+
+// ── LESSON NOTE ──
+function initLessonNotePage(){
+  populateSelect('ln-subject', MY_CLASS);
+  document.getElementById('ln-date').value = new Date().toISOString().slice(0,10);
+}
+
+function saveLessonNote(action){
+  var subject = document.getElementById('ln-subject').value;
+  var topic = (document.getElementById('ln-topic').value||'').trim();
+  if(!subject||!topic){toast('Select subject and enter topic','error');return;}
+  var doc = {
+    docType:'note', subject:subject, cls:MY_CLASS,
+    topic:topic, week:document.getElementById('ln-week').value,
+    date:document.getElementById('ln-date').value,
+    content:document.getElementById('ln-content').value,
+    attendance:document.getElementById('ln-attendance').value,
+    reflection:document.getElementById('ln-reflection').value,
+    by:ME.name||'Teacher', term:RSMS.school.term, session:RSMS.school.session,
+    createdAt:new Date().toISOString()
+  };
+  if(action==='submit'){
+    WF.submit('notes', doc);
+    toast('Lesson note submitted to HOD','success');
+  } else {
+    doc.id='ln'+Date.now(); doc.status='draft';
+    var all=WF.getAll('notes'); all.push(doc); WF.saveAll('notes',all);
+    toast('Lesson note saved as draft','info');
+  }
+  renderMyWorkflow();
+  document.getElementById('ln-form').style.display='none';
+}
+
+// ── EXAM QUESTIONS ──
+function initExamPage(){
+  populateSelect('eq-subject', MY_CLASS);
+}
+
+function saveExamQuestions(action){
+  var subject = document.getElementById('eq-subject').value;
+  if(!subject){toast('Select subject','error');return;}
+  var doc = {
+    docType:'exam', subject:subject, cls:MY_CLASS,
+    examType:document.getElementById('eq-type').value,
+    duration:document.getElementById('eq-duration').value,
+    totalMarks:document.getElementById('eq-marks').value,
+    instructions:document.getElementById('eq-instructions').value,
+    sectionA:document.getElementById('eq-section-a').value,
+    sectionB:document.getElementById('eq-section-b').value,
+    markingScheme:document.getElementById('eq-marking').value,
+    by:ME.name||'Teacher', term:RSMS.school.term, session:RSMS.school.session,
+    createdAt:new Date().toISOString()
+  };
+  if(action==='submit'){
+    WF.submit('exams', doc);
+    toast('Exam questions submitted to HOD','success');
+  } else {
+    doc.id='eq'+Date.now(); doc.status='draft';
+    var all=WF.getAll('exams'); all.push(doc); WF.saveAll('exams',all);
+    toast('Exam saved as draft','info');
+  }
+  renderMyWorkflow();
+  document.getElementById('eq-form').style.display='none';
+}
+
+// ── MY WORKFLOW ──
+function renderMyWorkflow(){
+  var plans = WF.getAll('plans').filter(function(d){return d.by===ME.name;});
+  var notes = WF.getAll('notes').filter(function(d){return d.by===ME.name;});
+  var exams = WF.getAll('exams').filter(function(d){return d.by===ME.name;});
+  var all = plans.concat(notes).concat(exams).sort(function(a,b){return (b.createdAt||'')>(a.createdAt||'')?1:-1;});
+  var el = document.getElementById('wf-list'); if(!el)return;
+  if(!all.length){el.innerHTML='<div class="empty-state">No submissions yet</div>';return;}
+  el.innerHTML='';
+  all.forEach(function(d){
+    var div = document.createElement('div'); div.className='card'; div.style.marginBottom='8px';
+    var typeLabel = d.docType==='plan'?'Lesson Plan':d.docType==='note'?'Lesson Note':'Exam Questions';
+    div.innerHTML='<div class="flex-between" style="margin-bottom:6px;">'+
+      '<div><div style="font-weight:700;color:var(--t1);">'+(d.topic||d.subject+' '+d.examType)+'</div>'+
+      '<div style="font-size:.72rem;color:var(--t3);">'+typeLabel+' \u00b7 '+(d.subject||'')+(d.week?' \u00b7 '+d.week:'')+'</div></div>'+
+      WF.badge(d.status)+'</div>'+
+      (d.hodNote?'<div style="margin-top:6px;background:var(--goldl);border-radius:var(--r3);padding:8px 10px;font-size:.78rem;color:#92400e;"><strong>HOD:</strong> '+d.hodNote+'</div>':'')+
+      (d.vpNote?'<div style="margin-top:6px;background:var(--greenl);border-radius:var(--r3);padding:8px 10px;font-size:.78rem;color:#15803d;"><strong>VP:</strong> '+d.vpNote+'</div>':'');
+    if(d.status==='draft'||d.status==='returned'){
+      var btn=document.createElement('button'); btn.className='btn btn-teal btn-xs'; btn.style.marginTop='8px'; btn.textContent='Resubmit to HOD';
+      btn.onclick=(function(doc){return function(){
+        doc.status='submitted'; doc.submittedAt=new Date().toISOString();
+        var key=doc.docType==='plan'?'plans':doc.docType==='note'?'notes':'exams';
+        var arr=WF.getAll(key); var i=arr.findIndex(function(x){return x.id===doc.id;}); if(i>-1){arr[i]=doc;WF.saveAll(key,arr);}
+        renderMyWorkflow(); toast('Resubmitted to HOD','success');
+      };})(d);
+      div.appendChild(btn);
+    }
+    el.appendChild(div);
+  });
+}
+
+// ── ASSIGNMENTS ──
+function renderAssignments(){
+  var el = document.getElementById('assign-list'); if(!el)return;
+  var assigns = JSON.parse(localStorage.getItem('rsms_assignments')||'[]');
+  var mine = assigns.filter(function(a){return a.by===ME.name||a.cls===MY_CLASS;});
+  if(!mine.length){el.innerHTML='<div class="empty-state">No assignments created yet</div>';return;}
+  el.innerHTML='';
+  mine.slice().reverse().forEach(function(a){
+    var div=document.createElement('div'); div.className='card'; div.style.marginBottom='8px';
+    div.innerHTML='<div class="flex-between" style="margin-bottom:4px;">'+
+      '<div style="font-weight:700;color:var(--t1);">'+a.title+'</div>'+
+      '<span class="badge bg-teal">'+a.cls+'</span></div>'+
+      '<div style="font-size:.78rem;color:var(--t3);">'+a.subject+' \u00b7 Due: '+a.dueDate+'</div>'+
+      '<div style="font-size:.82rem;color:var(--t2);margin-top:6px;">'+a.content+'</div>';
+    el.appendChild(div);
+  });
+}
+
+function createAssignment(){
+  var title = (document.getElementById('asgn-title').value||'').trim();
+  var subject = document.getElementById('asgn-subject').value;
+  var content = (document.getElementById('asgn-content').value||'').trim();
+  var due = document.getElementById('asgn-due').value;
+  if(!title||!subject||!content){toast('Fill title, subject and content','error');return;}
+  var assigns = JSON.parse(localStorage.getItem('rsms_assignments')||'[]');
+  assigns.push({
+    id:'asgn'+Date.now(), title:title, subject:subject, content:content,
+    cls:document.getElementById('asgn-class').value||MY_CLASS,
+    dueDate:due, by:ME.name||'Teacher',
+    createdAt:new Date().toISOString(), term:RSMS.school.term, session:RSMS.school.session
+  });
+  localStorage.setItem('rsms_assignments', JSON.stringify(assigns));
+  closeModal('m-add-assignment');
+  renderAssignments();
+  toast('Assignment created and sent to students','success');
+  ['asgn-title','asgn-content','asgn-due'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+}
+
+// ─── ATTENDANCE MODULE (Class Teacher) ─────────────────────────────────
+// Mark Register tab, QR Scanner tab, History tab
+// Uses jsQR from CDN
+
+var ATT = {
+  todayKey: function(){ return new Date().toISOString().slice(0,10); },
+  load: function(cls){ 
+    return JSON.parse(localStorage.getItem('rsms_att_'+cls+'_'+ATT.todayKey())||'{}'); 
+  },
+  save: function(cls, data){ 
+    localStorage.setItem('rsms_att_'+cls+'_'+ATT.todayKey(), JSON.stringify(data));
+    // also push to central attendance
+    var all = JSON.parse(localStorage.getItem('rsms_attendance')||'{}');
+    var today = ATT.todayKey();
+    if(!all[today]) all[today] = {};
+    var present = Object.values(data).filter(function(s){return s.status==='present';}).length;
+    var absent  = Object.values(data).filter(function(s){return s.status==='absent';}).length;
+    all[today][cls] = {present:present, absent:absent};
+    localStorage.setItem('rsms_attendance', JSON.stringify(all));
+  },
+  markStudent: function(stuId, status, cls){
+    var data = ATT.load(cls);
+    data[stuId] = data[stuId]||{};
+    data[stuId].status = status;
+    data[stuId].time = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    ATT.save(cls, data);
+  }
+};
+
+var ATT_TAB = 'register'; // current tab
+var QR_STREAM = null;
+
+window.onPage_attendance = function(){
+  switchAttTab('register');
+};
+
+function switchAttTab(tab){
+  ATT_TAB = tab;
+  ['register','scanner','history'].forEach(function(t){
+    var el = document.getElementById('att-tab-'+t);
+    var btn = document.getElementById('att-btn-'+t);
+    if(el) el.style.display = t===tab?'block':'none';
+    if(btn) btn.className = t===tab?'btn btn-navy btn-xs':'btn btn-ghost btn-xs';
+  });
+  if(tab==='register') renderMarkRegister();
+  if(tab==='scanner')  initQRScanner();
+  if(tab==='history')  renderAttHistory();
+  if(tab!=='scanner')  stopQRScanner();
+}
+
+function renderMarkRegister(){
+  var el = document.getElementById('att-register-list'); if(!el)return;
+  ME = RSMS.user||{};
+  MY_CLASS = ME.myClass||ME.class||MY_CLASS||'';
+  var students = MY_CLASS ? getStudents(MY_CLASS) : RSMS.students();
+  var data = ATT.load(MY_CLASS);
+  if(!students.length){el.innerHTML='<div class="empty-state">No students in your class</div>';return;}
+  
+  // Summary bar
+  var present = Object.values(data).filter(function(s){return s.status==='present';}).length;
+  var absent  = Object.values(data).filter(function(s){return s.status==='absent';}).length;
+  var unmarked = students.length - present - absent;
+  var sumEl = document.getElementById('att-summary');
+  if(sumEl) sumEl.innerHTML = 
+    '<span style="color:var(--green);font-weight:700;">'+present+' Present</span> &nbsp;'+
+    '<span style="color:var(--red);font-weight:700;">'+absent+' Absent</span> &nbsp;'+
+    '<span style="color:var(--t3);">'+unmarked+' Unmarked</span>';
+
+  el.innerHTML='';
+  students.forEach(function(s,i){
+    var name = (s.surname||'')+' '+(s.firstname||'');
+    var rec = data[s.id]||{};
+    var status = rec.status||'unmarked';
+    var div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);';
+    div.innerHTML='<div style="width:28px;height:28px;border-radius:50%;background:var(--goldl);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:var(--navy);flex-shrink:0;">'+(i+1)+'</div>'+
+      '<div style="flex:1;"><div style="font-weight:700;font-size:.88rem;color:var(--t1);">'+name+'</div>'+
+      '<div style="font-size:.7rem;color:var(--t3);">'+s.reg+(rec.time?' \u00b7 Marked '+rec.time:'')+'</div></div>';
+    
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:5px;';
+    
+    var pBtn = document.createElement('button');
+    pBtn.style.cssText='height:30px;padding:0 10px;border-radius:6px;font-size:.72rem;font-weight:700;border:none;cursor:pointer;transition:all .15s;'+
+      (status==='present'?'background:var(--green);color:#fff;':'background:rgba(34,197,94,.12);color:var(--green);');
+    pBtn.textContent='P';
+    pBtn.onclick=(function(id,cls,div,name){return function(){
+      ATT.markStudent(id,'present',cls);
+      renderMarkRegister();
+    };})(s.id,MY_CLASS,div,name);
+    
+    var aBtn = document.createElement('button');
+    aBtn.style.cssText='height:30px;padding:0 10px;border-radius:6px;font-size:.72rem;font-weight:700;border:none;cursor:pointer;transition:all .15s;'+
+      (status==='absent'?'background:var(--red);color:#fff;':'background:rgba(244,63,94,.12);color:var(--red);');
+    aBtn.textContent='A';
+    aBtn.onclick=(function(id,cls,sname,pphone){return function(){
+      ATT.markStudent(id,'absent',cls);
+      renderMarkRegister();
+      // WhatsApp alert
+      if(pphone){
+        var msg = 'Dear Parent, your ward '+sname+' was ABSENT from school today ('+ATT.todayKey()+'). Please contact the school for information. '+
+          (RSMS.school.name||'School')+' \u2014 '+(RSMS.school.phone||'');
+        setTimeout(function(){
+          if(confirm('Send WhatsApp absent alert to parent of '+sname+'?')){
+            window.open('https://wa.me/234'+pphone.replace(/^0/,'').replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
+          }
+        }, 200);
+      }
+    };})(s.id,MY_CLASS,name,s.parentPhone||'');
+    
+    btnRow.appendChild(pBtn);
+    btnRow.appendChild(aBtn);
+    div.appendChild(btnRow);
+    el.appendChild(div);
+  });
+}
+
+// ── MARK ALL ──
+function markAllPresent(){
+  var students = getStudents(MY_CLASS);
+  students.forEach(function(s){ ATT.markStudent(s.id,'present',MY_CLASS); });
+  renderMarkRegister();
+  toast('All students marked Present','success');
+}
+
+// ── QR SCANNER ──
+function initQRScanner(){
+  var el = document.getElementById('att-qr-status');
+  if(el) el.textContent = 'Starting camera...';
+  var video = document.getElementById('att-qr-video');
+  if(!video)return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    if(el) el.textContent = 'Camera not available on this device';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
+    .then(function(stream){
+      QR_STREAM = stream;
+      video.srcObject = stream;
+      video.play();
+      if(el) el.textContent = 'Scanning... Point camera at student QR code';
+      scanQRFrame(video);
+    })
+    .catch(function(err){
+      if(el) el.textContent = 'Camera permission denied. Please allow camera access.';
+      console.log('Camera error:', err);
+    });
+}
+
+function scanQRFrame(video){
+  if(ATT_TAB !== 'scanner') return;
+  var canvas = document.getElementById('att-qr-canvas');
+  if(!canvas||!video.videoWidth)return;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  if(typeof jsQR !== 'undefined'){
+    var code = jsQR(imageData.data, imageData.width, imageData.height);
+    if(code && code.data){
+      handleQRScan(code.data);
+      return;
+    }
+  }
+  requestAnimationFrame(function(){ scanQRFrame(video); });
+}
+
+function handleQRScan(data){
+  // QR data format: "REG|SURNAME FIRSTNAME|CLASS" or just reg number
+  var parts = data.split('|');
+  var reg = parts[0].trim();
+  var students = RSMS.students();
+  var stu = students.find(function(s){return s.reg===reg||(s.surname+' '+s.firstname)===reg;});
+  if(!stu){
+    toast('Student not found: '+reg, 'error');
+    setTimeout(function(){ if(ATT_TAB==='scanner') scanQRFrame(document.getElementById('att-qr-video')); }, 1500);
+    return;
+  }
+  var name = (stu.surname||'')+' '+(stu.firstname||'');
+  ATT.markStudent(stu.id,'present',MY_CLASS);
+  var el = document.getElementById('att-qr-status');
+  if(el){
+    el.style.color = 'var(--green)';
+    el.textContent = '\u2705 ' + name + ' marked Present';
+    setTimeout(function(){
+      el.style.color='';
+      el.textContent='Scanning...';
+      if(ATT_TAB==='scanner') scanQRFrame(document.getElementById('att-qr-video'));
+    }, 2000);
+  }
+  var result = document.getElementById('att-qr-result');
+  if(result){
+    result.innerHTML = '<div style="background:var(--greenl);border:1px solid var(--green);border-radius:var(--r2);padding:10px 14px;margin-top:8px;font-size:.85rem;color:var(--green);">'+
+      '\u2705 <strong>'+name+'</strong> \u2014 '+stu.class+'</div>' + result.innerHTML;
+  }
+}
+
+function stopQRScanner(){
+  if(QR_STREAM){
+    QR_STREAM.getTracks().forEach(function(t){t.stop();});
+    QR_STREAM = null;
+  }
+}
+
+// ── HISTORY ──
+function renderAttHistory(){
+  var el = document.getElementById('att-history-list'); if(!el)return;
+  var keys = [];
+  for(var i=0;i<localStorage.length;i++){
+    var k = localStorage.key(i);
+    if(k&&k.startsWith('rsms_att_'+MY_CLASS+'_')) keys.push(k);
+  }
+  if(!keys.length){el.innerHTML='<div class="empty-state">No attendance records yet</div>';return;}
+  keys.sort().reverse();
+  el.innerHTML='';
+  keys.slice(0,14).forEach(function(k){
+    var date = k.split('_').pop();
+    var data = JSON.parse(localStorage.getItem(k)||'{}');
+    var present = Object.values(data).filter(function(s){return s.status==='present';}).length;
+    var absent  = Object.values(data).filter(function(s){return s.status==='absent';}).length;
+    var total = RSMS.students().filter(function(s){return s.class===MY_CLASS;}).length;
+    var rate = total?Math.round(present/total*100):0;
+    var div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:.85rem;';
+    div.innerHTML='<div><div style="font-weight:700;color:var(--t1);">'+date+'</div>'+
+      '<div style="font-size:.72rem;color:var(--t3);">'+present+' present \u00b7 '+absent+' absent</div></div>'+
+      '<div style="text-align:right;"><div style="font-weight:700;color:'+(rate>=80?'var(--green)':rate>=60?'var(--gold)':'var(--red)')+';">'+rate+'%</div></div>';
+    el.appendChild(div);
+  });
+}
+
+</script>
+</body>
+</html>
