@@ -4,9 +4,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="theme-color" content="#0d1117"/>
-<title>RSMS &#8212; CBT Exam</title>
+<title>RSMS &#8212; Data Reset Tool</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 /* ═══════════════════════════════════════════════════
    RSMS CORE CSS — Include in every portal
    Single source of truth for all shared styles
@@ -466,116 +466,58 @@ textarea.fi { padding:12px 14px; height:auto; resize:vertical; }
   border-radius:20px; font-size:.63rem; font-weight:700;
 }
 
-
 :root{--bg:#0d1117;--bg2:#111827;--card:#1a2236;--card2:#1e2a45;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.12);--t1:#f0f6ff;--t2:#c9d6f0;--t3:#8899bb;--t4:#566280;}
 body{background:var(--bg);}
 .card{background:var(--card);border-color:var(--line);}
-.fi{background:var(--card2);border-color:var(--line2);color:var(--t1);}
 .btn-ghost{background:rgba(255,255,255,.06);border-color:var(--line2);color:var(--t2);}
-.empty-state{color:var(--t4);}
-/* Subject cards */
-.subj-card{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:10px;cursor:pointer;transition:all .2s;}
-.subj-card:active{transform:scale(.98);}
-.subj-ico{font-size:2rem;flex-shrink:0;}
-.subj-info{flex:1;}
-.subj-name{font-weight:700;color:var(--t1);font-size:.95rem;}
-.subj-meta{font-size:.75rem;color:var(--t3);margin-top:2px;}
-/* Exam screen */
-.exam-header{background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px;position:sticky;top:0;z-index:10;}
-.progress-bar{height:4px;background:var(--line);border-radius:2px;margin:8px 0;}
-.progress-fill{height:4px;background:var(--gold);border-radius:2px;transition:width .3s;}
-.q-meta{display:flex;justify-content:space-between;align-items:center;font-size:.75rem;color:var(--t3);}
-.timer{font-family:var(--mono);font-weight:700;font-size:1rem;}
-.q-text{font-size:1rem;font-weight:600;color:var(--t1);line-height:1.6;padding:20px 16px;min-height:80px;}
-.opt-btn{width:100%;display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--card);border:2px solid var(--line);border-radius:var(--r2);cursor:pointer;transition:all .18s;margin-bottom:10px;text-align:left;}
-.opt-btn:active{transform:scale(.98);}
-.opt-btn.selected{border-color:var(--gold);background:rgba(212,168,67,.08);}
-.opt-letter{width:28px;height:28px;border-radius:50%;background:var(--card2);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.82rem;color:var(--t3);flex-shrink:0;}
-.opt-btn.selected .opt-letter{background:var(--gold);color:#000;border-color:var(--gold);}
-.opt-text{font-size:.88rem;color:var(--t1);}
-.exam-nav{display:flex;gap:10px;padding:14px 16px;background:var(--card);border-top:1px solid var(--line);position:sticky;bottom:60px;}
-/* Result screen */
-.result-hero{text-align:center;padding:32px 20px;background:linear-gradient(135deg,var(--navy),var(--navy2));}
-.res-circle{width:110px;height:110px;border-radius:50%;background:var(--card);border:3px solid var(--gold);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 16px;}
-.res-score-big{font-family:var(--serif);font-size:1.6rem;font-weight:900;color:var(--t1);}
-.res-grade-big{font-size:3rem;font-weight:900;line-height:1;}
-/* Review */
-.review-item{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:14px;margin-bottom:10px;}
-.rv-header{display:flex;justify-content:space-between;margin-bottom:6px;}
-.rv-num{font-weight:800;color:var(--t3);font-size:.8rem;}
-.rv-status{font-weight:700;font-size:.8rem;}
-.rv-q{font-weight:600;color:var(--t1);font-size:.88rem;margin-bottom:6px;line-height:1.5;}
-.rv-ans,.rv-correct{font-size:.8rem;color:var(--t2);}
-
+.btn-danger{background:rgba(244,63,94,.15);border:1.5px solid var(--red);color:var(--red);border-radius:var(--r2);padding:10px 18px;font-family:var(--sans);font-size:.88rem;font-weight:700;cursor:pointer;}
+.btn-danger:active{transform:scale(.96);}
+.data-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);}
+.data-key{font-family:var(--mono);font-size:.78rem;color:var(--t2);}
+.data-size{font-size:.72rem;color:var(--t3);}
+.data-count{font-weight:700;color:var(--gold);font-size:.82rem;}
 </style>
 </head>
 <body>
+<div style="max-width:600px;margin:0 auto;padding:20px 16px;">
 
-<!-- MENU SCREEN -->
-<div id="screen-menu">
-  <header class="topbar">
-    <div class="topbar-title">&#128218; CBT Exam</div>
-    <div class="topbar-right"><div class="tb-av" id="hd-av">S</div></div>
-  </header>
-  <div style="padding:16px;">
-    <div class="hero-card" style="margin-bottom:16px;">
-      <div class="hc-label">Student Exam Portal</div>
-      <div class="hc-val" id="cbt-student-name" style="font-size:1.1rem;">Loading...</div>
-      <div class="hc-row" style="margin-top:8px;">
-        <div class="hc-badge" id="cbt-student-class">Class</div>
-      </div>
-    </div>
-    <div style="font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--t1);margin-bottom:12px;">
-      Available Exams
-    </div>
-    <div id="subject-list"></div>
+  <div style="text-align:center;padding:20px 0 24px;">
+    <div style="font-size:2.5rem;margin-bottom:8px;">&#128465;</div>
+    <div style="font-family:var(--serif);font-size:1.6rem;font-weight:900;color:var(--t1);margin-bottom:4px;">RSMS Data Reset</div>
+    <div style="font-size:.85rem;color:var(--t3);">Clear test data and start fresh</div>
   </div>
-</div>
 
-<!-- EXAM SCREEN -->
-<div id="screen-exam" style="display:none;">
-  <div class="exam-header">
-    <div class="q-meta">
-      <span id="q-subject" style="font-weight:700;color:var(--gold);"></span>
-      <span class="timer" id="timer-display">00:00</span>
-    </div>
-    <div class="progress-bar"><div class="progress-fill" id="q-progress-bar" style="width:0%"></div></div>
-    <div class="q-meta">
-      <span id="q-counter" style="color:var(--t3);">1 of 40</span>
-      <span style="color:var(--t3);font-size:.72rem;">Tap an option to select</span>
-    </div>
+  <!-- Current data summary -->
+  <div class="card" style="margin-bottom:16px;padding:16px;">
+    <div style="font-weight:700;color:var(--t1);margin-bottom:12px;">&#128200; Current Data on This Device</div>
+    <div id="data-summary"></div>
   </div>
-  <div id="q-text" class="q-text"></div>
-  <div style="padding:0 16px;" id="q-options"></div>
-  <div class="exam-nav">
-    <button class="btn btn-ghost" id="btn-prev" onclick="navQuestion(-1)" style="flex:1;">&#8592; Prev</button>
-    <button class="btn btn-gold" id="btn-next" onclick="navQuestion(1)" style="flex:2;">Next &#8594;</button>
-  </div>
-</div>
 
-<!-- RESULT SCREEN -->
-<div id="screen-result" style="display:none;">
-  <div class="result-hero">
-    <div class="res-circle">
-      <div class="res-grade-big" id="res-grade">A</div>
-    </div>
-    <div style="font-family:var(--serif);font-size:1.4rem;font-weight:900;color:#fff;margin-bottom:4px;" id="res-score">0/0</div>
-    <div style="font-size:1.1rem;font-weight:700;color:var(--gold);" id="res-pct">0%</div>
-    <div style="font-size:.85rem;color:rgba(255,255,255,.55);margin:8px 0;" id="res-subject"></div>
-    <div style="font-size:.88rem;color:rgba(255,255,255,.7);font-style:italic;" id="res-remark"></div>
+  <!-- Selective reset -->
+  <div class="card" style="margin-bottom:12px;padding:16px;">
+    <div style="font-weight:700;color:var(--t1);margin-bottom:4px;">&#9881;&#65039; Selective Reset</div>
+    <div style="font-size:.78rem;color:var(--t3);margin-bottom:14px;">Clear specific data while keeping settings</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="selective-btns"></div>
   </div>
-  <div style="padding:16px;">
-    <button class="btn btn-gold btn-full" onclick="retakeExam()" style="margin-bottom:12px;">
-      &#8635; Take Another Exam
+
+  <!-- Nuclear reset -->
+  <div class="card" style="padding:16px;border-color:rgba(244,63,94,.2);">
+    <div style="font-weight:700;color:var(--red);margin-bottom:4px;">&#9888;&#65039; Full Reset</div>
+    <div style="font-size:.78rem;color:var(--t3);margin-bottom:14px;">
+      Clears ALL RSMS data from this device — students, staff, fees, scores, settings, everything. Cannot be undone.
+    </div>
+    <button class="btn-danger" style="width:100%;" onclick="fullReset()">
+      &#128465; Clear ALL Data &amp; Start Fresh
     </button>
-    <div style="font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--t1);margin-bottom:12px;">
-      Answer Review
-    </div>
-    <div id="review-list"></div>
   </div>
+
+  <div style="text-align:center;margin-top:16px;">
+    <a href="rsms-admin.html" style="color:var(--t3);font-size:.82rem;">&#8592; Back to Admin Portal</a>
+  </div>
+
+  <div id="toast-local" style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 20px;border-radius:20px;font-weight:700;font-size:.85rem;display:none;z-index:999;"></div>
 </div>
 
-<div class="toast" id="rsms-toast"></div>
 <script>
 /* ═══════════════════════════════════════════════════════
    RSMS STANDALONE CORE — All globals, Android-safe
@@ -873,244 +815,143 @@ function copyText(text){
 // ── CONFIRM ────────────────────────────────────────────
 function confirmAction(msg,fn){if(window.confirm(msg))fn();}
 
-/* RSMS CBT — Student Exam Engine */
-var CBT = {
-  questions:[], current:0, answers:{}, timer:null,
-  timeLeft:0, subject:'', started:false, submitted:false,
-  score:0, total:0
-};
 
-var ME = {}, MY_CLASS='', MY_NAME='', MY_ID='';
+var RSMS_KEYS = [
+  {key:'rsms_students',   label:'Students',    icon:'&#128100;'},
+  {key:'rsms_staff',      label:'Staff',       icon:'&#128104;&#8205;&#127979;'},
+  {key:'rsms_fees',       label:'Fee Records', icon:'&#128176;'},
+  {key:'rsms_school',     label:'School Settings', icon:'&#127979;'},
+  {key:'rsms_fee_schedule',label:'Fee Schedule', icon:'&#128204;'},
+  {key:'rsms_stream_config',label:'Class Streams', icon:'&#127979;'},
+  {key:'rsms_broadcasts', label:'Broadcasts',  icon:'&#128172;'},
+  {key:'rsms_ct_remarks', label:'CT Remarks',  icon:'&#128172;'},
+  {key:'rsms_cbt_results',label:'CBT Results', icon:'&#128218;'},
+  {key:'rsms_cbt_questions',label:'CBT Questions', icon:'&#10067;'},
+  {key:'rsms_tokens',     label:'Login Tokens', icon:'&#128279;'},
+  {key:'rsms_clock_cfg',  label:'Clock Config', icon:'&#9201;'},
+  {key:'rsms_access_tokens', label:'Access Tokens', icon:'&#128274;'},
+];
 
-window.addEventListener('load',function(){
-  if(typeof checkToken==='function') checkToken();
-  if(typeof setHeaderInfo==='function') setHeaderInfo();
-  var user = typeof RSMS!=='undefined'&&RSMS.user?RSMS.user():{};
-  ME=user; MY_CLASS=user.class||user.myClass||'';
-  MY_NAME=(user.name||(user.surname||'')+' '+(user.firstname||'')).trim();
-  MY_ID=user.id||user.stuId||'';
-  loadSubjectMenu();
-});
+function getCount(key){
+  var raw = localStorage.getItem(key);
+  if(!raw) return null;
+  try{
+    var d = JSON.parse(raw);
+    if(Array.isArray(d)) return d.length + ' records';
+    if(typeof d === 'object') return Object.keys(d).length + ' entries';
+    return '1 item';
+  }catch(e){ return '~'+Math.round(raw.length/1024)+'KB'; }
+}
 
-function loadSubjectMenu(){
-  // Get available question sets from admin (rsms_cbt_questions_SUBJECT)
-  var subjects=[];
+function getSize(key){
+  var raw = localStorage.getItem(key)||'';
+  var kb = (raw.length/1024).toFixed(1);
+  return kb+'KB';
+}
+
+function renderSummary(){
+  var el = document.getElementById('data-summary');
+  var total = 0;
+  var html = '';
+  RSMS_KEYS.forEach(function(k){
+    var raw = localStorage.getItem(k.key);
+    if(!raw) return;
+    total += raw.length;
+    html += '<div class="data-row">'+
+      '<div><span class="data-key">'+k.icon+' '+k.label+'</span></div>'+
+      '<div style="display:flex;align-items:center;gap:10px;">'+
+        '<span class="data-count">'+getCount(k.key)+'</span>'+
+        '<span class="data-size">'+getSize(k.key)+'</span>'+
+      '</div></div>';
+  });
+  
+  // Also count rsms_scores_* keys
+  var scoreKeys = 0;
   for(var i=0;i<localStorage.length;i++){
-    var k=localStorage.key(i);
-    if(k&&k.indexOf('rsms_cbt_q_')===0){
-      var subj=k.replace('rsms_cbt_q_','').replace(/_/g,' ');
-      subjects.push(subj);
+    var k = localStorage.key(i);
+    if(k&&k.indexOf('rsms_scores_')===0) scoreKeys++;
+  }
+  if(scoreKeys){
+    html += '<div class="data-row"><div><span class="data-key">&#128221; Score Entries</span></div>'+
+      '<div><span class="data-count">'+scoreKeys+' subjects</span></div></div>';
+  }
+  
+  if(!html){ html = '<div style="color:var(--t4);padding:12px 0;text-align:center;">No RSMS data found on this device</div>'; }
+  else {
+    html += '<div style="margin-top:10px;font-size:.75rem;color:var(--t3);">Total: '+Math.round(total/1024)+'KB used</div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderSelectiveBtns(){
+  var el = document.getElementById('selective-btns');
+  var groups = [
+    {keys:['rsms_students'],label:'Students',icon:'&#128100;'},
+    {keys:['rsms_staff'],label:'Staff',icon:'&#128104;&#8205;&#127979;'},
+    {keys:['rsms_fees'],label:'Fees',icon:'&#128176;'},
+    {keys:['rsms_tokens','rsms_access_tokens'],label:'Tokens',icon:'&#128279;'},
+    {keys:['rsms_cbt_results'],label:'CBT Results',icon:'&#128218;'},
+    {keys:['rsms_broadcasts'],label:'Broadcasts',icon:'&#128172;'},
+    {keys:['rsms_ct_remarks'],label:'CT Remarks',icon:'&#128172;'},
+  ];
+  el.innerHTML = '';
+  groups.forEach(function(g){
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.style.cssText = 'display:flex;align-items:center;gap:6px;justify-content:center;';
+    btn.innerHTML = g.icon+' Clear '+g.label;
+    btn.onclick = (function(keys,label){return function(){
+      if(!confirm('Clear '+label+' data?')) return;
+      keys.forEach(function(k){ localStorage.removeItem(k); });
+      showToast(label+' cleared');
+      renderSummary();
+    };})(g.keys, g.label);
+    el.appendChild(btn);
+  });
+  // Score entries button
+  var scoreBtn = document.createElement('button');
+  scoreBtn.className = 'btn btn-ghost btn-sm';
+  scoreBtn.innerHTML = '&#128221; Clear Scores';
+  scoreBtn.onclick = function(){
+    if(!confirm('Clear all score entries?')) return;
+    var toRemove = [];
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(k&&(k.indexOf('rsms_scores_')===0||k.indexOf('scores_')===0)) toRemove.push(k);
     }
-  }
-  // Also check general questions pool
-  var pool=JSON.parse(localStorage.getItem('rsms_cbt_questions')||'[]');
-  if(pool.length){
-    var poolSubjects=[];
-    pool.forEach(function(q){if(q.subject&&poolSubjects.indexOf(q.subject)<0)poolSubjects.push(q.subject);});
-    poolSubjects.forEach(function(s){if(subjects.indexOf(s)<0)subjects.push(s);});
-  }
-  var el=document.getElementById('subject-list');
-  if(!el)return;
-  if(!subjects.length){
-    el.innerHTML='<div class="empty-state" style="padding:30px;text-align:center;">'+
-      '<div style="font-size:2rem;margin-bottom:10px;">&#128218;</div>'+
-      '<div style="font-weight:700;color:var(--t1);">No exams available</div>'+
-      '<div style="font-size:.82rem;color:var(--t3);margin-top:6px;">Your teacher has not uploaded any CBT questions yet.</div>'+
-      '</div>';
-    return;
-  }
-  el.innerHTML='';
-  subjects.forEach(function(subj){
-    var pool2=getSubjectQuestions(subj);
-    var d=document.createElement('div');d.className='subj-card';
-    d.innerHTML=
-      '<div class="subj-ico">&#128218;</div>'+
-      '<div class="subj-info">'+
-        '<div class="subj-name">'+subj+'</div>'+
-        '<div class="subj-meta">'+pool2.length+' questions \u00b7 '+
-          Math.ceil(pool2.length*1.5)+' mins</div>'+
-      '</div>'+
-      '<button class="btn btn-gold btn-sm">Start</button>';
-    d.querySelector('button').onclick=(function(s){return function(){startExam(s);};})(subj);
-    el.appendChild(d);
-  });
-}
-
-function getSubjectQuestions(subject){
-  // Check dedicated key first
-  var key='rsms_cbt_q_'+subject.replace(/\s+/g,'_');
-  var dedicated=JSON.parse(localStorage.getItem(key)||'[]');
-  if(dedicated.length) return dedicated;
-  // Fall back to pool
-  var pool=JSON.parse(localStorage.getItem('rsms_cbt_questions')||'[]');
-  return pool.filter(function(q){return q.subject===subject;});
-}
-
-function startExam(subject){
-  var allQ=getSubjectQuestions(subject);
-  if(!allQ.length){toast('No questions available for '+subject,'error');return;}
-  // Shuffle and take up to 40 questions
-  var shuffled=allQ.slice().sort(function(){return Math.random()-.5;});
-  CBT.questions=shuffled.slice(0,Math.min(40,shuffled.length));
-  CBT.subject=subject;
-  CBT.current=0;CBT.answers={};CBT.submitted=false;CBT.score=0;
-  CBT.timeLeft=CBT.questions.length*90; // 90 seconds per question
-  document.getElementById('screen-menu').style.display='none';
-  document.getElementById('screen-exam').style.display='block';
-  renderQuestion();
-  startTimer();
-  CBT.started=true;
-}
-
-function renderQuestion(){
-  var q=CBT.questions[CBT.current];
-  if(!q)return;
-  var total=CBT.questions.length;
-  var pct=Math.round((CBT.current/total)*100);
-  document.getElementById('q-progress-bar').style.width=pct+'%';
-  document.getElementById('q-counter').textContent=(CBT.current+1)+' of '+total;
-  document.getElementById('q-subject').textContent=CBT.subject;
-  document.getElementById('q-text').textContent=q.question||q.text||q.q||'';
-  // Options
-  var optEl=document.getElementById('q-options');optEl.innerHTML='';
-  var opts=q.options||q.choices||[];
-  var saved=CBT.answers[CBT.current];
-  opts.forEach(function(opt,i){
-    var btn=document.createElement('button');
-    btn.className='opt-btn'+(saved===i?' selected':'');
-    btn.innerHTML='<span class="opt-letter">'+String.fromCharCode(65+i)+'</span>'+
-      '<span class="opt-text">'+opt+'</span>';
-    btn.onclick=(function(idx){return function(){selectOption(idx);};})(i);
-    optEl.appendChild(btn);
-  });
-  // Nav buttons
-  document.getElementById('btn-prev').disabled=CBT.current===0;
-  document.getElementById('btn-next').textContent=
-    CBT.current===total-1?'Submit Exam':'Next >';
-}
-
-function selectOption(idx){
-  CBT.answers[CBT.current]=idx;
-  document.querySelectorAll('.opt-btn').forEach(function(b,i){
-    b.className='opt-btn'+(i===idx?' selected':'');
-  });
-}
-
-function navQuestion(dir){
-  var total=CBT.questions.length;
-  if(dir===1&&CBT.current===total-1){
-    // Submit
-    var answered=Object.keys(CBT.answers).length;
-    var unanswered=total-answered;
-    if(unanswered>0){
-      if(!confirm('You have '+unanswered+' unanswered question'+(unanswered>1?'s':'')+'. Submit anyway?'))return;
-    }
-    submitExam();return;
-  }
-  CBT.current=Math.max(0,Math.min(total-1,CBT.current+dir));
-  renderQuestion();
-}
-
-function startTimer(){
-  clearInterval(CBT.timer);
-  CBT.timer=setInterval(function(){
-    CBT.timeLeft--;
-    var m=Math.floor(CBT.timeLeft/60);
-    var s=CBT.timeLeft%60;
-    var el=document.getElementById('timer-display');
-    if(el){
-      el.textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
-      el.style.color=CBT.timeLeft<60?'var(--red)':'var(--t1)';
-    }
-    if(CBT.timeLeft<=0){clearInterval(CBT.timer);submitExam();}
-  },1000);
-}
-
-function submitExam(){
-  if(CBT.submitted)return;
-  clearInterval(CBT.timer);
-  CBT.submitted=true;
-  // Score
-  var correct=0;
-  CBT.questions.forEach(function(q,i){
-    var ans=CBT.answers[i];
-    var correctIdx=q.answer!==undefined?q.answer:(q.correct!==undefined?q.correct:null);
-    if(ans!==undefined&&ans===correctIdx) correct++;
-  });
-  CBT.score=correct;
-  CBT.total=CBT.questions.length;
-  var pct=Math.round(correct/CBT.total*100);
-  // Save result
-  var school=JSON.parse(localStorage.getItem('rsms_school')||'{}');
-  var result={
-    id:'cbt'+Date.now(), stuId:MY_ID, student:MY_NAME, class:MY_CLASS,
-    subject:CBT.subject, score:correct, total:CBT.total, percent:pct,
-    term:school.term||'First Term', session:school.session||'2025/2026',
-    takenAt:new Date().toISOString()
+    toRemove.forEach(function(k){localStorage.removeItem(k);});
+    showToast(toRemove.length+' score entries cleared');
+    renderSummary();
   };
-  var results=JSON.parse(localStorage.getItem('rsms_cbt_results')||'[]');
-  results.push(result);localStorage.setItem('rsms_cbt_results',JSON.stringify(results));
-  // Show result screen
-  document.getElementById('screen-exam').style.display='none';
-  document.getElementById('screen-result').style.display='block';
-  document.getElementById('res-score').textContent=correct+'/'+CBT.total;
-  document.getElementById('res-pct').textContent=pct+'%';
-  document.getElementById('res-subject').textContent=CBT.subject;
-  var grade=pct>=80?'A':pct>=70?'B':pct>=60?'C':pct>=50?'D':'F';
-  var gradeColor=pct>=60?'var(--green)':pct>=50?'var(--orange)':'var(--red)';
-  document.getElementById('res-grade').textContent=grade;
-  document.getElementById('res-grade').style.color=gradeColor;
-  document.getElementById('res-remark').textContent=
-    pct>=80?'Excellent! Outstanding performance!':
-    pct>=70?'Very Good! Keep it up!':
-    pct>=60?'Good. Keep studying!':
-    pct>=50?'Fair. You need to put in more effort.':
-    'Below average. Please revise this topic thoroughly.';
-  renderReview();
+  el.appendChild(scoreBtn);
 }
 
-function renderReview(){
-  var el=document.getElementById('review-list');if(!el)return;
-  el.innerHTML='';
-  CBT.questions.forEach(function(q,i){
-    var ans=CBT.answers[i];
-    var correctIdx=q.answer!==undefined?q.answer:(q.correct!==undefined?q.correct:null);
-    var isCorrect=ans!==undefined&&ans===correctIdx;
-    var opts=q.options||q.choices||[];
-    var d=document.createElement('div');d.className='review-item';
-    d.innerHTML=
-      '<div class="rv-header">'+
-        '<span class="rv-num">Q'+(i+1)+'</span>'+
-        '<span class="rv-status" style="color:'+(isCorrect?'var(--green)':'var(--red)')+';">'+
-          (isCorrect?'&#10003; Correct':'&#10007; Wrong')+'</span>'+
-      '</div>'+
-      '<div class="rv-q">'+q.question+'</div>'+
-      (ans!==undefined?'<div class="rv-ans">Your answer: <strong style="color:'+(isCorrect?'var(--green)':'var(--red)')+';">'+
-        (opts[ans]||'?')+'</strong></div>':
-        '<div class="rv-ans" style="color:var(--t4);">Not answered</div>')+
-      (correctIdx!==null&&!isCorrect?
-        '<div class="rv-correct">Correct: <strong style="color:var(--green);">'+
-          (opts[correctIdx]||'?')+'</strong></div>':'');
-    el.appendChild(d);
-  });
+function fullReset(){
+  if(!confirm('This will delete ALL RSMS data on this device.\nAre you sure?')) return;
+  if(!confirm('Last warning — this cannot be undone.\nProceed?')) return;
+  // Remove all rsms_ keys
+  var toRemove = [];
+  for(var i=0;i<localStorage.length;i++){
+    var k = localStorage.key(i);
+    if(k&&(k.indexOf('rsms_')===0||k.indexOf('scores_')===0||k.indexOf('subjects_')===0))
+      toRemove.push(k);
+  }
+  toRemove.forEach(function(k){localStorage.removeItem(k);});
+  // Clear sessionStorage too
+  sessionStorage.clear();
+  showToast('All data cleared! (' + toRemove.length + ' items removed)');
+  setTimeout(function(){ renderSummary(); }, 500);
 }
 
-function retakeExam(){
-  document.getElementById('screen-result').style.display='none';
-  document.getElementById('screen-menu').style.display='block';
-  loadSubjectMenu();
+function showToast(msg){
+  var t = document.getElementById('toast-local');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(function(){t.style.display='none';}, 3000);
 }
 
-// Populate student name in menu after load
-window.addEventListener('load', function(){
-  var user = typeof RSMS!=='undefined'&&RSMS.user?RSMS.user():{};
-  var name = (user.name||(user.surname||'')+' '+(user.firstname||'')).trim()||'Student';
-  var cls  = user.class||user.myClass||'';
-  var el=document.getElementById('cbt-student-name');
-  var cl=document.getElementById('cbt-student-class');
-  if(el) el.textContent = name;
-  if(cl) cl.textContent = cls||'Student';
-});
+renderSummary();
+renderSelectiveBtns();
 </script>
 </body>
 </html>
