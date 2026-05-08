@@ -1,0 +1,13 @@
+# ═══════════════════════════════════════════
+# RSMS — Files that must NEVER go to GitHub
+# ═══════════════════════════════════════════
+
+# Firebase config + secrets — upload manually to server
+rsms-config.js
+
+# Node modules (if any)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db

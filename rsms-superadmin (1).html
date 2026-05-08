@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0d1117"/>
+<title>RSMS &#8212; Superadmin</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+/* ═══════════════════════════════════════════════════
+   RSMS CORE CSS — Include in every portal
+   Single source of truth for all shared styles
+═══════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Brand */
+  --navy:   #0f1535;
+  --navy2:  #1a2347;
+  --navy3:  #232d5a;
+  --gold:   #d4a843;
+  --goldl:  rgba(212,168,67,.12);
+  --goldb:  rgba(212,168,67,.06);
+  --teal:   #0ea5e9;
+  --teall:  rgba(14,165,233,.1);
+  --green:  #22c55e;
+  --greenl: rgba(34,197,94,.1);
+  --red:    #f43f5e;
+  --redl:   rgba(244,63,94,.1);
+  --orange: #f97316;
+  --orangel:rgba(249,115,22,.1);
+  --purple: #8b5cf6;
+  --purplel:rgba(139,92,246,.1);
+
+  /* Light page bg */
+  --bg:    #eef2ff;
+  --bg2:   #f8faff;
+  --card:  #ffffff;
+  --card2: #f1f5ff;
+
+  /* Text */
+  --t1: #111827;
+  --t2: #374151;
+  --t3: #6b7280;
+  --t4: #9ca3af;
+
+  /* Borders */
+  --line:  #e5e7eb;
+  --line2: #d1d5db;
+
+  /* Fonts */
+  --sans:  'Outfit', sans-serif;
+  --serif: 'Fraunces', serif;
+  --mono:  'DM Mono', monospace;
+
+  /* Layout */
+  --sb-w:  230px;
+  --r:     14px;
+  --r2:    10px;
+  --r3:    7px;
+
+  /* Safe areas */
+  --safe-top: env(safe-area-inset-top);
+  --safe-bot: env(safe-area-inset-bottom);
+}
+
+/* ── RESET ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; font-family:var(--sans); background:var(--bg); color:var(--t1); }
+
+/* ── LAYOUT ── */
+.app-shell { display:flex; height:100vh; overflow:hidden; }
+
+/* Sidebar */
+.sidebar {
+  width:var(--sb-w); flex-shrink:0;
+  background:var(--navy);
+  display:flex; flex-direction:column;
+  height:100vh; overflow-y:auto; overflow-x:hidden;
+  transition:transform .28s ease;
+  z-index:200;
+}
+.sidebar::-webkit-scrollbar { display:none; }
+
+/* Main */
+.main-area {
+  flex:1; display:flex; flex-direction:column;
+  overflow:hidden; min-width:0;
+}
+.main-scroll {
+  flex:1; overflow-y:auto;
+  padding-bottom:calc(70px + var(--safe-bot));
+}
+.main-scroll::-webkit-scrollbar { width:4px; }
+.main-scroll::-webkit-scrollbar-thumb { background:var(--line2); border-radius:2px; }
+
+/* ── MOBILE ── */
+@media (max-width:899px) {
+  .sidebar {
+    position:fixed; left:0; top:0;
+    transform:translateX(-100%);
+    box-shadow:4px 0 32px rgba(0,0,0,.3);
+  }
+  .sidebar.open { transform:translateX(0); }
+  .sb-overlay {
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.55);
+    z-index:190;
+    display:none;
+  }
+  .sb-overlay.show { display:block; }
+}
+@media (min-width:900px) {
+  .menu-btn { display:none !important; }
+  .sb-overlay { display:none !important; }
+  .bottom-nav { display:none !important; }
+}
+
+/* ── SIDEBAR INTERNALS ── */
+.sb-brand {
+  padding:calc(16px + var(--safe-top)) 16px 14px;
+  display:flex; align-items:center; gap:10px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.sb-logo { width:36px; height:36px; border-radius:10px; object-fit:contain; flex-shrink:0; background:rgba(255,255,255,.1); }
+.sb-school { font-family:var(--serif); font-size:.9rem; font-weight:700; color:#fff; line-height:1.2; }
+.sb-tagline { font-size:.65rem; color:rgba(255,255,255,.4); }
+
+.sb-user {
+  margin:10px 12px; padding:10px 12px;
+  background:rgba(255,255,255,.06); border-radius:var(--r2);
+  display:flex; align-items:center; gap:9px;
+}
+.sb-av {
+  width:36px; height:36px; border-radius:50%;
+  background:var(--gold); color:#000; font-weight:800; font-size:.9rem;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.sb-uname { font-size:.82rem; font-weight:700; color:#fff; }
+.sb-urole { font-size:.63rem; color:rgba(255,255,255,.4); }
+
+.sb-section {
+  padding:10px 16px 4px;
+  font-size:.58rem; font-weight:800; color:rgba(255,255,255,.3);
+  text-transform:uppercase; letter-spacing:.12em;
+}
+
+.sb-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 16px; cursor:pointer;
+  font-size:.82rem; font-weight:600; color:rgba(255,255,255,.6);
+  transition:all .18s; border-left:3px solid transparent;
+  user-select:none;
+}
+.sb-item:hover { background:rgba(255,255,255,.06); color:#fff; }
+.sb-item.active { background:rgba(212,168,67,.1); color:var(--gold); border-left-color:var(--gold); }
+.sb-item .ico { font-size:1.1rem; width:22px; text-align:center; flex-shrink:0; }
+.sb-badge {
+  margin-left:auto; background:var(--red); color:#fff;
+  border-radius:20px; padding:1px 7px; font-size:.6rem; font-weight:800;
+}
+
+.sb-footer {
+  margin-top:auto; padding:12px 16px;
+  border-top:1px solid rgba(255,255,255,.06);
+  font-size:.72rem; color:rgba(255,255,255,.25);
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  background:var(--navy);
+  padding:calc(12px + var(--safe-top)) 16px 12px;
+  display:flex; align-items:center; gap:12px;
+  flex-shrink:0; position:relative; z-index:10;
+}
+.menu-btn {
+  background:none; border:none; color:rgba(255,255,255,.7);
+  font-size:1.3rem; cursor:pointer; padding:4px; line-height:1;
+}
+.topbar-title { font-family:var(--serif); font-size:1rem; font-weight:700; color:#fff; flex:1; }
+.topbar-right { display:flex; align-items:center; gap:8px; }
+.tb-notif {
+  background:rgba(255,255,255,.1); border:none; border-radius:50%;
+  width:36px; height:36px; color:#fff; cursor:pointer; font-size:1rem;
+  display:flex; align-items:center; justify-content:center;
+}
+.tb-av {
+  width:36px; height:36px; border-radius:50%;
+  background:var(--gold); color:#000; font-weight:800; font-size:.85rem;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+
+/* ── STAT HERO CARD ── */
+.hero-card {
+  background:linear-gradient(135deg, var(--navy), var(--navy2));
+  margin:0 16px 16px; border-radius:var(--r);
+  padding:16px; position:relative; overflow:hidden;
+}
+.hero-card::before {
+  content:''; position:absolute; inset:0; opacity:.04;
+  background-image:radial-gradient(circle,#fff 1px,transparent 1px);
+  background-size:18px 18px;
+}
+.hc-label { font-size:.7rem; color:rgba(255,255,255,.5); font-weight:600; margin-bottom:4px; }
+.hc-val { font-family:var(--serif); font-size:1.8rem; font-weight:900; color:#fff; margin-bottom:2px; }
+.hc-sub { font-size:.72rem; color:rgba(255,255,255,.5); }
+.hc-row { display:flex; align-items:center; justify-content:space-between; }
+.hc-badge {
+  background:rgba(255,255,255,.12); border-radius:20px;
+  padding:4px 12px; font-size:.72rem; color:rgba(255,255,255,.7); font-weight:600;
+}
+
+/* ── BANNER CAROUSEL ── */
+.carousel-wrap { padding:0 16px 4px; }
+.carousel-track {
+  display:flex; gap:12px;
+  overflow-x:auto; scroll-snap-type:x mandatory;
+  scroll-behavior:smooth; scrollbar-width:none;
+  padding-bottom:4px;
+}
+.carousel-track::-webkit-scrollbar { display:none; }
+.banner {
+  min-width:calc(100% - 32px); height:120px;
+  border-radius:var(--r); flex-shrink:0;
+  scroll-snap-align:start; position:relative;
+  overflow:hidden; cursor:pointer;
+}
+@media (min-width:600px) { .banner { min-width:280px; } }
+.banner-bg { position:absolute; inset:0; }
+.banner-content {
+  position:relative; z-index:1; padding:14px 16px;
+  height:100%; display:flex; flex-direction:column; justify-content:space-between;
+}
+.banner-tag {
+  background:rgba(255,255,255,.2); border-radius:20px;
+  padding:2px 9px; font-size:.6rem; font-weight:800;
+  color:#fff; display:inline-block; width:fit-content;
+}
+.banner-title { font-size:.95rem; font-weight:800; color:#fff; line-height:1.3; }
+.banner-sub { font-size:.7rem; color:rgba(255,255,255,.75); }
+.banner-btn {
+  background:rgba(255,255,255,.18); border:none; border-radius:20px;
+  color:#fff; font-size:.7rem; font-weight:700; padding:5px 12px;
+  cursor:pointer; font-family:var(--sans);
+}
+.carousel-dots { display:flex; justify-content:center; gap:5px; padding:6px 0 12px; }
+.dot { width:6px; height:6px; border-radius:50%; background:var(--line2); transition:all .3s; }
+.dot.active { width:18px; border-radius:3px; background:var(--navy); }
+
+/* ── QUICK ACTIONS ── */
+.qa-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.qa-item {
+  background:var(--card); border-radius:12px;
+  padding:14px 6px; text-align:center;
+  cursor:pointer; transition:all .18s;
+  box-shadow:0 1px 4px rgba(0,0,0,.06); border:1px solid var(--line);
+}
+.qa-item:active { transform:scale(.93); background:var(--card2); }
+.qa-ico { font-size:1.5rem; display:block; margin-bottom:5px; }
+.qa-lbl { font-size:.62rem; font-weight:700; color:var(--t2); line-height:1.3; }
+
+/* ── SECTION ── */
+.section { padding:0 16px 16px; }
+.sec-hd {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:10px;
+}
+.sec-title { font-size:.75rem; font-weight:800; color:var(--t3); text-transform:uppercase; letter-spacing:.09em; }
+.sec-action { font-size:.75rem; font-weight:700; color:var(--teal); cursor:pointer; }
+
+/* ── CARDS ── */
+.card {
+  background:var(--card); border-radius:var(--r);
+  border:1px solid var(--line);
+  padding:16px; margin-bottom:12px;
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.card-title {
+  font-size:.88rem; font-weight:700; color:var(--t1);
+  display:flex; align-items:center; gap:8px; margin-bottom:14px;
+}
+.card-body { font-size:.85rem; color:var(--t2); line-height:1.6; }
+
+/* ── STAT TILES ── */
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.stat-tile {
+  background:var(--card); border-radius:var(--r2);
+  padding:14px; border:1px solid var(--line);
+  border-top:3px solid var(--line2);
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.stat-tile.s-blue  { border-top-color:var(--teal); }
+.stat-tile.s-gold  { border-top-color:var(--gold); }
+.stat-tile.s-green { border-top-color:var(--green); }
+.stat-tile.s-red   { border-top-color:var(--red); }
+.stat-v { font-family:var(--serif); font-size:1.6rem; font-weight:900; color:var(--t1); }
+.stat-l { font-size:.7rem; color:var(--t3); font-weight:600; margin-top:2px; }
+
+/* ── ACTIVITY LIST ── */
+.act-item {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 0; border-bottom:1px solid var(--line);
+  cursor:pointer;
+}
+.act-item:last-child { border-bottom:none; }
+.act-ico {
+  width:40px; height:40px; border-radius:12px;
+  display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;
+}
+.act-ico.c-blue   { background:#eff6ff; }
+.act-ico.c-gold   { background:#fefce8; }
+.act-ico.c-green  { background:#f0fdf4; }
+.act-ico.c-red    { background:#fff1f2; }
+.act-ico.c-purple { background:#f5f3ff; }
+.act-info { flex:1; min-width:0; }
+.act-title { font-size:.85rem; font-weight:700; color:var(--t1); }
+.act-sub { font-size:.72rem; color:var(--t3); }
+.act-right { text-align:right; flex-shrink:0; }
+.act-val { font-size:.82rem; font-weight:700; color:var(--t1); }
+.act-time { font-size:.65rem; color:var(--t4); }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0;
+  background:#fff; border-top:1px solid var(--line);
+  padding:8px 4px calc(8px + var(--safe-bot));
+  display:flex; z-index:100;
+  box-shadow:0 -4px 20px rgba(0,0,0,.08);
+}
+.bn-item {
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:5px 2px; border-radius:10px; cursor:pointer;
+  transition:all .18s; border:none; background:none;
+}
+.bn-item:active { transform:scale(.9); }
+.bn-item.active { background:#eff6ff; }
+.bn-ico { font-size:1.25rem; line-height:1; }
+.bn-lbl { font-size:.57rem; font-weight:700; color:var(--t4); }
+.bn-item.active .bn-lbl { color:var(--teal); }
+
+/* ── FORMS ── */
+.fg { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+.fg label { font-size:.63rem; font-weight:800; color:var(--t3); text-transform:uppercase; letter-spacing:.08em; }
+.fi {
+  background:var(--card2); border:1.5px solid var(--line2); border-radius:var(--r2);
+  padding:0 14px; color:var(--t1); font-size:.9rem; font-family:var(--sans);
+  outline:none; width:100%; height:46px; transition:all .2s;
+}
+.fi:focus { border-color:var(--teal); background:#fff; }
+select.fi { cursor:pointer; }
+textarea.fi { padding:12px 14px; height:auto; resize:vertical; }
+.f2 { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+.f3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px; }
+@media(max-width:600px) { .f2, .f3 { grid-template-columns:1fr; } }
+
+/* ── BUTTONS ── */
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  height:44px; padding:0 18px; border:none; border-radius:var(--r2);
+  cursor:pointer; font-family:var(--sans); font-size:.85rem; font-weight:700;
+  transition:all .18s; text-decoration:none; white-space:nowrap;
+}
+.btn:active { transform:scale(.96); }
+.btn-navy   { background:var(--navy); color:#fff; }
+.btn-gold   { background:var(--gold); color:#000; }
+.btn-teal   { background:var(--teal); color:#fff; }
+.btn-green  { background:var(--green); color:#fff; }
+.btn-red    { background:var(--red); color:#fff; }
+.btn-ghost  { background:transparent; border:1.5px solid var(--line2); color:var(--t2); }
+.btn-light  { background:var(--card2); border:1px solid var(--line); color:var(--t2); }
+.btn-sm { height:36px; padding:0 13px; font-size:.78rem; }
+.btn-xs { height:30px; padding:0 10px; font-size:.72rem; }
+.btn-full { width:100%; }
+
+/* ── BADGES ── */
+.badge {
+  display:inline-flex; align-items:center; padding:3px 10px;
+  border-radius:20px; font-size:.63rem; font-weight:700;
+}
+.bg-navy   { background:rgba(15,21,53,.1); color:var(--navy); }
+.bg-gold   { background:var(--goldl); color:#92650a; }
+.bg-teal   { background:var(--teall); color:#0369a1; }
+.bg-green  { background:var(--greenl); color:#15803d; }
+.bg-red    { background:var(--redl); color:#be123c; }
+.bg-orange { background:var(--orangel); color:#c2410c; }
+.bg-gray   { background:#f3f4f6; color:var(--t3); }
+
+/* ── TABLE ── */
+.tbl-wrap { overflow-x:auto; border-radius:var(--r2); border:1px solid var(--line); }
+.tbl { width:100%; border-collapse:collapse; font-size:.83rem; }
+.tbl th {
+  background:var(--card2); color:var(--t3); font-size:.62rem; font-weight:800;
+  text-transform:uppercase; letter-spacing:.07em; padding:10px 12px;
+  border-bottom:1px solid var(--line); white-space:nowrap; text-align:left;
+}
+.tbl td { padding:11px 12px; border-bottom:1px solid var(--line); color:var(--t2); vertical-align:middle; }
+.tbl tr:last-child td { border-bottom:none; }
+.tbl tr:hover td { background:#fafbff; }
+
+/* ── MODAL ── */
+.modal-ov {
+  position:fixed; inset:0; background:rgba(15,21,53,.6);
+  z-index:500; display:none; align-items:flex-end; justify-content:center;
+  backdrop-filter:blur(6px); padding:0;
+}
+.modal-ov.open { display:flex; }
+@media(min-width:600px) { .modal-ov { align-items:center; padding:16px; } }
+.modal {
+  background:#fff; border-radius:22px 22px 0 0;
+  padding:20px; width:100%; max-height:92vh; overflow-y:auto;
+}
+@media(min-width:600px) { .modal { border-radius:22px; max-width:520px; } }
+.modal-handle { width:40px; height:4px; background:var(--line2); border-radius:2px; margin:0 auto 16px; }
+.modal-title { font-family:var(--serif); font-size:1.1rem; font-weight:700; color:var(--t1); margin-bottom:16px; }
+.btn-row { display:flex; gap:9px; margin-top:4px; }
+
+/* ── PAGE SYSTEM ── */
+.page { display:none; }
+.page.active { display:block; padding:16px; }
+
+/* ── PAGE HEADER ── */
+.page-hd { margin-bottom:16px; }
+.page-hd-title { font-family:var(--serif); font-size:1.2rem; font-weight:900; color:var(--t1); }
+.page-hd-sub { font-size:.8rem; color:var(--t3); margin-top:2px; }
+.page-hd-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:calc(80px + var(--safe-bot)); left:50%;
+  transform:translateX(-50%) translateY(60px);
+  background:#1e293b; color:#fff; border-radius:var(--r2);
+  padding:10px 20px; font-size:.84rem; z-index:9999;
+  transition:transform .28s; pointer-events:none;
+  display:flex; align-items:center; gap:8px; white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,0,0,.2);
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+.toast.ok   { background:#14532d; border-left:3px solid var(--green); }
+.toast.err  { background:#4c0519; border-left:3px solid var(--red); }
+.toast.info { background:#0c1a2e; border-left:3px solid var(--teal); }
+
+/* ── STATUS BADGES ── */
+.status-draft        { background:#f3f4f6; color:var(--t3); }
+.status-submitted    { background:#eff6ff; color:#1d4ed8; }
+.status-hod_reviewed { background:#fefce8; color:#92400e; }
+.status-vp_approved  { background:#f0fdf4; color:#15803d; }
+.status-returned     { background:#fff1f2; color:#be123c; }
+
+/* ── UTILS ── */
+.flex-center { display:flex; align-items:center; justify-content:center; }
+.flex-between { display:flex; align-items:center; justify-content:space-between; }
+.flex-gap { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.text-muted { color:var(--t3); font-size:.8rem; }
+.empty-state { text-align:center; padding:40px 20px; color:var(--t4); font-size:.85rem; }
+.divider { border:none; border-top:1px solid var(--line); margin:12px 0; }
+.mt8 { margin-top:8px; }
+.mt12 { margin-top:12px; }
+
+/* ── ANIMATIONS ── */
+@keyframes fade-up { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:none;} }
+.fade-up { animation:fade-up .28s ease both; }
+
+/* ── STATUS PILL ── */
+.pill {
+  display:inline-flex; align-items:center; padding:3px 10px;
+  border-radius:20px; font-size:.63rem; font-weight:700;
+}
+
+
+:root{--bg:#0d1117;--bg2:#111827;--card:#1a2236;--card2:#1e2a45;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.12);--t1:#f0f6ff;--t2:#c9d6f0;--t3:#8899bb;--t4:#566280;}
+body{background:var(--bg);}
+.card{background:var(--card);border-color:var(--line);}
+.fi{background:var(--card2);border-color:var(--line2);color:var(--t1);}
+.fi::placeholder{color:var(--t4);}
+select.fi option{background:var(--card);color:var(--t1);}
+.fi:focus{background:var(--card);border-color:var(--teal);}
+.stat-tile{background:var(--card);border-color:var(--line);}
+.stat-v{color:var(--t1);}.stat-l{color:var(--t3);}
+.act-item{border-bottom-color:var(--line);}
+.act-title{color:var(--t1);}.act-sub{color:var(--t3);}.act-time{color:var(--t4);}
+.act-ico.c-teal{background:rgba(14,165,233,.12);color:var(--teal);}
+.modal{background:var(--card);}
+.btn-ghost{background:rgba(255,255,255,.06);border-color:var(--line2);color:var(--t2);}
+.btn-light{background:var(--card2);border-color:var(--line);color:var(--t2);}
+.bottom-nav{background:var(--card);border-top-color:var(--line);}
+.bn-lbl{color:var(--t4);}
+.empty-state{color:var(--t4);}
+.card-title{color:var(--t1);}
+/* School cards */
+.school-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px;}
+.sc-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.sc-av{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--navy),var(--navy2));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;color:var(--gold);flex-shrink:0;}
+.sc-info{flex:1;min-width:0;}
+.sc-name{font-weight:700;color:var(--t1);font-size:.9rem;}
+.sc-id{font-size:.7rem;color:var(--t3);font-family:var(--mono);}
+.sc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}
+.sc-stat{background:var(--card2);border-radius:8px;padding:7px;text-align:center;}
+.sc-sv{font-weight:700;color:var(--t1);font-size:.82rem;}
+.sc-sl{font-size:.62rem;color:var(--t4);margin-top:1px;}
+.sc-actions{display:flex;gap:6px;flex-wrap:wrap;}
+/* Plan badges */
+.plan-badge{padding:3px 10px;border-radius:20px;font-size:.62rem;font-weight:800;text-transform:uppercase;}
+.plan-starter{background:rgba(99,131,255,.12);color:#99b0ff;}
+.plan-standard{background:rgba(14,165,233,.12);color:var(--teal);}
+.plan-premium{background:rgba(139,92,246,.12);color:#c4b5fd;}
+.plan-enterprise{background:rgba(212,168,67,.15);color:var(--gold);}
+.plan-whitelabel{background:rgba(212,168,67,.25);color:#fff;border:1px solid var(--gold);}
+/* Link output */
+.link-output-wrap{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:10px 12px;margin-bottom:12px;}
+/* Branding slots */
+.bg-slot{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:10px;margin-bottom:10px;}
+.bg-slot-num{font-size:.65rem;font-weight:800;color:var(--t3);text-transform:uppercase;margin-bottom:6px;}
+.bg-preview{width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:6px;}
+.bg-empty{height:60px;display:flex;align-items:center;justify-content:center;color:var(--t4);font-size:.82rem;border:2px dashed var(--line2);border-radius:6px;margin-bottom:6px;}
+.bg-slot-actions{display:flex;gap:6px;margin-bottom:6px;}
+/* Login screen */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:32px 24px;width:100%;max-width:380px;}
+/* Plan preview */
+.plan-preview{background:var(--card2);border:1px solid var(--line2);border-radius:var(--r2);padding:10px 14px;margin-top:8px;font-size:.78rem;color:var(--t2);}
+
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="screen-login" class="login-screen" style="display:none;">
+  <div class="login-card">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:2.5rem;margin-bottom:10px;">&#9971;</div>
+      <div style="font-family:var(--serif);font-size:1.5rem;font-weight:900;color:var(--t1);">RSMS Superadmin</div>
+      <div style="font-size:.8rem;color:var(--t3);margin-top:4px;">Rehoteq Technologies — Master Control</div>
+    </div>
+    <div class="fg"><label>Superadmin Password</label>
+      <input class="fi" id="sa-password" type="password" placeholder="Enter superadmin password"
+             onkeydown="if(event.key==='Enter')saLogin()"/></div>
+    <button class="btn btn-gold btn-full" onclick="saLogin()" style="margin-top:8px;">&#128274; Login</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="screen-main" style="display:none;">
+<div class="sb-overlay" id="sb-ov" onclick="closeSb()"></div>
+<div class="app-shell">
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div><div class="sb-school">RSMS Control</div><div class="sb-tagline">Superadmin Portal</div></div>
+  </div>
+  <div class="sb-user">
+    <div class="sb-av">R</div>
+    <div><div class="sb-uname">Rehoteq</div><div class="sb-urole">Master Admin</div></div>
+  </div>
+  <div class="sb-section">OVERVIEW</div>
+  <div class="sb-item active" onclick="showPage('home',this)"><span class="ico">&#127968;</span>Dashboard</div>
+  <div class="sb-section">SCHOOLS</div>
+  <div class="sb-item" onclick="showPage('schools',this)"><span class="ico">&#127979;</span>All Schools</div>
+  <div class="sb-item" onclick="showPage('create',this);openModal('m-create-school')"><span class="ico">&#43;</span>Create School</div>
+  <div class="sb-section">FINANCE</div>
+  <div class="sb-item" onclick="showPage('revenue',this)"><span class="ico">&#128176;</span>Revenue</div>
+  <div class="sb-section">ACCESS</div>
+  <div class="sb-item" onclick="showPage('tokens',this)"><span class="ico">&#128279;</span>All Tokens</div>
+  <div class="sb-section">SYSTEM</div>
+  <div class="sb-item" onclick="window.open('rsms-reset.html','_blank')"><span class="ico">&#128465;</span>Data Reset Tool</div>
+  <div class="sb-item" onclick="confirmAction('Logout?',saLogout)"><span class="ico">&#128682;</span>Logout</div>
+  <div class="sb-footer">Rehoteq Technologies &#8212; Okitipupa</div>
+</aside>
+
+<div class="main-area">
+  <header class="topbar">
+    <button class="menu-btn" onclick="openSb()">&#9776;</button>
+    <div class="topbar-title">Superadmin</div>
+    <div class="topbar-right">
+      <div class="tb-av" style="background:var(--gold);color:#000;">R</div>
+    </div>
+  </header>
+  <div class="main-scroll">
+
+<!-- HOME -->
+<div class="page active" id="pg-home">
+  <div class="hero-card" style="margin:16px 16px 0;background:linear-gradient(135deg,#0f1535,#1a2347);">
+    <div class="hc-label">Rehoteq RSMS Platform</div>
+    <div style="font-family:var(--serif);font-size:1.6rem;font-weight:900;color:#fff;margin:4px 0;">Master Control</div>
+    <div class="hc-row" style="margin-top:8px;">
+      <div class="hc-badge">All Schools</div>
+    </div>
+  </div>
+  <div class="section" style="margin-top:14px;">
+    <div class="stat-grid">
+      <div class="stat-tile s-teal"><div class="stat-v" id="sa-total-schools">0</div><div class="stat-l">Total Schools</div></div>
+      <div class="stat-tile s-green"><div class="stat-v" id="sa-active-schools">0</div><div class="stat-l">Active</div></div>
+      <div class="stat-tile s-gold"><div class="stat-v" id="sa-enterprise-count">0</div><div class="stat-l">Enterprise</div></div>
+      <div class="stat-tile s-blue"><div class="stat-v" id="sa-revenue">&#8358;0</div><div class="stat-l">Est. Revenue</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="sec-hd">
+      <div class="sec-title">Recent Schools</div>
+      <div class="sec-action" onclick="showPage('schools')">View all &#8594;</div>
+    </div>
+    <div class="card" id="sa-recent-schools"></div>
+  </div>
+  <div class="section">
+    <div class="sec-hd"><div class="sec-title">Quick Actions</div></div>
+    <div class="qa-grid">
+      <div class="qa-item" onclick="showPage('create');openModal('m-create-school')"><span class="qa-ico">&#43;</span><div class="qa-lbl">New School</div></div>
+      <div class="qa-item" onclick="showPage('schools')"><span class="qa-ico">&#127979;</span><div class="qa-lbl">Schools</div></div>
+      <div class="qa-item" onclick="showPage('revenue')"><span class="qa-ico">&#128176;</span><div class="qa-lbl">Revenue</div></div>
+      <div class="qa-item" onclick="showPage('tokens')"><span class="qa-ico">&#128279;</span><div class="qa-lbl">Tokens</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCHOOLS -->
+<div class="page" id="pg-schools">
+  <div class="pg-hd" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+    <div>
+      <div style="font-family:var(--serif);font-size:1.1rem;font-weight:900;color:var(--t1);">All Schools</div>
+      <div style="font-size:.78rem;color:var(--t3);" id="school-count-lbl">0 schools</div>
+    </div>
+    <button class="btn btn-gold btn-sm" onclick="openModal('m-create-school');initCreateForm()">+ New School</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+    <input class="fi" id="school-search" placeholder="Search name or ID..." oninput="renderSchools()" style="flex:2;height:40px;font-size:.82rem;"/>
+    <select class="fi" id="plan-filter" onchange="renderSchools()" style="flex:1;height:40px;font-size:.82rem;min-width:110px;">
+      <option value="">All Plans</option>
+      <option>Starter</option><option>Standard</option><option>Premium</option>
+      <option>Enterprise</option><option>White Label</option>
+    </select>
+  </div>
+  <div id="schools-list"></div>
+</div>
+
+<!-- CREATE / EDIT -->
+<div class="page" id="pg-create"></div>
+
+<!-- REVENUE -->
+<div class="page" id="pg-revenue">
+  <div style="font-family:var(--serif);font-size:1.1rem;font-weight:900;color:var(--t1);margin-bottom:14px;">&#128176; Revenue Overview</div>
+  <div class="stat-grid" style="margin-bottom:16px;">
+    <div class="stat-tile s-green"><div class="stat-v" id="rev-onboarding">&#8358;0</div><div class="stat-l">Setup Fees</div></div>
+    <div class="stat-tile s-teal"><div class="stat-v" id="rev-monthly">&#8358;0</div><div class="stat-l">Monthly MRR</div></div>
+    <div class="stat-tile s-gold"><div class="stat-v" id="rev-annual">&#8358;0</div><div class="stat-l">Annual ARR</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Breakdown by Plan</div>
+    <div id="rev-by-plan"></div>
+  </div>
+</div>
+
+<!-- TOKENS -->
+<div class="page" id="pg-tokens">
+  <div style="font-family:var(--serif);font-size:1.1rem;font-weight:900;color:var(--t1);margin-bottom:14px;">&#128279; All Access Tokens</div>
+  <div id="tokens-list"></div>
+</div>
+
+  </div>
+</div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="bn-item active" onclick="showPage('home',this)"><div class="bn-ico">&#127968;</div><div class="bn-lbl">Home</div></button>
+  <button class="bn-item" onclick="showPage('schools',this)"><div class="bn-ico">&#127979;</div><div class="bn-lbl">Schools</div></button>
+  <button class="bn-item" onclick="openModal('m-create-school');initCreateForm()"><div class="bn-ico">&#43;</div><div class="bn-lbl">Add</div></button>
+  <button class="bn-item" onclick="showPage('revenue',this)"><div class="bn-ico">&#128176;</div><div class="bn-lbl">Revenue</div></button>
+  <button class="bn-item" onclick="showPage('tokens',this)"><div class="bn-ico">&#128279;</div><div class="bn-lbl">Tokens</div></button>
+</nav>
+
+</div><!-- screen-main -->
+
+<!-- MODALS -->
+<!-- Create/Edit School Modal -->
+<div class="modal-ov" id="m-create-school">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="create-form-title">Create New School</div>
+    <div class="fg"><label>School Name *</label><input class="fi" id="cr-name" placeholder="e.g. Sharonrose College"/></div>
+    <div class="f2">
+      <div class="fg"><label>State *</label><select class="fi" id="cr-state" style="height:46px;"><option value="">-- State --</option><option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option><option>Anambra</option><option>Bauchi</option><option>Bayelsa</option><option>Benue</option><option>Borno</option><option>Cross River</option><option>Delta</option><option>Ebonyi</option><option>Edo</option><option>Ekiti</option><option>Enugu</option><option>FCT Abuja</option><option>Gombe</option><option>Imo</option><option>Jigawa</option><option>Kaduna</option><option>Kano</option><option>Katsina</option><option>Kebbi</option><option>Kogi</option><option>Kwara</option><option>Lagos</option><option>Nasarawa</option><option>Niger</option><option>Ogun</option><option>Ondo</option><option>Osun</option><option>Oyo</option><option>Plateau</option><option>Rivers</option><option>Sokoto</option><option>Taraba</option><option>Yobe</option><option>Zamfara</option></select></div>
+      <div class="fg"><label>Plan *</label>
+        <select class="fi" id="cr-plan" onchange="updatePlanPreview()" style="height:46px;">
+          <option>Starter</option><option>Standard</option><option>Premium</option>
+          <option>Enterprise</option><option>White Label</option>
+        </select>
+      </div>
+    </div>
+    <div class="plan-preview" id="plan-preview">
+      <div style="font-weight:700;color:var(--gold);margin-bottom:2px;" id="plan-preview-price"></div>
+      <div style="color:var(--t3);" id="plan-preview-limits"></div>
+    </div>
+    <div class="fg" id="cr-subdomain-wrap" style="display:none;">
+      <label>Subdomain <span style="font-size:.7rem;color:var(--t3);">(Enterprise/White Label)</span></label>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input class="fi" id="cr-subdomain" placeholder="sharonrose" style="flex:1;"/>
+        <span style="font-size:.78rem;color:var(--t3);white-space:nowrap;">.rsms.rehoteq.com</span>
+      </div>
+    </div>
+    <div class="fg"><label>Address</label><input class="fi" id="cr-address" placeholder="Full school address"/></div>
+    <div class="f2">
+      <div class="fg"><label>Phone</label><input class="fi" id="cr-phone" placeholder="08012345678" type="tel"/></div>
+      <div class="fg"><label>Email</label><input class="fi" id="cr-email" placeholder="school@email.com"/></div>
+    </div>
+    <div class="fg"><label>Principal / Head Teacher</label><input class="fi" id="cr-principal" placeholder="Principal name"/></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeModal('m-create-school')" style="flex:1;">Cancel</button>
+      <button class="btn btn-gold" onclick="createSchool()" style="flex:2;">&#9989; Save School</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Link Modal -->
+<div class="modal-ov" id="m-link-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">&#128279; Admin Login Link</div>
+    <div style="font-size:.82rem;color:var(--t2);margin-bottom:10px;" id="link-school-name"></div>
+    <div class="link-output-wrap">
+      <input class="fi" id="link-output" readonly style="font-family:var(--mono);font-size:.68rem;height:38px;"/>
+    </div>
+    <div style="font-size:.75rem;color:var(--t3);margin-bottom:14px;">
+      &#8505;&#65039; This link logs the admin directly in. They should bookmark it after first login.
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeModal('m-link-modal')" style="flex:1;">Close</button>
+      <button class="btn btn-teal" onclick="copyAdminLink()" style="flex:1;">&#128203; Copy</button>
+      <button class="btn btn-gold" onclick="shareAdminLinkWA()" style="flex:2;">&#128241; WhatsApp</button>
+    </div>
+  </div>
+</div>
+
+<!-- Branding Modal (Enterprise) -->
+<div class="modal-ov" id="m-branding">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">&#127912; Enterprise Branding</div>
+    <div class="f2">
+      <div class="fg"><label>School Logo URL</label><input class="fi" id="br-logo" placeholder="https://... or base64"/></div>
+      <div class="fg"><label>Brand Accent Colour</label><input class="fi" id="br-color" type="color" value="#d4a843" style="height:46px;padding:4px;"/></div>
+    </div>
+    <div class="fg"><label>Subdomain</label>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input class="fi" id="br-subdomain" placeholder="sharonrose" style="flex:1;"/>
+        <span style="font-size:.75rem;color:var(--t3);white-space:nowrap;">.rsms.rehoteq.com</span>
+      </div>
+    </div>
+    <div class="fg"><label>Welcome Message (shown on login page)</label>
+      <input class="fi" id="br-welcome" placeholder="Welcome to Sharonrose College RSMS"/></div>
+    <div class="fg"><label>School Motto</label>
+      <input class="fi" id="br-motto" placeholder="e.g. Excellence in Knowledge"/></div>
+    <div class="card-title" style="margin:14px 0 8px;">Background Images (up to 5 for Enterprise)</div>
+    <div style="font-size:.75rem;color:var(--t3);margin-bottom:10px;">These appear as a carousel on the school&#8217;s login and dashboard. JPG/PNG, max 2MB each.</div>
+    <div id="bg-image-slots"></div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-ghost" onclick="closeModal('m-branding')" style="flex:1;">Cancel</button>
+      <button class="btn btn-gold" onclick="saveBranding()" style="flex:2;">&#9989; Save Branding</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="rsms-toast"></div>
+<script>
+/* ═══════════════════════════════════════════════════════
+   RSMS STANDALONE CORE — All globals, Android-safe
+   No external dependencies, works offline
+═══════════════════════════════════════════════════════ */
+
+// ── DATA ────────────────────────────────────────────────
+var RSMS = {
+  school:   function(){ return JSON.parse(localStorage.getItem('rsms_school')||'{"name":"","term":"First Term","session":"2025/2026","plan":"Standard"}'); },
+  user:     function(){ return JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"Admin","role":"admin"}'); },
+  students: function(){ return JSON.parse(localStorage.getItem('rsms_students')||'[]'); },
+  staff:    function(){ return JSON.parse(localStorage.getItem('rsms_staff')||'[]'); },
+  fees:     function(){ return JSON.parse(localStorage.getItem('rsms_fees')||'[]'); },
+  pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||({admin:'admin123',bursar:'bursar123',teacher:'teacher123',classteacher:'ct123',hod:'hod123',vp:'vp123',student:'student123',parent:'parent123'}[role]||'pass123'); },
+  save:     function(key,data){ localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
+  logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
+};
+
+// ── SUBJECTS ───────────────────────────────────────────
+var SUBJECTS_JSS = ["English Language","Mathematics","Basic Science & Technology","Social Studies","Civic Education","Cultural & Creative Arts","Physical & Health Education","Computer Studies","Agricultural Science","Home Economics","Business Studies","Yoruba Language","Christian Religious Studies","Islamic Religious Studies","Security Education","Basic Technology","French Language"];
+var SUBJECTS_SS_SCI = ["English Language","Mathematics","Physics","Chemistry","Biology","Further Mathematics","Computer Studies","Agricultural Science","Christian Religious Studies","Islamic Religious Studies","Civic Education","Physical & Health Education","Yoruba Language","Geography","Technical Drawing"];
+var SUBJECTS_SS_COM = ["English Language","Mathematics","Economics","Commerce","Financial Accounting","Business Studies","Office Practice","Computer Studies","Christian Religious Studies","Islamic Religious Studies","Civic Education","Physical & Health Education","Yoruba Language","Literature in English","Marketing"];
+var SUBJECTS_SS_ART = ["English Language","Mathematics","Literature in English","Government","History","Christian Religious Studies","Islamic Religious Studies","Yoruba Language","French Language","Fine Arts","Music","Geography","Economics","Civic Education","Physical & Health Education"];
+
+function getSubjects(cls){
+  var c=(cls||'').toLowerCase();
+  if(c.includes('science'))    return SUBJECTS_SS_SCI;
+  if(c.includes('commercial')) return SUBJECTS_SS_COM;
+  if(c.includes('art'))        return SUBJECTS_SS_ART;
+  if(c.includes('ss')||c.includes('senior')) return SUBJECTS_SS_SCI;
+  return SUBJECTS_JSS;
+}
+
+function populateSelect(selId,cls,selected){
+  var sel=document.getElementById(selId); if(!sel)return;
+  var subjects=getSubjects(cls);
+  sel.innerHTML='<option value="">-- Select Subject --</option>'+subjects.map(function(s){
+    return '<option value="'+s+'"'+(s===selected?' selected':'')+'>'+s+'</option>';
+  }).join('');
+}
+
+// ── UTILS ──────────────────────────────────────────────
+function uniqueArr(arr){
+  var seen={},out=[];
+  for(var i=0;i<arr.length;i++){if(arr[i]!==undefined&&arr[i]!==null&&arr[i]!==''&&!seen[arr[i]]){seen[arr[i]]=1;out.push(arr[i]);}}
+  return out;
+}
+
+// ── TOAST ──────────────────────────────────────────────
+function toast(msg,type){
+  var t=document.getElementById('rsms-toast');
+  if(!t){t=document.createElement('div');t.id='rsms-toast';t.className='toast';document.body.appendChild(t);}
+  t.className='toast show '+(type==='success'?'ok':type==='error'?'err':'info');
+  t.textContent=msg;
+  clearTimeout(t._t);
+  t._t=setTimeout(function(){t.classList.remove('show');},3200);
+}
+
+// ── MODAL ──────────────────────────────────────────────
+function openModal(id){
+  var el=document.getElementById(id);
+  if(el)el.classList.add('open');
+}
+function closeModal(id){
+  var el=document.getElementById(id);
+  if(el)el.classList.remove('open');
+}
+
+// ── SIDEBAR ────────────────────────────────────────────
+function openSb(){
+  var sb=document.getElementById('sidebar');
+  var ov=document.getElementById('sb-ov');
+  if(sb)sb.classList.add('open');
+  if(ov)ov.classList.add('show');
+}
+function closeSb(){
+  var sb=document.getElementById('sidebar');
+  var ov=document.getElementById('sb-ov');
+  if(sb)sb.classList.remove('open');
+  if(ov)ov.classList.remove('show');
+}
+
+// ── PAGE NAVIGATION ────────────────────────────────────
+function showPage(name,el){
+  // Hide all pages
+  var pages=document.querySelectorAll('.page');
+  for(var i=0;i<pages.length;i++){
+    pages[i].classList.remove('active');
+  }
+  // Show target page
+  var pg=document.getElementById('pg-'+name);
+  if(pg){
+    pg.classList.add('active');
+  }
+  // Update sidebar active
+  var items=document.querySelectorAll('.sb-item');
+  for(var j=0;j<items.length;j++){items[j].classList.remove('active');}
+  if(el&&el.classList)el.classList.add('active');
+  // Update bottom nav active
+  var bnItems=document.querySelectorAll('.bn-item');
+  for(var k=0;k<bnItems.length;k++){bnItems[k].classList.remove('active');}
+  closeSb();
+  // Fire page hook
+  var hook=window['onPage_'+name];
+  if(typeof hook==='function')hook();
+}
+
+// ── CAROUSEL ──────────────────────────────────────────
+function initCarousel(slides,trackId,dotsId){
+  var track=document.getElementById(trackId);
+  var dotsEl=document.getElementById(dotsId);
+  if(!track||!slides||!slides.length)return;
+  var idx=0;
+  track.innerHTML=slides.map(function(s){
+    return '<div class="banner" style="min-width:280px;height:110px;flex-shrink:0;scroll-snap-align:start;" onclick="'+s.onclick+'">'+
+      '<div class="banner-bg" style="background:'+s.bg+';"></div>'+
+      '<div class="banner-content">'+
+        '<div><div class="banner-tag">'+s.tag+'</div><div class="banner-title">'+s.title+'</div>'+
+        '<div class="banner-sub">'+s.sub+'</div></div>'+
+        '<div class="flex-between">'+
+          '<button class="banner-btn" onclick="event.stopPropagation();'+s.onclick+'">'+s.btn+' &#8594;</button>'+
+          '<span style="font-size:1.8rem;opacity:.5;">'+s.ico+'</span>'+
+        '</div>'+
+      '</div></div>';
+  }).join('');
+  if(dotsEl){
+    dotsEl.innerHTML=slides.map(function(s,i){
+      return '<div class="dot'+(i===0?' active':'')+'"></div>';
+    }).join('');
+  }
+  function goTo(n){
+    idx=((n%slides.length)+slides.length)%slides.length;
+    var card=track.querySelector('.banner');
+    if(card)track.scrollTo({left:idx*(card.offsetWidth+10),behavior:'smooth'});
+    if(dotsEl){
+      var dots=dotsEl.querySelectorAll('.dot');
+      for(var i=0;i<dots.length;i++)dots[i].className='dot'+(i===idx?' active':'');
+    }
+  }
+  var timer=setInterval(function(){goTo(idx+1);},4500);
+  track.addEventListener('scroll',function(){
+    var card=track.querySelector('.banner');
+    if(!card)return;
+    var n=Math.round(track.scrollLeft/(card.offsetWidth+10));
+    if(n!==idx){idx=n;clearInterval(timer);timer=setInterval(function(){goTo(idx+1);},4500);}
+  });
+}
+
+// ── WORKFLOW ENGINE ────────────────────────────────────
+var WF={
+  getAll:function(t){return JSON.parse(localStorage.getItem('rsms_wf_'+t)||'[]');},
+  saveAll:function(t,d){localStorage.setItem('rsms_wf_'+t,JSON.stringify(d));},
+  badge:function(status){
+    var map={draft:'bg-gray',submitted:'bg-teal',hod_reviewed:'bg-gold',vp_approved:'bg-green',returned:'bg-red'};
+    var lbl={draft:'Draft',submitted:'Submitted',hod_reviewed:'HOD OK',vp_approved:'VP Approved ✅',returned:'Returned ↩'};
+    return '<span class="badge '+(map[status]||'bg-gray')+'" style="font-size:.6rem;">'+(lbl[status]||status)+'</span>';
+  },
+  submit:function(type,doc){
+    var all=WF.getAll(type);
+    doc.id=doc.id||('wf'+Date.now());doc.status='submitted';
+    doc.submittedAt=new Date().toISOString();
+    doc.history=doc.history||[];
+    doc.history.push({action:'submitted',by:doc.by,at:new Date().toISOString()});
+    var i=all.findIndex(function(d){return d.id===doc.id;});
+    if(i>-1)all[i]=doc;else all.push(doc);
+    WF.saveAll(type,all);return doc;
+  },
+  review:function(type,id,action,note,by){
+    var all=WF.getAll(type);
+    var i=all.findIndex(function(d){return d.id===id;});if(i<0)return false;
+    all[i].status=action==='approve'?'hod_reviewed':'returned';
+    all[i].hodNote=note;all[i].hodBy=by;all[i].hodAt=new Date().toISOString();
+    all[i].history=all[i].history||[];
+    all[i].history.push({action:all[i].status,by:by,at:new Date().toISOString(),note:note});
+    WF.saveAll(type,all);return all[i];
+  },
+  vpApprove:function(type,id,action,note,by){
+    var all=WF.getAll(type);
+    var i=all.findIndex(function(d){return d.id===id;});if(i<0)return false;
+    all[i].status=action==='approve'?'vp_approved':'returned';
+    all[i].vpNote=note;all[i].vpBy=by;all[i].vpAt=new Date().toISOString();
+    all[i].history=all[i].history||[];
+    all[i].history.push({action:all[i].status,by:by,at:new Date().toISOString(),note:note});
+    WF.saveAll(type,all);return all[i];
+  },
+  pending:function(role){
+    var count=0;
+    ['plans','notes','exams'].forEach(function(t){
+      var all=WF.getAll(t);
+      if(role==='hod')count+=all.filter(function(d){return d.status==='submitted';}).length;
+      if(role==='vp') count+=all.filter(function(d){return d.status==='hod_reviewed';}).length;
+    });
+    return count;
+  }
+};
+
+// ── LESSON AI ──────────────────────────────────────────
+var LESSON_AI={
+  URL:'https://rehoteq.com/lesson-ai.html',
+  UNITS_PER_TERM:10,
+  giftLink:function(teacher){
+    var token=btoa((teacher.id||teacher.name)+'|'+(teacher.email||'')+'|'+Date.now()).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+    var email=encodeURIComponent(teacher.email||(teacher.name.replace(/\s+/g,''))+'@rsms.school');
+    return LESSON_AI.URL+'?rsms_gift='+token+'&units='+LESSON_AI.UNITS_PER_TERM+'&teacher='+email;
+  },
+  giftAll:function(){
+    var school=RSMS.school();
+    var term=school.term||'First Term';
+    var session=school.session||'2025/2026';
+    var key='gift_'+term.replace(/\s+/g,'_')+'_'+session.replace('/','_');
+    var done=localStorage.getItem(key)==='done';
+    var staff=JSON.parse(localStorage.getItem('rsms_staff')||'[]');
+    var teachers=staff.filter(function(s){
+      var r=(s.role||'').toLowerCase();
+      return r.includes('teacher')||r.includes('hod')||r.includes('principal');
+    });
+    if(!done)localStorage.setItem(key,'done');
+    return {alreadyDone:done,teachers:teachers,count:teachers.length};
+  }
+};
+
+// ── LINK GENERATOR ─────────────────────────────────────
+var LINKS={
+  BASE:'https://rsms.rehoteq.com/',
+  PORTAL:{
+    'Class Teacher':'rsms-classteacher.html','Subject Teacher':'rsms-teacher.html',
+    'Teacher':'rsms-teacher.html','HOD':'rsms-hod.html',
+    'Vice Principal Academic':'rsms-vp.html','Vice Principal Admin':'rsms-vp.html',
+    'Principal':'rsms-vp.html','Head Mistress':'rsms-vp.html',
+    'Bursar':'rsms-bursar.html','Admin Staff':'rsms-admin.html','Security':'rsms-clock.html'
+  },
+  _token:function(seed){return btoa(seed+'|'+Date.now()).replace(/[^a-zA-Z0-9]/g,'').slice(0,16);},
+  _save:function(tk,data){
+    var tokens=JSON.parse(localStorage.getItem('rsms_tokens')||'{}');
+    tokens[tk]=data;localStorage.setItem('rsms_tokens',JSON.stringify(tokens));
+  },
+  staff:function(s){
+    var tk=LINKS._token(s.id||s.name);
+    LINKS._save(tk,{role:s.role,name:s.name,id:s.id,email:s.email||'',myClass:s.myClass||'',subjects:s.subjects||'',staffId:s.staffId||''});
+    return LINKS.BASE+(LINKS.PORTAL[s.role]||'rsms-teacher.html')+'?token='+tk;
+  },
+  student:function(s){
+    var tk=LINKS._token(s.id||s.reg);
+    LINKS._save(tk,{role:'student',name:(s.surname||'')+' '+(s.firstname||''),id:s.id,stuId:s.id,class:s.class,reg:s.reg,parentPhone:s.parentPhone||''});
+    return LINKS.BASE+'rsms-student.html?token='+tk;
+  },
+  parent:function(s){
+    var tk=LINKS._token('p'+(s.id||s.reg));
+    LINKS._save(tk,{role:'parent',childId:s.id,childName:(s.surname||'')+' '+(s.firstname||''),class:s.class,parentPhone:s.parentPhone||''});
+    return LINKS.BASE+'rsms-parent.html?token='+tk;
+  }
+};
+
+// ── AUTH HELPERS ───────────────────────────────────────
+function checkToken(){
+  var params=new URLSearchParams(window.location.search);
+  var token=params.get('token');
+  if(token){
+    var tokens=JSON.parse(localStorage.getItem('rsms_tokens')||'{}');
+    var td=tokens[token];
+    if(td){
+      sessionStorage.setItem('rsms_user',JSON.stringify(td));
+      sessionStorage.setItem('rsms_auth','true');
+      window.history.replaceState({},'',window.location.pathname);
+    }
+  }
+}
+
+function setHeaderInfo(){
+  var user=RSMS.user();
+  var school=RSMS.school();
+  function s(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+  s('sb-name',user.name||'User');
+  s('sb-role',user.role||'');
+  s('sb-av',(user.name||'U').charAt(0).toUpperCase());
+  s('sb-school',school.name||'School');
+  s('hd-av',(user.name||'U').charAt(0).toUpperCase());
+  var logoEl=document.getElementById('sb-logo-img');
+  var logo=localStorage.getItem('rsms_school_logo')||'';
+  if(logoEl&&logo){logoEl.src=logo;logoEl.style.display='block';}
+}
+
+// ── COPY ───────────────────────────────────────────────
+function copyText(text){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){toast('Copied!','success');});
+  } else {
+    var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.focus();ta.select();
+    try{document.execCommand('copy');toast('Copied!','success');}catch(e){toast('Copy failed','error');}
+    document.body.removeChild(ta);
+  }
+}
+
+// ── CONFIRM ────────────────────────────────────────────
+function confirmAction(msg,fn){if(window.confirm(msg))fn();}
+
+/* ═══════════════════════════════════════════════════════
+   RSMS SUPERADMIN — Rehoteq Master Control
+   Manages all client schools, plans, tokens, branding
+═══════════════════════════════════════════════════════ */
+
+var SA_PASS = (window.RSMS_CONFIG&&window.RSMS_CONFIG.platform&&window.RSMS_CONFIG.platform.superadminPw)||'';
+var SA_KEY  = 'rsms_superadmin_auth';
+
+// ── DATA ────────────────────────────────────────────────
+function getSchools(){ return JSON.parse(localStorage.getItem('rsms_sa_schools')||'[]'); }
+function saveSchools(d){ localStorage.setItem('rsms_sa_schools',JSON.stringify(d)); }
+function getTokens(){ return JSON.parse(localStorage.getItem('rsms_sa_tokens')||'{}'); }
+function saveTokens(d){ localStorage.setItem('rsms_sa_tokens',JSON.stringify(d)); }
+
+// ── UTILS ───────────────────────────────────────────────
+function uniqueArr(arr){
+  var seen={},out=[];
+  for(var i=0;i<arr.length;i++){if(!seen[arr[i]]){seen[arr[i]]=1;out.push(arr[i]);}}
+  return out;
+}
+function gEl(id){ return document.getElementById(id); }
+function elTxt(id,v){ var e=gEl(id);if(e)e.textContent=v; }
+function getVal(id){ var e=gEl(id);return e?(e.value||'').trim():''; }
+function setVal(id,v){ var e=gEl(id);if(e)e.value=v||''; }
+function genRef(){
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var r='';for(var i=0;i<8;i++)r+=chars[Math.floor(Math.random()*chars.length)];
+  return r;
+}
+function genToken(){
+  var chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var t='';for(var i=0;i<32;i++)t+=chars[Math.floor(Math.random()*chars.length)];
+  return t;
+}
+function naira(n){ return '₦'+parseFloat(n||0).toLocaleString(); }
+
+var PLAN_PRICES = {
+  starter:    {onboarding:10000, monthly:10000,  label:'Starter'},
+  standard:   {onboarding:10000, monthly:20000,  label:'Standard'},
+  premium:    {onboarding:20000, monthly:25000,  label:'Premium'},
+  enterprise: {onboarding:200000,monthly:350000, label:'Enterprise'},
+  whitelabel: {onboarding:500000,monthly:100000, label:'White Label'},
+};
+
+var PLAN_LIMITS = {
+  starter:    {students:100,  staff:10},
+  standard:   {students:300,  staff:30},
+  premium:    {students:1000, staff:100},
+  enterprise: {students:9999, staff:500},
+  whitelabel: {students:9999, staff:999},
+};
+
+// ── AUTH ────────────────────────────────────────────────
+window.addEventListener('load', function(){
+  var auth = sessionStorage.getItem(SA_KEY);
+  if(auth === 'true'){
+    showDashboard();
+  } else {
+    gEl('screen-login').style.display = 'flex';
+  }
+});
+
+function saLogin(){
+  var pw = getVal('sa-password');
+  if(pw !== SA_PASS){ toast('Wrong password','error'); return; }
+  sessionStorage.setItem(SA_KEY,'true');
+  showDashboard();
+}
+
+function showDashboard(){
+  if(!window.RSMS_CONFIG){
+    toast('Warning: rsms-config.js not loaded. Some features may not work.','error');
+  }
+  gEl('screen-login').style.display = 'none';
+  gEl('screen-main').style.display  = 'block';
+  showPage('home');
+}
+
+function saLogout(){
+  sessionStorage.removeItem(SA_KEY);
+  location.reload();
+}
+
+// ── PAGE HOOKS ──────────────────────────────────────────
+window.onPage_home     = renderSADash;
+window.onPage_schools  = renderSchools;
+window.onPage_create   = initCreateForm;
+window.onPage_revenue  = renderRevenue;
+window.onPage_tokens   = renderTokens;
+
+// ── DASHBOARD ───────────────────────────────────────────
+function renderSADash(){
+  var schools = getSchools();
+  var active  = schools.filter(function(s){return s.status!=='suspended';});
+  var enterprise = schools.filter(function(s){return (s.plan||'').toLowerCase().includes('enterprise')||s.plan==='whitelabel';});
+  var totalRevenue = schools.reduce(function(a,s){
+    var pp = PLAN_PRICES[(s.plan||'starter').toLowerCase()]||PLAN_PRICES.starter;
+    return a + (parseFloat(s.onboardingPaid||0)) + (parseFloat(pp.monthly||0));
+  },0);
+
+  elTxt('sa-total-schools', schools.length);
+  elTxt('sa-active-schools', active.length);
+  elTxt('sa-enterprise-count', enterprise.length);
+  elTxt('sa-revenue', naira(totalRevenue));
+
+  // Recent schools
+  var el = gEl('sa-recent-schools'); if(!el)return;
+  if(!schools.length){ el.innerHTML='<div class="empty-state">No schools yet. Create your first one.</div>'; return; }
+  el.innerHTML='';
+  schools.slice().reverse().slice(0,5).forEach(function(s){
+    var d = document.createElement('div'); d.className = 'act-item';
+    var planColor = s.plan==='Enterprise'||s.plan==='White Label'?'var(--gold)':'var(--teal)';
+    d.innerHTML =
+      '<div class="act-ico c-teal">&#127979;</div>'+
+      '<div class="act-info">'+
+        '<div class="act-title">'+s.name+'</div>'+
+        '<div class="act-sub">'+s.schoolId+' \u00b7 <span style="color:'+planColor+';">'+s.plan+'</span></div>'+
+      '</div>'+
+      '<div class="act-right">'+
+        '<div style="font-size:.72rem;color:var(--t3);">'+new Date(s.createdAt||Date.now()).toLocaleDateString()+'</div>'+
+        '<span style="font-size:.65rem;padding:2px 8px;border-radius:10px;background:'+(s.status==='active'?'rgba(34,197,94,.12)':'rgba(244,63,94,.12)')+';color:'+(s.status==='active'?'var(--green)':'var(--red)')+';">'+
+          (s.status||'active')+'</span>'+
+      '</div>';
+    el.appendChild(d);
+  });
+}
+
+// ── SCHOOLS LIST ────────────────────────────────────────
+var editSchoolId = null;
+
+function renderSchools(){
+  var schools = getSchools();
+  var q = (gEl('school-search')||{value:''}).value.toLowerCase();
+  var pf = (gEl('plan-filter')||{value:''}).value||'';
+  elTxt('school-count-lbl', schools.length+' schools');
+  var el = gEl('schools-list'); if(!el)return;
+  var list = schools.filter(function(s){
+    return (!q||s.name.toLowerCase().includes(q)||s.schoolId.toLowerCase().includes(q))&&
+           (!pf||s.plan.toLowerCase()===pf.toLowerCase());
+  });
+  if(!list.length){ el.innerHTML='<div class="empty-state">No schools found</div>'; return; }
+  el.innerHTML='';
+  list.forEach(function(s){
+    var pp = PLAN_PRICES[(s.plan||'starter').toLowerCase()]||PLAN_PRICES.starter;
+    var d = document.createElement('div'); d.className='school-card';
+    d.innerHTML =
+      '<div class="sc-header">'+
+        '<div class="sc-av">'+s.name.charAt(0)+'</div>'+
+        '<div class="sc-info">'+
+          '<div class="sc-name">'+s.name+'</div>'+
+          '<div class="sc-id">'+s.schoolId+' \u00b7 '+s.state+'</div>'+
+        '</div>'+
+        '<span class="plan-badge plan-'+s.plan.toLowerCase().replace(/\s+/g,'')+'">'+s.plan+'</span>'+
+      '</div>'+
+      '<div class="sc-stats">'+
+        '<div class="sc-stat"><div class="sc-sv">'+naira(pp.monthly)+'</div><div class="sc-sl">/month</div></div>'+
+        '<div class="sc-stat"><div class="sc-sv">'+(s.studentsCount||0)+'</div><div class="sc-sl">Students</div></div>'+
+        '<div class="sc-stat"><div class="sc-sv">'+(s.staffCount||0)+'</div><div class="sc-sl">Staff</div></div>'+
+        '<div class="sc-stat"><div class="sc-sv" style="color:'+(s.status==='active'?'var(--green)':'var(--red)')+';">'+(s.status||'active')+'</div><div class="sc-sl">Status</div></div>'+
+      '</div>'+
+      '<div class="sc-actions">';
+    var ab = document.createElement('button'); ab.className='btn btn-teal btn-xs'; ab.textContent='🔗 Admin Link';
+    ab.onclick=(function(sc){return function(){genAdminLink(sc);};})(s);
+    var eb = document.createElement('button'); eb.className='btn btn-light btn-xs'; eb.textContent='✏️ Edit';
+    eb.onclick=(function(sc){return function(){openEditSchool(sc);};})(s);
+    var bb = document.createElement('button'); bb.className='btn btn-ghost btn-xs';
+    bb.textContent = s.status==='suspended'?'▶ Activate':'⏸ Suspend';
+    bb.onclick=(function(sc){return function(){toggleSchoolStatus(sc.schoolId);};})(s);
+    if(s.plan==='Enterprise'||s.plan==='White Label'){
+      var brb = document.createElement('button'); brb.className='btn btn-gold btn-xs'; brb.textContent='🎨 Branding';
+      brb.onclick=(function(sc){return function(){openBranding(sc);};})(s);
+      d.lastElementChild.appendChild(brb);
+    }
+    d.lastElementChild.appendChild(ab);
+    d.lastElementChild.appendChild(eb);
+    d.lastElementChild.appendChild(bb);
+    d.lastElementChild.innerHTML+='</div>';
+    el.appendChild(d);
+  });
+}
+
+function initCreateForm(){
+  editSchoolId = null;
+  var t = gEl('create-form-title'); if(t) t.textContent='Create New School';
+  ['cr-name','cr-address','cr-phone','cr-email','cr-principal','cr-subdomain'].forEach(function(id){setVal(id,'');});
+  var ps = gEl('cr-plan'); if(ps) ps.value='Standard';
+  var ss = gEl('cr-state'); if(ss) ss.value='';
+  updatePlanPreview();
+}
+
+function updatePlanPreview(){
+  var plan = (gEl('cr-plan')||{value:'standard'}).value||'standard';
+  var pp = PLAN_PRICES[plan.toLowerCase()]||PLAN_PRICES.standard;
+  var lim = PLAN_LIMITS[plan.toLowerCase()]||PLAN_LIMITS.standard;
+  var sub = gEl('cr-subdomain-wrap');
+  if(sub) sub.style.display = (plan==='Enterprise'||plan==='White Label')?'block':'none';
+  elTxt('plan-preview-price', naira(pp.onboarding)+' setup + '+naira(pp.monthly)+'/month');
+  elTxt('plan-preview-limits', 'Up to '+lim.students+' students, '+lim.staff+' staff');
+}
+
+function createSchool(){
+  var name = getVal('cr-name');
+  var plan = (gEl('cr-plan')||{value:'Standard'}).value;
+  if(!name){ toast('Enter school name','error'); return; }
+
+  var ref     = genRef();
+  var schoolId= 'REH-'+ref;
+  var adminTok= genToken();
+
+  var school = {
+    schoolId:     schoolId,
+    ref:          ref,
+    name:         name,
+    address:      getVal('cr-address'),
+    phone:        getVal('cr-phone'),
+    email:        getVal('cr-email'),
+    principal:    getVal('cr-principal'),
+    state:        getVal('cr-state'),
+    plan:         plan,
+    subdomain:    getVal('cr-subdomain')||'',
+    status:       'active',
+    adminToken:   adminTok,
+    studentsCount:0,
+    staffCount:   0,
+    term:         'First Term',
+    session:      '2025/2026',
+    onboardingPaid: PLAN_PRICES[plan.toLowerCase()]?PLAN_PRICES[plan.toLowerCase()].onboarding:0,
+    createdAt:    new Date().toISOString(),
+    branding: {
+      logoUrl:'', brandColor:'#d4a843', welcomeMsg:'', motto:'',
+      bgImages:[], bgImageCount: plan==='Enterprise'||plan==='White Label'?5:1
+    }
+  };
+
+  if(editSchoolId){
+    var all=getSchools(); var i=all.findIndex(function(s){return s.schoolId===editSchoolId;});
+    if(i>-1){ school.schoolId=editSchoolId; school.ref=all[i].ref; school.adminToken=all[i].adminToken; school.createdAt=all[i].createdAt; school.branding=all[i].branding||school.branding; all[i]=school; }
+    saveSchools(all); toast('✅ School updated','success');
+  } else {
+    var all=getSchools(); all.push(school); saveSchools(all);
+    // Save admin token
+    var tokens=getTokens(); tokens[adminTok]={role:'admin',schoolId:schoolId,schoolName:name,plan:plan,term:school.term,session:school.session,brandColor:school.branding.brandColor,logoUrl:'',subdomain:school.subdomain,name:'Admin',active:true};
+    saveTokens(tokens);
+    toast('✅ '+name+' created — ID: '+schoolId,'success');
+  }
+
+  editSchoolId=null;
+  closeModal('m-create-school');
+  showPage('schools');
+}
+
+function openEditSchool(s){
+  editSchoolId = s.schoolId;
+  var t=gEl('create-form-title'); if(t) t.textContent='Edit School';
+  setVal('cr-name',s.name); setVal('cr-address',s.address); setVal('cr-phone',s.phone);
+  setVal('cr-email',s.email); setVal('cr-principal',s.principal); setVal('cr-state',s.state);
+  setVal('cr-subdomain',s.subdomain||'');
+  var ps=gEl('cr-plan'); if(ps) ps.value=s.plan||'Standard';
+  updatePlanPreview();
+  openModal('m-create-school');
+}
+
+function toggleSchoolStatus(schoolId){
+  var all=getSchools(); var i=all.findIndex(function(s){return s.schoolId===schoolId;});
+  if(i<0) return;
+  all[i].status = all[i].status==='suspended'?'active':'suspended';
+  saveSchools(all); renderSchools();
+  toast((all[i].status==='active'?'School activated':'School suspended'),'info');
+}
+
+// ── ADMIN LINK GENERATOR ────────────────────────────────
+function genAdminLink(school){
+  var token = school.adminToken;
+  if(!token){ toast('No token found for this school','error'); return; }
+  // Update token with latest school info
+  var tokens=getTokens();
+  tokens[token]={role:'admin',schoolId:school.schoolId,schoolName:school.name,plan:school.plan,
+    term:school.term||'First Term',session:school.session||'2025/2026',
+    brandColor:(school.branding&&school.branding.brandColor)||'#d4a843',
+    logoUrl:(school.branding&&school.branding.logoUrl)||'',
+    subdomain:school.subdomain||'',name:'Admin',active:true};
+  saveTokens(tokens);
+  var BASE = 'https://rsms.rehoteq.com/rsms-admin.html?token='+token;
+  gEl('link-output').value = BASE;
+  gEl('link-school-name').textContent = school.name+' ('+school.plan+')';
+  openModal('m-link-modal');
+}
+
+function copyAdminLink(){
+  var link = gEl('link-output').value;
+  copyText(link);
+  toast('Admin link copied!','success');
+}
+
+function shareAdminLinkWA(){
+  var link = gEl('link-output').value;
+  var school = gEl('link-school-name').textContent;
+  window.open('https://wa.me/?text='+encodeURIComponent('Hello!\n\nYour RSMS Admin Portal for '+school+' is ready.\n\n🔗 Login link:\n'+link+'\n\nThis link logs you in directly. Bookmark it after first login.\n\nRehoteq Technologies | rsms.rehoteq.com'),'_blank');
+}
+
+// ── ENTERPRISE BRANDING ─────────────────────────────────
+var _brandingSchoolId = null;
+
+function openBranding(school){
+  _brandingSchoolId = school.schoolId;
+  var b = school.branding||{};
+  setVal('br-logo',b.logoUrl||'');
+  setVal('br-color',b.brandColor||'#d4a843');
+  setVal('br-welcome',b.welcomeMsg||'');
+  setVal('br-motto',b.motto||'');
+  setVal('br-subdomain',school.subdomain||'');
+  // Render bg image slots
+  renderBgSlots(school);
+  openModal('m-branding');
+}
+
+function renderBgSlots(school){
+  var el = gEl('bg-image-slots'); if(!el)return;
+  var b = school.branding||{};
+  var count = b.bgImageCount||5;
+  var images = b.bgImages||[];
+  el.innerHTML='';
+  for(var i=0;i<count;i++){
+    var slot = document.createElement('div'); slot.className='bg-slot';
+    var img = images[i]||'';
+    slot.innerHTML=
+      '<div class="bg-slot-num">'+(i+1)+'</div>'+
+      (img?'<img src="'+img+'" class="bg-preview" alt="BG '+(i+1)+'"/>':
+           '<div class="bg-empty">&#43; Add Background</div>')+
+      '<div class="bg-slot-actions">'+
+        '<label class="btn btn-teal btn-xs" style="cursor:pointer;">Upload'+
+          '<input type="file" accept="image/*" style="display:none;" onchange="uploadBgImage('+i+',this)"/>'+
+        '</label>'+
+        (img?'<button class="btn btn-ghost btn-xs" onclick="removeBgImage('+i+')">Remove</button>':'')+
+      '</div>'+
+      '<input class="fi" style="margin-top:6px;height:34px;font-size:.72rem;" placeholder="Or paste image URL" id="bg-url-'+i+'" value="'+img+'" oninput="setBgImageUrl('+i+',this.value)"/>';
+    el.appendChild(slot);
+  }
+}
+
+function uploadBgImage(idx, input){
+  var file = input.files[0]; if(!file)return;
+  if(file.size>2*1024*1024){ toast('Image too large. Max 2MB per background.','error'); return; }
+  var reader = new FileReader();
+  reader.onload=function(e){
+    setBgImageUrl(idx, e.target.result);
+    saveBranding();
+  };
+  reader.readAsDataURL(file);
+}
+
+function setBgImageUrl(idx, url){
+  var all=getSchools(); var i=all.findIndex(function(s){return s.schoolId===_brandingSchoolId;});
+  if(i<0)return;
+  if(!all[i].branding) all[i].branding={};
+  if(!all[i].branding.bgImages) all[i].branding.bgImages=[];
+  all[i].branding.bgImages[idx]=url;
+  saveSchools(all);
+}
+
+function removeBgImage(idx){
+  var all=getSchools(); var i=all.findIndex(function(s){return s.schoolId===_brandingSchoolId;});
+  if(i<0)return;
+  all[i].branding.bgImages[idx]='';
+  saveSchools(all); renderBgSlots(all[i]);
+}
+
+function saveBranding(){
+  var all=getSchools(); var i=all.findIndex(function(s){return s.schoolId===_brandingSchoolId;});
+  if(i<0){toast('School not found','error');return;}
+  if(!all[i].branding) all[i].branding={};
+  all[i].branding.logoUrl    = getVal('br-logo');
+  all[i].branding.brandColor = getVal('br-color')||'#d4a843';
+  all[i].branding.welcomeMsg = getVal('br-welcome');
+  all[i].branding.motto      = getVal('br-motto');
+  all[i].subdomain           = getVal('br-subdomain');
+  // Update admin token with new branding
+  var tokens=getTokens(); var tok=all[i].adminToken;
+  if(tok&&tokens[tok]){
+    tokens[tok].brandColor=all[i].branding.brandColor;
+    tokens[tok].logoUrl=all[i].branding.logoUrl;
+    tokens[tok].subdomain=all[i].subdomain;
+    tokens[tok].bgImages=all[i].branding.bgImages||[];
+    saveTokens(tokens);
+  }
+  saveSchools(all);
+  closeModal('m-branding');
+  toast('✅ Branding saved for '+all[i].name,'success');
+}
+
+// ── REVENUE OVERVIEW ────────────────────────────────────
+function renderRevenue(){
+  var schools = getSchools();
+  var byPlan={};
+  var totalOnboarding=0, totalMonthly=0;
+  schools.forEach(function(s){
+    var pl=(s.plan||'Standard').toLowerCase();
+    var pp=PLAN_PRICES[pl]||PLAN_PRICES.standard;
+    if(!byPlan[s.plan]) byPlan[s.plan]={count:0,onboarding:0,monthly:0};
+    byPlan[s.plan].count++;
+    byPlan[s.plan].onboarding+=parseFloat(pp.onboarding||0);
+    byPlan[s.plan].monthly+=parseFloat(pp.monthly||0);
+    totalOnboarding+=parseFloat(pp.onboarding||0);
+    totalMonthly+=parseFloat(pp.monthly||0);
+  });
+  elTxt('rev-onboarding',naira(totalOnboarding));
+  elTxt('rev-monthly',naira(totalMonthly));
+  elTxt('rev-annual',naira(totalMonthly*12));
+  var el=gEl('rev-by-plan'); if(!el)return;
+  el.innerHTML='';
+  Object.keys(byPlan).forEach(function(plan){
+    var d=document.createElement('div');
+    d.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:.85rem;';
+    d.innerHTML='<div><div style="font-weight:700;color:var(--t1);">'+plan+'</div>'+
+      '<div style="font-size:.72rem;color:var(--t3);">'+byPlan[plan].count+' school'+(byPlan[plan].count>1?'s':'')+'</div></div>'+
+      '<div style="text-align:right;">'+
+        '<div style="font-weight:700;color:var(--gold);">'+naira(byPlan[plan].monthly)+'/mo</div>'+
+        '<div style="font-size:.7rem;color:var(--t3);">'+naira(byPlan[plan].onboarding)+' setup</div>'+
+      '</div>';
+    el.appendChild(d);
+  });
+  if(!el.children.length) el.innerHTML='<div class="empty-state">No schools yet</div>';
+}
+
+// ── TOKENS PAGE ─────────────────────────────────────────
+function renderTokens(){
+  var tokens=getTokens(); var schools=getSchools();
+  var el=gEl('tokens-list'); if(!el)return;
+  var keys=Object.keys(tokens);
+  if(!keys.length){el.innerHTML='<div class="empty-state">No tokens generated yet</div>';return;}
+  el.innerHTML='';
+  keys.forEach(function(tok){
+    var t=tokens[tok];
+    var d=document.createElement('div');d.className='card';d.style.marginBottom='8px';
+    d.innerHTML=
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">'+
+        '<div>'+
+          '<div style="font-weight:700;color:var(--t1);font-size:.85rem;">'+t.schoolName+'</div>'+
+          '<div style="font-size:.7rem;color:var(--t3);">'+t.schoolId+' \u00b7 '+t.role+' \u00b7 '+(t.plan||'')+'</div>'+
+        '</div>'+
+        '<span style="font-size:.6rem;padding:2px 8px;border-radius:10px;background:'+(t.active?'rgba(34,197,94,.12)':'rgba(244,63,94,.12)')+';color:'+(t.active?'var(--green)':'var(--red)')+';">'+(t.active?'Active':'Revoked')+'</span>'+
+      '</div>'+
+      '<div style="font-family:var(--mono);font-size:.62rem;color:var(--t4);word-break:break-all;margin-bottom:8px;">'+tok+'</div>';
+    var row=document.createElement('div');row.className='flex-gap';
+    var cb=document.createElement('button');cb.className='btn btn-light btn-xs';cb.textContent='📋 Copy Link';
+    cb.onclick=(function(token,sname,splan){return function(){
+      var link='https://rsms.rehoteq.com/rsms-admin.html?token='+token;
+      copyText(link);
+    };})(tok,t.schoolName,t.plan);
+    var rb=document.createElement('button');rb.className='btn btn-ghost btn-xs';
+    rb.textContent=t.active?'Revoke':'Restore';
+    rb.onclick=(function(token){return function(){
+      var ts=getTokens(); ts[token].active=!ts[token].active; saveTokens(ts); renderTokens();
+    };})(tok);
+    row.appendChild(cb);row.appendChild(rb);d.appendChild(row);el.appendChild(d);
+  });
+}
+
+</script>
+</body>
+</html>
