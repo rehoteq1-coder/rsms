@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#0d1117"/>
+<title>RSMS — Data Migration Tool</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0d1117;color:#f0f6ff;font-family:'Outfit',sans-serif;min-height:100vh;padding:20px 16px;}
+.card{background:#1a2236;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:14px;}
+.gold{color:#d4a843;}
+.green{color:#22c55e;}
+.red{color:#ef4444;}
+.teal{color:#0ea5e9;}
+.mono{font-family:'DM Mono',monospace;}
+h1{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;color:#fff;margin-bottom:4px;}
+h2{font-size:1rem;font-weight:700;color:#f0f6ff;margin-bottom:12px;}
+.sub{font-size:.82rem;color:#8899bb;margin-bottom:20px;line-height:1.6;}
+.btn{width:100%;padding:13px;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:.92rem;font-weight:800;cursor:pointer;margin-bottom:8px;transition:all .2s;}
+.btn-gold{background:linear-gradient(135deg,#d4a843,#b8932a);color:#000;}
+.btn-teal{background:rgba(14,165,233,.15);border:1px solid rgba(14,165,233,.3);color:#0ea5e9;}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#c9d6f0;}
+.btn-danger{background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.3);color:#ef4444;}
+.status-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.82rem;}
+.status-row:last-child{border:none;}
+.badge{padding:2px 10px;border-radius:20px;font-size:.65rem;font-weight:800;text-transform:uppercase;}
+.badge-ok{background:rgba(34,197,94,.12);color:#22c55e;}
+.badge-warn{background:rgba(245,200,66,.12);color:#d4a843;}
+.badge-err{background:rgba(244,63,94,.12);color:#ef4444;}
+.progress-bar{height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin:10px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,#d4a843,#22c55e);border-radius:4px;transition:width .3s;}
+.log{background:#0d1117;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;max-height:200px;overflow-y:auto;font-family:'DM Mono',monospace;font-size:.7rem;color:#566280;margin-top:8px;}
+.log .ok{color:#22c55e;}
+.log .warn{color:#d4a843;}
+.log .err{color:#ef4444;}
+.fi{width:100%;background:#1e2a45;border:1.5px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 14px;color:#f0f6ff;font-family:'Outfit',sans-serif;font-size:.88rem;margin-bottom:8px;}
+.fi:focus{outline:none;border-color:#d4a843;}
+</style>
+</head>
+<body>
+<div style="max-width:560px;margin:0 auto;">
+
+  <div style="text-align:center;padding:24px 0 20px;">
+    <div style="font-size:2rem;margin-bottom:8px;">☁️</div>
+    <h1>RSMS Data Migration</h1>
+    <p class="sub">Push all localStorage data to Firebase so every device can access it. Run this once per school device.</p>
+  </div>
+
+  <!-- FIREBASE STATUS -->
+  <div class="card">
+    <h2>🔌 Firebase Connection</h2>
+    <div id="firebase-status">
+      <div class="status-row">
+        <span>rsms-config.js</span>
+        <span id="st-config" class="badge badge-warn">Checking...</span>
+      </div>
+      <div class="status-row">
+        <span>Firebase SDK</span>
+        <span id="st-sdk" class="badge badge-warn">Checking...</span>
+      </div>
+      <div class="status-row">
+        <span>Realtime Database</span>
+        <span id="st-db" class="badge badge-warn">Checking...</span>
+      </div>
+      <div class="status-row">
+        <span>School ID</span>
+        <span id="st-school" class="badge badge-warn">Checking...</span>
+      </div>
+    </div>
+    <button class="btn btn-teal" onclick="checkConnection()" style="margin-top:12px;">🔄 Check Connection</button>
+  </div>
+
+  <!-- LOCAL DATA SUMMARY -->
+  <div class="card">
+    <h2>💾 Data on This Device</h2>
+    <div id="local-data-summary"></div>
+    <button class="btn btn-ghost" onclick="scanLocalData()" style="margin-top:8px;">🔍 Scan Data</button>
+  </div>
+
+  <!-- MIGRATION -->
+  <div class="card">
+    <h2>☁️ Push to Firebase</h2>
+    <p style="font-size:.78rem;color:#8899bb;margin-bottom:14px;line-height:1.6;">
+      This pushes all data from this device to Firebase. After migration, any device that logs in with the same School ID will see the same data.
+    </p>
+    <div class="progress-bar" id="migration-progress-bar" style="display:none;">
+      <div class="progress-fill" id="migration-fill" style="width:0%"></div>
+    </div>
+    <div id="migration-status" style="font-size:.78rem;color:#8899bb;margin-bottom:8px;display:none;"></div>
+    <button class="btn btn-gold" id="migrate-btn" onclick="runMigration()">
+      ☁️ Push All Data to Firebase
+    </button>
+    <div class="log" id="migration-log" style="display:none;"></div>
+  </div>
+
+  <!-- PUBLIC SCHOOLS (for login page) -->
+  <div class="card">
+    <h2>🌐 Publish School Branding</h2>
+    <p style="font-size:.78rem;color:#8899bb;margin-bottom:14px;line-height:1.6;">
+      Push school branding (logo, colours, name) to <code style="background:#0d1117;padding:2px 6px;border-radius:4px;">/public_schools/</code> so any subdomain login page can load the school automatically.
+    </p>
+    <div id="schools-to-publish"></div>
+    <button class="btn btn-teal" onclick="publishAllSchools()">
+      📡 Publish All Schools to Public
+    </button>
+  </div>
+
+  <!-- MANUAL SCHOOL ID -->
+  <div class="card">
+    <h2>🔧 Set School ID Manually</h2>
+    <p style="font-size:.78rem;color:#8899bb;margin-bottom:10px;">If School ID is missing, enter it here:</p>
+    <input class="fi" id="manual-school-id" placeholder="e.g. REH-2J8KQ2XF"/>
+    <button class="btn btn-ghost" onclick="setSchoolIdManually()">Set School ID</button>
+  </div>
+
+  <div style="text-align:center;margin-top:8px;margin-bottom:30px;">
+    <a href="rsms-admin.html" style="color:#566280;font-size:.78rem;">← Back to Admin Portal</a>
+  </div>
+</div>
+
+<!-- Load Firebase + config -->
+<script src="rsms-config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="rsms-firebase.js"></script>
+
+<script>
+var _db = null;
+var _schoolId = null;
+
+// ── INIT ──────────────────────────────────────────────────────
+window.addEventListener('load', function(){
+  checkConnection();
+  scanLocalData();
+  loadSchoolsToPublish();
+});
+
+function checkConnection(){
+  var cfg = window.RSMS_CONFIG && window.RSMS_CONFIG.firebase;
+  setBadge('st-config', cfg ? 'ok' : 'err', cfg ? 'Loaded' : 'MISSING');
+
+  if(!cfg){
+    setBadge('st-sdk','err','N/A');
+    setBadge('st-db','err','N/A');
+    setBadge('st-school','err','N/A');
+    return;
+  }
+
+  // Try to init Firebase
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    _db = firebase.database();
+    setBadge('st-sdk','ok','Loaded');
+
+    // Test DB connection
+    _db.ref('.info/connected').on('value', function(snap){
+      var connected = snap.val();
+      setBadge('st-db', connected ? 'ok' : 'warn', connected ? 'Connected' : 'Offline');
+    });
+  }catch(e){
+    setBadge('st-sdk','err','Error: '+e.message.slice(0,30));
+    setBadge('st-db','err','Failed');
+  }
+
+  // School ID
+  var school = JSON.parse(localStorage.getItem('rsms_school')||'{}');
+  _schoolId = school.schoolId || null;
+  if(!_schoolId){
+    // Try from rsms_user session
+    var user = JSON.parse(sessionStorage.getItem('rsms_user')||'{}');
+    _schoolId = user.schoolId || null;
+  }
+  if(!_schoolId){
+    // Try from sa_schools
+    var schools = JSON.parse(localStorage.getItem('rsms_sa_schools')||'[]');
+    if(schools.length) _schoolId = schools[0].schoolId;
+  }
+  setBadge('st-school', _schoolId ? 'ok' : 'err', _schoolId || 'NOT SET');
+}
+
+// ── SCAN LOCAL DATA ───────────────────────────────────────────
+function scanLocalData(){
+  var el = document.getElementById('local-data-summary'); if(!el)return;
+  var keys = [
+    {key:'rsms_students',   label:'Students'},
+    {key:'rsms_staff',      label:'Staff'},
+    {key:'rsms_fees',       label:'Fee Records'},
+    {key:'rsms_school',     label:'School Settings'},
+    {key:'rsms_fee_schedule',label:'Fee Schedule'},
+    {key:'rsms_stream_config',label:'Class Streams'},
+    {key:'rsms_broadcasts', label:'Broadcasts'},
+    {key:'rsms_ct_remarks', label:'CT Remarks'},
+    {key:'rsms_cbt_results',label:'CBT Results'},
+    {key:'rsms_cbt_questions',label:'CBT Questions'},
+    {key:'rsms_sa_schools', label:'Schools (Superadmin)'},
+    {key:'rsms_sa_tokens',  label:'Tokens (Superadmin)'},
+  ];
+  el.innerHTML='';
+  var totalItems = 0;
+  keys.forEach(function(k){
+    var raw = localStorage.getItem(k.key);
+    if(!raw) return;
+    try{
+      var d = JSON.parse(raw);
+      var count = Array.isArray(d) ? d.length : (typeof d==='object' ? Object.keys(d).length : 1);
+      totalItems += count;
+      var row = document.createElement('div'); row.className='status-row';
+      row.innerHTML='<span>'+k.label+'</span>'+
+        '<span class="badge badge-ok">'+count+' record'+(count!==1?'s':'')+'</span>';
+      el.appendChild(row);
+    }catch(e){}
+  });
+  // Score keys
+  var scoreCount = 0;
+  for(var i=0;i<localStorage.length;i++){
+    var k = localStorage.key(i);
+    if(k && k.indexOf('rsms_scores_')===0) scoreCount++;
+  }
+  if(scoreCount){
+    var row2 = document.createElement('div'); row2.className='status-row';
+    row2.innerHTML='<span>Score Entries</span>'+
+      '<span class="badge badge-ok">'+scoreCount+' subjects</span>';
+    el.appendChild(row2);
+  }
+  if(!el.children.length){
+    el.innerHTML='<div style="color:#566280;padding:8px;">No RSMS data found on this device.</div>';
+  }
+}
+
+// ── RUN MIGRATION ─────────────────────────────────────────────
+function runMigration(){
+  if(!_db){ addLog('err','Firebase not connected. Check rsms-config.js is uploaded.'); return; }
+  if(!_schoolId){ addLog('err','No School ID found. Set it manually below.'); return; }
+
+  var btn = document.getElementById('migrate-btn');
+  btn.disabled = true; btn.textContent = '⏳ Migrating...';
+  document.getElementById('migration-progress-bar').style.display='block';
+  document.getElementById('migration-status').style.display='block';
+  document.getElementById('migration-log').style.display='block';
+
+  addLog('ok','Starting migration for school: '+_schoolId);
+
+  var dataKeys = [
+    'students','staff','fees','results','attendance',
+    'assignments','broadcasts','ct_remarks','clock_logs',
+    'fee_schedule','stream_config','school','cbt_results','cbt_questions'
+  ];
+
+  var done = 0;
+  var pushed = 0;
+  var total = dataKeys.length;
+
+  // Also add score keys
+  for(var i=0;i<localStorage.length;i++){
+    var k = localStorage.key(i);
+    if(k && k.indexOf('rsms_scores_')===0){
+      dataKeys.push('__score__'+k);
+      total++;
+    }
+  }
+
+  function updateProgress(){
+    done++;
+    var pct = Math.round(done/total*100);
+    document.getElementById('migration-fill').style.width = pct+'%';
+    document.getElementById('migration-status').textContent = done+'/'+total+' items processed...';
+    if(done >= total){
+      btn.disabled = false;
+      btn.textContent = '✅ Migration Complete — '+pushed+' items pushed';
+      addLog('ok','Migration complete! '+pushed+'/'+total+' items synced to Firebase.');
+    }
+  }
+
+  dataKeys.forEach(function(key){
+    var isScore = key.indexOf('__score__') === 0;
+    var lsKey   = isScore ? key.replace('__score__','') : 'rsms_'+key;
+    var fbPath  = isScore
+      ? 'schools/'+_schoolId+'/'+key.replace('__score__rsms_','')
+      : 'schools/'+_schoolId+'/'+key;
+
+    var raw = localStorage.getItem(lsKey);
+    if(!raw){ updateProgress(); return; }
+
+    try{
+      var data = JSON.parse(raw);
+      _db.ref(fbPath).set(data)
+        .then(function(){
+          pushed++;
+          addLog('ok','✓ '+lsKey.replace('rsms_',''));
+          updateProgress();
+        })
+        .catch(function(e){
+          addLog('err','✗ '+lsKey+': '+e.message.slice(0,40));
+          updateProgress();
+        });
+    }catch(e){
+      addLog('warn','Skip '+lsKey+' (invalid JSON)');
+      updateProgress();
+    }
+  });
+}
+
+// ── PUBLISH SCHOOL BRANDING ───────────────────────────────────
+function loadSchoolsToPublish(){
+  var schools = JSON.parse(localStorage.getItem('rsms_sa_schools')||'[]');
+  var el = document.getElementById('schools-to-publish'); if(!el) return;
+  if(!schools.length){
+    el.innerHTML='<div style="color:#566280;font-size:.78rem;margin-bottom:8px;">No schools found in superadmin data.</div>';
+    return;
+  }
+  el.innerHTML='';
+  schools.forEach(function(sc){
+    var row = document.createElement('div'); row.className='status-row';
+    row.innerHTML='<span style="font-size:.82rem;">'+sc.name+' <span class="mono" style="color:#566280;font-size:.65rem;">'+sc.schoolId+'</span></span>'+
+      '<span class="badge badge-warn">Pending</span>';
+    row.id = 'pub-'+sc.schoolId;
+    el.appendChild(row);
+  });
+}
+
+function publishAllSchools(){
+  if(!_db){ addLog('err','Firebase not connected'); return; }
+  var schools = JSON.parse(localStorage.getItem('rsms_sa_schools')||'[]');
+  var tokens  = JSON.parse(localStorage.getItem('rsms_sa_tokens')||'{}');
+  if(!schools.length){ alert('No schools found. Add schools in Superadmin first.'); return; }
+
+  schools.forEach(function(sc){
+    var b = sc.branding||{};
+    // Find admin token for this school
+    var adminTok = null;
+    Object.keys(tokens).forEach(function(t){
+      if(tokens[t]&&tokens[t].schoolId===sc.schoolId) adminTok=t;
+    });
+
+    var publicData = {
+      schoolId:   sc.schoolId,
+      name:       sc.name,
+      subdomain:  sc.subdomain||'',
+      state:      sc.state||'',
+      plan:       sc.plan,
+      brandColor: b.brandColor||'#d4a843',
+      logoUrl:    b.logoUrl||'',
+      bgImages:   b.bgImages||[],
+      welcomeMsg: b.welcomeMsg||'',
+      motto:      b.motto||'',
+      adminToken: adminTok||'',
+      updatedAt:  new Date().toISOString()
+    };
+
+    // Write to /public_schools/
+    _db.ref('public_schools/'+sc.schoolId).set(publicData)
+      .then(function(){
+        if(sc.subdomain){
+          _db.ref('public_schools_by_subdomain/'+sc.subdomain).set(publicData);
+        }
+        var row = document.getElementById('pub-'+sc.schoolId);
+        if(row){
+          var badge = row.querySelector('.badge');
+          if(badge){ badge.className='badge badge-ok'; badge.textContent='Published'; }
+        }
+        addLog('ok','Published: '+sc.name+(sc.subdomain?' → '+sc.subdomain+'.rsms.rehoteq.com':''));
+      })
+      .catch(function(e){
+        addLog('err','Failed '+sc.name+': '+e.message.slice(0,40));
+      });
+
+    // Also cache locally
+    var pub = JSON.parse(localStorage.getItem('rsms_public_schools')||'{}');
+    pub[sc.schoolId] = publicData;
+    if(sc.subdomain) pub[sc.subdomain] = publicData;
+    localStorage.setItem('rsms_public_schools', JSON.stringify(pub));
+  });
+}
+
+// ── SET SCHOOL ID MANUALLY ────────────────────────────────────
+function setSchoolIdManually(){
+  var id = (document.getElementById('manual-school-id').value||'').trim().toUpperCase();
+  if(!id){ alert('Enter a School ID'); return; }
+  if(!id.startsWith('REH-')){ id = 'REH-'+id; }
+  var school = JSON.parse(localStorage.getItem('rsms_school')||'{}');
+  school.schoolId = id;
+  localStorage.setItem('rsms_school', JSON.stringify(school));
+  _schoolId = id;
+  setBadge('st-school','ok',id);
+  alert('School ID set to: '+id+'\nNow run the migration.');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function setBadge(id, type, text){
+  var el=document.getElementById(id); if(!el)return;
+  el.className='badge badge-'+type;
+  el.textContent=text;
+}
+
+function addLog(type, msg){
+  var el=document.getElementById('migration-log'); if(!el)return;
+  var line=document.createElement('div'); line.className=type;
+  line.textContent='['+new Date().toLocaleTimeString()+'] '+msg;
+  el.appendChild(line);
+  el.scrollTop=el.scrollHeight;
+}
+</script>
+</body>
+</html>
