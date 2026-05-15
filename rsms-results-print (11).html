@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#0d1117"/>
+<title>RSMS — Result Cards</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0d1117;--card:#1a2236;--card2:#1e2a45;--line:rgba(255,255,255,.08);
+  --t1:#f0f6ff;--t2:#c9d6f0;--t3:#8899bb;--t4:#566280;
+  --gold:#d4a843;--green:#22c55e;--red:#ef4444;--teal:#0ea5e9;
+  --serif:'Fraunces',serif;--sans:'Outfit',sans-serif;--mono:'DM Mono',monospace;
+  --r:14px;--r2:10px;
+}
+body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100vh;padding:16px;}
+.top-bar{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.top-bar h1{font-family:var(--serif);font-size:1.2rem;font-weight:900;}
+.top-bar a{color:var(--t3);font-size:.8rem;text-decoration:none;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px;}
+.card-title{font-weight:800;font-size:.9rem;color:var(--t1);margin-bottom:12px;}
+.fg{margin-bottom:10px;}
+.fg label{display:block;font-size:.72rem;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+.fi{width:100%;background:var(--card2);border:1.5px solid rgba(255,255,255,.12);border-radius:var(--r2);padding:10px 12px;color:var(--t1);font-family:var(--sans);font-size:.88rem;height:44px;}
+.fi:focus{outline:none;border-color:var(--gold);}
+select.fi option{background:var(--card);}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn{width:100%;padding:12px;border:none;border-radius:var(--r2);font-family:var(--sans);font-weight:800;font-size:.9rem;cursor:pointer;margin-bottom:8px;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#b8932a);color:#000;}
+.btn-teal{background:rgba(14,165,233,.15);border:1px solid rgba(14,165,233,.3);color:var(--teal);}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--t2);}
+.badge{padding:2px 8px;border-radius:20px;font-size:.65rem;font-weight:800;text-transform:uppercase;}
+.bg-green{background:rgba(34,197,94,.12);color:var(--green);}
+.bg-gold{background:rgba(212,168,67,.12);color:var(--gold);}
+.bg-red{background:rgba(239,68,68,.12);color:var(--red);}
+.bg-teal{background:rgba(14,165,233,.12);color:var(--teal);}
+.student-preview{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:.82rem;}
+.student-preview:last-child{border:none;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 20px;font-size:.82rem;font-weight:700;color:var(--t1);z-index:999;display:none;white-space:nowrap;}
+
+/* ── PRINT STYLES ─────────────────────────── */
+@media print{
+  body{background:#fff;padding:0;}
+  .no-print{display:none!important;}
+  .result-card{page-break-after:always;break-after:page;}
+  .result-card:last-child{page-break-after:avoid;}
+}
+
+/* ── RESULT CARD STYLES (screen + print) ───── */
+.result-card{
+  background:#fff;color:#000;
+  width:210mm;min-height:297mm;
+  margin:0 auto 20px;
+  padding:10mm 12mm;
+  font-family:'Times New Roman',serif;
+  font-size:11pt;
+  border:1px solid #ccc;
+  position:relative;
+}
+@media screen{
+  .result-card{ max-width:100%; }
+}
+.rc-school-header{text-align:center;border-bottom:3px double #000;padding-bottom:8px;margin-bottom:8px;}
+.rc-school-logo{width:70px;height:70px;object-fit:contain;margin-bottom:4px;}
+.rc-school-name{font-size:16pt;font-weight:bold;text-transform:uppercase;letter-spacing:.05em;}
+.rc-school-addr{font-size:9pt;color:#444;margin-top:2px;}
+.rc-school-motto{font-style:italic;font-size:9pt;color:#333;margin-top:2px;}
+.rc-title{text-align:center;font-size:12pt;font-weight:bold;background:#f0f0f0;padding:4px;margin:6px 0;border:1px solid #aaa;text-transform:uppercase;letter-spacing:.1em;}
+.rc-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #aaa;margin-bottom:8px;}
+.rc-info-cell{padding:4px 8px;font-size:9.5pt;border-bottom:1px solid #ddd;}
+.rc-info-cell:nth-child(odd){border-right:1px solid #ddd;background:#fafafa;}
+.rc-info-cell span{font-weight:bold;}
+.rc-scores-table{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:9.5pt;}
+.rc-scores-table th{background:#1a1a2e;color:#fff;padding:5px 4px;text-align:center;font-size:8.5pt;}
+.rc-scores-table th:first-child{text-align:left;padding-left:6px;}
+.rc-scores-table td{padding:4px;border-bottom:1px solid #eee;text-align:center;}
+.rc-scores-table td:first-child{text-align:left;padding-left:6px;}
+.rc-scores-table tr:nth-child(even) td{background:#f9f9f9;}
+.rc-grade-A1{color:#155724;font-weight:bold;}
+.rc-grade-B{color:#0c4a6e;font-weight:bold;}
+.rc-grade-C{color:#78350f;font-weight:bold;}
+.rc-grade-D{color:#92400e;}
+.rc-grade-E{color:#991b1b;}
+.rc-grade-F{color:#7f1d1d;font-weight:bold;}
+.rc-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid #aaa;margin-bottom:8px;text-align:center;}
+.rc-summary-cell{padding:5px;border-right:1px solid #ddd;font-size:9pt;}
+.rc-summary-cell:last-child{border-right:none;}
+.rc-summary-cell .val{font-size:13pt;font-weight:bold;}
+.rc-summary-cell .lbl{font-size:7.5pt;color:#555;text-transform:uppercase;}
+.rc-remarks-section{border:1px solid #aaa;padding:6px 8px;margin-bottom:6px;font-size:9.5pt;}
+.rc-remarks-section .label{font-weight:bold;margin-bottom:3px;}
+.rc-sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px;}
+.rc-sig-box{text-align:center;font-size:8.5pt;}
+.rc-sig-line{border-top:1px solid #000;margin-top:20px;padding-top:3px;}
+.rc-footer{text-align:center;font-size:8pt;color:#666;border-top:1px solid #ddd;padding-top:4px;margin-top:6px;}
+</style>
+</head>
+<body>
+
+<!-- ── CONTROLS (no-print) ─────────────────────────────────── -->
+<div class="no-print">
+  <div class="top-bar">
+    <a href="rsms-admin.html">← Admin</a>
+    <h1>📄 Result Cards</h1>
+  </div>
+
+  <!-- STEP 1: SELECT -->
+  <div class="card">
+    <div class="card-title">Step 1 — Select Class & Term</div>
+    <div class="fg">
+      <label>Class</label>
+      <select class="fi" id="cls-sel" onchange="onClassChange()">
+        <option value="">— Select Class —</option>
+      </select>
+    </div>
+    <div class="f2">
+      <div class="fg">
+        <label>Term</label>
+        <select class="fi" id="term-sel" onchange="onClassChange()">
+          <option>First Term</option>
+          <option>Second Term</option>
+          <option>Third Term</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Session</label>
+        <input class="fi" id="sess-in" value="2025/2026" onchange="onClassChange()"/>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Next Term Begins</label>
+      <input class="fi" id="next-term" placeholder="e.g. 15th September 2026"/>
+    </div>
+  </div>
+
+  <!-- STEP 2: PREVIEW -->
+  <div class="card" id="preview-card" style="display:none;">
+    <div class="card-title" id="preview-title">Preview</div>
+    <div id="preview-list"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:120px;">
+        <label style="font-size:.68rem;color:var(--t3);display:block;margin-bottom:3px;">CA1 Max</label>
+        <input class="fi" id="ca1-max" type="number" value="20" style="height:38px;"/>
+      </div>
+      <div style="flex:1;min-width:120px;">
+        <label style="font-size:.68rem;color:var(--t3);display:block;margin-bottom:3px;">CA2 Max</label>
+        <input class="fi" id="ca2-max" type="number" value="20" style="height:38px;"/>
+      </div>
+      <div style="flex:1;min-width:120px;">
+        <label style="font-size:.68rem;color:var(--t3);display:block;margin-bottom:3px;">Exam Max</label>
+        <input class="fi" id="exam-max" type="number" value="60" style="height:38px;"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: GENERATE -->
+  <div id="generate-section" style="display:none;">
+    <button class="btn btn-gold" onclick="generateCards()">📄 Generate Report Cards</button>
+    <button class="btn btn-teal" onclick="window.print()">🖨️ Print All Cards</button>
+    <button class="btn btn-ghost" onclick="document.getElementById('cards-output').innerHTML='';document.getElementById('generate-section').style.display='none';">✕ Clear</button>
+  </div>
+</div>
+
+<!-- ── CARDS OUTPUT ─────────────────────────────────────────── -->
+<div id="cards-output"></div>
+
+<div class="toast" id="rsms-toast"></div>
+
+<script src="rsms-firebase.js"></script>
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+var SCHOOL   = JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School","principal":"","address":"","phone":"","motto":""}');
+var STUDENTS = JSON.parse(localStorage.getItem('rsms_students')||'[]');
+var LOGO     = localStorage.getItem('rsms_school_logo')||'';
+
+var currentStudents = [];
+var currentScores   = {}; // {stuId: {subject: {ca1,ca2,exam}}}
+var currentSubjects = [];
+
+// ── INIT ──────────────────────────────────────────────────────
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    try{
+      var _sc=JSON.parse(localStorage.getItem('rsms_school')||'{}');
+      if(_sc.schoolId&&typeof RSMS_FB!=='undefined'){
+        if(RSMS_FB.isReady()){
+          RSMS_FB.warmCache(_sc.schoolId, function(){
+            // Refresh student list after warm cache
+            STUDENTS=JSON.parse(localStorage.getItem('rsms_students')||'[]');
+            populateClassDropdown();
+          });
+        }
+      }
+    }catch(e){}
+  },500);
+  populateClassDropdown();
+});
+
+function populateClassDropdown(){
+  var sel = document.getElementById('cls-sel');
+  sel.innerHTML = '<option value="">— Select Class —</option>';
+
+  // Get classes from actual students
+  var classes = [];
+  STUDENTS.forEach(function(s){
+    if(s.class && classes.indexOf(s.class)<0) classes.push(s.class);
+  });
+
+  // Also get classes from rsms_scores_* keys
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);
+    if(!k||k.indexOf('rsms_scores_')!==0) continue;
+    // Extract class name from key: rsms_scores_CLASS_TERM_SESSION
+    var parts=k.replace('rsms_scores_','').split('_');
+    if(parts.length>=2){
+      // Try to reconstruct class name (may have spaces replaced with _)
+      var possibleClass=parts[0];
+      // Check against known class patterns
+      if(classes.indexOf(possibleClass)<0) classes.push(possibleClass);
+    }
+  }
+
+  // Sort and add
+  classes.sort();
+  classes.forEach(function(c){
+    var o=document.createElement('option');
+    o.value=c; o.textContent=c; sel.appendChild(o);
+  });
+
+  if(!classes.length){
+    toast('No classes found. Add students first.','info');
+  }
+}
+
+function onClassChange(){
+  var cls  = document.getElementById('cls-sel').value;
+  var term = document.getElementById('term-sel').value;
+  var sess = document.getElementById('sess-in').value||'2025/2026';
+  if(!cls) return;
+
+  loadScores(cls, term, sess);
+}
+
+// ── LOAD SCORES FROM ALL rsms_scores_* KEYS ──────────────────
+function loadScores(cls, term, sess){
+  currentStudents = STUDENTS.filter(function(s){
+    return (s.class||'').trim().toLowerCase() === cls.trim().toLowerCase();
+  });
+
+  // Also include students found in scores even if not in rsms_students
+  currentScores  = {};
+  currentSubjects = [];
+
+  var clsKey = cls.replace(/\s+/g,'_');
+
+  // Scan ALL rsms_scores_* keys for this class
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);
+    if(!k||k.indexOf('rsms_scores_'+clsKey)<0) continue;
+    var data=JSON.parse(localStorage.getItem(k)||'{}');
+    Object.keys(data).forEach(function(entryKey){
+      var e=data[entryKey];
+      if(!e||!e.stuId||!e.subject) return;
+      var sid=e.stuId;
+      var subj=e.subject;
+      if(!currentScores[sid]) currentScores[sid]={};
+      // Only overwrite if no score yet or new score has data
+      if(!currentScores[sid][subj]||
+        (parseInt(e.ca1||0)+parseInt(e.ca2||0)+parseInt(e.exam||0)>0)){
+        currentScores[sid][subj]={
+          ca1:parseInt(e.ca1||0),
+          ca2:parseInt(e.ca2||0),
+          exam:parseInt(e.exam||0)
+        };
+      }
+      if(currentSubjects.indexOf(subj)<0) currentSubjects.push(subj);
+      // Add student to list if not already there
+      if(!currentStudents.find(function(s){return s.id===sid;})){
+        // Look up from full student list
+        var fullStu=STUDENTS.find(function(s){return s.id===sid;});
+        if(fullStu) currentStudents.push(fullStu);
+        else currentStudents.push({
+          id:sid,surname:e.surname||'',firstname:e.firstname||'',
+          class:cls,reg:e.reg||sid
+        });
+      }
+    });
+  }
+
+  currentSubjects.sort();
+  showPreview(cls, term, sess);
+}
+
+// ── PREVIEW ───────────────────────────────────────────────────
+function showPreview(cls, term, sess){
+  var previewCard=document.getElementById('preview-card');
+  var previewList=document.getElementById('preview-list');
+  var genSection=document.getElementById('generate-section');
+
+  if(!currentStudents.length){
+    previewCard.style.display='block';
+    document.getElementById('preview-title').textContent=
+      cls+' — No students found';
+    previewList.innerHTML=
+      '<div style="color:var(--t3);font-size:.82rem;padding:8px 0;">'+
+      'No students or scores found for this class/term. '+
+      'Make sure teachers have entered scores for '+term+' '+sess+'.</div>';
+    genSection.style.display='none';
+    return;
+  }
+
+  previewCard.style.display='block';
+  document.getElementById('preview-title').textContent=
+    cls+' — '+currentStudents.length+' students · '+currentSubjects.length+' subjects';
+
+  previewList.innerHTML='';
+  currentStudents.forEach(function(s){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    var scores=currentScores[s.id]||{};
+    var subjectCount=Object.keys(scores).filter(function(subj){
+      var sc=scores[subj];
+      return sc&&(sc.ca1||sc.ca2||sc.exam);
+    }).length;
+    var total=Object.values(scores).reduce(function(a,sc){
+      return a+(parseInt(sc.ca1||0)+parseInt(sc.ca2||0)+parseInt(sc.exam||0));
+    },0);
+    var row=document.createElement('div');
+    row.className='student-preview';
+    row.innerHTML=
+      '<div>'+
+        '<div style="font-weight:700;font-size:.85rem;">'+name+'</div>'+
+        '<div style="font-size:.72rem;color:var(--t3);">'+s.reg+'</div>'+
+      '</div>'+
+      '<span class="badge '+(subjectCount>0?'bg-green':'bg-red')+'">'+
+        subjectCount+' subject'+(subjectCount!==1?'s':'')+
+      '</span>';
+    previewList.appendChild(row);
+  });
+
+  genSection.style.display='block';
+  toast('Loaded '+currentStudents.length+' students · '+currentSubjects.length+' subjects','success');
+}
+
+// ── GRADE HELPERS ─────────────────────────────────────────────
+
+function getStudentPhoto(stuId){
+  var p=localStorage.getItem('rsms_photo_'+stuId); if(p) return p;
+  var students=JSON.parse(localStorage.getItem('rsms_students')||'[]');
+  var stu=students.find(function(s){return s.id===stuId;});
+  if(stu&&stu.passport) return stu.passport;
+  if(stu&&stu.photo) return stu.photo;
+  return null;
+}
+
+function grade(score){
+  var s=parseFloat(score)||0;
+  if(s>=80) return 'A1';
+  if(s>=75) return 'B2';
+  if(s>=70) return 'B3';
+  if(s>=65) return 'C4';
+  if(s>=60) return 'C5';
+  if(s>=55) return 'C6';
+  if(s>=50) return 'D7';
+  if(s>=45) return 'E8';
+  return 'F9';
+}
+function gradeRemark(g){
+  return {A1:'Excellent',B2:'Very Good',B3:'Good',C4:'Credit',C5:'Credit',
+    C6:'Credit',D7:'Pass',E8:'Pass',F9:'Fail'}[g]||'';
+}
+function gradeClass(g){
+  if(g==='A1') return 'rc-grade-A1';
+  if(g[0]==='B') return 'rc-grade-B';
+  if(g[0]==='C') return 'rc-grade-C';
+  if(g==='D7') return 'rc-grade-D';
+  if(g==='E8') return 'rc-grade-E';
+  return 'rc-grade-F';
+}
+function ordinal(n){
+  var s=['th','st','nd','rd'],v=n%100;
+  return n+(s[(v-20)%10]||s[v]||s[0]);
+}
+
+// ── GENERATE CARDS ────────────────────────────────────────────
+function generateCards(){
+  var cls     = document.getElementById('cls-sel').value;
+  var term    = document.getElementById('term-sel').value;
+  var sess    = document.getElementById('sess-in').value||'2025/2026';
+  var nextTerm= document.getElementById('next-term').value||'To be announced';
+  var ca1Max  = parseInt(document.getElementById('ca1-max').value)||20;
+  var ca2Max  = parseInt(document.getElementById('ca2-max').value)||20;
+  var examMax = parseInt(document.getElementById('exam-max').value)||60;
+  var totalMax= ca1Max+ca2Max+examMax;
+
+  if(!cls){toast('Select a class first','error');return;}
+  if(!currentStudents.length){toast('No students loaded','error');return;}
+
+  // CT Remarks
+  var ctRemarks=JSON.parse(localStorage.getItem('rsms_ct_remarks')||'{}');
+
+  // Calculate totals + positions
+  var studentTotals=currentStudents.map(function(s){
+    var scores=currentScores[s.id]||{};
+    var total=0, subjCount=0;
+    currentSubjects.forEach(function(subj){
+      var sc=scores[subj];
+      if(sc){
+        total+=parseInt(sc.ca1||0)+parseInt(sc.ca2||0)+parseInt(sc.exam||0);
+        if(parseInt(sc.ca1||0)+parseInt(sc.ca2||0)+parseInt(sc.exam||0)>0) subjCount++;
+      }
+    });
+    return {id:s.id, total:total, subjCount:subjCount};
+  });
+
+  // Sort for positions
+  var sorted=[].concat(studentTotals).sort(function(a,b){return b.total-a.total;});
+  var positions={};
+  sorted.forEach(function(s,i){ positions[s.id]=i+1; });
+
+  var output=document.getElementById('cards-output');
+  output.innerHTML='';
+
+  currentStudents.forEach(function(stu){
+    var name=(stu.surname||'').toUpperCase()+' '+(stu.firstname||'');
+    var scores=currentScores[stu.id]||{};
+    var stuTotals=studentTotals.find(function(s){return s.id===stu.id;})||{total:0,subjCount:0};
+    var ctRemark=ctRemarks[stu.id]||'';
+    var pos=positions[stu.id]||'-';
+    var grandTotal=stuTotals.total;
+    var subjCount=stuTotals.subjCount;
+    var avg=subjCount?Math.round(grandTotal/subjCount):0;
+    var grd=grade(avg);
+
+    // Build subject rows
+    var subjectRows='';
+    var subjWithScores=currentSubjects.filter(function(subj){
+      var sc=scores[subj];
+      return sc&&(parseInt(sc.ca1||0)+parseInt(sc.ca2||0)+parseInt(sc.exam||0)>0);
+    });
+
+    subjWithScores.forEach(function(subj,idx){
+      var sc=scores[subj]||{ca1:0,ca2:0,exam:0};
+      var ca1=parseInt(sc.ca1||0),ca2=parseInt(sc.ca2||0),exam=parseInt(sc.exam||0);
+      var tot=ca1+ca2+exam;
+      var g=grade(tot);
+      var rem=gradeRemark(g);
+      subjectRows+=
+        '<tr>'+
+          '<td style="text-align:left;padding-left:6px;">'+(idx+1)+'. '+subj+'</td>'+
+          '<td>'+ca1+'</td>'+
+          '<td>'+ca2+'</td>'+
+          '<td>'+exam+'</td>'+
+          '<td style="font-weight:700;">'+tot+'</td>'+
+          '<td class="'+gradeClass(g)+'">'+g+'</td>'+
+          '<td>'+rem+'</td>'+
+        '</tr>';
+    });
+
+    var logoHtml=LOGO?
+      '<img src="'+LOGO+'" class="rc-school-logo" onerror="this.style.display=\'none\'"/>':'';
+
+    var card=document.createElement('div');
+    card.className='result-card';
+    card.innerHTML=
+      // Header
+      '<div class="rc-school-header">'+
+        logoHtml+
+        '<div class="rc-school-name">'+SCHOOL.name+'</div>'+
+        (SCHOOL.address?'<div class="rc-school-addr">'+SCHOOL.address+'</div>':'')+
+        (SCHOOL.motto?'<div class="rc-school-motto">"'+SCHOOL.motto+'"</div>':'')+
+      '</div>'+
+
+      // Report title
+      '<div class="rc-title">Student Report Card — '+term+' '+sess+'</div>'+
+
+      // Student info with passport photo
+      (function(){
+        var ph=getStudentPhoto(stu.id);
+        var phHtml=ph
+          ? '<img src="'+ph+'" style="width:80px;height:100px;object-fit:cover;border:1px solid #aaa;"/>'
+          : '<div style="width:80px;height:100px;border:1px dashed #aaa;display:flex;align-items:center;justify-content:center;font-size:7pt;color:#999;text-align:center;">Passport Photo</div>';
+        return '<div style="display:flex;gap:0;margin-bottom:8px;border:1px solid #aaa;">'+
+          '<div style="padding:6px 8px;border-right:1px solid #aaa;">'+phHtml+'</div>'+
+          '<table style="flex:1;border-collapse:collapse;font-size:9.5pt;width:100%;">'+
+            '<tr><td style="padding:4px 8px;background:#fafafa;border-bottom:1px solid #ddd;border-right:1px solid #ddd;width:38%;">Student Name:</td>'+
+                '<td style="padding:4px 8px;border-bottom:1px solid #ddd;font-weight:bold;">'+name+'</td></tr>'+
+            '<tr><td style="padding:4px 8px;background:#fafafa;border-bottom:1px solid #ddd;border-right:1px solid #ddd;">Reg No:</td>'+
+                '<td style="padding:4px 8px;border-bottom:1px solid #ddd;font-weight:bold;">'+(stu.reg||stu.id)+'</td></tr>'+
+            '<tr><td style="padding:4px 8px;background:#fafafa;border-bottom:1px solid #ddd;border-right:1px solid #ddd;">Class:</td>'+
+                '<td style="padding:4px 8px;border-bottom:1px solid #ddd;font-weight:bold;">'+cls+'</td></tr>'+
+            '<tr><td style="padding:4px 8px;background:#fafafa;border-bottom:1px solid #ddd;border-right:1px solid #ddd;">Term:</td>'+
+                '<td style="padding:4px 8px;border-bottom:1px solid #ddd;font-weight:bold;">'+term+'</td></tr>'+
+            '<tr><td style="padding:4px 8px;background:#fafafa;border-bottom:1px solid #ddd;border-right:1px solid #ddd;">Session:</td>'+
+                '<td style="padding:4px 8px;border-bottom:1px solid #ddd;font-weight:bold;">'+sess+'</td></tr>'+
+            '<tr><td style="padding:4px 8px;background:#fafafa;border-right:1px solid #ddd;">Date:</td>'+
+                '<td style="padding:4px 8px;font-weight:bold;">'+new Date().toLocaleDateString()+'</td></tr>'+
+          '</table>'+
+        '</div>';
+      })()+
+
+      // Scores table
+      '<table class="rc-scores-table">'+
+        '<thead><tr>'+
+          '<th>Subject</th>'+
+          '<th>CA1<br/>/'+ca1Max+'</th>'+
+          '<th>CA2<br/>/'+ca2Max+'</th>'+
+          '<th>Exam<br/>/'+examMax+'</th>'+
+          '<th>Total<br/>/'+totalMax+'</th>'+
+          '<th>Grade</th>'+
+          '<th>Remark</th>'+
+        '</tr></thead>'+
+        '<tbody>'+subjectRows+'</tbody>'+
+      '</table>'+
+
+      // Summary
+      '<div class="rc-summary">'+
+        '<div class="rc-summary-cell"><div class="val">'+subjCount+'</div><div class="lbl">Subjects</div></div>'+
+        '<div class="rc-summary-cell"><div class="val">'+grandTotal+'</div><div class="lbl">Total Score</div></div>'+
+        '<div class="rc-summary-cell"><div class="val">'+avg+'%</div><div class="lbl">Average</div></div>'+
+        '<div class="rc-summary-cell"><div class="val">'+ordinal(pos)+'/'+currentStudents.length+'</div><div class="lbl">Position</div></div>'+
+      '</div>'+
+
+      // Remarks
+      '<div class="rc-remarks-section">'+
+        '<div class="label">Class Teacher\'s Remark:</div>'+
+        '<div style="min-height:22px;">'+
+          (ctRemark||'<span style="color:#999;">—</span>')+
+        '</div>'+
+      '</div>'+
+      '<div class="rc-remarks-section">'+
+        '<div class="label">Principal\'s Remark:</div>'+
+        '<div style="min-height:22px;"></div>'+
+      '</div>'+
+
+      // Next term + signatures
+      '<div style="font-size:9.5pt;margin-bottom:8px;"><strong>Next Term Begins:</strong> '+nextTerm+'</div>'+
+      '<div class="rc-sig-row">'+
+        '<div class="rc-sig-box"><div class="rc-sig-line">Class Teacher\'s Signature</div></div>'+
+        '<div class="rc-sig-box"><div class="rc-sig-line">Date</div></div>'+
+        '<div class="rc-sig-box"><div class="rc-sig-line">'+
+          (SCHOOL.principal?SCHOOL.principal+' (Principal)':'Principal\'s Signature')+
+        '</div></div>'+
+      '</div>'+
+
+      // Footer
+      '<div class="rc-footer">'+SCHOOL.name+' | rsms.rehoteq.com | Powered by Rehoteq Technologies</div>';
+
+    output.appendChild(card);
+  });
+
+  toast('Generated '+currentStudents.length+' report cards','success');
+  setTimeout(function(){
+    output.scrollIntoView({behavior:'smooth'});
+  },300);
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function toast(msg,type){
+  var el=document.getElementById('rsms-toast'); if(!el)return;
+  el.textContent=msg;
+  el.style.display='block';
+  el.style.borderColor=type==='success'?'rgba(34,197,94,.4)':
+    type==='error'?'rgba(239,68,68,.4)':'rgba(255,255,255,.15)';
+  setTimeout(function(){el.style.display='none';},3000);
+}
+</script>
+</body>
+</html>
