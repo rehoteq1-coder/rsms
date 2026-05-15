@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0d1117"/>
+<title>RSMS — School Portal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+/* ═══════════════════════════════════════════════════
+   RSMS CORE CSS — Include in every portal
+   Single source of truth for all shared styles
+═══════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Brand */
+  --navy:   #0f1535;
+  --navy2:  #1a2347;
+  --navy3:  #232d5a;
+  --gold:   #d4a843;
+  --goldl:  rgba(212,168,67,.12);
+  --goldb:  rgba(212,168,67,.06);
+  --teal:   #0ea5e9;
+  --teall:  rgba(14,165,233,.1);
+  --green:  #22c55e;
+  --greenl: rgba(34,197,94,.1);
+  --red:    #f43f5e;
+  --redl:   rgba(244,63,94,.1);
+  --orange: #f97316;
+  --orangel:rgba(249,115,22,.1);
+  --purple: #8b5cf6;
+  --purplel:rgba(139,92,246,.1);
+
+  /* Light page bg */
+  --bg:    #eef2ff;
+  --bg2:   #f8faff;
+  --card:  #ffffff;
+  --card2: #f1f5ff;
+
+  /* Text */
+  --t1: #111827;
+  --t2: #374151;
+  --t3: #6b7280;
+  --t4: #9ca3af;
+
+  /* Borders */
+  --line:  #e5e7eb;
+  --line2: #d1d5db;
+
+  /* Fonts */
+  --sans:  'Outfit', sans-serif;
+  --serif: 'Fraunces', serif;
+  --mono:  'DM Mono', monospace;
+
+  /* Layout */
+  --sb-w:  230px;
+  --r:     14px;
+  --r2:    10px;
+  --r3:    7px;
+
+  /* Safe areas */
+  --safe-top: env(safe-area-inset-top);
+  --safe-bot: env(safe-area-inset-bottom);
+}
+
+/* ── RESET ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; font-family:var(--sans); background:var(--bg); color:var(--t1); }
+
+/* ── LAYOUT ── */
+.app-shell { display:flex; height:100vh; overflow:hidden; }
+
+/* Sidebar */
+.sidebar {
+  width:var(--sb-w); flex-shrink:0;
+  background:var(--navy);
+  display:flex; flex-direction:column;
+  height:100vh; overflow-y:auto; overflow-x:hidden;
+  transition:transform .28s ease;
+  z-index:200;
+}
+.sidebar::-webkit-scrollbar { display:none; }
+
+/* Main */
+.main-area {
+  flex:1; display:flex; flex-direction:column;
+  overflow:hidden; min-width:0;
+}
+.main-scroll {
+  flex:1; overflow-y:auto;
+  padding-bottom:calc(70px + var(--safe-bot));
+}
+.main-scroll::-webkit-scrollbar { width:4px; }
+.main-scroll::-webkit-scrollbar-thumb { background:var(--line2); border-radius:2px; }
+
+/* ── MOBILE ── */
+@media (max-width:899px) {
+  .sidebar {
+    position:fixed; left:0; top:0;
+    transform:translateX(-100%);
+    box-shadow:4px 0 32px rgba(0,0,0,.3);
+  }
+  .sidebar.open { transform:translateX(0); }
+  .sb-overlay {
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.55);
+    z-index:190;
+    display:none;
+  }
+  .sb-overlay.show { display:block; }
+}
+@media (min-width:900px) {
+  .menu-btn { display:none !important; }
+  .sb-overlay { display:none !important; }
+  .bottom-nav { display:none !important; }
+}
+
+/* ── SIDEBAR INTERNALS ── */
+.sb-brand {
+  padding:calc(16px + var(--safe-top)) 16px 14px;
+  display:flex; align-items:center; gap:10px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.sb-logo { width:36px; height:36px; border-radius:10px; object-fit:contain; flex-shrink:0; background:rgba(255,255,255,.1); }
+.sb-school { font-family:var(--serif); font-size:.9rem; font-weight:700; color:#fff; line-height:1.2; }
+.sb-tagline { font-size:.65rem; color:rgba(255,255,255,.4); }
+
+.sb-user {
+  margin:10px 12px; padding:10px 12px;
+  background:rgba(255,255,255,.06); border-radius:var(--r2);
+  display:flex; align-items:center; gap:9px;
+}
+.sb-av {
+  width:36px; height:36px; border-radius:50%;
+  background:var(--gold); color:#000; font-weight:800; font-size:.9rem;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.sb-uname { font-size:.82rem; font-weight:700; color:#fff; }
+.sb-urole { font-size:.63rem; color:rgba(255,255,255,.4); }
+
+.sb-section {
+  padding:10px 16px 4px;
+  font-size:.58rem; font-weight:800; color:rgba(255,255,255,.3);
+  text-transform:uppercase; letter-spacing:.12em;
+}
+
+.sb-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 16px; cursor:pointer;
+  font-size:.82rem; font-weight:600; color:rgba(255,255,255,.6);
+  transition:all .18s; border-left:3px solid transparent;
+  user-select:none;
+}
+.sb-item:hover { background:rgba(255,255,255,.06); color:#fff; }
+.sb-item.active { background:rgba(212,168,67,.1); color:var(--gold); border-left-color:var(--gold); }
+.sb-item .ico { font-size:1.1rem; width:22px; text-align:center; flex-shrink:0; }
+.sb-badge {
+  margin-left:auto; background:var(--red); color:#fff;
+  border-radius:20px; padding:1px 7px; font-size:.6rem; font-weight:800;
+}
+
+.sb-footer {
+  margin-top:auto; padding:12px 16px;
+  border-top:1px solid rgba(255,255,255,.06);
+  font-size:.72rem; color:rgba(255,255,255,.25);
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  background:var(--navy);
+  padding:calc(12px + var(--safe-top)) 16px 12px;
+  display:flex; align-items:center; gap:12px;
+  flex-shrink:0; position:relative; z-index:10;
+}
+.menu-btn {
+  background:none; border:none; color:rgba(255,255,255,.7);
+  font-size:1.3rem; cursor:pointer; padding:4px; line-height:1;
+}
+.topbar-title { font-family:var(--serif); font-size:1rem; font-weight:700; color:#fff; flex:1; }
+.topbar-right { display:flex; align-items:center; gap:8px; }
+.tb-notif {
+  background:rgba(255,255,255,.1); border:none; border-radius:50%;
+  width:36px; height:36px; color:#fff; cursor:pointer; font-size:1rem;
+  display:flex; align-items:center; justify-content:center;
+}
+.tb-av {
+  width:36px; height:36px; border-radius:50%;
+  background:var(--gold); color:#000; font-weight:800; font-size:.85rem;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+
+/* ── STAT HERO CARD ── */
+.hero-card {
+  background:linear-gradient(135deg, var(--navy), var(--navy2));
+  margin:0 16px 16px; border-radius:var(--r);
+  padding:16px; position:relative; overflow:hidden;
+}
+.hero-card::before {
+  content:''; position:absolute; inset:0; opacity:.04;
+  background-image:radial-gradient(circle,#fff 1px,transparent 1px);
+  background-size:18px 18px;
+}
+.hc-label { font-size:.7rem; color:rgba(255,255,255,.5); font-weight:600; margin-bottom:4px; }
+.hc-val { font-family:var(--serif); font-size:1.8rem; font-weight:900; color:#fff; margin-bottom:2px; }
+.hc-sub { font-size:.72rem; color:rgba(255,255,255,.5); }
+.hc-row { display:flex; align-items:center; justify-content:space-between; }
+.hc-badge {
+  background:rgba(255,255,255,.12); border-radius:20px;
+  padding:4px 12px; font-size:.72rem; color:rgba(255,255,255,.7); font-weight:600;
+}
+
+/* ── BANNER CAROUSEL ── */
+.carousel-wrap { padding:0 16px 4px; }
+.carousel-track {
+  display:flex; gap:12px;
+  overflow-x:auto; scroll-snap-type:x mandatory;
+  scroll-behavior:smooth; scrollbar-width:none;
+  padding-bottom:4px;
+}
+.carousel-track::-webkit-scrollbar { display:none; }
+.banner {
+  min-width:calc(100% - 32px); height:120px;
+  border-radius:var(--r); flex-shrink:0;
+  scroll-snap-align:start; position:relative;
+  overflow:hidden; cursor:pointer;
+}
+@media (min-width:600px) { .banner { min-width:280px; } }
+.banner-bg { position:absolute; inset:0; }
+.banner-content {
+  position:relative; z-index:1; padding:14px 16px;
+  height:100%; display:flex; flex-direction:column; justify-content:space-between;
+}
+.banner-tag {
+  background:rgba(255,255,255,.2); border-radius:20px;
+  padding:2px 9px; font-size:.6rem; font-weight:800;
+  color:#fff; display:inline-block; width:fit-content;
+}
+.banner-title { font-size:.95rem; font-weight:800; color:#fff; line-height:1.3; }
+.banner-sub { font-size:.7rem; color:rgba(255,255,255,.75); }
+.banner-btn {
+  background:rgba(255,255,255,.18); border:none; border-radius:20px;
+  color:#fff; font-size:.7rem; font-weight:700; padding:5px 12px;
+  cursor:pointer; font-family:var(--sans);
+}
+.carousel-dots { display:flex; justify-content:center; gap:5px; padding:6px 0 12px; }
+.dot { width:6px; height:6px; border-radius:50%; background:var(--line2); transition:all .3s; }
+.dot.active { width:18px; border-radius:3px; background:var(--navy); }
+
+/* ── QUICK ACTIONS ── */
+.qa-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.qa-item {
+  background:var(--card); border-radius:12px;
+  padding:14px 6px; text-align:center;
+  cursor:pointer; transition:all .18s;
+  box-shadow:0 1px 4px rgba(0,0,0,.06); border:1px solid var(--line);
+}
+.qa-item:active { transform:scale(.93); background:var(--card2); }
+.qa-ico { font-size:1.5rem; display:block; margin-bottom:5px; }
+.qa-lbl { font-size:.62rem; font-weight:700; color:var(--t2); line-height:1.3; }
+
+/* ── SECTION ── */
+.section { padding:0 16px 16px; }
+.sec-hd {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:10px;
+}
+.sec-title { font-size:.75rem; font-weight:800; color:var(--t3); text-transform:uppercase; letter-spacing:.09em; }
+.sec-action { font-size:.75rem; font-weight:700; color:var(--teal); cursor:pointer; }
+
+/* ── CARDS ── */
+.card {
+  background:var(--card); border-radius:var(--r);
+  border:1px solid var(--line);
+  padding:16px; margin-bottom:12px;
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.card-title {
+  font-size:.88rem; font-weight:700; color:var(--t1);
+  display:flex; align-items:center; gap:8px; margin-bottom:14px;
+}
+.card-body { font-size:.85rem; color:var(--t2); line-height:1.6; }
+
+/* ── STAT TILES ── */
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.stat-tile {
+  background:var(--card); border-radius:var(--r2);
+  padding:14px; border:1px solid var(--line);
+  border-top:3px solid var(--line2);
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.stat-tile.s-blue  { border-top-color:var(--teal); }
+.stat-tile.s-gold  { border-top-color:var(--gold); }
+.stat-tile.s-green { border-top-color:var(--green); }
+.stat-tile.s-red   { border-top-color:var(--red); }
+.stat-v { font-family:var(--serif); font-size:1.6rem; font-weight:900; color:var(--t1); }
+.stat-l { font-size:.7rem; color:var(--t3); font-weight:600; margin-top:2px; }
+
+/* ── ACTIVITY LIST ── */
+.act-item {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 0; border-bottom:1px solid var(--line);
+  cursor:pointer;
+}
+.act-item:last-child { border-bottom:none; }
+.act-ico {
+  width:40px; height:40px; border-radius:12px;
+  display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;
+}
+.act-ico.c-blue   { background:#eff6ff; }
+.act-ico.c-gold   { background:#fefce8; }
+.act-ico.c-green  { background:#f0fdf4; }
+.act-ico.c-red    { background:#fff1f2; }
+.act-ico.c-purple { background:#f5f3ff; }
+.act-info { flex:1; min-width:0; }
+.act-title { font-size:.85rem; font-weight:700; color:var(--t1); }
+.act-sub { font-size:.72rem; color:var(--t3); }
+.act-right { text-align:right; flex-shrink:0; }
+.act-val { font-size:.82rem; font-weight:700; color:var(--t1); }
+.act-time { font-size:.65rem; color:var(--t4); }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0;
+  background:#fff; border-top:1px solid var(--line);
+  padding:8px 4px calc(8px + var(--safe-bot));
+  display:flex; z-index:100;
+  box-shadow:0 -4px 20px rgba(0,0,0,.08);
+}
+.bn-item {
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:5px 2px; border-radius:10px; cursor:pointer;
+  transition:all .18s; border:none; background:none;
+}
+.bn-item:active { transform:scale(.9); }
+.bn-item.active { background:#eff6ff; }
+.bn-ico { font-size:1.25rem; line-height:1; }
+.bn-lbl { font-size:.57rem; font-weight:700; color:var(--t4); }
+.bn-item.active .bn-lbl { color:var(--teal); }
+
+/* ── FORMS ── */
+.fg { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+.fg label { font-size:.63rem; font-weight:800; color:var(--t3); text-transform:uppercase; letter-spacing:.08em; }
+.fi {
+  background:var(--card2); border:1.5px solid var(--line2); border-radius:var(--r2);
+  padding:0 14px; color:var(--t1); font-size:.9rem; font-family:var(--sans);
+  outline:none; width:100%; height:46px; transition:all .2s;
+}
+.fi:focus { border-color:var(--teal); background:#fff; }
+select.fi { cursor:pointer; }
+textarea.fi { padding:12px 14px; height:auto; resize:vertical; }
+.f2 { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+.f3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px; }
+@media(max-width:600px) { .f2, .f3 { grid-template-columns:1fr; } }
+
+/* ── BUTTONS ── */
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  height:44px; padding:0 18px; border:none; border-radius:var(--r2);
+  cursor:pointer; font-family:var(--sans); font-size:.85rem; font-weight:700;
+  transition:all .18s; text-decoration:none; white-space:nowrap;
+}
+.btn:active { transform:scale(.96); }
+.btn-navy   { background:var(--navy); color:#fff; }
+.btn-gold   { background:var(--gold); color:#000; }
+.btn-teal   { background:var(--teal); color:#fff; }
+.btn-green  { background:var(--green); color:#fff; }
+.btn-red    { background:var(--red); color:#fff; }
+.btn-ghost  { background:transparent; border:1.5px solid var(--line2); color:var(--t2); }
+.btn-light  { background:var(--card2); border:1px solid var(--line); color:var(--t2); }
+.btn-sm { height:36px; padding:0 13px; font-size:.78rem; }
+.btn-xs { height:30px; padding:0 10px; font-size:.72rem; }
+.btn-full { width:100%; }
+
+/* ── BADGES ── */
+.badge {
+  display:inline-flex; align-items:center; padding:3px 10px;
+  border-radius:20px; font-size:.63rem; font-weight:700;
+}
+.bg-navy   { background:rgba(15,21,53,.1); color:var(--navy); }
+.bg-gold   { background:var(--goldl); color:#92650a; }
+.bg-teal   { background:var(--teall); color:#0369a1; }
+.bg-green  { background:var(--greenl); color:#15803d; }
+.bg-red    { background:var(--redl); color:#be123c; }
+.bg-orange { background:var(--orangel); color:#c2410c; }
+.bg-gray   { background:#f3f4f6; color:var(--t3); }
+
+/* ── TABLE ── */
+.tbl-wrap { overflow-x:auto; border-radius:var(--r2); border:1px solid var(--line); }
+.tbl { width:100%; border-collapse:collapse; font-size:.83rem; }
+.tbl th {
+  background:var(--card2); color:var(--t3); font-size:.62rem; font-weight:800;
+  text-transform:uppercase; letter-spacing:.07em; padding:10px 12px;
+  border-bottom:1px solid var(--line); white-space:nowrap; text-align:left;
+}
+.tbl td { padding:11px 12px; border-bottom:1px solid var(--line); color:var(--t2); vertical-align:middle; }
+.tbl tr:last-child td { border-bottom:none; }
+.tbl tr:hover td { background:#fafbff; }
+
+/* ── MODAL ── */
+.modal-ov {
+  position:fixed; inset:0; background:rgba(15,21,53,.6);
+  z-index:500; display:none; align-items:flex-end; justify-content:center;
+  backdrop-filter:blur(6px); padding:0;
+}
+.modal-ov.open { display:flex; }
+@media(min-width:600px) { .modal-ov { align-items:center; padding:16px; } }
+.modal {
+  background:#fff; border-radius:22px 22px 0 0;
+  padding:20px; width:100%; max-height:92vh; overflow-y:auto;
+}
+@media(min-width:600px) { .modal { border-radius:22px; max-width:520px; } }
+.modal-handle { width:40px; height:4px; background:var(--line2); border-radius:2px; margin:0 auto 16px; }
+.modal-title { font-family:var(--serif); font-size:1.1rem; font-weight:700; color:var(--t1); margin-bottom:16px; }
+.btn-row { display:flex; gap:9px; margin-top:4px; }
+
+/* ── PAGE SYSTEM ── */
+.page { display:none; }
+.page.active { display:block; padding:16px; }
+
+/* ── PAGE HEADER ── */
+.page-hd { margin-bottom:16px; }
+.page-hd-title { font-family:var(--serif); font-size:1.2rem; font-weight:900; color:var(--t1); }
+.page-hd-sub { font-size:.8rem; color:var(--t3); margin-top:2px; }
+.page-hd-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:calc(80px + var(--safe-bot)); left:50%;
+  transform:translateX(-50%) translateY(60px);
+  background:#1e293b; color:#fff; border-radius:var(--r2);
+  padding:10px 20px; font-size:.84rem; z-index:9999;
+  transition:transform .28s; pointer-events:none;
+  display:flex; align-items:center; gap:8px; white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,0,0,.2);
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+.toast.ok   { background:#14532d; border-left:3px solid var(--green); }
+.toast.err  { background:#4c0519; border-left:3px solid var(--red); }
+.toast.info { background:#0c1a2e; border-left:3px solid var(--teal); }
+
+/* ── STATUS BADGES ── */
+.status-draft        { background:#f3f4f6; color:var(--t3); }
+.status-submitted    { background:#eff6ff; color:#1d4ed8; }
+.status-hod_reviewed { background:#fefce8; color:#92400e; }
+.status-vp_approved  { background:#f0fdf4; color:#15803d; }
+.status-returned     { background:#fff1f2; color:#be123c; }
+
+/* ── UTILS ── */
+.flex-center { display:flex; align-items:center; justify-content:center; }
+.flex-between { display:flex; align-items:center; justify-content:space-between; }
+.flex-gap { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.text-muted { color:var(--t3); font-size:.8rem; }
+.empty-state { text-align:center; padding:40px 20px; color:var(--t4); font-size:.85rem; }
+.divider { border:none; border-top:1px solid var(--line); margin:12px 0; }
+.mt8 { margin-top:8px; }
+.mt12 { margin-top:12px; }
+
+/* ── ANIMATIONS ── */
+@keyframes fade-up { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:none;} }
+.fade-up { animation:fade-up .28s ease both; }
+
+/* ── STATUS PILL ── */
+.pill {
+  display:inline-flex; align-items:center; padding:3px 10px;
+  border-radius:20px; font-size:.63rem; font-weight:700;
+}
+
+
+:root{--bg:#0d1117;--bg2:#111827;--card:#1a2236;--card2:#1e2a45;
+  --line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.12);
+  --t1:#f0f6ff;--t2:#c9d6f0;--t3:#8899bb;--t4:#566280;}
+body{background:var(--bg);min-height:100vh;font-family:var(--sans);}
+
+/* PANELS */
+.app{display:flex;min-height:100vh;}
+.left-panel{width:38%;min-height:100vh;position:relative;
+  background:linear-gradient(160deg,#0a0d1a,#141b35 60%,#0f1220);
+  display:flex;flex-direction:column;justify-content:center;
+  padding:40px 32px;overflow:hidden;}
+.left-bg{position:absolute;inset:0;background-size:cover;
+  background-position:center;opacity:.2;transition:opacity .5s;}
+.left-content{position:relative;z-index:2;}
+.school-logo-wrap{width:72px;height:72px;border-radius:20px;
+  background:linear-gradient(135deg,#1a2347,#2a3a6e);
+  border:2px solid rgba(255,255,255,.15);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;margin-bottom:20px;}
+.school-logo-wrap img{width:100%;height:100%;object-fit:contain;}
+.logo-initials{font-family:var(--serif);font-size:2rem;font-weight:900;color:var(--brand,var(--gold));}
+.school-name{font-family:var(--serif);font-size:1.6rem;font-weight:900;color:#fff;line-height:1.25;margin-bottom:6px;}
+.school-loc{font-size:.82rem;color:rgba(255,255,255,.5);margin-bottom:14px;}
+.school-badge{display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;padding:4px 12px;font-size:.72rem;
+  color:rgba(255,255,255,.6);font-family:var(--mono);margin-bottom:24px;}
+.features{list-style:none;}
+.feat-item{display:flex;align-items:center;gap:10px;padding:7px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);font-size:.82rem;color:rgba(255,255,255,.5);}
+.feat-item:last-child{border:none;}
+.feat-ico{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:.9rem;flex-shrink:0;}
+.left-footer{position:absolute;bottom:24px;left:32px;
+  font-size:.7rem;color:rgba(255,255,255,.2);}
+
+/* RIGHT PANEL */
+.right-panel{flex:1;display:flex;align-items:center;justify-content:center;padding:24px 20px;}
+.login-box{width:100%;max-width:400px;}
+
+/* STEPS */
+.step{display:none;}
+.step.active{display:block;}
+.step-title{font-family:var(--serif);font-size:1.4rem;font-weight:900;color:var(--t1);margin-bottom:4px;}
+.step-sub{font-size:.82rem;color:var(--t3);margin-bottom:20px;}
+.back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;
+  color:var(--t3);font-size:.8rem;cursor:pointer;font-family:var(--sans);margin-bottom:16px;padding:0;}
+.back-btn:hover{color:var(--t1);}
+
+/* SCHOOL MINI */
+.school-mini{display:flex;align-items:center;gap:10px;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:10px 14px;margin-bottom:20px;}
+.mini-logo{width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,#1a2347,#2a3a6e);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:.9rem;font-weight:900;
+  color:var(--brand,var(--gold));overflow:hidden;flex-shrink:0;}
+.mini-logo img{width:100%;height:100%;object-fit:contain;}
+.mini-name{font-weight:700;color:var(--t1);font-size:.85rem;}
+.mini-id{font-size:.68rem;color:var(--t3);font-family:var(--mono);}
+.mini-change{background:none;border:none;color:var(--brand,var(--gold));
+  font-size:.72rem;cursor:pointer;font-family:var(--sans);margin-left:auto;}
+
+/* ROLE GRID */
+.roles-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px;}
+.role-btn{background:var(--card);border:2px solid var(--line);
+  border-radius:var(--r);padding:16px 12px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .18s;}
+.role-btn.selected{border-color:var(--brand,var(--gold));background:rgba(212,168,67,.08);}
+.role-ico{font-size:1.6rem;}
+.role-lbl{font-weight:700;font-size:.78rem;color:var(--t2);}
+.role-btn.selected .role-lbl{color:var(--brand,var(--gold));}
+
+/* IDENTITY LIST */
+.identity-list{max-height:320px;overflow-y:auto;margin-bottom:16px;}
+.identity-item{display:flex;align-items:center;gap:12px;
+  background:var(--card);border:2px solid var(--line);border-radius:var(--r2);
+  padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all .18s;}
+.identity-item:hover,.identity-item.selected{border-color:var(--brand,var(--gold));background:rgba(212,168,67,.06);}
+.identity-av{width:38px;height:38px;border-radius:50%;
+  background:var(--card2);display:flex;align-items:center;justify-content:center;
+  font-weight:800;color:var(--gold);font-size:.9rem;flex-shrink:0;overflow:hidden;}
+.identity-av img{width:100%;height:100%;object-fit:cover;}
+.identity-info{flex:1;}
+.identity-name{font-weight:700;color:var(--t1);font-size:.88rem;}
+.identity-meta{font-size:.72rem;color:var(--t3);margin-top:2px;}
+
+/* CONTINUE BTN */
+.continue-btn{width:100%;padding:14px;
+  background:linear-gradient(135deg,var(--brand,var(--gold)),#b8932a);
+  color:#000;font-weight:800;font-size:1rem;border:none;border-radius:var(--r);
+  cursor:pointer;font-family:var(--sans);margin-bottom:12px;transition:all .2s;}
+.continue-btn:disabled{opacity:.4;cursor:not-allowed;}
+.rehoteq-link{text-align:center;font-size:.75rem;color:var(--t4);display:block;cursor:pointer;}
+
+/* SCHOOL SEARCH */
+.search-input{width:100%;background:var(--card2);border:1.5px solid var(--line2);
+  border-radius:var(--r2);padding:12px 14px;color:var(--t1);
+  font-family:var(--sans);font-size:.9rem;margin-bottom:8px;}
+.search-input:focus{outline:none;border-color:var(--brand,var(--gold));}
+.search-result{background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r2);padding:12px 14px;cursor:pointer;margin-bottom:6px;transition:all .18s;}
+.search-result:hover{border-color:var(--brand,var(--gold));}
+
+@media(max-width:640px){
+  .app{flex-direction:column;}
+  .left-panel{width:100%;min-height:auto;padding:24px 20px 20px;}
+  .school-name{font-size:1.2rem;}
+  .features{display:none;}
+  .left-footer{display:none;}
+  .right-panel{padding:16px;}
+}
+
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="rsms-firebase.js"></script>
+<script src="rsms-config.js"></script>
+</head>
+<body>
+<div class="app">
+
+<!-- LEFT PANEL -->
+<div class="left-panel">
+  <div class="left-bg" id="left-bg"></div>
+  <div class="left-content">
+    <div class="school-logo-wrap" id="school-logo-wrap">
+      <div class="logo-initials" id="school-initials">R</div>
+    </div>
+    <div class="school-name" id="school-name">RSMS Portal</div>
+    <div class="school-loc" id="school-loc">School Management System</div>
+    <div class="school-badge">&#128274; <span id="school-id-lbl">rehoteq.com</span></div>
+    <ul class="features">
+      <li class="feat-item"><div class="feat-ico" style="background:rgba(212,168,67,.12);">&#127941;</div>Student Management &amp; Results</li>
+      <li class="feat-item"><div class="feat-ico" style="background:rgba(14,165,233,.12);">&#128241;</div>QR Attendance &amp; Parent Alerts</li>
+      <li class="feat-item"><div class="feat-ico" style="background:rgba(34,197,94,.12);">&#128176;</div>Fee Management &amp; Receipts</li>
+      <li class="feat-item"><div class="feat-ico" style="background:rgba(139,92,246,.12);">&#128196;</div>Auto Report Cards</li>
+    </ul>
+  </div>
+  <div class="left-footer">Powered by Rehoteq Technologies &bull; rsms.rehoteq.com</div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="right-panel">
+<div class="login-box">
+
+  <!-- SCHOOL MINI HEADER (shown on steps 2+) -->
+  <div class="school-mini" id="school-mini" style="display:none;">
+    <div class="mini-logo" id="mini-logo">R</div>
+    <div>
+      <div class="mini-name" id="mini-name">School</div>
+      <div class="mini-id" id="mini-id">--</div>
+    </div>
+    <button class="mini-change" onclick="goToStep(1)">Change</button>
+  </div>
+
+  <!-- ── STEP 1: SCHOOL ── -->
+  <div class="step active" id="step-1">
+    <div class="step-title">Find Your School</div>
+    <div class="step-sub">Enter your School ID or search by name</div>
+    <input class="search-input" id="school-search-input"
+           placeholder="School ID (e.g. REH-MNG8KH7V) or school name"
+           oninput="debounceSearch(this.value)" autocomplete="off"/>
+    <button onclick="searchSchools(document.getElementById('school-search-input').value)"
+  style="width:100%;margin-top:8px;padding:11px;background:var(--gold,#d4a843);color:#000;
+         border:none;border-radius:10px;font-weight:800;font-size:.9rem;cursor:pointer;
+         font-family:var(--sans,sans-serif);">
+  &#128269; Search School
+</button>
+<div id="school-search-results"></div>
+    <div id="school-auto-msg" style="display:none;background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:12px 14px;font-size:.82rem;color:var(--t2);">
+      &#128269; Detected your school automatically
+    </div>
+  </div>
+
+  <!-- ── STEP 2: ROLE ── -->
+  <div class="step" id="step-2">
+    <button class="back-btn" onclick="goToStep(1)">&#8592; Back</button>
+    <div class="step-title">Who are you?</div>
+    <div class="step-sub">Select your role to continue</div>
+    <div class="roles-grid" id="roles-grid">
+      <button class="role-btn" data-role="admin"        onclick="selectRole('admin')"><div class="role-ico">&#127979;</div><div class="role-lbl">Admin</div></button>
+      <button class="role-btn" data-role="classteacher" onclick="selectRole('classteacher')"><div class="role-ico">&#129489;&#8205;&#127979;</div><div class="role-lbl">Class Teacher</div></button>
+      <button class="role-btn" data-role="teacher"      onclick="selectRole('teacher')"><div class="role-ico">&#128104;&#8205;&#127979;</div><div class="role-lbl">Teacher</div></button>
+      <button class="role-btn" data-role="hod"          onclick="selectRole('hod')"><div class="role-ico">&#127891;</div><div class="role-lbl">HOD</div></button>
+      <button class="role-btn" data-role="vp"           onclick="selectRole('vp')"><div class="role-ico">&#127891;</div><div class="role-lbl">VP Academic</div></button>
+      <button class="role-btn" data-role="bursar"       onclick="selectRole('bursar')"><div class="role-ico">&#127968;</div><div class="role-lbl">Bursar</div></button>
+      <button class="role-btn" data-role="student"      onclick="selectRole('student')"><div class="role-ico">&#129489;</div><div class="role-lbl">Student</div></button>
+      <button class="role-btn" data-role="parent"       onclick="selectRole('parent')"><div class="role-ico">&#128106;</div><div class="role-lbl">Parent</div></button>
+    </div>
+    <button class="continue-btn" id="role-continue-btn" onclick="afterRoleSelect()" disabled>
+      Continue &#8594;
+    </button>
+  </div>
+
+  <!-- ── STEP 3: IDENTITY ── -->
+  <div class="step" id="step-3">
+    <button class="back-btn" onclick="goToStep(2)">&#8592; Back</button>
+    <div class="step-title" id="identity-title">Who are you?</div>
+    <div class="step-sub" id="identity-sub">Select your name from the list</div>
+    <input class="search-input" id="identity-search"
+           placeholder="Search your name..." oninput="filterIdentity(this.value)"
+           style="margin-bottom:10px;"/>
+    <div class="identity-list" id="identity-list"></div>
+    <button class="continue-btn" id="identity-continue-btn" onclick="doLogin()" disabled>
+      Enter Portal &#8594;
+    </button>
+  </div>
+
+  <div class="step" id="step-4">
+    <button class="back-btn" onclick="goToStep(3)">&#8592; Back</button>
+    <div class="step-title">&#128274; Enter Your PIN</div>
+    <div class="step-sub">Enter your portal password to continue.</div>
+    <div style="margin:20px 0;">
+      <input type="password" id="pin-input" class="search-input"
+        placeholder="Enter PIN or password"
+        style="text-align:center;font-size:1.1rem;letter-spacing:.15em;margin-bottom:10px;"
+        onkeydown="if(event.key===\'Enter\')checkPIN()"
+        autocomplete="current-password"/>
+      <div style="font-size:.72rem;color:var(--t3,#8899bb);text-align:center;">
+        Contact your school admin if you forgot your PIN.
+      </div>
+    </div>
+    <button class="continue-btn" onclick="checkPIN()">&#9989; Confirm &amp; Enter Portal</button>
+  </div>
+
+  <a class="rehoteq-link"  href="https://rehoteq.com" target="_blank"
+     style="margin-top:12px;">Rehoteq Technologies &#8594;</a>
+</div>
+</div>
+</div>
+
+<div class="toast" id="rsms-toast"></div>
+<script>
+/* ═══════════════════════════════════════════════════════
+   RSMS STANDALONE CORE — All globals, Android-safe
+   No external dependencies, works offline
+═══════════════════════════════════════════════════════ */
+
+// ── DATA ────────────────────────────────────────────────
+var RSMS = {
+  school:   function(){ return JSON.parse(localStorage.getItem('rsms_school')||'{"name":"","term":"First Term","session":"2025/2026","plan":"Standard"}'); },
+  user:     function(){ return JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"Admin","role":"admin"}'); },
+  students: function(){ return JSON.parse(localStorage.getItem('rsms_students')||'[]'); },
+  staff:    function(){ return JSON.parse(localStorage.getItem('rsms_staff')||'[]'); },
+  fees:     function(){ return JSON.parse(localStorage.getItem('rsms_fees')||'[]'); },
+  pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||({admin:'admin123',bursar:'bursar123',teacher:'teacher123',classteacher:'ct123',hod:'hod123',vp:'vp123',student:'student123',parent:'parent123'}[role]||'pass123'); },
+  save:     function(key,data){ localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
+  logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
+};
+
+// ── SUBJECTS ───────────────────────────────────────────
+var SUBJECTS_JSS = ["English Language","Mathematics","Basic Science & Technology","Social Studies","Civic Education","Cultural & Creative Arts","Physical & Health Education","Computer Studies","Agricultural Science","Home Economics","Business Studies","Yoruba Language","Christian Religious Studies","Islamic Religious Studies","Security Education","Basic Technology","French Language"];
+var SUBJECTS_SS_SCI = ["English Language","Mathematics","Physics","Chemistry","Biology","Further Mathematics","Computer Studies","Agricultural Science","Christian Religious Studies","Islamic Religious Studies","Civic Education","Physical & Health Education","Yoruba Language","Geography","Technical Drawing"];
+var SUBJECTS_SS_COM = ["English Language","Mathematics","Economics","Commerce","Financial Accounting","Business Studies","Office Practice","Computer Studies","Christian Religious Studies","Islamic Religious Studies","Civic Education","Physical & Health Education","Yoruba Language","Literature in English","Marketing"];
+var SUBJECTS_SS_ART = ["English Language","Mathematics","Literature in English","Government","History","Christian Religious Studies","Islamic Religious Studies","Yoruba Language","French Language","Fine Arts","Music","Geography","Economics","Civic Education","Physical & Health Education"];
+
+function getSubjects(cls){
+  var c=(cls||'').toLowerCase();
+  if(c.includes('science'))    return SUBJECTS_SS_SCI;
+  if(c.includes('commercial')) return SUBJECTS_SS_COM;
+  if(c.includes('art'))        return SUBJECTS_SS_ART;
+  if(c.includes('ss')||c.includes('senior')) return SUBJECTS_SS_SCI;
+  return SUBJECTS_JSS;
+}
+
+function populateSelect(selId,cls,selected){
+  var sel=document.getElementById(selId); if(!sel)return;
+  var subjects=getSubjects(cls);
+  sel.innerHTML='<option value="">-- Select Subject --</option>'+subjects.map(function(s){
+    return '<option value="'+s+'"'+(s===selected?' selected':'')+'>'+s+'</option>';
+  }).join('');
+}
+
+// ── UTILS ──────────────────────────────────────────────
+function uniqueArr(arr){
+  var seen={},out=[];
+  for(var i=0;i<arr.length;i++){if(arr[i]!==undefined&&arr[i]!==null&&arr[i]!==''&&!seen[arr[i]]){seen[arr[i]]=1;out.push(arr[i]);}}
+  return out;
+}
+
+// ── TOAST ──────────────────────────────────────────────
+function toast(msg,type){
+  var t=document.getElementById('rsms-toast');
+  if(!t){t=document.createElement('div');t.id='rsms-toast';t.className='toast';document.body.appendChild(t);}
+  t.className='toast show '+(type==='success'?'ok':type==='error'?'err':'info');
+  t.textContent=msg;
+  clearTimeout(t._t);
+  t._t=setTimeout(function(){t.classList.remove('show');},3200);
+}
+
+// ── MODAL ──────────────────────────────────────────────
+function openModal(id){
+  var el=document.getElementById(id);
+  if(el)el.classList.add('open');
+}
+function closeModal(id){
+  var el=document.getElementById(id);
+  if(el)el.classList.remove('open');
+}
+
+// ── SIDEBAR ────────────────────────────────────────────
+function openSb(){
+  var sb=document.getElementById('sidebar');
+  var ov=document.getElementById('sb-ov');
+  if(sb)sb.classList.add('open');
+  if(ov)ov.classList.add('show');
+}
+function closeSb(){
+  var sb=document.getElementById('sidebar');
+  var ov=document.getElementById('sb-ov');
+  if(sb)sb.classList.remove('open');
+  if(ov)ov.classList.remove('show');
+}
+
+// ── PAGE NAVIGATION ────────────────────────────────────
+function showPage(name,el){
+  // Hide all pages
+  var pages=document.querySelectorAll('.page');
+  for(var i=0;i<pages.length;i++){
+    pages[i].classList.remove('active');
+  }
+  // Show target page
+  var pg=document.getElementById('pg-'+name);
+  if(pg){
+    pg.classList.add('active');
+  }
+  // Update sidebar active
+  var items=document.querySelectorAll('.sb-item');
+  for(var j=0;j<items.length;j++){items[j].classList.remove('active');}
+  if(el&&el.classList)el.classList.add('active');
+  // Update bottom nav active
+  var bnItems=document.querySelectorAll('.bn-item');
+  for(var k=0;k<bnItems.length;k++){bnItems[k].classList.remove('active');}
+  closeSb();
+  // Fire page hook
+  var hook=window['onPage_'+name];
+  if(typeof hook==='function')hook();
+}
+
+// ── CAROUSEL ──────────────────────────────────────────
+function initCarousel(slides,trackId,dotsId){
+  var track=document.getElementById(trackId);
+  var dotsEl=document.getElementById(dotsId);
+  if(!track||!slides||!slides.length)return;
+  var idx=0;
+  track.innerHTML=slides.map(function(s){
+    return '<div class="banner" style="min-width:280px;height:110px;flex-shrink:0;scroll-snap-align:start;" onclick="'+s.onclick+'">'+
+      '<div class="banner-bg" style="background:'+s.bg+';"></div>'+
+      '<div class="banner-content">'+
+        '<div><div class="banner-tag">'+s.tag+'</div><div class="banner-title">'+s.title+'</div>'+
+        '<div class="banner-sub">'+s.sub+'</div></div>'+
+        '<div class="flex-between">'+
+          '<button class="banner-btn" onclick="event.stopPropagation();'+s.onclick+'">'+s.btn+' &#8594;</button>'+
+          '<span style="font-size:1.8rem;opacity:.5;">'+s.ico+'</span>'+
+        '</div>'+
+      '</div></div>';
+  }).join('');
+  if(dotsEl){
+    dotsEl.innerHTML=slides.map(function(s,i){
+      return '<div class="dot'+(i===0?' active':'')+'"></div>';
+    }).join('');
+  }
+  function goTo(n){
+    idx=((n%slides.length)+slides.length)%slides.length;
+    var card=track.querySelector('.banner');
+    if(card)track.scrollTo({left:idx*(card.offsetWidth+10),behavior:'smooth'});
+    if(dotsEl){
+      var dots=dotsEl.querySelectorAll('.dot');
+      for(var i=0;i<dots.length;i++)dots[i].className='dot'+(i===idx?' active':'');
+    }
+  }
+  var timer=setInterval(function(){goTo(idx+1);},4500);
+  track.addEventListener('scroll',function(){
+    var card=track.querySelector('.banner');
+    if(!card)return;
+    var n=Math.round(track.scrollLeft/(card.offsetWidth+10));
+    if(n!==idx){idx=n;clearInterval(timer);timer=setInterval(function(){goTo(idx+1);},4500);}
+  });
+}
+
+// ── WORKFLOW ENGINE ────────────────────────────────────
+var WF={
+  getAll:function(t){return JSON.parse(localStorage.getItem('rsms_wf_'+t)||'[]');},
+  saveAll:function(t,d){localStorage.setItem('rsms_wf_'+t,JSON.stringify(d));},
+  badge:function(status){
+    var map={draft:'bg-gray',submitted:'bg-teal',hod_reviewed:'bg-gold',vp_approved:'bg-green',returned:'bg-red'};
+    var lbl={draft:'Draft',submitted:'Submitted',hod_reviewed:'HOD OK',vp_approved:'VP Approved ✅',returned:'Returned ↩'};
+    return '<span class="badge '+(map[status]||'bg-gray')+'" style="font-size:.6rem;">'+(lbl[status]||status)+'</span>';
+  },
+  submit:function(type,doc){
+    var all=WF.getAll(type);
+    doc.id=doc.id||('wf'+Date.now());doc.status='submitted';
+    doc.submittedAt=new Date().toISOString();
+    doc.history=doc.history||[];
+    doc.history.push({action:'submitted',by:doc.by,at:new Date().toISOString()});
+    var i=all.findIndex(function(d){return d.id===doc.id;});
+    if(i>-1)all[i]=doc;else all.push(doc);
+    WF.saveAll(type,all);return doc;
+  },
+  review:function(type,id,action,note,by){
+    var all=WF.getAll(type);
+    var i=all.findIndex(function(d){return d.id===id;});if(i<0)return false;
+    all[i].status=action==='approve'?'hod_reviewed':'returned';
+    all[i].hodNote=note;all[i].hodBy=by;all[i].hodAt=new Date().toISOString();
+    all[i].history=all[i].history||[];
+    all[i].history.push({action:all[i].status,by:by,at:new Date().toISOString(),note:note});
+    WF.saveAll(type,all);return all[i];
+  },
+  vpApprove:function(type,id,action,note,by){
+    var all=WF.getAll(type);
+    var i=all.findIndex(function(d){return d.id===id;});if(i<0)return false;
+    all[i].status=action==='approve'?'vp_approved':'returned';
+    all[i].vpNote=note;all[i].vpBy=by;all[i].vpAt=new Date().toISOString();
+    all[i].history=all[i].history||[];
+    all[i].history.push({action:all[i].status,by:by,at:new Date().toISOString(),note:note});
+    WF.saveAll(type,all);return all[i];
+  },
+  pending:function(role){
+    var count=0;
+    ['plans','notes','exams'].forEach(function(t){
+      var all=WF.getAll(t);
+      if(role==='hod')count+=all.filter(function(d){return d.status==='submitted';}).length;
+      if(role==='vp') count+=all.filter(function(d){return d.status==='hod_reviewed';}).length;
+    });
+    return count;
+  }
+};
+
+// ── LESSON AI ──────────────────────────────────────────
+var LESSON_AI={
+  URL:'https://rehoteq.com/lesson-ai.html',
+  UNITS_PER_TERM:10,
+  giftLink:function(teacher){
+    var token=btoa((teacher.id||teacher.name)+'|'+(teacher.email||'')+'|'+Date.now()).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+    var email=encodeURIComponent(teacher.email||(teacher.name.replace(/\s+/g,''))+'@rsms.school');
+    return LESSON_AI.URL+'?rsms_gift='+token+'&units='+LESSON_AI.UNITS_PER_TERM+'&teacher='+email;
+  },
+  giftAll:function(){
+    var school=RSMS.school();
+    var term=school.term||'First Term';
+    var session=school.session||'2025/2026';
+    var key='gift_'+term.replace(/\s+/g,'_')+'_'+session.replace('/','_');
+    var done=localStorage.getItem(key)==='done';
+    var staff=JSON.parse(localStorage.getItem('rsms_staff')||'[]');
+    var teachers=staff.filter(function(s){
+      var r=(s.role||'').toLowerCase();
+      return r.includes('teacher')||r.includes('hod')||r.includes('principal');
+    });
+    if(!done)localStorage.setItem(key,'done');
+    return {alreadyDone:done,teachers:teachers,count:teachers.length};
+  }
+};
+
+// ── LINK GENERATOR ─────────────────────────────────────
+var LINKS={
+  BASE:'https://rsms.rehoteq.com/',
+  PORTAL:{
+    'Class Teacher':'rsms-classteacher.html','Subject Teacher':'rsms-teacher.html',
+    'Teacher':'rsms-teacher.html','HOD':'rsms-hod.html',
+    'Vice Principal Academic':'rsms-vp.html','Vice Principal Admin':'rsms-vp.html',
+    'Principal':'rsms-vp.html','Head Mistress':'rsms-vp.html',
+    'Bursar':'rsms-bursar.html','Admin Staff':'rsms-admin.html','Security':'rsms-clock.html'
+  },
+  _token:function(seed){return btoa(seed+'|'+Date.now()).replace(/[^a-zA-Z0-9]/g,'').slice(0,16);},
+  _save:function(tk,data){
+    var tokens=JSON.parse(localStorage.getItem('rsms_tokens')||'{}');
+    tokens[tk]=data;localStorage.setItem('rsms_tokens',JSON.stringify(tokens));
+  },
+  staff:function(s){
+    var tk=LINKS._token(s.id||s.name);
+    LINKS._save(tk,{role:s.role,name:s.name,id:s.id,email:s.email||'',myClass:s.myClass||'',subjects:s.subjects||'',staffId:s.staffId||''});
+    return LINKS.BASE+(LINKS.PORTAL[s.role]||'rsms-teacher.html')+'?token='+tk;
+  },
+  student:function(s){
+    var tk=LINKS._token(s.id||s.reg);
+    LINKS._save(tk,{role:'student',name:(s.surname||'')+' '+(s.firstname||''),id:s.id,stuId:s.id,class:s.class,reg:s.reg,parentPhone:s.parentPhone||''});
+    return LINKS.BASE+'rsms-student.html?token='+tk;
+  },
+  parent:function(s){
+    var tk=LINKS._token('p'+(s.id||s.reg));
+    LINKS._save(tk,{role:'parent',childId:s.id,childName:(s.surname||'')+' '+(s.firstname||''),class:s.class,parentPhone:s.parentPhone||''});
+    return LINKS.BASE+'rsms-parent.html?token='+tk;
+  }
+};
+
+// ── AUTH HELPERS ───────────────────────────────────────
+function checkToken(){
+  var params=new URLSearchParams(window.location.search);
+  var token=params.get('token');
+  if(token){
+    var tokens=JSON.parse(localStorage.getItem('rsms_tokens')||'{}');
+    var td=tokens[token];
+    if(td){
+      sessionStorage.setItem('rsms_user',JSON.stringify(td));
+      sessionStorage.setItem('rsms_auth','true');
+      window.history.replaceState({},'',window.location.pathname);
+    }
+  }
+}
+
+function setHeaderInfo(){
+  var user=RSMS.user();
+  var school=RSMS.school();
+  function s(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+  s('sb-name',user.name||'User');
+  s('sb-role',user.role||'');
+  s('sb-av',(user.name||'U').charAt(0).toUpperCase());
+  s('sb-school',school.name||'School');
+  s('hd-av',(user.name||'U').charAt(0).toUpperCase());
+  var logoEl=document.getElementById('sb-logo-img');
+  var logo=localStorage.getItem('rsms_school_logo')||'';
+  if(logoEl&&logo){logoEl.src=logo;logoEl.style.display='block';}
+}
+
+// ── COPY ───────────────────────────────────────────────
+function copyText(text){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){toast('Copied!','success');});
+  } else {
+    var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.focus();ta.select();
+    try{document.execCommand('copy');toast('Copied!','success');}catch(e){toast('Copy failed','error');}
+    document.body.removeChild(ta);
+  }
+}
+
+// ── CONFIRM ────────────────────────────────────────────
+function confirmAction(msg,fn){if(window.confirm(msg))fn();}
+
+
+/* ═══════════════════════════════════════════════
+   RSMS LOGIN — Multi-step identity flow
+═══════════════════════════════════════════════ */
+
+var PORTAL_MAP = {
+  admin:'rsms-admin.html', classteacher:'rsms-classteacher.html',
+  teacher:'rsms-teacher.html', hod:'rsms-hod.html',
+  vp:'rsms-vp.html', bursar:'rsms-bursar.html',
+  student:'rsms-student.html', parent:'rsms-parent.html',
+};
+
+// Roles that need identity step
+var NEEDS_IDENTITY = ['classteacher','teacher','student','parent'];
+// Roles that go straight through (only 1 per school)
+var DIRECT_ROLES = ['admin','hod','vp','bursar'];
+
+var STATE = {
+  school: null,   // {schoolId, name, plan, brandColor, logoUrl, bgImages, adminToken, subdomain}
+  role:   null,
+  person: null,   // selected staff/student object
+  step:   1,
+};
+
+/* ── INIT ─────────────────────────────────── */
+window.addEventListener('load', function(){
+  var urlParams = new URLSearchParams(window.location.search);
+
+  // Auto-detect school from subdomain
+  var host = window.location.hostname;
+  var parts = host.split('.');
+  var subdomain = parts.length >= 4 ? parts[0] : '';
+
+  // Check cookie from worker
+  if(!subdomain){
+    document.cookie.split(';').forEach(function(c){
+      c = c.trim();
+      if(c.indexOf('rsms_subdomain=')===0)
+        subdomain = c.substring('rsms_subdomain='.length).trim();
+    });
+  }
+
+  // URL params
+  var schoolParam = urlParams.get('school')||'';
+  var roleParam   = (urlParams.get('role')||'').toLowerCase();
+
+  // Try to find school
+  var found = null;
+  if(subdomain) found = findSchoolBySubdomain(subdomain);
+  if(!found && schoolParam) found = findSchoolById(schoolParam);
+  if(!found){
+    // Try saved school from last visit
+    var saved = JSON.parse(localStorage.getItem('rsms_school')||'null');
+    if(saved && saved.schoolId) found = buildSchoolFromSaved(saved);
+  }
+
+  function continueWithSchool(found){
+    if(found){
+      // Cache it for future visits
+      var pub=JSON.parse(localStorage.getItem('rsms_public_schools')||'{}');
+      if(found.subdomain) pub[found.subdomain]=found;
+      if(found.schoolId) pub[found.schoolId]=found;
+      localStorage.setItem('rsms_public_schools',JSON.stringify(pub));
+      applySchool(found);
+      document.getElementById('school-auto-msg').style.display='block';
+      goToStep(2);
+      if(roleParam && PORTAL_MAP[roleParam]){
+        selectRole(roleParam);
+        afterRoleSelect();
+      }
+    } else {
+      goToStep(1);
+    }
+  }
+
+  if(found){
+    continueWithSchool(found);
+  } else if(subdomain){
+    // Try Firebase async
+    showLoadingState();
+    findSchoolBySubdomain(subdomain, function(fbSchool){
+      hideLoadingState();
+      continueWithSchool(fbSchool);
+    });
+  } else {
+    goToStep(1);
+  }
+});
+
+/* ── SCHOOL LOOKUP ───────────────────────── */
+function findSchoolBySubdomain(sub, cb){
+  // 1. Check public_schools (set by superadmin across any device)
+  var pub = JSON.parse(localStorage.getItem('rsms_public_schools')||'{}');
+  if(pub[sub]){ var r=pub[sub]; if(cb)cb(r); return r; }
+
+  // 2. Check rsms_sa_schools (same device as superadmin)
+  var schools = JSON.parse(localStorage.getItem('rsms_sa_schools')||'[]');
+  var sc = schools.find(function(s){return (s.subdomain||'').toLowerCase()===sub;});
+  if(sc){ var r=schoolFromRecord(sc); if(cb)cb(r); return r; }
+
+  // 3. Check tokens
+  var tokens = JSON.parse(localStorage.getItem('rsms_sa_tokens')||
+               localStorage.getItem('rsms_tokens')||'{}');
+  var found = null;
+  Object.keys(tokens).forEach(function(t){
+    var td=tokens[t];
+    if(td&&(td.subdomain||'').toLowerCase()===sub){
+      found={schoolId:td.schoolId,name:td.schoolName,plan:td.plan,
+             brandColor:td.brandColor||'#d4a843',logoUrl:td.logoUrl||'',
+             bgImages:td.bgImages||[],adminToken:t,subdomain:td.subdomain};
+    }
+  });
+  if(found){ if(cb)cb(found); return found; }
+
+  // 4. Try Firebase (works across all subdomains/devices)
+  if(cb){
+    fetchFromFirebase(sub, cb);
+  }
+  return null;
+}
+
+function fetchFromFirebase(sub, cb){
+  try{
+    var cfg = window.RSMS_CONFIG && window.RSMS_CONFIG.firebase;
+    if(!cfg){ cb(null); return; }
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    var db = firebase.database();
+    // Try by subdomain first
+    db.ref('public_schools_by_subdomain/'+sub).once('value').then(function(snap){
+      var val = snap.val();
+      if(val){ cb(val); }
+      else{
+        // Try all public_schools for matching subdomain
+        db.ref('public_schools').orderByChild('subdomain').equalTo(sub)
+          .once('value').then(function(snap2){
+            var v2=snap2.val();
+            if(v2){
+              var keys=Object.keys(v2);
+              cb(v2[keys[0]]);
+            } else { cb(null); }
+          }).catch(function(){ cb(null); });
+      }
+    }).catch(function(){ cb(null); });
+  }catch(e){ cb(null); }
+}
+
+function findSchoolById(id, cb){
+  id = (id||'').toUpperCase();
+  // Check local public cache first (fastest path)
+  var _pubCache=JSON.parse(localStorage.getItem('rsms_public_schools')||'{}');
+  if(_pubCache[id]){ if(cb) cb(_pubCache[id]); return _pubCache[id]; }
+  var schools = JSON.parse(localStorage.getItem('rsms_sa_schools')||'[]');
+  var sc = schools.find(function(s){return s.schoolId===id;});
+  if(sc) return schoolFromRecord(sc);
+  // Check tokens
+  var tokens = JSON.parse(localStorage.getItem('rsms_sa_tokens')||
+               localStorage.getItem('rsms_tokens')||'{}');
+  var found = null;
+  Object.keys(tokens).forEach(function(t){
+    var td=tokens[t];
+    if(td&&td.schoolId===id){
+      found={schoolId:td.schoolId,name:td.schoolName,plan:td.plan,
+              brandColor:td.brandColor||'#d4a843',logoUrl:td.logoUrl||'',
+              bgImages:td.bgImages||[],adminToken:t,subdomain:td.subdomain||''};
+    }
+  });
+  if(found){ if(cb)cb(found); return found; }
+
+  // Firebase lookup — works on any fresh device
+  if(cb){
+    try{
+      var cfg={
+        apiKey:'AIzaSyDKkmeHjIJm1vTg9A-o_AZnhIp1f3jmG2M',
+        databaseURL:'https://rsms-a84ff-default-rtdb.europe-west1.firebasedatabase.app',
+        projectId:'rsms-a84ff'
+      };
+      var doFbLookup=function(){
+        if(!firebase.apps.length) firebase.initializeApp(cfg);
+        firebase.database().ref('public_schools/'+id).once('value')
+          .then(function(snap){
+            var val=snap.val();
+            if(val){
+              var p=JSON.parse(localStorage.getItem('rsms_public_schools')||'{}');
+              p[id]=val; if(val.subdomain) p[val.subdomain]=val;
+              localStorage.setItem('rsms_public_schools',JSON.stringify(p));
+              cb(val);
+            } else { cb(null); }
+          }).catch(function(){ cb(null); });
+      };
+      if(typeof firebase==='undefined'){
+        // Show loading while SDK loads
+        if(cb){
+          var _el=document.getElementById('school-search-results');
+          if(_el) _el.innerHTML='<div style="font-size:.78rem;color:var(--teal,#0ea5e9);padding:8px 0;">&#128225; Loading school database...</div>';
+        }
+        var s1=document.createElement('script');
+        s1.src='https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js';
+        s1.onload=function(){
+          var s2=document.createElement('script');
+          s2.src='https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js';
+          s2.onload=doFbLookup;
+          document.head.appendChild(s2);
+        };
+        document.head.appendChild(s1);
+      } else { doFbLookup(); }
+    }catch(e){ cb(null); }
+  }
+  return null;
+}
+
+function schoolFromRecord(sc){
+  return {
+    schoolId:   sc.schoolId,
+    name:       sc.name,
+    plan:       sc.plan,
+    brandColor: (sc.branding&&sc.branding.brandColor)||'#d4a843',
+    logoUrl:    (sc.branding&&sc.branding.logoUrl)||sc.logo||'',
+    bgImages:   (sc.branding&&sc.branding.bgImages)||[],
+    adminToken: sc.adminToken||'',
+    subdomain:  sc.subdomain||'',
+    state:      sc.state||'',
+  };
+}
+
+function buildSchoolFromSaved(s){
+  return {
+    schoolId:   s.schoolId,
+    name:       s.name||s.schoolName||'School',
+    plan:       s.plan||'Standard',
+    brandColor: s.brandColor||'#d4a843',
+    logoUrl:    s.logo||s.logoUrl||localStorage.getItem('rsms_school_logo')||'',
+    bgImages:   [],
+    adminToken: '',
+    subdomain:  s.subdomain||'',
+  };
+}
+
+var _searchTimer=null;
+function debounceSearch(q){
+  clearTimeout(_searchTimer);
+  var el=document.getElementById('school-search-results');
+  if((q||'').trim().length>=3){
+    if(el) el.innerHTML='<div style="font-size:.78rem;color:var(--t3);padding:8px 0;">&#128269; Searching...</div>';
+    _searchTimer=setTimeout(function(){ searchSchools(q); },600);
+  } else if(el){ el.innerHTML=''; }
+}
+
+function searchSchools(q){
+  q = (q||'').trim().toUpperCase();
+  var el = document.getElementById('school-search-results'); if(!el)return;
+  if(q.length<2){el.innerHTML='';return;}
+
+  // Show loading
+  el.innerHTML='<div style="font-size:.78rem;color:var(--t3);padding:8px 0;">🔍 Searching...</div>';
+
+  // Try local first (sa_schools + public cache)
+  var schools = JSON.parse(localStorage.getItem('rsms_sa_schools')||'[]');
+  var pub = JSON.parse(localStorage.getItem('rsms_public_schools')||'{}');
+
+  // Add public_schools entries to search list
+  Object.keys(pub).forEach(function(k){
+    var ps=pub[k];
+    if(ps&&ps.schoolId&&!schools.find(function(s){return s.schoolId===ps.schoolId;})){
+      schools.push({schoolId:ps.schoolId,name:ps.name,plan:ps.plan||'',state:ps.state||'',
+        branding:{brandColor:ps.brandColor,logoUrl:ps.logoUrl,bgImages:ps.bgImages||[]},
+        subdomain:ps.subdomain||'',adminToken:ps.adminToken||''});
+    }
+  });
+
+  var matched = schools.filter(function(s){
+    return (s.name||'').toUpperCase().includes(q)||
+           (s.schoolId||'').toUpperCase().includes(q);
+  });
+
+  if(matched.length){
+    renderSchoolResults(matched, el);
+    return;
+  }
+
+  // Not found locally — try Firebase async
+  var lookupId = q.startsWith('REH-') ? q : (q.length>=6 ? 'REH-'+q : null);
+  if(lookupId){
+    findSchoolById(lookupId, function(fb){
+      if(fb){
+        el.innerHTML='';
+        var d=document.createElement('div');d.className='search-result';
+        d.innerHTML='<div style="font-weight:700;color:var(--t1);">'+fb.name+'</div>'+
+          '<div style="font-size:.72rem;color:var(--t3);">'+fb.schoolId+' · '+(fb.plan||'')+'</div>';
+        d.onclick=function(){ applySchool(fb); goToStep(2); };
+        el.appendChild(d);
+      } else {
+        el.innerHTML='<div style="font-size:.78rem;color:var(--t4);padding:8px 0;">No school found for <strong style="color:var(--gold);">'+q+'</strong>. Contact Rehoteq Technologies.</div>';
+      }
+    });
+  } else {
+    el.innerHTML='<div style="font-size:.78rem;color:var(--t4);padding:8px 0;">No school found. Contact Rehoteq Technologies.</div>';
+  }
+}
+
+function renderSchoolResults(list, el){
+  el.innerHTML='';
+  list.forEach(function(sc){
+    var d=document.createElement('div');d.className='search-result';
+    d.innerHTML='<div style="font-weight:700;color:var(--t1);">'+sc.name+'</div>'+
+      '<div style="font-size:.72rem;color:var(--t3);">'+sc.schoolId+' · '+(sc.plan||'')+' · '+(sc.state||'')+'</div>';
+    d.onclick=(function(s){return function(){
+      var r = s.branding ? s : null;
+      applySchool(r ? {
+        schoolId:s.schoolId,name:s.name,plan:s.plan,
+        brandColor:(s.branding&&s.branding.brandColor)||'#d4a843',
+        logoUrl:(s.branding&&s.branding.logoUrl)||'',
+        bgImages:(s.branding&&s.branding.bgImages)||[],
+        adminToken:s.adminToken||'',subdomain:s.subdomain||'',state:s.state||''
+      } : schoolFromRecord(s));
+      goToStep(2);
+    };})(sc);
+    el.appendChild(d);
+  });
+}
+
+/* ── APPLY SCHOOL ────────────────────────── */
+function applySchool(school){
+  STATE.school = school;
+  var name   = school.name||'School';
+  var logo   = school.logoUrl||'';
+  var color  = school.brandColor||'#d4a843';
+  var bgs    = school.bgImages||[];
+  var initials=name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
+
+  // Brand colour
+  document.documentElement.style.setProperty('--brand',color);
+  document.documentElement.style.setProperty('--gold',color);
+
+  // Left panel
+  document.getElementById('school-name').textContent = name;
+  document.getElementById('school-loc').textContent  = school.state||'';
+  document.getElementById('school-id-lbl').textContent = school.schoolId||'';
+  document.title = name+' — RSMS';
+
+  // Logo
+  if(logo){
+    document.getElementById('school-logo-wrap').innerHTML='<img src="'+logo+'" style="width:100%;height:100%;object-fit:contain;"/>';
+    document.getElementById('mini-logo').innerHTML='<img src="'+logo+'" style="width:100%;height:100%;object-fit:contain;"/>';
+  } else {
+    document.getElementById('school-initials').textContent=initials;
+    document.getElementById('mini-logo').textContent=initials;
+  }
+  document.getElementById('mini-name').textContent=name;
+  document.getElementById('mini-id').textContent=school.schoolId||'';
+
+  // BG carousel
+  var validBgs=(bgs||[]).filter(function(b){return b&&b.length>5;});
+  if(validBgs.length){
+    var bgEl=document.getElementById('left-bg');
+    bgEl.style.backgroundImage='url('+validBgs[0]+')';
+    bgEl.style.opacity='.22';
+    if(validBgs.length>1){
+      var idx=0;
+      setInterval(function(){
+        idx=(idx+1)%validBgs.length;
+        bgEl.style.opacity='0';
+        setTimeout(function(){bgEl.style.backgroundImage='url('+validBgs[idx]+')';bgEl.style.opacity='.22';},400);
+      },4000);
+    }
+  }
+
+  // Save school context
+  var sc=JSON.parse(localStorage.getItem('rsms_school')||'{}');
+  sc.schoolId=school.schoolId;sc.name=school.name;sc.plan=school.plan;
+  sc.brandColor=color;sc.logoUrl=logo;
+  localStorage.setItem('rsms_school',JSON.stringify(sc));
+  if(logo) localStorage.setItem('rsms_school_logo',logo);
+}
+
+/* ── STEPS ───────────────────────────────── */
+function goToStep(n){
+  STATE.step=n;
+  document.querySelectorAll('.step').forEach(function(s){s.className='step';});
+  var el=document.getElementById('step-'+n);
+  if(el) el.className='step active';
+  var mini=document.getElementById('school-mini');
+  if(mini) mini.style.display=(n>1&&STATE.school)?'flex':'none';
+}
+
+/* ── ROLE SELECTION ──────────────────────── */
+function selectRole(role){
+  STATE.role=role; STATE.person=null;
+  document.querySelectorAll('.role-btn').forEach(function(b){
+    b.className='role-btn'+(b.dataset.role===role?' selected':'');
+  });
+  var btn=document.getElementById('role-continue-btn');
+  if(btn){btn.disabled=false;btn.textContent='Continue →';}
+}
+
+function afterRoleSelect(){
+  if(!STATE.role){toast('Select a role first','error');return;}
+  if(DIRECT_ROLES.indexOf(STATE.role)>=0){
+    // Admin/HOD/VP/Bursar — go straight in
+    doLogin();
+  } else {
+    // Need identity
+    buildIdentityStep();
+    goToStep(3);
+  }
+}
+
+/* ── IDENTITY STEP ───────────────────────── */
+var ALL_IDENTITY_ITEMS=[];
+var selectedPersonId=null;
+
+function buildIdentityStep(){
+  var role=STATE.role;
+  var title='',sub='';
+  if(role==='classteacher'){title='Which Class Teacher are you?';sub='Select your name from the staff list';}
+  else if(role==='teacher'){title='Which Teacher are you?';sub='Select your name from the staff list';}
+  else if(role==='student'){title='Which Student are you?';sub='Search your name or enter your Reg Number';}
+  else if(role==='parent'){title='Which parent are you?';sub='Search your child name or Reg Number';}
+
+  document.getElementById('identity-title').textContent=title;
+  document.getElementById('identity-sub').textContent=sub;
+  document.getElementById('identity-search').value='';
+  document.getElementById('identity-continue-btn').disabled=true;
+  selectedPersonId=null;
+
+  // Build list
+  var items=[];
+  var staff=JSON.parse(localStorage.getItem('rsms_staff')||'[]');
+  var students=JSON.parse(localStorage.getItem('rsms_students')||'[]');
+
+  if(role==='classteacher'){
+    items=staff.filter(function(s){
+      var r=(s.role||'').toLowerCase();
+      return r.includes('class teacher')||r.includes('classteacher');
+    });
+  } else if(role==='teacher'){
+    items=staff.filter(function(s){
+      var r=(s.role||'').toLowerCase();
+      return r.includes('teacher')||r.includes('subject');
+    });
+  } else if(role==='student'){
+    items=students;
+  } else if(role==='parent'){
+    // Show students — parent identifies via child
+    items=students;
+    document.getElementById('identity-sub').textContent='Search your child name or Reg Number';
+  }
+
+  ALL_IDENTITY_ITEMS=items;
+  renderIdentityList(items);
+}
+
+function renderIdentityList(items){
+  var el=document.getElementById('identity-list'); if(!el)return;
+  if(!items.length){
+    el.innerHTML='<div style="text-align:center;padding:20px;color:var(--t4);">'+
+      '<div style="font-size:1.5rem;margin-bottom:8px;">&#128100;</div>'+
+      '<div>No '+(STATE.role==='student'||STATE.role==='parent'?'students':'staff')+' found.<br/>'+
+      '<small>Make sure the admin has added them first.</small></div></div>';
+    return;
+  }
+  el.innerHTML='';
+  items.forEach(function(item){
+    var name=item.name||(item.surname||'')+' '+(item.firstname||'');
+    name=name.trim();
+    var meta='';
+    if(item.role) meta=item.role+(item.myClass?' · '+item.myClass:'');
+    else if(item.class) meta=item.class+' · '+(item.reg||'');
+    var initials=name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
+    var photo=item.photo||'';
+
+    var d=document.createElement('div');
+    d.className='identity-item'+(item.id===selectedPersonId?' selected':'');
+    d.innerHTML=
+      '<div class="identity-av">'+(photo?'<img src="'+photo+'"/>':initials)+'</div>'+
+      '<div class="identity-info">'+
+        '<div class="identity-name">'+name+'</div>'+
+        '<div class="identity-meta">'+meta+'</div>'+
+      '</div>'+
+      (item.id===selectedPersonId?'<span style="color:var(--brand,var(--gold));font-size:1.2rem;">&#10003;</span>':'');
+    d.onclick=(function(i,nm){return function(){
+      selectedPersonId=i.id;
+      STATE.person=i;
+      renderIdentityList(ALL_IDENTITY_ITEMS); // re-render to show tick
+      var btn=document.getElementById('identity-continue-btn');
+      if(btn){btn.disabled=false;btn.textContent='Enter as '+nm+' →';}
+    };})(item,name);
+    el.appendChild(d);
+  });
+}
+
+function filterIdentity(q){
+  q=(q||'').toLowerCase();
+  var filtered=ALL_IDENTITY_ITEMS.filter(function(item){
+    var name=(item.name||(item.surname||'')+' '+(item.firstname||'')).toLowerCase();
+    var reg=(item.reg||'').toLowerCase();
+    var cls=(item.class||'').toLowerCase();
+    return name.includes(q)||reg.includes(q)||cls.includes(q);
+  });
+  renderIdentityList(filtered);
+}
+
+/* ── DO LOGIN ────────────────────────────── */
+function doLogin(){
+  if(!STATE.school){toast('No school selected','error');return;}
+  if(!STATE.role){toast('No role selected','error');return;}
+
+  // For identity roles, must have selected person
+  if(NEEDS_IDENTITY.indexOf(STATE.role)>=0 && !STATE.person){
+    toast('Please select yourself from the list','error');return;
+  }
+
+  // Build session
+  var person=STATE.person||{};
+  var name=person.name||(person.surname||'')+' '+(person.firstname||'');
+  name=name.trim()||(STATE.role.charAt(0).toUpperCase()+STATE.role.slice(1));
+
+  var session={
+    role:       STATE.role,
+    schoolId:   STATE.school.schoolId,
+    schoolName: STATE.school.name,
+    plan:       STATE.school.plan,
+    name:       name,
+    id:         person.id||STATE.role,
+    // Class teacher — include their class
+    myClass:    person.myClass||person.class||'',
+    // Teacher — include their subjects
+    subjects:   person.subjects||'',
+    // Student
+    stuId:      person.id||'',
+    reg:        person.reg||'',
+    class:      person.class||person.myClass||'',
+    // Branding
+    brandColor: STATE.school.brandColor,
+    logoUrl:    STATE.school.logoUrl,
+  };
+
+  sessionStorage.setItem('rsms_user',JSON.stringify(session));
+  sessionStorage.setItem('rsms_auth','true');
+
+  // ── Also write rsms_school to localStorage ──────────────
+  // This ensures all portals can read school name, plan, term etc.
+  var existingSchool = JSON.parse(localStorage.getItem('rsms_school')||'{}');
+  if(!existingSchool.schoolId || existingSchool.schoolId !== STATE.school.schoolId){
+    // Fresh school — write full record
+    existingSchool = {
+      schoolId:   STATE.school.schoolId,
+      name:       STATE.school.name,
+      plan:       STATE.school.plan,
+      term:       STATE.school.term||'First Term',
+      session:    STATE.school.session||'2025/2026',
+      brandColor: STATE.school.brandColor||'#d4a843',
+      logoUrl:    STATE.school.logoUrl||'',
+      subdomain:  STATE.school.subdomain||'',
+      address:    STATE.school.address||'',
+      phone:      STATE.school.phone||'',
+      email:      STATE.school.email||'',
+      principal:  STATE.school.principal||'',
+      state:      STATE.school.state||'',
+    };
+  } else {
+    // Same school — update plan/term from latest token data
+    existingSchool.plan = STATE.school.plan||existingSchool.plan;
+    existingSchool.term = STATE.school.term||existingSchool.term;
+    existingSchool.brandColor = STATE.school.brandColor||existingSchool.brandColor;
+  }
+  localStorage.setItem('rsms_school', JSON.stringify(existingSchool));
+  if(STATE.school.logoUrl) localStorage.setItem('rsms_school_logo', STATE.school.logoUrl);
+
+  // Redirect
+  var portal=PORTAL_MAP[STATE.role]||'rsms-admin.html';
+  if(STATE.role==='admin'&&STATE.school.adminToken){
+    portal='rsms-admin.html?token='+STATE.school.adminToken;
+  }
+    // Build portal
+  var portal=PORTAL_MAP[STATE.role]||'rsms-admin.html';
+  if(STATE.role==='admin'&&STATE.school&&STATE.school.adminToken){
+    portal='rsms-admin.html?token='+STATE.school.adminToken;
+  }
+  STATE._pendingPortal=portal;
+  // Check PIN
+  var staffArr=JSON.parse(localStorage.getItem('rsms_staff')||'[]');
+  var pers=STATE.person||{};
+  var sRec=staffArr.find(function(s){return s.id===pers.id;})||null;
+  var sPin=null;
+  if(['admin','hod','vp','bursar'].indexOf(STATE.role)>=0){
+    sPin=(JSON.parse(localStorage.getItem('rsms_portal_pins')||'{}')||{})[STATE.role]||null;
+  } else if(sRec&&sRec.pin){ sPin=sRec.pin; }
+  else if(pers.pin){ sPin=pers.pin; }
+  STATE._expectedPin=sPin;
+  if(sPin){ goToStep(4); } else { enterPortal(); }
+}
+
+function enterPortal(){
+  window.location.href=STATE._pendingPortal||(PORTAL_MAP[STATE.role]||'rsms-admin.html');
+}
+
+function checkPIN(){
+  var ent=(document.getElementById('pin-input')||{value:''}).value.trim();
+  if(!ent){toast('Enter your PIN','error');return;}
+  if(ent===STATE._expectedPin){
+    document.getElementById('pin-input').value='';
+    enterPortal();
+  } else {
+    toast('Incorrect PIN. Try again.','error');
+    var inp=document.getElementById('pin-input');
+    if(inp){inp.value='';inp.style.borderColor='#ef4444';
+      setTimeout(function(){inp.style.borderColor='';},1500);}
+  }
+}
+function showLoadingState(){
+  var el=document.getElementById('school-auto-msg');
+  if(el){el.style.display='block';el.textContent='🔍 Looking up your school...';}
+}
+function hideLoadingState(){
+  var el=document.getElementById('school-auto-msg');
+  if(el){el.style.display='none';}
+}
+
+</script>
+</body>
+</html>
