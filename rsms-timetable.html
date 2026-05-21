@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>RSMS — Timetable</title>
+<link rel="manifest" href="manifest.json"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --navy:#0f1535;--navy2:#1a2347;--navy3:#232d5a;
+  --gold:#d4a843;--goldl:rgba(212,168,67,.12);--goldb:rgba(212,168,67,.06);
+  --green:#22c55e;--greenl:rgba(34,197,94,.1);
+  --red:#f43f5e;--redl:rgba(244,63,94,.1);
+  --blue:#3b82f6;--bluel:rgba(59,130,246,.1);
+  --purple:#8b5cf6;--purplel:rgba(139,92,246,.1);
+  --orange:#f97316;--orangel:rgba(249,115,22,.1);
+  --bg:#eef2ff;--bg2:#f8faff;--card:#ffffff;--card2:#f1f5ff;
+  --t1:#111827;--t2:#374151;--t3:#6b7280;--t4:#9ca3af;
+  --line:#e5e7eb;--line2:#d1d5db;
+  --sans:'Outfit',sans-serif;--serif:'Fraunces',serif;--mono:'DM Mono',monospace;
+  --r:12px;--shadow:0 2px 8px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--t1);}
+
+/* ── TOPBAR ── */
+.topbar{position:sticky;top:0;z-index:100;background:linear-gradient(135deg,var(--navy),var(--navy2));
+  padding:env(safe-area-inset-top,0) 0 0;display:flex;align-items:center;gap:10px;
+  padding-left:14px;padding-right:14px;padding-bottom:12px;padding-top:calc(env(safe-area-inset-top,0) + 12px);}
+.topbar-back{background:rgba(255,255,255,.1);border:none;color:#fff;width:34px;height:34px;
+  border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.topbar-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:#fff;flex:1;}
+.topbar-btn{background:var(--gold);color:#000;border:none;border-radius:8px;padding:7px 12px;
+  font-size:.78rem;font-weight:800;cursor:pointer;font-family:var(--sans);}
+
+/* ── LAYOUT ── */
+.scroll{flex:1;overflow-y:auto;padding:16px 14px 100px;}
+.scroll::-webkit-scrollbar{width:3px;}
+.scroll::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px;}
+
+/* ── CARDS ── */
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);
+  border:1px solid var(--line);padding:14px;margin-bottom:12px;}
+.sec-title{font-size:.72rem;font-weight:800;color:var(--t3);text-transform:uppercase;
+  letter-spacing:.09em;margin-bottom:10px;}
+
+/* ── FORM ELEMENTS ── */
+.fi{width:100%;border:1.5px solid var(--line2);border-radius:8px;padding:9px 12px;
+  font-size:.88rem;font-family:var(--sans);color:var(--t1);background:var(--bg2);outline:none;
+  transition:border-color .2s;}
+.fi:focus{border-color:var(--gold);}
+select.fi{cursor:pointer;}
+.fg{margin-bottom:10px;}
+.fg label{display:block;font-size:.75rem;font-weight:700;color:var(--t2);margin-bottom:5px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+
+/* ── BUTTONS ── */
+.btn{border:none;border-radius:8px;padding:10px 16px;font-size:.85rem;font-weight:700;
+  cursor:pointer;font-family:var(--sans);transition:opacity .2s;}
+.btn:active{opacity:.75;}
+.btn-gold{background:var(--gold);color:#000;}
+.btn-navy{background:var(--navy);color:#fff;}
+.btn-red{background:var(--redl);color:var(--red);border:1px solid var(--red);}
+.btn-green{background:var(--greenl);color:var(--green);border:1px solid var(--green);}
+.btn-sm{padding:6px 10px;font-size:.75rem;border-radius:6px;}
+.btn-full{width:100%;}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:7px 14px;border-radius:20px;font-size:.78rem;font-weight:700;cursor:pointer;
+  white-space:nowrap;border:1.5px solid var(--line2);color:var(--t3);background:var(--card);transition:all .2s;}
+.tab.active{background:var(--navy);color:var(--gold);border-color:var(--navy);}
+
+/* ── TIMETABLE GRID ── */
+.tt-wrap{overflow-x:auto;margin-top:10px;}
+.tt-wrap::-webkit-scrollbar{height:4px;}
+.tt-wrap::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px;}
+.tt-table{border-collapse:collapse;min-width:600px;width:100%;}
+.tt-table th{background:var(--navy);color:#fff;padding:8px 6px;font-size:.72rem;
+  font-weight:700;text-align:center;border:1px solid var(--navy2);white-space:nowrap;}
+.tt-table th.period-col{background:var(--navy2);font-family:var(--mono);font-size:.68rem;}
+.tt-table td{padding:5px 4px;border:1px solid var(--line);text-align:center;
+  vertical-align:top;min-width:90px;position:relative;}
+.tt-cell{min-height:52px;border-radius:6px;padding:5px;cursor:pointer;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:2px;transition:all .2s;background:var(--card2);}
+.tt-cell:hover{transform:scale(1.02);box-shadow:0 2px 8px rgba(0,0,0,.1);}
+.tt-cell.filled{background:var(--goldl);border:1px solid rgba(212,168,67,.3);}
+.tt-cell.break-cell{background:var(--greenl);border:1px solid rgba(34,197,94,.2);cursor:default;}
+.tt-cell.free-cell{background:transparent;border:1.5px dashed var(--line2);}
+.tt-subj{font-size:.72rem;font-weight:700;color:var(--t1);line-height:1.2;}
+.tt-teacher{font-size:.62rem;color:var(--t3);line-height:1.2;}
+.tt-add-ico{font-size:1.1rem;color:var(--t4);}
+.period-lbl{font-family:var(--mono);font-size:.68rem;color:var(--t3);white-space:nowrap;}
+
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;
+  align-items:flex-end;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--card);border-radius:18px 18px 0 0;padding:20px 16px 32px;
+  width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--t1);margin-bottom:16px;}
+.modal-close{float:right;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--t3);margin-top:-4px;}
+
+/* ── SUBJECT TAGS ── */
+.subj-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.subj-tag{padding:5px 10px;border-radius:20px;font-size:.75rem;font-weight:600;cursor:pointer;
+  background:var(--card2);border:1.5px solid var(--line2);color:var(--t2);transition:all .2s;}
+.subj-tag.selected{background:var(--goldl);border-color:var(--gold);color:var(--t1);}
+
+/* ── COLOUR DOTS ── */
+.color-dots{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.color-dot{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s;}
+.color-dot.selected{border-color:var(--t1);transform:scale(1.2);}
+
+/* ── CLASS BADGE ── */
+.class-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;
+  border-radius:20px;font-size:.78rem;font-weight:700;background:var(--goldl);
+  color:var(--t1);border:1px solid rgba(212,168,67,.3);}
+
+/* ── PRINT AREA ── */
+@media print{
+  .topbar,.tabs,.no-print{display:none!important;}
+  .tt-table{min-width:100%;}
+  .tt-wrap{overflow:visible;}
+  .tt-cell{min-height:40px;}
+  body{background:#fff;}
+}
+
+/* ── TOAST ── */
+.toast-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999;
+  display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;}
+.toast{background:var(--navy);color:#fff;padding:10px 18px;border-radius:10px;
+  font-size:.83rem;font-weight:600;opacity:0;transform:translateY(10px);
+  transition:all .3s;white-space:nowrap;max-width:90vw;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.success{background:#166534;border:1px solid var(--green);}
+.toast.error{background:#881337;border:1px solid var(--red);}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:40px 20px;color:var(--t3);}
+.empty-ico{font-size:2.5rem;margin-bottom:10px;}
+.empty-txt{font-size:.88rem;}
+
+/* ── PERIOD MANAGER ── */
+.period-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);}
+.period-row:last-child{border:none;}
+.period-num{width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;
+  font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <button class="topbar-back" onclick="history.back()">←</button>
+  <span class="topbar-title">📅 Timetable</span>
+  <button class="topbar-btn no-print" onclick="printTimetable()">🖨️ Print</button>
+  <button class="topbar-btn no-print" style="margin-left:4px;" onclick="openModal('m-settings')">⚙️</button>
+</div>
+
+<div class="scroll" id="main-scroll">
+
+  <!-- CLASS SELECTOR -->
+  <div class="card no-print">
+    <div class="sec-title">Select Class</div>
+    <div class="row2">
+      <div class="fg" style="margin:0;">
+        <select class="fi" id="tt-class-sel" onchange="loadTimetable()">
+          <option value="">-- Choose Class --</option>
+        </select>
+      </div>
+      <div class="fg" style="margin:0;">
+        <select class="fi" id="tt-term-sel" onchange="loadTimetable()">
+          <option value="First Term">First Term</option>
+          <option value="Second Term">Second Term</option>
+          <option value="Third Term">Third Term</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW TABS -->
+  <div class="tabs no-print">
+    <div class="tab active" id="tab-class" onclick="switchView('class')">📚 By Class</div>
+    <div class="tab" id="tab-teacher" onclick="switchView('teacher')">👨‍🏫 By Teacher</div>
+    <div class="tab" id="tab-master" onclick="switchView('master')">📋 Master View</div>
+  </div>
+
+  <!-- TIMETABLE DISPLAY AREA -->
+  <div id="tt-display"></div>
+
+</div>
+
+<!-- ── MODALS ── -->
+
+<!-- CELL EDIT MODAL -->
+<div class="modal-bg" id="m-cell">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('m-cell')">✕</button>
+    <div class="modal-title" id="cell-modal-title">Assign Period</div>
+    <div class="fg">
+      <label>Subject</label>
+      <select class="fi" id="cell-subject">
+        <option value="">-- Select Subject --</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Teacher</label>
+      <select class="fi" id="cell-teacher">
+        <option value="">-- Select Teacher --</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Type</label>
+      <div class="row3" style="margin-top:4px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer;">
+          <input type="radio" name="cell-type" value="lesson" checked> Lesson
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer;">
+          <input type="radio" name="cell-type" value="break"> Break
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer;">
+          <input type="radio" name="cell-type" value="free"> Free
+        </label>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Room / Venue (optional)</label>
+      <input class="fi" id="cell-room" placeholder="e.g. Science Lab, Hall A"/>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-gold btn-full" onclick="saveCell()">✅ Save</button>
+      <button class="btn btn-red" onclick="clearCell()">🗑️ Clear</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="m-settings">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('m-settings')">✕</button>
+    <div class="modal-title">⚙️ Timetable Settings</div>
+
+    <div class="sec-title">Periods Per Day</div>
+    <div class="card" style="padding:10px;">
+      <div id="periods-list"></div>
+      <button class="btn btn-navy btn-sm" style="margin-top:10px;" onclick="addPeriod()">+ Add Period</button>
+    </div>
+
+    <div class="sec-title" style="margin-top:14px;">Days</div>
+    <div class="card" style="padding:10px;">
+      <div id="days-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    </div>
+
+    <div class="sec-title" style="margin-top:14px;">Subjects</div>
+    <div class="card" style="padding:10px;">
+      <div id="subjects-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input class="fi" id="new-subject" placeholder="Add subject..." style="flex:1;"/>
+        <button class="btn btn-gold btn-sm" onclick="addSubject()">Add</button>
+      </div>
+    </div>
+
+    <button class="btn btn-navy btn-full" style="margin-top:16px;" onclick="saveSettings();closeModal('m-settings');loadTimetable();">
+      💾 Save Settings
+    </button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap"><div class="toast" id="toast"></div></div>
+
+<script>
+// ── HELPERS ─────────────────────────────────────────────
+function _sid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
+function _key(k){ var id=_sid(); return id?'rsms_'+id+'_'+k:'rsms_'+k; }
+function _get(k,fb){ try{ var v=JSON.parse(localStorage.getItem(_key(k))||localStorage.getItem('rsms_'+k)||fb||'[]'); return v||JSON.parse(fb||'[]'); }catch(e){ return JSON.parse(fb||'[]'); } }
+function _set(k,d){ localStorage.setItem(_key(k),JSON.stringify(d)); }
+function getStudents(){ return _get('students','[]'); }
+function getStaff(){ return _get('staff','[]'); }
+function getSchool(){ return JSON.parse(localStorage.getItem('rsms_school')||'{}'); }
+
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  clearTimeout(t._t); t._t=setTimeout(function(){t.className='toast';},2800);
+}
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+// ── DATA ─────────────────────────────────────────────────
+var DEFAULT_PERIODS=[
+  {label:'Period 1',start:'7:30',end:'8:10'},
+  {label:'Period 2',start:'8:10',end:'8:50'},
+  {label:'Period 3',start:'8:50',end:'9:30'},
+  {label:'Break',  start:'9:30',end:'10:00', isBreak:true},
+  {label:'Period 4',start:'10:00',end:'10:40'},
+  {label:'Period 5',start:'10:40',end:'11:20'},
+  {label:'Period 6',start:'11:20',end:'12:00'},
+  {label:'Lunch',  start:'12:00',end:'12:40', isBreak:true},
+  {label:'Period 7',start:'12:40',end:'13:20'},
+  {label:'Period 8',start:'13:20',end:'14:00'},
+];
+var DEFAULT_DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday'];
+var DEFAULT_SUBJECTS=['Mathematics','English Language','Physics','Chemistry','Biology',
+  'Economics','Government','Literature','Geography','History','Civic Education',
+  'Agricultural Science','Computer Science','Further Mathematics','Technical Drawing',
+  'Fine Art','Music','Physical Education','Yoruba','Igbo','Hausa','Islamic Studies','CRS'];
+
+function getSettings(){
+  var s=_get('tt_settings','{}');
+  if(!s||typeof s!=='object'||Array.isArray(s)) s={};
+  if(!s.periods) s.periods=DEFAULT_PERIODS;
+  if(!s.days) s.days=DEFAULT_DAYS;
+  if(!s.subjects) s.subjects=DEFAULT_SUBJECTS;
+  return s;
+}
+function saveSettings(){
+  var periods=[];
+  document.querySelectorAll('.period-row').forEach(function(row,i){
+    var lbl=row.querySelector('.period-lbl-inp').value.trim();
+    var start=row.querySelector('.period-start').value.trim();
+    var end=row.querySelector('.period-end').value.trim();
+    var isBreak=row.querySelector('.period-break-chk').checked;
+    if(lbl) periods.push({label:lbl,start:start,end:end,isBreak:isBreak});
+  });
+  var days=[];
+  document.querySelectorAll('.day-chk:checked').forEach(function(chk){ days.push(chk.value); });
+  var subjects=[];
+  document.querySelectorAll('.subj-chip').forEach(function(c){ subjects.push(c.dataset.subj); });
+  var s=getSettings();
+  s.periods=periods.length?periods:DEFAULT_PERIODS;
+  s.days=days.length?days:DEFAULT_DAYS;
+  s.subjects=subjects.length?subjects:DEFAULT_SUBJECTS;
+  _set('tt_settings',s);
+  toast('Settings saved ✅','success');
+}
+
+// ── TIMETABLE DATA ────────────────────────────────────────
+function getTTKey(){
+  var cls=document.getElementById('tt-class-sel').value;
+  var term=document.getElementById('tt-term-sel').value;
+  return 'tt_'+cls.replace(/\s/g,'_')+'_'+term.replace(/\s/g,'_');
+}
+function getTimetable(){
+  var key=getTTKey();
+  return _get(key,'{}');
+}
+function saveTimetable(data){
+  _set(getTTKey(),data);
+}
+
+// ── CELL EDIT ─────────────────────────────────────────────
+var _editing={day:'',pIdx:0};
+function openCell(day,pIdx,periodLabel){
+  _editing={day:day,pIdx:pIdx};
+  var tt=getTimetable();
+  var cell=(tt[day]&&tt[day][pIdx])||{};
+  document.getElementById('cell-modal-title').textContent=day+' — '+periodLabel;
+  // Populate subjects
+  var sel=document.getElementById('cell-subject');
+  sel.innerHTML='<option value="">-- Select Subject --</option>';
+  var s=getSettings();
+  s.subjects.forEach(function(subj){
+    var o=document.createElement('option');
+    o.value=subj; o.textContent=subj;
+    if(cell.subject===subj) o.selected=true;
+    sel.appendChild(o);
+  });
+  // Populate teachers
+  var tsel=document.getElementById('cell-teacher');
+  tsel.innerHTML='<option value="">-- Select Teacher --</option>';
+  var staff=getStaff();
+  staff.filter(function(s){ return s.role&&(s.role.toLowerCase().includes('teacher')||s.role.toLowerCase().includes('hod')); })
+    .forEach(function(st){
+      var o=document.createElement('option');
+      var name=(st.surname||'')+' '+(st.firstname||st.name||'');
+      o.value=name.trim(); o.textContent=name.trim();
+      if(cell.teacher===name.trim()) o.selected=true;
+      tsel.appendChild(o);
+    });
+  // Type
+  var type=cell.type||'lesson';
+  document.querySelectorAll('[name="cell-type"]').forEach(function(r){ r.checked=r.value===type; });
+  // Room
+  document.getElementById('cell-room').value=cell.room||'';
+  openModal('m-cell');
+}
+function saveCell(){
+  var tt=getTimetable();
+  if(!tt[_editing.day]) tt[_editing.day]={};
+  var type=document.querySelector('[name="cell-type"]:checked').value;
+  tt[_editing.day][_editing.pIdx]={
+    subject:document.getElementById('cell-subject').value,
+    teacher:document.getElementById('cell-teacher').value,
+    room:document.getElementById('cell-room').value,
+    type:type
+  };
+  saveTimetable(tt);
+  closeModal('m-cell');
+  renderTimetable();
+  toast('Period saved ✅','success');
+}
+function clearCell(){
+  var tt=getTimetable();
+  if(tt[_editing.day]) delete tt[_editing.day][_editing.pIdx];
+  saveTimetable(tt);
+  closeModal('m-cell');
+  renderTimetable();
+  toast('Period cleared');
+}
+
+// ── RENDER ────────────────────────────────────────────────
+var _currentView='class';
+function switchView(v){
+  _currentView=v;
+  ['class','teacher','master'].forEach(function(id){
+    document.getElementById('tab-'+id).classList.toggle('active',id===v);
+  });
+  loadTimetable();
+}
+
+function loadTimetable(){
+  var cls=document.getElementById('tt-class-sel').value;
+  if(_currentView==='class'&&!cls){
+    document.getElementById('tt-display').innerHTML=
+      '<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Select a class to view or build timetable</div></div>';
+    return;
+  }
+  renderTimetable();
+}
+
+function renderTimetable(){
+  var view=_currentView;
+  if(view==='class') renderClassView();
+  else if(view==='teacher') renderTeacherView();
+  else renderMasterView();
+}
+
+function renderClassView(){
+  var cls=document.getElementById('tt-class-sel').value;
+  var term=document.getElementById('tt-term-sel').value;
+  if(!cls) return;
+  var s=getSettings();
+  var tt=getTimetable();
+  var html='<div class="card" style="padding:10px 8px;">';
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
+  html+='<div class="class-badge">📚 '+cls+' &nbsp;|&nbsp; '+term+'</div>';
+  html+='<button class="btn btn-navy btn-sm no-print" onclick="clearClass()">🗑️ Clear All</button>';
+  html+='</div>';
+  html+='<div class="tt-wrap">'+buildTable(s,tt,cls)+'</div></div>';
+  document.getElementById('tt-display').innerHTML=html;
+}
+
+function buildTable(s,tt,cls){
+  var days=s.days;
+  var periods=s.periods;
+  var html='<table class="tt-table"><thead><tr>';
+  html+='<th class="period-col" style="min-width:70px;">Period</th>';
+  days.forEach(function(d){ html+='<th>'+d+'</th>'; });
+  html+='</tr></thead><tbody>';
+  periods.forEach(function(p,pIdx){
+    html+='<tr>';
+    html+='<td style="background:var(--bg2);padding:6px 8px;">';
+    html+='<div class="period-lbl">'+p.label+'</div>';
+    html+='<div style="font-size:.6rem;color:var(--t4);">'+p.start+'–'+p.end+'</div>';
+    html+='</td>';
+    days.forEach(function(day){
+      var cell=(tt[day]&&tt[day][pIdx])||{};
+      var isBreak=p.isBreak||cell.type==='break';
+      var cellClass=isBreak?'break-cell':(cell.subject?'filled':'free-cell');
+      html+='<td>';
+      if(isBreak){
+        html+='<div class="tt-cell break-cell">';
+        html+='<div class="tt-subj" style="color:var(--green);">'+p.label+'</div>';
+        html+='</div>';
+      } else {
+        html+='<div class="tt-cell '+cellClass+'" onclick="openCell(\''+day+'\','+pIdx+',\''+p.label+'\')">';
+        if(cell.subject){
+          html+='<div class="tt-subj">'+cell.subject+'</div>';
+          if(cell.teacher) html+='<div class="tt-teacher">'+cell.teacher+'</div>';
+          if(cell.room) html+='<div class="tt-teacher">📍'+cell.room+'</div>';
+        } else {
+          html+='<div class="tt-add-ico">+</div>';
+        }
+        html+='</div>';
+      }
+      html+='</td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  return html;
+}
+
+function renderTeacherView(){
+  var staff=getStaff().filter(function(s){ return s.role&&(s.role.toLowerCase().includes('teacher')||s.role.toLowerCase().includes('hod')); });
+  if(!staff.length){
+    document.getElementById('tt-display').innerHTML='<div class="empty"><div class="empty-ico">👨‍🏫</div><div class="empty-txt">No teachers found. Add staff first.</div></div>';
+    return;
+  }
+  var s=getSettings();
+  var classes=getClasses();
+  var term=document.getElementById('tt-term-sel').value;
+  // Build teacher schedule by scanning all class timetables
+  var teacherMap={};
+  staff.forEach(function(st){
+    var name=((st.surname||'')+' '+(st.firstname||st.name||'')).trim();
+    teacherMap[name]=[];
+  });
+  classes.forEach(function(cls){
+    var sel=document.getElementById('tt-class-sel');
+    var orig=sel.value;
+    sel.value=cls;
+    var tt=getTimetable();
+    sel.value=orig;
+    s.days.forEach(function(day){
+      s.periods.forEach(function(p,pIdx){
+        var cell=(tt[day]&&tt[day][pIdx])||{};
+        if(cell.teacher&&teacherMap[cell.teacher]!==undefined){
+          teacherMap[cell.teacher].push({day:day,pIdx:pIdx,period:p.label,subject:cell.subject,class:cls});
+        }
+      });
+    });
+  });
+  var html='';
+  staff.forEach(function(st){
+    var name=((st.surname||'')+' '+(st.firstname||st.name||'')).trim();
+    var lessons=teacherMap[name]||[];
+    html+='<div class="card">';
+    html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">';
+    html+='<div style="width:36px;height:36px;border-radius:50%;background:var(--navy);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;">'+name.charAt(0)+'</div>';
+    html+='<div><div style="font-weight:700;font-size:.9rem;">'+name+'</div>';
+    html+='<div style="font-size:.72rem;color:var(--t3);">'+(st.subject||st.role||'')+'</div></div>';
+    html+='<div style="margin-left:auto;background:var(--goldl);padding:4px 10px;border-radius:20px;font-size:.72rem;font-weight:700;">'+lessons.length+' lessons</div>';
+    html+='</div>';
+    if(lessons.length){
+      html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;">';
+      lessons.forEach(function(l){
+        html+='<div style="background:var(--card2);border-radius:8px;padding:7px 9px;border:1px solid var(--line);">';
+        html+='<div style="font-size:.72rem;font-weight:700;color:var(--t1);">'+l.subject+'</div>';
+        html+='<div style="font-size:.65rem;color:var(--t3);">'+l.class+' • '+l.day+'</div>';
+        html+='<div style="font-size:.62rem;color:var(--gold);">'+l.period+'</div>';
+        html+='</div>';
+      });
+      html+='</div>';
+    } else {
+      html+='<div style="font-size:.8rem;color:var(--t4);padding:8px 0;">No lessons assigned yet</div>';
+    }
+    html+='</div>';
+  });
+  document.getElementById('tt-display').innerHTML=html||'<div class="empty"><div class="empty-ico">👨‍🏫</div><div class="empty-txt">No teacher data</div></div>';
+}
+
+function renderMasterView(){
+  var classes=getClasses();
+  if(!classes.length){
+    document.getElementById('tt-display').innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-txt">No classes found. Add students first.</div></div>';
+    return;
+  }
+  var s=getSettings();
+  var html='<div class="sec-title">All Classes — Master Timetable</div>';
+  var sel=document.getElementById('tt-class-sel');
+  var origVal=sel.value;
+  classes.forEach(function(cls){
+    sel.value=cls;
+    var tt=getTimetable();
+    html+='<div class="card" style="padding:10px 8px;margin-bottom:14px;">';
+    html+='<div class="class-badge" style="margin-bottom:10px;">📚 '+cls+'</div>';
+    html+='<div class="tt-wrap">'+buildTable(s,tt,cls)+'</div>';
+    html+='</div>';
+  });
+  sel.value=origVal;
+  document.getElementById('tt-display').innerHTML=html;
+}
+
+// ── CLASSES ───────────────────────────────────────────────
+function getClasses(){
+  var students=getStudents();
+  var classes={};
+  students.forEach(function(s){ if(s.class) classes[s.class]=1; });
+  return Object.keys(classes).sort();
+}
+function populateClassSel(){
+  var sel=document.getElementById('tt-class-sel');
+  var classes=getClasses();
+  sel.innerHTML='<option value="">-- Choose Class --</option>';
+  classes.forEach(function(c){
+    var o=document.createElement('option');
+    o.value=c; o.textContent=c;
+    sel.appendChild(o);
+  });
+  // Also set term from school settings
+  var school=getSchool();
+  if(school.term){
+    var tsel=document.getElementById('tt-term-sel');
+    for(var i=0;i<tsel.options.length;i++){
+      if(tsel.options[i].value===school.term){ tsel.selectedIndex=i; break; }
+    }
+  }
+}
+
+// ── CLEAR CLASS ───────────────────────────────────────────
+function clearClass(){
+  if(!confirm('Clear entire timetable for this class?')) return;
+  saveTimetable({});
+  renderTimetable();
+  toast('Timetable cleared');
+}
+
+// ── SETTINGS UI ───────────────────────────────────────────
+function openSettingsModal(){
+  renderPeriodsUI();
+  renderDaysUI();
+  renderSubjectsUI();
+  openModal('m-settings');
+}
+function renderPeriodsUI(){
+  var s=getSettings();
+  var html='';
+  s.periods.forEach(function(p,i){
+    html+='<div class="period-row">';
+    html+='<div class="period-num">'+(i+1)+'</div>';
+    html+='<input class="fi period-lbl-inp" style="flex:2;" value="'+p.label+'" placeholder="Label"/>';
+    html+='<input class="fi period-start" style="width:64px;" value="'+p.start+'" placeholder="Start"/>';
+    html+='<input class="fi period-end" style="width:64px;" value="'+p.end+'" placeholder="End"/>';
+    html+='<label style="display:flex;align-items:center;gap:4px;font-size:.72rem;white-space:nowrap;cursor:pointer;">';
+    html+='<input type="checkbox" class="period-break-chk"'+(p.isBreak?' checked':'')+'>Break</label>';
+    html+='<button class="btn btn-red btn-sm" onclick="this.closest(\'.period-row\').remove()">✕</button>';
+    html+='</div>';
+  });
+  document.getElementById('periods-list').innerHTML=html;
+}
+function addPeriod(){
+  var list=document.getElementById('periods-list');
+  var count=list.children.length+1;
+  var div=document.createElement('div');
+  div.className='period-row';
+  div.innerHTML='<div class="period-num">'+count+'</div>'+
+    '<input class="fi period-lbl-inp" style="flex:2;" value="Period '+count+'" placeholder="Label"/>'+
+    '<input class="fi period-start" style="width:64px;" value="" placeholder="Start"/>'+
+    '<input class="fi period-end" style="width:64px;" value="" placeholder="End"/>'+
+    '<label style="display:flex;align-items:center;gap:4px;font-size:.72rem;white-space:nowrap;cursor:pointer;">'+
+    '<input type="checkbox" class="period-break-chk">Break</label>'+
+    '<button class="btn btn-red btn-sm" onclick="this.closest(\'.period-row\').remove()">✕</button>';
+  list.appendChild(div);
+}
+function renderDaysUI(){
+  var s=getSettings();
+  var allDays=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var html='';
+  allDays.forEach(function(d){
+    var checked=s.days.includes(d)?'checked':'';
+    html+='<label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer;padding:4px 8px;border-radius:6px;background:var(--card2);">';
+    html+='<input type="checkbox" class="day-chk" value="'+d+'" '+checked+'>'+d+'</label>';
+  });
+  document.getElementById('days-list').innerHTML=html;
+}
+function renderSubjectsUI(){
+  var s=getSettings();
+  var html='';
+  s.subjects.forEach(function(subj){
+    html+='<span class="subj-tag subj-chip" data-subj="'+subj+'">'+subj+
+      ' <span onclick="this.parentElement.remove()" style="cursor:pointer;margin-left:4px;color:var(--red);">✕</span></span>';
+  });
+  document.getElementById('subjects-list').innerHTML=html;
+}
+function addSubject(){
+  var inp=document.getElementById('new-subject');
+  var val=inp.value.trim();
+  if(!val) return;
+  var list=document.getElementById('subjects-list');
+  var span=document.createElement('span');
+  span.className='subj-tag subj-chip';
+  span.dataset.subj=val;
+  span.innerHTML=val+' <span onclick="this.parentElement.remove()" style="cursor:pointer;margin-left:4px;color:var(--red);">✕</span>';
+  list.appendChild(span);
+  inp.value='';
+}
+
+// ── PRINT ─────────────────────────────────────────────────
+function printTimetable(){
+  var cls=document.getElementById('tt-class-sel').value;
+  var term=document.getElementById('tt-term-sel').value;
+  var school=getSchool();
+  var s=getSettings();
+  var tt=getTimetable();
+  var w=window.open('','_blank');
+  w.document.write('<html><head><title>Timetable — '+cls+'</title>');
+  w.document.write('<style>');
+  w.document.write('body{font-family:Outfit,sans-serif;padding:20px;color:#111;}');
+  w.document.write('.hd{text-align:center;margin-bottom:16px;}');
+  w.document.write('.hd h2{font-size:1.2rem;margin-bottom:4px;}');
+  w.document.write('.hd p{font-size:.85rem;color:#555;}');
+  w.document.write('table{border-collapse:collapse;width:100%;}');
+  w.document.write('th{background:#0f1535;color:#fff;padding:8px;font-size:.72rem;text-align:center;}');
+  w.document.write('td{border:1px solid #ddd;padding:7px 5px;text-align:center;font-size:.72rem;}');
+  w.document.write('.subj{font-weight:700;}.teacher{color:#666;font-size:.65rem;}');
+  w.document.write('.break{background:#f0fdf4;color:#166534;font-weight:700;}');
+  w.document.write('.period-col{background:#f9fafb;font-weight:700;text-align:left;padding-left:8px;}');
+  w.document.write('</style></head><body>');
+  w.document.write('<div class="hd"><h2>'+(school.name||'School')+' — Class Timetable</h2>');
+  w.document.write('<p>Class: <b>'+cls+'</b> &nbsp;|&nbsp; Term: <b>'+term+'</b> &nbsp;|&nbsp; Session: <b>'+(school.session||'2025/2026')+'</b></p></div>');
+  w.document.write('<table><thead><tr><th>Period</th>');
+  s.days.forEach(function(d){ w.document.write('<th>'+d+'</th>'); });
+  w.document.write('</tr></thead><tbody>');
+  s.periods.forEach(function(p,pIdx){
+    var isBreak=p.isBreak;
+    w.document.write('<tr>');
+    w.document.write('<td class="period-col">'+p.label+'<br><small>'+p.start+'–'+p.end+'</small></td>');
+    s.days.forEach(function(day){
+      var cell=(tt[day]&&tt[day][pIdx])||{};
+      if(isBreak||cell.type==='break'){
+        w.document.write('<td class="break">'+p.label+'</td>');
+      } else {
+        w.document.write('<td>'+(cell.subject?'<div class="subj">'+cell.subject+'</div>':'<span style="color:#ccc;">—</span>')+
+          (cell.teacher?'<div class="teacher">'+cell.teacher+'</div>':'')+
+          (cell.room?'<div class="teacher">'+cell.room+'</div>':'')+'</td>');
+      }
+    });
+    w.document.write('</tr>');
+  });
+  w.document.write('</tbody></table>');
+  w.document.write('<p style="text-align:center;margin-top:20px;font-size:.7rem;color:#999;">Generated by RSMS • Powered by Rehoteq Technologies</p>');
+  w.document.write('</body></html>');
+  w.document.close();
+  w.onload=function(){ w.print(); };
+}
+
+// ── INIT ──────────────────────────────────────────────────
+window.addEventListener('load',function(){
+  populateClassSel();
+  // Pre-open settings UI silently so it's ready
+  renderPeriodsUI();
+  renderDaysUI();
+  renderSubjectsUI();
+  // Initial display
+  document.getElementById('tt-display').innerHTML=
+    '<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Select a class above to build your timetable</div></div>';
+});
+
+// Open settings button wired
+document.querySelector('[onclick="openModal(\'m-settings\')"]').onclick=function(){
+  renderPeriodsUI(); renderDaysUI(); renderSubjectsUI(); openModal('m-settings');
+};
+</script>
+</body>
+</html>
