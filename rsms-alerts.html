@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>RSMS — Parent Alerts</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --navy:#0f1535;--navy2:#1a2347;--navy3:#232d5a;
+  --gold:#d4a843;--goldl:rgba(212,168,67,.12);--goldb:rgba(212,168,67,.06);
+  --green:#22c55e;--greenl:rgba(34,197,94,.1);
+  --red:#f43f5e;--redl:rgba(244,63,94,.1);
+  --blue:#3b82f6;--bluel:rgba(59,130,246,.1);
+  --bg:#eef2ff;--bg2:#f8faff;--card:#ffffff;--card2:#f1f5ff;
+  --t1:#111827;--t2:#374151;--t3:#6b7280;--t4:#9ca3af;
+  --line:#e5e7eb;--line2:#d1d5db;
+  --sans:'Outfit',sans-serif;--serif:'Fraunces',serif;--mono:'DM Mono',monospace;
+  --r:12px;--shadow:0 2px 8px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--t1);}
+.topbar{position:sticky;top:0;z-index:100;background:linear-gradient(135deg,var(--navy),var(--navy2));
+  display:flex;align-items:center;gap:10px;padding:12px 14px;
+  padding-top:calc(env(safe-area-inset-top,0) + 12px);}
+.topbar-back{background:rgba(255,255,255,.1);border:none;color:#fff;width:34px;height:34px;
+  border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.topbar-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:#fff;flex:1;}
+.scroll{overflow-y:auto;padding:16px 14px 100px;}
+.scroll::-webkit-scrollbar{width:3px;}
+.scroll::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px;}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);padding:14px;margin-bottom:12px;}
+.sec-title{font-size:.72rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px;}
+.fi{width:100%;border:1.5px solid var(--line2);border-radius:8px;padding:9px 12px;
+  font-size:.88rem;font-family:var(--sans);color:var(--t1);background:var(--bg2);outline:none;transition:border-color .2s;}
+.fi:focus{border-color:var(--gold);}
+select.fi{cursor:pointer;}
+textarea.fi{resize:vertical;min-height:90px;line-height:1.5;}
+.fg{margin-bottom:10px;}
+.fg label{display:block;font-size:.75rem;font-weight:700;color:var(--t2);margin-bottom:5px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn{border:none;border-radius:8px;padding:10px 16px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .2s;}
+.btn:active{opacity:.75;}
+.btn-gold{background:var(--gold);color:#000;}
+.btn-navy{background:var(--navy);color:#fff;}
+.btn-green{background:var(--green);color:#fff;}
+.btn-red{background:var(--redl);color:var(--red);border:1px solid var(--red);}
+.btn-sm{padding:6px 12px;font-size:.78rem;border-radius:6px;}
+.btn-full{width:100%;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* TABS */
+.tabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:7px 14px;border-radius:20px;font-size:.78rem;font-weight:700;cursor:pointer;
+  white-space:nowrap;border:1.5px solid var(--line2);color:var(--t3);background:var(--card);transition:all .2s;}
+.tab.active{background:var(--navy);color:var(--gold);border-color:var(--navy);}
+
+/* TEMPLATE CARDS */
+.tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.tpl-card{background:var(--card2);border:1.5px solid var(--line);border-radius:10px;padding:12px;
+  cursor:pointer;transition:all .2s;text-align:center;}
+.tpl-card:hover,.tpl-card.selected{border-color:var(--gold);background:var(--goldl);}
+.tpl-ico{font-size:1.6rem;margin-bottom:6px;}
+.tpl-name{font-size:.78rem;font-weight:700;color:var(--t1);}
+
+/* RECIPIENT ROWS */
+.rec-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);}
+.rec-row:last-child{border:none;}
+.rec-av{width:34px;height:34px;border-radius:50%;background:var(--navy);color:var(--gold);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.82rem;flex-shrink:0;}
+.rec-info{flex:1;min-width:0;}
+.rec-name{font-size:.85rem;font-weight:700;color:var(--t1);}
+.rec-sub{font-size:.72rem;color:var(--t3);}
+.rec-check{width:18px;height:18px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
+
+/* STATUS BADGE */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.68rem;font-weight:700;}
+.badge-sent{background:var(--greenl);color:var(--green);}
+.badge-failed{background:var(--redl);color:var(--red);}
+.badge-pending{background:var(--goldl);color:#a07800;}
+
+/* LOG TABLE */
+.log-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.8rem;}
+.log-row:last-child{border:none;}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.stat-box{background:var(--card);border-radius:10px;padding:12px;text-align:center;border:1px solid var(--line);}
+.stat-val{font-family:var(--serif);font-size:1.4rem;font-weight:900;color:var(--t1);}
+.stat-lbl{font-size:.65rem;color:var(--t3);margin-top:2px;}
+
+/* CHANNEL TOGGLE */
+.channel-row{display:flex;gap:8px;margin-bottom:10px;}
+.ch-btn{flex:1;padding:9px;border-radius:8px;border:1.5px solid var(--line2);
+  background:var(--card2);font-size:.8rem;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;color:var(--t2);}
+.ch-btn.active{border-color:var(--green);background:var(--greenl);color:#166534;}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--card);border-radius:18px 18px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--t1);margin-bottom:16px;}
+.modal-close{float:right;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--t3);margin-top:-4px;}
+
+/* PROGRESS */
+.progress-bar{width:100%;height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:10px 0;}
+.progress-fill{height:100%;background:var(--green);border-radius:3px;transition:width .3s;}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999;pointer-events:none;}
+.toast{background:var(--navy);color:#fff;padding:10px 18px;border-radius:10px;font-size:.83rem;
+  font-weight:600;opacity:0;transform:translateY(10px);transition:all .3s;white-space:nowrap;max-width:90vw;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.success{background:#166534;}
+.toast.error{background:#881337;}
+.empty{text-align:center;padding:40px 20px;color:var(--t3);}
+.empty-ico{font-size:2.5rem;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="history.back()">←</button>
+  <span class="topbar-title">📲 Parent Alerts</span>
+  <button class="btn btn-sm" style="background:var(--goldl);color:var(--gold);border:1px solid var(--gold);" onclick="openModal('m-config')">⚙️ Setup</button>
+</div>
+
+<div class="scroll">
+
+  <!-- STATS -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-box"><div class="stat-val" id="stat-sent">0</div><div class="stat-lbl">Sent Today</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-parents">0</div><div class="stat-lbl">Total Parents</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-balance">—</div><div class="stat-lbl">SMS Balance</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" id="tab-compose" onclick="switchTab('compose')">✉️ Compose</div>
+    <div class="tab" id="tab-log" onclick="switchTab('log')">📋 History</div>
+    <div class="tab" id="tab-auto" onclick="switchTab('auto')">⚡ Auto Alerts</div>
+  </div>
+
+  <!-- COMPOSE TAB -->
+  <div id="pane-compose">
+
+    <!-- TEMPLATE PICKER -->
+    <div class="card">
+      <div class="sec-title">Quick Templates</div>
+      <div class="tpl-grid">
+        <div class="tpl-card" onclick="useTemplate('fee')">
+          <div class="tpl-ico">💰</div>
+          <div class="tpl-name">Fee Reminder</div>
+        </div>
+        <div class="tpl-card" onclick="useTemplate('result')">
+          <div class="tpl-ico">📊</div>
+          <div class="tpl-name">Result Ready</div>
+        </div>
+        <div class="tpl-card" onclick="useTemplate('attendance')">
+          <div class="tpl-ico">📍</div>
+          <div class="tpl-name">Absent Alert</div>
+        </div>
+        <div class="tpl-card" onclick="useTemplate('resumption')">
+          <div class="tpl-ico">🏫</div>
+          <div class="tpl-name">Resumption</div>
+        </div>
+        <div class="tpl-card" onclick="useTemplate('meeting')">
+          <div class="tpl-ico">👥</div>
+          <div class="tpl-name">PTA Meeting</div>
+        </div>
+        <div class="tpl-card" onclick="useTemplate('custom')">
+          <div class="tpl-ico">✏️</div>
+          <div class="tpl-name">Custom</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHANNEL -->
+    <div class="card">
+      <div class="sec-title">Send Via</div>
+      <div class="channel-row">
+        <div class="ch-btn active" id="ch-sms" onclick="toggleChannel('sms')">📱 SMS</div>
+        <div class="ch-btn" id="ch-wa" onclick="toggleChannel('whatsapp')">💬 WhatsApp</div>
+      </div>
+
+      <!-- MESSAGE -->
+      <div class="fg">
+        <label>Message <span id="char-count" style="color:var(--t4);font-weight:400;">(0 chars)</span></label>
+        <textarea class="fi" id="msg-body" placeholder="Type your message here..." oninput="updateCharCount()"></textarea>
+      </div>
+      <div style="background:var(--goldb);border:1px solid rgba(212,168,67,.2);border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:.75rem;color:var(--t2);">
+        <b>Available variables:</b> {name} = student name, {class} = class, {school} = school name, {balance} = fee balance, {term} = current term
+      </div>
+    </div>
+
+    <!-- RECIPIENTS -->
+    <div class="card">
+      <div class="sec-title">Recipients</div>
+      <div class="row2" style="margin-bottom:10px;">
+        <div class="fg" style="margin:0;">
+          <select class="fi" id="filter-class" onchange="loadRecipients()">
+            <option value="">All Classes</option>
+          </select>
+        </div>
+        <div class="fg" style="margin:0;">
+          <select class="fi" id="filter-type" onchange="loadRecipients()">
+            <option value="all">All Parents</option>
+            <option value="fee">Fee Defaulters</option>
+            <option value="absent">Absent Today</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:.8rem;cursor:pointer;">
+          <input type="checkbox" id="select-all" onchange="toggleSelectAll()" style="accent-color:var(--gold);width:16px;height:16px;">
+          <span id="select-all-lbl">Select All</span>
+        </label>
+        <span id="selected-count" style="font-size:.75rem;color:var(--t3);">0 selected</span>
+      </div>
+      <div id="recipients-list" style="max-height:260px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- SEND -->
+    <button class="btn btn-green btn-full" id="send-btn" onclick="confirmSend()" style="margin-bottom:12px;">
+      📤 Send Alert
+    </button>
+
+  </div><!-- /compose -->
+
+  <!-- LOG TAB -->
+  <div id="pane-log" style="display:none;">
+    <div class="card">
+      <div class="sec-title">Send History</div>
+      <div id="log-list"></div>
+    </div>
+  </div>
+
+  <!-- AUTO ALERTS TAB -->
+  <div id="pane-auto" style="display:none;">
+    <div class="card">
+      <div class="sec-title">Automatic Alerts</div>
+      <div style="font-size:.82rem;color:var(--t3);margin-bottom:14px;">
+        These alerts send automatically when triggered in the system.
+      </div>
+
+      <div id="auto-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">Alert Schedule</div>
+      <div class="fg">
+        <label>Fee Reminder — Days Before Due Date</label>
+        <select class="fi" id="auto-fee-days">
+          <option value="7">7 days before</option>
+          <option value="3" selected>3 days before</option>
+          <option value="1">1 day before</option>
+          <option value="0">On due date</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Result Alert — Send When</label>
+        <select class="fi" id="auto-result-trigger">
+          <option value="published">Results Published</option>
+          <option value="manual">Manual Only</option>
+        </select>
+      </div>
+      <button class="btn btn-navy btn-full" onclick="saveAutoSettings()">💾 Save Auto Settings</button>
+    </div>
+  </div>
+
+</div><!-- /scroll -->
+
+<!-- CONFIG MODAL -->
+<div class="modal-bg" id="m-config">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('m-config')">✕</button>
+    <div class="modal-title">⚙️ Alert Setup</div>
+
+    <div class="fg">
+      <label>SMS/WhatsApp Provider</label>
+      <select class="fi" id="cfg-provider" onchange="updateProviderUI()">
+        <option value="termii">Termii (Recommended — Nigerian)</option>
+        <option value="twilio">Twilio (International)</option>
+        <option value="infobip">Infobip</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>API Key</label>
+      <input class="fi" id="cfg-apikey" type="password" placeholder="Paste your API key here"/>
+      <div style="font-size:.72rem;color:var(--t3);margin-top:4px;">Get free API key at <b>termii.com</b> — ₦2 per SMS, ₦4 per WhatsApp</div>
+    </div>
+    <div class="fg">
+      <label>Sender ID / Phone Number</label>
+      <input class="fi" id="cfg-sender" placeholder="e.g. RSMS or 2348012345678"/>
+      <div style="font-size:.72rem;color:var(--t3);margin-top:4px;">Termii: use your registered Sender ID</div>
+    </div>
+    <div class="fg">
+      <label>School Name (used in messages)</label>
+      <input class="fi" id="cfg-schoolname" placeholder="e.g. Adetola Group of Schools"/>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-navy" style="flex:1;" onclick="saveConfig()">💾 Save</button>
+      <button class="btn btn-sm" style="background:var(--bluel);color:var(--blue);border:1px solid var(--blue);" onclick="testAlert()">🧪 Test</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM SEND MODAL -->
+<div class="modal-bg" id="m-confirm">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('m-confirm')">✕</button>
+    <div class="modal-title">📤 Confirm Send</div>
+    <div id="confirm-summary" style="background:var(--bg2);border-radius:8px;padding:12px;margin-bottom:14px;font-size:.85rem;line-height:1.7;"></div>
+    <div class="progress-bar" id="send-progress-wrap" style="display:none;">
+      <div class="progress-fill" id="send-progress" style="width:0%;"></div>
+    </div>
+    <div id="send-status" style="font-size:.78rem;color:var(--t3);margin-bottom:10px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-green" style="flex:1;" id="confirm-send-btn" onclick="executeSend()">✅ Send Now</button>
+      <button class="btn btn-red btn-sm" onclick="closeModal('m-confirm')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap"><div class="toast" id="toast"></div></div>
+
+<script>
+// ── HELPERS ──────────────────────────────────────────────
+function _sid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
+function _key(k){ var id=_sid(); return id?'rsms_'+id+'_'+k:'rsms_'+k; }
+function _get(k,fb){ try{ var v=JSON.parse(localStorage.getItem(_key(k))||localStorage.getItem('rsms_'+k)||fb||'[]'); return v||JSON.parse(fb||'[]'); }catch(e){ return JSON.parse(fb||'[]'); } }
+function _set(k,d){ localStorage.setItem(_key(k),JSON.stringify(d)); }
+function getStudents(){ return _get('students','[]'); }
+function getSchool(){ return JSON.parse(localStorage.getItem('rsms_school')||'{}'); }
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  clearTimeout(t._t); t._t=setTimeout(function(){t.className='toast';},2800);
+}
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+// ── CONFIG ────────────────────────────────────────────────
+function getConfig(){ return JSON.parse(localStorage.getItem(_key('alert_config'))||'{}'); }
+function saveConfig(){
+  var cfg={
+    provider:document.getElementById('cfg-provider').value,
+    apiKey:document.getElementById('cfg-apikey').value,
+    sender:document.getElementById('cfg-sender').value,
+    schoolName:document.getElementById('cfg-schoolname').value
+  };
+  localStorage.setItem(_key('alert_config'),JSON.stringify(cfg));
+  closeModal('m-config');
+  toast('Config saved ✅','success');
+}
+function loadConfig(){
+  var cfg=getConfig();
+  var school=getSchool();
+  if(cfg.provider) document.getElementById('cfg-provider').value=cfg.provider;
+  if(cfg.apiKey) document.getElementById('cfg-apikey').value=cfg.apiKey;
+  if(cfg.sender) document.getElementById('cfg-sender').value=cfg.sender;
+  document.getElementById('cfg-schoolname').value=cfg.schoolName||school.name||'';
+}
+
+// ── TEMPLATES ────────────────────────────────────────────
+var TEMPLATES={
+  fee:    'Dear Parent/Guardian of {name} ({class}),\n\nThis is a reminder that school fees for the current term at {school} are outstanding. Kindly settle your balance to avoid disruption of your child\'s academic activities.\n\nThank you.\n{school} Management.',
+  result: 'Dear Parent/Guardian of {name},\n\nWe are pleased to inform you that {name}\'s academic results for this term are now available on the RSMS Parent Portal.\n\nLog in at rsms.rehoteq.com to view.\n\n{school}.',
+  attendance: 'Dear Parent/Guardian of {name} ({class}),\n\nThis is to inform you that {name} was absent from school today. Kindly contact the school if this was unplanned.\n\n{school} Management.',
+  resumption: 'Dear Parent/Guardian,\n\nThis is a reminder that {school} resumes for the new term on Monday. All students are expected to resume punctually.\n\nThank you for your continued support.\n{school} Management.',
+  meeting: 'Dear Parent/Guardian,\n\nYou are cordially invited to the PTA Meeting at {school} this Saturday at 10:00 AM. Your presence is important.\n\nThank you.\n{school} Management.',
+  custom: ''
+};
+function useTemplate(type){
+  document.querySelectorAll('.tpl-card').forEach(function(c){ c.classList.remove('selected'); });
+  event.currentTarget.classList.add('selected');
+  document.getElementById('msg-body').value=TEMPLATES[type]||'';
+  updateCharCount();
+}
+function updateCharCount(){
+  var len=document.getElementById('msg-body').value.length;
+  document.getElementById('char-count').textContent='('+len+' chars'+(len>160?' — '+(Math.ceil(len/160))+' SMS':'')+')';}
+
+// ── CHANNEL ───────────────────────────────────────────────
+var _channel='sms';
+function toggleChannel(ch){
+  _channel=ch;
+  document.getElementById('ch-sms').classList.toggle('active',ch==='sms');
+  document.getElementById('ch-wa').classList.toggle('active',ch==='whatsapp');
+}
+
+// ── RECIPIENTS ────────────────────────────────────────────
+function loadRecipients(){
+  var students=getStudents();
+  var cls=document.getElementById('filter-class').value;
+  var type=document.getElementById('filter-type').value;
+  var list=students.filter(function(s){
+    if(!s.parentPhone) return false;
+    if(cls&&s.class!==cls) return false;
+    return true;
+  });
+  // Unique by parent phone
+  var seen={};
+  var unique=[];
+  list.forEach(function(s){
+    var phone=s.parentPhone.replace(/\s/g,'');
+    if(!seen[phone]){ seen[phone]=true; unique.push(s); }
+  });
+  var html='';
+  if(!unique.length){
+    html='<div class="empty"><div class="empty-ico">👥</div><div class="empty-txt">No parents with phone numbers found</div></div>';
+  } else {
+    unique.forEach(function(s){
+      var name=(s.surname||'')+' '+(s.firstname||'');
+      html+='<div class="rec-row">';
+      html+='<input type="checkbox" class="rec-check rec-chk" value="'+s.parentPhone+'" data-name="'+name.trim()+'" data-class="'+(s.class||'')+'" data-reg="'+(s.reg||'')+'" checked>';
+      html+='<div class="rec-av">'+name.trim().charAt(0)+'</div>';
+      html+='<div class="rec-info"><div class="rec-name">'+name.trim()+'</div>';
+      html+='<div class="rec-sub">'+(s.class||'')+(s.parentName?' · '+s.parentName:'')+'</div></div>';
+      html+='<div style="font-size:.72rem;color:var(--t4);font-family:var(--mono);">'+s.parentPhone+'</div>';
+      html+='</div>';
+    });
+  }
+  document.getElementById('recipients-list').innerHTML=html;
+  document.querySelectorAll('.rec-chk').forEach(function(chk){
+    chk.addEventListener('change',updateSelectedCount);
+  });
+  updateSelectedCount();
+}
+function toggleSelectAll(){
+  var checked=document.getElementById('select-all').checked;
+  document.querySelectorAll('.rec-chk').forEach(function(c){ c.checked=checked; });
+  updateSelectedCount();
+}
+function updateSelectedCount(){
+  var total=document.querySelectorAll('.rec-chk').length;
+  var selected=document.querySelectorAll('.rec-chk:checked').length;
+  document.getElementById('selected-count').textContent=selected+' of '+total+' selected';
+  document.getElementById('select-all-lbl').textContent=selected===total?'Deselect All':'Select All';
+  document.getElementById('select-all').checked=selected===total&&total>0;
+}
+function populateClassFilter(){
+  var students=getStudents();
+  var classes={};
+  students.forEach(function(s){ if(s.class) classes[s.class]=1; });
+  var sel=document.getElementById('filter-class');
+  sel.innerHTML='<option value="">All Classes</option>';
+  Object.keys(classes).sort().forEach(function(c){
+    var o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o);
+  });
+}
+
+// ── SEND ─────────────────────────────────────────────────
+function confirmSend(){
+  var msg=document.getElementById('msg-body').value.trim();
+  if(!msg){ toast('Enter a message first','error'); return; }
+  var selected=document.querySelectorAll('.rec-chk:checked');
+  if(!selected.length){ toast('Select at least one recipient','error'); return; }
+  var cfg=getConfig();
+  if(!cfg.apiKey){ toast('Set up your API key first (⚙️ Setup)','error'); openModal('m-config'); return; }
+  var html='<b>Channel:</b> '+((_channel==='whatsapp')?'💬 WhatsApp':'📱 SMS')+'<br>';
+  html+='<b>Recipients:</b> '+selected.length+' parents<br>';
+  html+='<b>Provider:</b> '+(cfg.provider||'Termii')+'<br>';
+  html+='<b>Preview:</b><br><div style="background:var(--card);border-radius:6px;padding:8px;margin-top:6px;font-size:.78rem;color:var(--t2);white-space:pre-wrap;">'+msg.substring(0,200)+(msg.length>200?'...':'')+'</div>';
+  document.getElementById('confirm-summary').innerHTML=html;
+  document.getElementById('send-progress-wrap').style.display='none';
+  document.getElementById('send-status').textContent='';
+  document.getElementById('confirm-send-btn').disabled=false;
+  document.getElementById('confirm-send-btn').textContent='✅ Send Now';
+  openModal('m-confirm');
+}
+
+function executeSend(){
+  var cfg=getConfig();
+  var msg=document.getElementById('msg-body').value.trim();
+  var school=getSchool();
+  var schoolName=cfg.schoolName||school.name||'School';
+  var recipients=[];
+  document.querySelectorAll('.rec-chk:checked').forEach(function(chk){
+    recipients.push({phone:chk.value,name:chk.dataset.name,cls:chk.dataset.class,reg:chk.dataset.reg});
+  });
+  document.getElementById('confirm-send-btn').disabled=true;
+  document.getElementById('confirm-send-btn').textContent='Sending...';
+  document.getElementById('send-progress-wrap').style.display='block';
+  var sent=0,failed=0,total=recipients.length;
+  var log=_get('alert_log','[]');
+  function sendNext(idx){
+    if(idx>=total){
+      document.getElementById('send-progress').style.width='100%';
+      document.getElementById('send-status').textContent='Done! ✅ Sent: '+sent+' | Failed: '+failed;
+      document.getElementById('confirm-send-btn').textContent='✅ Done';
+      updateStats();
+      toast('Sent to '+sent+' parents ✅','success');
+      return;
+    }
+    var r=recipients[idx];
+    var personalised=msg
+      .replace(/{name}/g,r.name)
+      .replace(/{class}/g,r.cls)
+      .replace(/{school}/g,schoolName)
+      .replace(/{term}/g,school.term||'current term')
+      .replace(/{balance}/g,'outstanding balance');
+    var phone=formatPhone(r.phone);
+    document.getElementById('send-status').textContent='Sending to '+r.name+'... ('+(idx+1)+'/'+total+')';
+    document.getElementById('send-progress').style.width=(((idx+1)/total)*100)+'%';
+    sendTermii(cfg,phone,personalised,function(ok){
+      var entry={phone:phone,name:r.name,msg:personalised,channel:_channel,
+        status:ok?'sent':'failed',time:new Date().toLocaleString()};
+      log.unshift(entry);
+      if(ok) sent++; else failed++;
+      _set('alert_log',log.slice(0,200));
+      setTimeout(function(){ sendNext(idx+1); },400); // 400ms delay between sends
+    });
+  }
+  sendNext(0);
+}
+
+function formatPhone(p){
+  p=(p||'').replace(/[\s\-\(\)]/g,'');
+  if(p.startsWith('0')) p='234'+p.substring(1);
+  if(!p.startsWith('+')) p='+'+p;
+  return p;
+}
+
+function sendTermii(cfg,phone,msg,cb){
+  var provider=cfg.provider||'termii';
+  if(provider==='termii'){
+    var url='https://api.ng.termii.com/api/sms/send';
+    var body={to:phone,from:cfg.sender||'RSMS',sms:msg,type:'plain',
+      channel:_channel==='whatsapp'?'whatsapp':'generic',api_key:cfg.apiKey};
+    fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ cb(d.code==='ok'||d.message_id); })
+      .catch(function(){ cb(false); });
+  } else if(provider==='twilio'){
+    // Twilio uses different endpoint — simplified
+    toast('Twilio: configure your Twilio Cloudflare Worker proxy','error');
+    cb(false);
+  } else {
+    cb(false);
+  }
+}
+
+// ── TEST ALERT ────────────────────────────────────────────
+function testAlert(){
+  var cfg=getConfig();
+  if(!cfg.apiKey){ toast('Enter API key first','error'); return; }
+  var school=getSchool();
+  var msg='Test message from RSMS — '+(cfg.schoolName||school.name||'School')+'. If you received this, your Termii setup is working correctly!';
+  var myPhone=school.phone||'';
+  if(!myPhone){ myPhone=prompt('Enter your phone number for test (e.g. 08012345678):'); }
+  if(!myPhone) return;
+  toast('Sending test message...','');
+  sendTermii(cfg,formatPhone(myPhone),msg,function(ok){
+    toast(ok?'Test sent! Check your phone ✅':'Test failed. Check API key ❌',ok?'success':'error');
+  });
+}
+
+// ── LOG ───────────────────────────────────────────────────
+function renderLog(){
+  var log=_get('alert_log','[]');
+  if(!log.length){
+    document.getElementById('log-list').innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-txt">No messages sent yet</div></div>';
+    return;
+  }
+  var html='';
+  log.forEach(function(l){
+    html+='<div class="log-row">';
+    html+='<div style="flex:1;min-width:0;">';
+    html+='<div style="font-weight:700;font-size:.82rem;">'+l.name+'</div>';
+    html+='<div style="font-size:.7rem;color:var(--t4);">'+l.phone+' · '+l.time+'</div>';
+    html+='</div>';
+    html+='<span class="badge badge-'+(l.status==='sent'?'sent':'failed')+'">'+(l.status==='sent'?'✅ Sent':'❌ Failed')+'</span>';
+    html+='</div>';
+  });
+  document.getElementById('log-list').innerHTML=html;
+}
+
+// ── AUTO ALERTS ───────────────────────────────────────────
+var AUTO_ALERTS=[
+  {id:'fee_reminder',   ico:'💰', name:'Fee Reminder',        desc:'Remind parents when fees are due', enabled:false},
+  {id:'result_ready',   ico:'📊', name:'Result Published',     desc:'Alert when results are published', enabled:false},
+  {id:'absent_alert',   ico:'📍', name:'Daily Absent Alert',   desc:'Notify parents of absent students', enabled:false},
+  {id:'resumption',     ico:'🏫', name:'Resumption Reminder',  desc:'Remind parents 3 days before resumption', enabled:false},
+];
+function renderAutoAlerts(){
+  var saved=JSON.parse(localStorage.getItem(_key('auto_alerts'))||'{}');
+  var html='';
+  AUTO_ALERTS.forEach(function(a){
+    var on=saved[a.id]||false;
+    html+='<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);">';
+    html+='<div style="font-size:1.4rem;">'+a.ico+'</div>';
+    html+='<div style="flex:1;"><div style="font-weight:700;font-size:.88rem;">'+a.name+'</div>';
+    html+='<div style="font-size:.72rem;color:var(--t3);">'+a.desc+'</div></div>';
+    html+='<label class="switch" style="cursor:pointer;">';
+    html+='<input type="checkbox" id="auto-'+a.id+'" style="accent-color:var(--green);width:20px;height:20px;" '+(on?'checked':'')+' onchange="saveAutoToggle(\''+a.id+'\',this.checked)">';
+    html+='</label></div>';
+  });
+  document.getElementById('auto-list').innerHTML=html;
+}
+function saveAutoToggle(id,val){
+  var saved=JSON.parse(localStorage.getItem(_key('auto_alerts'))||'{}');
+  saved[id]=val;
+  localStorage.setItem(_key('auto_alerts'),JSON.stringify(saved));
+  toast((val?'✅ ':'❌ ')+(val?'Auto alert enabled':'Auto alert disabled'));
+}
+function saveAutoSettings(){
+  var days=document.getElementById('auto-fee-days').value;
+  var trigger=document.getElementById('auto-result-trigger').value;
+  localStorage.setItem(_key('auto_settings'),JSON.stringify({feeDays:days,resultTrigger:trigger}));
+  toast('Auto settings saved ✅','success');
+}
+
+// ── STATS ─────────────────────────────────────────────────
+function updateStats(){
+  var students=getStudents();
+  var parents=new Set();
+  students.forEach(function(s){ if(s.parentPhone) parents.add(s.parentPhone); });
+  document.getElementById('stat-parents').textContent=parents.size;
+  var log=_get('alert_log','[]');
+  var today=new Date().toLocaleDateString();
+  var sentToday=log.filter(function(l){ return l.time&&l.time.includes(today)&&l.status==='sent'; }).length;
+  document.getElementById('stat-sent').textContent=sentToday;
+  // Check Termii balance
+  var cfg=getConfig();
+  if(cfg.apiKey&&cfg.provider==='termii'){
+    fetch('https://api.ng.termii.com/api/get-balance?api_key='+cfg.apiKey)
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if(d.balance!==undefined) document.getElementById('stat-balance').textContent='₦'+d.balance; })
+      .catch(function(){});
+  }
+}
+
+// ── TABS ─────────────────────────────────────────────────
+function switchTab(t){
+  ['compose','log','auto'].forEach(function(id){
+    document.getElementById('pane-'+id).style.display=id===t?'':'none';
+    document.getElementById('tab-'+id).classList.toggle('active',id===t);
+  });
+  if(t==='log') renderLog();
+  if(t==='auto') renderAutoAlerts();
+}
+
+// ── INIT ──────────────────────────────────────────────────
+window.addEventListener('load',function(){
+  loadConfig();
+  populateClassFilter();
+  loadRecipients();
+  updateStats();
+  renderAutoAlerts();
+});
+</script>
+</body>
+</html>
