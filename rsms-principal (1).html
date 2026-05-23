@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>RSMS — Principal's Office</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,400&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --navy:#0b1022;--navy2:#141830;--navy3:#1e2545;--navy4:#262d52;
+  --gold:#d4a843;--goldl:rgba(212,168,67,.12);--goldb:rgba(212,168,67,.06);
+  --green:#22c55e;--greenl:rgba(34,197,94,.1);
+  --red:#f43f5e;--redl:rgba(244,63,94,.1);
+  --blue:#3b82f6;--bluel:rgba(59,130,246,.1);
+  --purple:#8b5cf6;--purplel:rgba(139,92,246,.1);
+  --orange:#f97316;--orangel:rgba(249,115,22,.1);
+  --bg:#0b1022;--card:#141830;--card2:#1e2545;--card3:#262d52;
+  --t1:#f0f4ff;--t2:rgba(240,244,255,.75);--t3:rgba(240,244,255,.4);--t4:rgba(240,244,255,.15);
+  --line:rgba(255,255,255,.07);--line2:rgba(255,255,255,.12);
+  --sans:'Outfit',sans-serif;--serif:'Fraunces',serif;--mono:'DM Mono',monospace;
+  --r:12px;--shadow:0 4px 20px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--t1);}
+
+/* ── TOPBAR ── */
+.topbar{position:sticky;top:0;z-index:100;
+  background:linear-gradient(135deg,var(--navy),var(--navy2));
+  border-bottom:1px solid var(--line2);
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;padding-top:calc(env(safe-area-inset-top,0) + 12px);}
+.tb-back{background:rgba(255,255,255,.08);border:1px solid var(--line2);
+  color:var(--t2);width:34px;height:34px;border-radius:50%;font-size:1rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.tb-back:hover{background:rgba(255,255,255,.15);}
+.tb-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--t1);flex:1;}
+.tb-school{font-size:.72rem;color:var(--gold);display:block;}
+.tb-badge{background:var(--goldl);color:var(--gold);border:1px solid rgba(212,168,67,.3);
+  border-radius:20px;padding:4px 12px;font-size:.72rem;font-weight:800;}
+
+/* ── SIDEBAR ── */
+.app-shell{display:flex;height:calc(100vh - 56px);overflow:hidden;}
+.sidebar{width:220px;background:var(--navy2);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
+.sidebar::-webkit-scrollbar{width:2px;}
+.sb-section{font-size:.6rem;font-weight:800;color:var(--t4);
+  text-transform:uppercase;letter-spacing:.1em;padding:14px 16px 6px;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 16px;
+  cursor:pointer;border-left:3px solid transparent;transition:all .2s;
+  color:var(--t3);font-size:.84rem;font-weight:600;}
+.sb-item:hover{background:rgba(255,255,255,.04);color:var(--t2);}
+.sb-item.active{background:rgba(212,168,67,.08);color:var(--gold);border-left-color:var(--gold);}
+.sb-ico{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+.sb-footer{padding:14px 16px;font-size:.65rem;color:var(--t4);margin-top:auto;border-top:1px solid var(--line);}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;background:var(--bg);}
+.main::-webkit-scrollbar{width:3px;}
+.main::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px;}
+.page{display:none;padding:16px;}
+.page.active{display:block;}
+
+/* ── BOTTOM NAV (mobile) ── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;
+  background:var(--navy2);border-top:1px solid var(--line2);z-index:90;
+  padding:6px 0;padding-bottom:calc(env(safe-area-inset-bottom,0) + 6px);
+  display:flex;justify-content:space-around;}
+.bn{display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 12px;border-radius:10px;cursor:pointer;
+  font-size:.62rem;font-weight:700;color:var(--t4);transition:all .2s;}
+.bn.active{color:var(--gold);}
+.bn-ico{font-size:1.2rem;}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.card-title{font-size:.78rem;font-weight:800;color:var(--t2);
+  margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.sec-title{font-size:.68rem;font-weight:800;color:var(--t3);
+  text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px;}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold);}
+.kpi.blue::before{background:var(--blue);}
+.kpi.green::before{background:var(--green);}
+.kpi.red::before{background:var(--red);}
+.kpi.purple::before{background:var(--purple);}
+.kpi-val{font-family:var(--serif);font-size:1.6rem;font-weight:900;color:var(--t1);line-height:1;}
+.kpi-lbl{font-size:.68rem;color:var(--t3);margin-top:5px;}
+.kpi-sub{font-size:.7rem;color:var(--t4);margin-top:3px;}
+
+/* ── FORM ── */
+.fi{width:100%;background:var(--card2);border:1.5px solid var(--line2);
+  border-radius:8px;padding:9px 12px;font-size:.88rem;font-family:var(--sans);
+  color:var(--t1);outline:none;transition:border-color .2s;}
+.fi:focus{border-color:var(--gold);}
+select.fi{cursor:pointer;}
+textarea.fi{resize:vertical;min-height:72px;line-height:1.5;}
+.fg{margin-bottom:10px;}
+.fg label{display:block;font-size:.72rem;font-weight:700;color:var(--t3);margin-bottom:5px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+
+/* ── BUTTONS ── */
+.btn{border:none;border-radius:8px;padding:9px 16px;font-size:.84rem;
+  font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+.btn:active{transform:scale(.97);}
+.btn-gold{background:var(--gold);color:#000;}
+.btn-navy{background:var(--navy3);color:var(--t1);border:1px solid var(--line2);}
+.btn-green{background:var(--green);color:#000;}
+.btn-red{background:var(--redl);color:var(--red);border:1px solid rgba(244,63,94,.3);}
+.btn-blue{background:var(--bluel);color:var(--blue);border:1px solid rgba(59,130,246,.3);}
+.btn-sm{padding:6px 12px;font-size:.76rem;border-radius:6px;}
+.btn-full{width:100%;}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:7px 14px;border-radius:20px;font-size:.76rem;font-weight:700;
+  cursor:pointer;white-space:nowrap;border:1.5px solid var(--line2);
+  color:var(--t3);background:var(--card);transition:all .2s;}
+.tab.active{background:var(--navy3);color:var(--gold);border-color:var(--gold);}
+
+/* ── STUDENT ROW ── */
+.stu-row{display:flex;align-items:center;gap:10px;padding:10px 0;
+  border-bottom:1px solid var(--line);}
+.stu-row:last-child{border:none;}
+.stu-av{width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--navy3),var(--navy4));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:.82rem;color:var(--gold);flex-shrink:0;}
+.stu-info{flex:1;min-width:0;}
+.stu-name{font-size:.85rem;font-weight:700;color:var(--t1);}
+.stu-sub{font-size:.7rem;color:var(--t3);}
+
+/* ── SCORE TABLE ── */
+.score-table{width:100%;border-collapse:collapse;font-size:.78rem;}
+.score-table th{background:var(--navy3);color:var(--gold);padding:7px 8px;
+  text-align:left;font-size:.68rem;font-weight:800;white-space:nowrap;}
+.score-table td{padding:7px 8px;border-bottom:1px solid var(--line);color:var(--t2);}
+.score-table tr:last-child td{border:none;}
+.score-table input{background:var(--card3);border:1px solid var(--line2);
+  border-radius:5px;padding:4px 8px;color:var(--t1);width:52px;
+  font-size:.8rem;font-family:var(--mono);text-align:center;outline:none;}
+.score-table input:focus{border-color:var(--gold);}
+
+/* ── BADGE ── */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.68rem;font-weight:700;}
+.badge-green{background:var(--greenl);color:var(--green);}
+.badge-red{background:var(--redl);color:var(--red);}
+.badge-gold{background:var(--goldl);color:var(--gold);}
+.badge-blue{background:var(--bluel);color:var(--blue);}
+.badge-purple{background:var(--purplel);color:var(--purple);}
+
+/* ── PIPELINE ── */
+.pipeline{display:flex;align-items:center;gap:0;margin-bottom:16px;overflow-x:auto;padding:4px 0;}
+.pipeline::-webkit-scrollbar{display:none;}
+.pipe-step{display:flex;flex-direction:column;align-items:center;gap:4px;
+  min-width:80px;flex:1;}
+.pipe-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.75rem;font-weight:800;z-index:1;position:relative;}
+.pipe-dot.done{background:var(--green);color:#000;}
+.pipe-dot.active{background:var(--gold);color:#000;box-shadow:0 0 0 4px var(--goldl);}
+.pipe-dot.pending{background:var(--card3);color:var(--t4);border:1px solid var(--line2);}
+.pipe-lbl{font-size:.62rem;color:var(--t3);font-weight:700;text-align:center;}
+.pipe-line{flex:1;height:2px;background:var(--line2);margin:0 -2px;z-index:0;}
+.pipe-line.done{background:var(--green);}
+
+/* ── STATUS RING ── */
+.status-ring{display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:20px;font-size:.75rem;font-weight:700;}
+
+/* ── REMARK CARD ── */
+.remark-card{background:var(--card2);border:1px solid var(--line2);
+  border-radius:10px;padding:12px;margin-bottom:10px;}
+.remark-card.principal-remark{border-color:rgba(212,168,67,.3);background:var(--goldb);}
+
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:200;align-items:flex-end;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--navy2);border-radius:18px 18px 0 0;
+  padding:20px 16px 32px;width:100%;max-width:500px;max-height:92vh;
+  overflow-y:auto;border:1px solid var(--line2);}
+.modal-title{font-family:var(--serif);font-size:1.1rem;font-weight:700;
+  color:var(--t1);margin-bottom:16px;}
+.modal-close{float:right;background:none;border:none;font-size:1.3rem;
+  cursor:pointer;color:var(--t3);margin-top:-4px;}
+
+/* ── TOAST ── */
+.toast-wrap{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+  z-index:999;pointer-events:none;}
+.toast{background:var(--navy3);color:var(--t1);border:1px solid var(--line2);
+  padding:10px 18px;border-radius:10px;font-size:.82rem;font-weight:600;
+  opacity:0;transform:translateY(10px);transition:all .3s;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.success{background:#052e16;border-color:var(--green);color:var(--green);}
+.toast.error{background:#1f0a0f;border-color:var(--red);color:var(--red);}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:40px 20px;color:var(--t3);}
+.empty-ico{font-size:2.5rem;margin-bottom:10px;}
+.empty-txt{font-size:.85rem;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:640px){
+  .sidebar{display:none;}
+  .main{padding-bottom:70px;}
+}
+@media(min-width:641px){
+  .bottom-nav{display:none;}
+}
+
+/* ── PUBLISH GLOW ── */
+@keyframes glow{0%,100%{box-shadow:0 0 8px var(--gold);}50%{box-shadow:0 0 20px var(--gold),0 0 40px rgba(212,168,67,.3);}}
+.btn-publish{animation:glow 2s infinite;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="tb-back" onclick="goBackPortal()">←</button>
+  <div style="flex:1;">
+    <div class="tb-title">🏛️ Principal's Office</div>
+    <span class="tb-school" id="hd-school">Loading...</span>
+  </div>
+  <span class="tb-badge" id="hd-term">—</span>
+</div>
+
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-section">Overview</div>
+    <div class="sb-item active" onclick="showPage('home',this)"><span class="sb-ico">🏠</span> Dashboard</div>
+    <div class="sb-item" onclick="showPage('pipeline',this)"><span class="sb-ico">🔄</span> Review Pipeline</div>
+
+    <div class="sb-section">Academics</div>
+    <div class="sb-item" onclick="showPage('results',this)"><span class="sb-ico">📊</span> Results Review</div>
+    <div class="sb-item" onclick="showPage('remarks',this)"><span class="sb-ico">✍️</span> My Remarks</div>
+    <div class="sb-item" onclick="showPage('override',this)"><span class="sb-ico">🔧</span> Score Override</div>
+    <div class="sb-item" onclick="showPage('publish',this)"><span class="sb-ico">📢</span> Publish Results</div>
+
+    <div class="sb-section">School</div>
+    <div class="sb-item" onclick="showPage('staff',this)"><span class="sb-ico">👨‍🏫</span> Staff Overview</div>
+    <div class="sb-item" onclick="showPage('analytics',this)"><span class="sb-ico">📈</span> Analytics</div>
+    <div class="sb-item" onclick="showPage('print',this)"><span class="sb-ico">🖨️</span> Print Results</div>
+
+    <div class="sb-section">System</div>
+    <div class="sb-item" onclick="confirmLogout()"><span class="sb-ico">🔒</span> Logout</div>
+    <div class="sb-footer">RSMS — Rehoteq Technologies</div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="main-scroll">
+
+    <!-- HOME PAGE -->
+    <div class="page active" id="pg-home">
+      <div class="kpi-grid" id="kpi-home"></div>
+
+      <!-- PIPELINE OVERVIEW -->
+      <div class="card">
+        <div class="card-title">🔄 Review Pipeline Status</div>
+        <div class="pipeline" id="pipeline-home"></div>
+      </div>
+
+      <!-- PENDING ACTIONS -->
+      <div class="card">
+        <div class="card-title">⏳ Pending My Action
+          <span class="badge badge-red" id="pending-count"></span>
+        </div>
+        <div id="pending-list"></div>
+      </div>
+
+      <!-- RECENT ACTIVITY -->
+      <div class="card">
+        <div class="card-title">📋 Recent Activity</div>
+        <div id="recent-activity"></div>
+      </div>
+    </div>
+
+    <!-- PIPELINE PAGE -->
+    <div class="page" id="pg-pipeline">
+      <div class="card">
+        <div class="card-title">🔄 Academic Review Chain</div>
+        <div style="font-size:.8rem;color:var(--t3);margin-bottom:14px;">
+          Track results workflow: CT → HOD → VP → Principal → Published
+        </div>
+        <div class="fg row2">
+          <div>
+            <label>Class</label>
+            <select class="fi" id="pipe-class-sel" onchange="renderPipeline()">
+              <option value="">All Classes</option>
+            </select>
+          </div>
+          <div>
+            <label>Term</label>
+            <select class="fi" id="pipe-term-sel" onchange="renderPipeline()">
+              <option>First Term</option>
+              <option>Second Term</option>
+              <option>Third Term</option>
+            </select>
+          </div>
+        </div>
+        <div id="pipeline-list"></div>
+      </div>
+    </div>
+
+    <!-- RESULTS REVIEW PAGE -->
+    <div class="page" id="pg-results">
+      <div class="card">
+        <div class="card-title">📊 Results Review</div>
+        <div class="row3" style="margin-bottom:12px;">
+          <div class="fg" style="margin:0;">
+            <label>Class</label>
+            <select class="fi" id="res-class" onchange="loadResults()">
+              <option value="">Select Class</option>
+            </select>
+          </div>
+          <div class="fg" style="margin:0;">
+            <label>Term</label>
+            <select class="fi" id="res-term">
+              <option>First Term</option>
+              <option>Second Term</option>
+              <option>Third Term</option>
+            </select>
+          </div>
+          <div class="fg" style="margin:0;display:flex;align-items:flex-end;">
+            <button class="btn btn-gold btn-full" onclick="loadResults()">Load</button>
+          </div>
+        </div>
+        <div id="results-content"></div>
+      </div>
+    </div>
+
+    <!-- REMARKS PAGE -->
+    <div class="page" id="pg-remarks">
+      <div class="card">
+        <div class="card-title">✍️ Principal's Remarks
+          <button class="btn btn-gold btn-sm" onclick="saveAllRemarks()">💾 Save All</button>
+        </div>
+        <div class="row2" style="margin-bottom:12px;">
+          <div class="fg" style="margin:0;">
+            <label>Class</label>
+            <select class="fi" id="rem-class" onchange="loadRemarksPage()">
+              <option value="">Select Class</option>
+            </select>
+          </div>
+          <div class="fg" style="margin:0;">
+            <label>Term</label>
+            <select class="fi" id="rem-term">
+              <option>First Term</option>
+              <option>Second Term</option>
+              <option>Third Term</option>
+            </select>
+          </div>
+        </div>
+        <!-- Quick remark templates -->
+        <div style="margin-bottom:12px;">
+          <div class="sec-title">Quick Templates</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <button class="btn btn-navy btn-sm" onclick="setTemplate('Excellent performance. Keep it up!')">⭐ Excellent</button>
+            <button class="btn btn-navy btn-sm" onclick="setTemplate('Good work. Strive for more.')">👍 Good</button>
+            <button class="btn btn-navy btn-sm" onclick="setTemplate('Fair. More effort is needed.')">📈 Fair</button>
+            <button class="btn btn-navy btn-sm" onclick="setTemplate('Must work harder next term.')">⚠️ Improve</button>
+            <button class="btn btn-navy btn-sm" onclick="setTemplate('Well done! Promoted to next class.')">🎓 Promoted</button>
+          </div>
+        </div>
+        <div id="remarks-list"></div>
+      </div>
+    </div>
+
+    <!-- SCORE OVERRIDE PAGE -->
+    <div class="page" id="pg-override">
+      <div class="card">
+        <div class="card-title">🔧 Score Override
+          <span class="badge badge-red">Principal Only</span>
+        </div>
+        <div style="background:var(--redl);border:1px solid rgba(244,63,94,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:.78rem;color:var(--t2);">
+          ⚠️ Use responsibly. All overrides are logged with your name and timestamp.
+        </div>
+        <div class="row3" style="margin-bottom:12px;">
+          <div class="fg" style="margin:0;">
+            <label>Class</label>
+            <select class="fi" id="ov-class" onchange="loadOverrideScores()">
+              <option value="">Select Class</option>
+            </select>
+          </div>
+          <div class="fg" style="margin:0;">
+            <label>Subject</label>
+            <select class="fi" id="ov-subject" onchange="loadOverrideScores()">
+              <option value="">All Subjects</option>
+            </select>
+          </div>
+          <div class="fg" style="margin:0;display:flex;align-items:flex-end;">
+            <button class="btn btn-gold btn-full" onclick="loadOverrideScores()">Load</button>
+          </div>
+        </div>
+        <div id="override-content"></div>
+      </div>
+    </div>
+
+    <!-- PUBLISH PAGE -->
+    <div class="page" id="pg-publish">
+      <div class="card">
+        <div class="card-title">📢 Publish Results</div>
+        <div style="font-size:.82rem;color:var(--t3);margin-bottom:16px;">
+          Publishing makes results visible to students, parents and class teachers.
+        </div>
+        <div id="publish-classes-list"></div>
+        <button class="btn btn-green btn-full btn-publish" style="margin-top:14px;" onclick="publishAll()">
+          📢 Publish All Approved Results
+        </button>
+      </div>
+    </div>
+
+    <!-- STAFF PAGE -->
+    <div class="page" id="pg-staff">
+      <div class="kpi-grid" id="kpi-staff"></div>
+      <div class="card">
+        <div class="card-title">👨‍🏫 Staff Overview</div>
+        <div id="staff-list"></div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS PAGE -->
+    <div class="page" id="pg-analytics">
+      <div class="kpi-grid" id="kpi-analytics"></div>
+      <div class="card">
+        <div class="card-title">📈 Class Performance Summary</div>
+        <div id="analytics-content"></div>
+      </div>
+    </div>
+
+    <!-- PRINT PAGE -->
+    <div class="page" id="pg-print">
+      <div class="card">
+        <div class="card-title">🖨️ Print Results</div>
+        <div class="row2" style="margin-bottom:12px;">
+          <div class="fg" style="margin:0;">
+            <label>Class</label>
+            <select class="fi" id="print-class">
+              <option value="">All Classes</option>
+            </select>
+          </div>
+          <div class="fg" style="margin:0;">
+            <label>Type</label>
+            <select class="fi" id="print-type">
+              <option value="results">Academic Results</option>
+              <option value="progress">Progress Report (KG/Nursery)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-gold" onclick="openPrint()">🖨️ Open Print Page</button>
+          <button class="btn btn-navy" onclick="openProgressReport()">📋 Progress Report</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app-shell -->
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="bn active" onclick="showPage('home',this)" id="bn-home">
+    <div class="bn-ico">🏠</div><div>Home</div>
+  </div>
+  <div class="bn" onclick="showPage('results',this)" id="bn-results">
+    <div class="bn-ico">📊</div><div>Results</div>
+  </div>
+  <div class="bn" onclick="showPage('remarks',this)" id="bn-remarks">
+    <div class="bn-ico">✍️</div><div>Remarks</div>
+  </div>
+  <div class="bn" onclick="showPage('override',this)" id="bn-override">
+    <div class="bn-ico">🔧</div><div>Override</div>
+  </div>
+  <div class="bn" onclick="showPage('publish',this)" id="bn-publish">
+    <div class="bn-ico">📢</div><div>Publish</div>
+  </div>
+</div>
+
+<!-- MODAL: Score Override Confirm -->
+<div class="modal-bg" id="m-override-confirm">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('m-override-confirm')">✕</button>
+    <div class="modal-title">🔧 Confirm Score Override</div>
+    <div id="override-summary" style="background:var(--card3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:.85rem;line-height:1.8;"></div>
+    <div class="fg">
+      <label>Reason for Override</label>
+      <textarea class="fi" id="override-reason" placeholder="State reason for changing this score..."></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn btn-red" style="flex:1;" onclick="confirmOverride()">✅ Confirm Override</button>
+      <button class="btn btn-navy btn-sm" onclick="closeModal('m-override-confirm')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap"><div class="toast" id="toast"></div></div>
+
+<script>
+/* ── FIREBASE ── */
+var FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyDKkmeHjIJm1vTg9A-o_AZnhIp1f3jmG2M',
+  authDomain: 'rsms-a84ff.firebaseapp.com',
+  databaseURL: 'https://rsms-a84ff-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'rsms-a84ff'
+};
+
+/* ── HELPERS ── */
+function _sid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
+function _key(k){ var id=_sid(); return id?'rsms_'+id+'_'+k:'rsms_'+k; }
+function _lsget(k){ return localStorage.getItem(_key(k))||localStorage.getItem('rsms_'+k)||null; }
+function _lsset(k,d){
+  var id=_sid(); var json=JSON.stringify(d);
+  localStorage.setItem('rsms_'+k,json);
+  if(id) localStorage.setItem('rsms_'+id+'_'+k,json);
+  // Sync to Firebase
+  if(id && typeof firebase!=='undefined'){
+    try{ firebase.database().ref('schools/'+id+'/'+k).set(d); }catch(e){}
+  }
+}
+function getStudents(){ return JSON.parse(_lsget('students')||'[]'); }
+function getStaff(){ return JSON.parse(_lsget('staff')||'[]'); }
+function getSchool(){ return JSON.parse(localStorage.getItem('rsms_school')||'{}'); }
+function getFees(){ return JSON.parse(_lsget('fees')||'[]'); }
+
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  clearTimeout(t._t); t._t=setTimeout(function(){t.className='toast';},2800);
+}
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function goBackPortal(){
+  location.href='rsms-login.html';
+}
+function confirmLogout(){
+  if(confirm('Logout from Principal portal?')){ sessionStorage.clear(); location.href='rsms-login.html'; }
+}
+
+/* ── SCORE KEY HELPERS ── */
+function getScoreKeys(cls,term,sess){
+  var id=_sid();
+  var k=cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
+  return {
+    scoped: id?'rsms_'+id+'_scores_'+k:null,
+    unscoped:'rsms_scores_'+k
+  };
+}
+function getScores(cls,term,sess){
+  var keys=getScoreKeys(cls,term,sess);
+  var raw=(keys.scoped?localStorage.getItem(keys.scoped):null)||localStorage.getItem(keys.unscoped)||'{}';
+  return JSON.parse(raw);
+}
+function saveScores(cls,term,sess,data){
+  var keys=getScoreKeys(cls,term,sess);
+  var json=JSON.stringify(data);
+  localStorage.setItem(keys.unscoped,json);
+  if(keys.scoped) localStorage.setItem(keys.scoped,json);
+  var id=_sid();
+  if(id&&typeof firebase!=='undefined'){
+    var fbKey=cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
+    try{ firebase.database().ref('schools/'+id+'/score_entries/'+fbKey).set(data); }catch(e){}
+  }
+}
+
+/* ── NAVIGATION ── */
+function showPage(name,el){
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  var pg=document.getElementById('pg-'+name);
+  if(pg) pg.classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(function(i){ i.classList.remove('active'); });
+  document.querySelectorAll('.bn').forEach(function(b){ b.classList.remove('active'); });
+  if(el){
+    el.classList.add('active');
+    var bn=document.getElementById('bn-'+name);
+    if(bn) bn.classList.add('active');
+  }
+  var renders={
+    home:renderHome, pipeline:renderPipeline, results:renderResultsPage,
+    remarks:renderRemarksPage, override:renderOverridePage,
+    publish:renderPublishPage, staff:renderStaffPage,
+    analytics:renderAnalytics, print:renderPrintPage
+  };
+  if(renders[name]) renders[name]();
+}
+
+/* ── CLASSES ── */
+function getClasses(){
+  var students=getStudents();
+  var cls={};
+  students.forEach(function(s){ if(s.class) cls[s.class]=1; });
+  return Object.keys(cls).sort();
+}
+function populateAllSelects(){
+  var classes=getClasses();
+  ['res-class','rem-class','ov-class','print-class','pipe-class-sel'].forEach(function(id){
+    var sel=document.getElementById(id); if(!sel) return;
+    var cur=sel.value;
+    sel.innerHTML=(id==='print-class'?'<option value="">All Classes</option>':'<option value="">Select Class</option>');
+    classes.forEach(function(c){
+      var o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o);
+    });
+    if(cur) sel.value=cur;
+  });
+  // Subjects
+  var subjSel=document.getElementById('ov-subject');
+  if(subjSel){
+    var subjects=getSubjects();
+    subjSel.innerHTML='<option value="">All Subjects</option>';
+    subjects.forEach(function(s){
+      var o=document.createElement('option'); o.value=s; o.textContent=s; subjSel.appendChild(o);
+    });
+  }
+  // Sync terms
+  var school=getSchool();
+  if(school.term){
+    ['res-term','rem-term','pipe-term-sel'].forEach(function(id){
+      var sel=document.getElementById(id); if(!sel) return;
+      for(var i=0;i<sel.options.length;i++){
+        if(sel.options[i].value===school.term){ sel.selectedIndex=i; break; }
+      }
+    });
+  }
+}
+function getSubjects(){
+  var subjs={};
+  var id=_sid();
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);
+    if(!k) continue;
+    var isScore=(id&&k.indexOf('rsms_'+id+'_scores_')===0)||k.indexOf('rsms_scores_')===0;
+    if(!isScore) continue;
+    try{
+      var data=JSON.parse(localStorage.getItem(k)||'{}');
+      Object.values(data).forEach(function(e){ if(e&&e.subject) subjs[e.subject]=1; });
+    }catch(e){}
+  }
+  return Object.keys(subjs).sort();
+}
+
+/* ── HOME PAGE ── */
+function renderHome(){
+  var students=getStudents();
+  var staff=getStaff();
+  var school=getSchool();
+  var fees=getFees();
+  var totalFees=fees.reduce(function(a,f){ return a+parseFloat(f.amount||0); },0);
+  var published=JSON.parse(_lsget('published_results')||'{}');
+  var pubCount=Object.keys(published).length;
+
+  document.getElementById('kpi-home').innerHTML=[
+    {ico:'👨‍🎓',val:students.length,lbl:'Students',sub:getClasses().length+' classes',cls:'blue'},
+    {ico:'👨‍🏫',val:staff.length,lbl:'Staff',sub:'total staff',cls:''},
+    {ico:'📢',val:pubCount,lbl:'Published',sub:'result sets',cls:'green'},
+    {ico:'💰',val:'₦'+Math.round(totalFees/1000)+'k',lbl:'Fees Collected',sub:'this term',cls:'purple'}
+  ].map(function(k){
+    return '<div class="kpi '+k.cls+'"><div class="kpi-val">'+k.ico+' '+k.val+'</div>'+
+      '<div class="kpi-lbl">'+k.lbl+'</div><div class="kpi-sub">'+k.sub+'</div></div>';
+  }).join('');
+
+  // Pipeline overview
+  renderPipelineHome();
+
+  // Pending actions
+  renderPendingActions();
+
+  // Recent activity
+  var log=JSON.parse(_lsget('principal_log')||'[]');
+  var rHtml=log.length?log.slice(0,5).map(function(l){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.8rem;">'+
+      '<div style="font-size:1.1rem;">'+l.ico+'</div>'+
+      '<div style="flex:1;"><div style="color:var(--t1);">'+l.msg+'</div>'+
+      '<div style="font-size:.7rem;color:var(--t3);">'+l.time+'</div></div></div>';
+  }).join('') : '<div class="empty"><div class="empty-ico">📋</div><div class="empty-txt">No activity yet</div></div>';
+  document.getElementById('recent-activity').innerHTML=rHtml;
+}
+
+function renderPipelineHome(){
+  var classes=getClasses();
+  var school=getSchool();
+  var term=school.term||'First Term';
+  var steps=['CT Entered','HOD Reviewed','VP Approved','Principal Approved','Published'];
+  var icons=['📝','📚','🎓','🏛️','📢'];
+
+  // Count how many classes at each stage
+  var counts=[0,0,0,0,0];
+  var pipeline=JSON.parse(_lsget('result_pipeline')||'{}');
+  classes.forEach(function(cls){
+    var stage=(pipeline[cls]&&pipeline[cls][term])||0;
+    for(var i=0;i<=Math.min(stage,4);i++) counts[i]++;
+  });
+
+  var html='';
+  steps.forEach(function(step,i){
+    if(i>0) html+='<div class="pipe-line'+(counts[i]===classes.length&&classes.length?' done':'')+'"></div>';
+    var cls=counts[i]===classes.length&&classes.length?'done':counts[i]>0?'active':'pending';
+    html+='<div class="pipe-step">'+
+      '<div class="pipe-dot '+cls+'">'+icons[i]+'</div>'+
+      '<div class="pipe-lbl">'+step+'<br/>'+counts[i]+'/'+classes.length+'</div>'+
+      '</div>';
+  });
+  document.getElementById('pipeline-home').innerHTML=html||'<div style="color:var(--t3);font-size:.8rem;">No classes found</div>';
+}
+
+function renderPendingActions(){
+  var pipeline=JSON.parse(_lsget('result_pipeline')||'{}');
+  var school=getSchool();
+  var term=school.term||'First Term';
+  var classes=getClasses();
+  var pending=classes.filter(function(cls){
+    var stage=(pipeline[cls]&&pipeline[cls][term])||0;
+    return stage>=2&&stage<3; // VP approved, waiting for principal
+  });
+  var count=pending.length;
+  document.getElementById('pending-count').textContent=count;
+  var html=pending.length?pending.map(function(cls){
+    return '<div class="stu-row">'+
+      '<div class="stu-av">📊</div>'+
+      '<div class="stu-info"><div class="stu-name">'+cls+'</div>'+
+      '<div class="stu-sub">'+term+' — Awaiting your approval</div></div>'+
+      '<button class="btn btn-gold btn-sm" onclick="quickApprove(\''+cls+'\')">Approve</button>'+
+      '</div>';
+  }).join('') : '<div class="empty"><div class="empty-ico">✅</div><div class="empty-txt">No pending approvals</div></div>';
+  document.getElementById('pending-list').innerHTML=html;
+}
+
+/* ── PIPELINE PAGE ── */
+function renderPipeline(){
+  var pipeline=JSON.parse(_lsget('result_pipeline')||'{}');
+  var classes=getClasses();
+  var term=(document.getElementById('pipe-term-sel')||{value:'First Term'}).value||'First Term';
+  var filterCls=(document.getElementById('pipe-class-sel')||{value:''}).value||'';
+  var displayClasses=filterCls?[filterCls]:classes;
+  var stages=['CT Entered','HOD Reviewed','VP Approved','Principal ✅','Published 📢'];
+  var stageColors=['var(--blue)','var(--purple)','var(--orange)','var(--gold)','var(--green)'];
+
+  var html='';
+  displayClasses.forEach(function(cls){
+    var stage=(pipeline[cls]&&pipeline[cls][term])||0;
+    html+='<div style="background:var(--card2);border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid var(--line2);">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'+
+        '<div style="font-weight:700;font-size:.9rem;">'+cls+'</div>'+
+        '<span class="badge" style="background:'+stageColors[Math.min(stage,4)]+'22;color:'+stageColors[Math.min(stage,4)]+';">'+
+        stages[Math.min(stage,4)]+'</span></div>'+
+      '<div style="display:flex;gap:4px;">'+
+      stages.map(function(s,i){
+        var done=stage>i; var active=stage===i;
+        return '<div style="flex:1;height:5px;border-radius:3px;background:'+(done?stageColors[i]:active?stageColors[i]:'var(--line2)')+
+          ';opacity:'+(done?1:active?0.6:0.3)+';"></div>';
+      }).join('')+
+      '</div>'+
+      (stage<3?'<button class="btn btn-gold btn-sm" style="margin-top:10px;" onclick="approveClass(\''+cls+'\',\''+term+'\')">✅ Approve & Forward</button>':
+       stage===3?'<button class="btn btn-green btn-sm" style="margin-top:10px;" onclick="publishClass(\''+cls+'\',\''+term+'\')">📢 Publish</button>':
+       '<span style="font-size:.75rem;color:var(--green);margin-top:8px;display:block;">✅ Published</span>')+
+      '</div>';
+  });
+  document.getElementById('pipeline-list').innerHTML=html||'<div class="empty"><div class="empty-ico">🔄</div><div class="empty-txt">No classes found</div></div>';
+}
+
+/* ── RESULTS REVIEW ── */
+function loadResults(){
+  var cls=document.getElementById('res-class').value;
+  var term=document.getElementById('res-term').value;
+  var school=getSchool();
+  var sess=school.session||'2025/2026';
+  if(!cls){ document.getElementById('results-content').innerHTML='<div class="empty"><div class="empty-ico">📊</div><div class="empty-txt">Select a class to view results</div></div>'; return; }
+  var students=getStudents().filter(function(s){ return s.class===cls; });
+  var scores=getScores(cls,term,sess);
+  var ctRemarks=JSON.parse(_lsget('ct_remarks')||'{}');
+  if(!students.length){ document.getElementById('results-content').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-txt">No students in this class</div></div>'; return; }
+
+  // Build subject list
+  var subjects={};
+  Object.values(scores).forEach(function(e){ if(e&&e.subject) subjects[e.subject]=1; });
+  var subjList=Object.keys(subjects).sort();
+
+  // Build student score map
+  var stuScores={};
+  Object.values(scores).forEach(function(e){
+    if(!e||!e.stuId) return;
+    if(!stuScores[e.stuId]) stuScores[e.stuId]={};
+    var total=parseInt(e.ca1||0)+parseInt(e.ca2||0)+parseInt(e.exam||0);
+    stuScores[e.stuId][e.subject]={ca1:e.ca1,ca2:e.ca2,exam:e.exam,total:total};
+  });
+
+  var html='<div style="overflow-x:auto;"><table class="score-table">'+
+    '<thead><tr><th>#</th><th>Student</th>'+
+    subjList.map(function(s){ return '<th>'+s+'</th>'; }).join('')+
+    '<th>Total</th><th>Avg%</th><th>CT Remark</th></tr></thead><tbody>';
+
+  students.sort(function(a,b){
+    var aT=Object.values(stuScores[a.id]||{}).reduce(function(x,v){ return x+v.total; },0);
+    var bT=Object.values(stuScores[b.id]||{}).reduce(function(x,v){ return x+v.total; },0);
+    return bT-aT;
+  }).forEach(function(s,i){
+    var sScores=stuScores[s.id]||{};
+    var total=Object.values(sScores).reduce(function(a,v){ return a+v.total; },0);
+    var avg=subjList.length?Math.round(total/subjList.length):0;
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    var avgColor=avg>=70?'var(--green)':avg>=50?'var(--gold)':'var(--red)';
+    html+='<tr>'+
+      '<td style="color:var(--t4);">'+(i+1)+'</td>'+
+      '<td style="font-weight:700;">'+name+'</td>'+
+      subjList.map(function(subj){
+        var sc=sScores[subj];
+        return '<td style="color:'+(sc&&sc.total>=50?'var(--t1)':'var(--red)')+';">'+(sc?sc.total:'—')+'</td>';
+      }).join('')+
+      '<td style="font-weight:700;">'+total+'</td>'+
+      '<td style="font-weight:700;color:'+avgColor+';">'+avg+'%</td>'+
+      '<td style="font-size:.72rem;color:var(--t3);">'+(ctRemarks[s.id]||'—')+'</td>'+
+      '</tr>';
+  });
+  html+='</tbody></table></div>';
+  html+='<div style="display:flex;gap:8px;margin-top:12px;">'+
+    '<button class="btn btn-gold btn-sm" onclick="showPage(\'remarks\')">✍️ Add My Remarks</button>'+
+    '<button class="btn btn-blue btn-sm" onclick="showPage(\'override\')">🔧 Override Scores</button>'+
+    '</div>';
+  document.getElementById('results-content').innerHTML=html;
+}
+
+/* ── REMARKS PAGE ── */
+var _remarkTemplate='';
+function setTemplate(t){ _remarkTemplate=t; toast('Template ready — click a student remark box to apply'); }
+function renderRemarksPage(){
+  var cls=document.getElementById('rem-class').value;
+  if(!cls){ document.getElementById('remarks-list').innerHTML='<div class="empty"><div class="empty-ico">✍️</div><div class="empty-txt">Select a class first</div></div>'; return; }
+  loadRemarksPage();
+}
+function loadRemarksPage(){
+  var cls=document.getElementById('rem-class').value; if(!cls) return;
+  var students=getStudents().filter(function(s){ return s.class===cls; });
+  var remarks=JSON.parse(_lsget('principal_remarks')||'{}');
+  var html='';
+  students.forEach(function(s){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    html+='<div class="remark-card principal-remark">'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'+
+        '<div class="stu-av">'+name.charAt(0)+'</div>'+
+        '<div class="stu-info"><div class="stu-name">'+name+'</div>'+
+        '<div class="stu-sub">'+s.class+'</div></div>'+
+        '<button class="btn btn-navy btn-sm" onclick="applyTemplate(\'rem-'+s.id+'\')">📋</button>'+
+      '</div>'+
+      '<textarea class="fi" id="rem-'+s.id+'" placeholder="Principal\'s remark..." style="min-height:60px;">'+
+      (remarks[s.id]||'')+'</textarea>'+
+      '</div>';
+  });
+  document.getElementById('remarks-list').innerHTML=html||'<div class="empty"><div class="empty-ico">👥</div><div class="empty-txt">No students found</div></div>';
+}
+function applyTemplate(inputId){
+  var inp=document.getElementById(inputId);
+  if(inp&&_remarkTemplate) inp.value=_remarkTemplate;
+}
+function saveAllRemarks(){
+  var cls=document.getElementById('rem-class').value; if(!cls){ toast('Select a class first','error'); return; }
+  var students=getStudents().filter(function(s){ return s.class===cls; });
+  var remarks=JSON.parse(_lsget('principal_remarks')||'{}');
+  students.forEach(function(s){
+    var inp=document.getElementById('rem-'+s.id);
+    if(inp) remarks[s.id]=inp.value.trim();
+  });
+  _lsset('principal_remarks',remarks);
+  logActivity('✍️','Principal remarks saved for '+cls);
+  toast('Remarks saved ✅','success');
+}
+
+/* ── SCORE OVERRIDE ── */
+var _pendingOverride=null;
+function loadOverridePage(){ renderOverridePage(); }
+function renderOverridePage(){
+  var cls=document.getElementById('ov-class').value;
+  if(!cls){ document.getElementById('override-content').innerHTML='<div class="empty"><div class="empty-ico">🔧</div><div class="empty-txt">Select a class to override scores</div></div>'; return; }
+  loadOverrideScores();
+}
+function loadOverrideScores(){
+  var cls=document.getElementById('ov-class').value; if(!cls) return;
+  var subj=document.getElementById('ov-subject').value;
+  var school=getSchool();
+  var term=(document.getElementById('res-term')||{value:'First Term'}).value||school.term||'First Term';
+  var sess=school.session||'2025/2026';
+  var students=getStudents().filter(function(s){ return s.class===cls; });
+  var scores=getScores(cls,term,sess);
+
+  // Build student score map
+  var stuScores={};
+  Object.keys(scores).forEach(function(k){
+    var e=scores[k]; if(!e||!e.stuId) return;
+    if(!stuScores[e.stuId]) stuScores[e.stuId]={};
+    stuScores[e.stuId][e.subject]={key:k,ca1:e.ca1||0,ca2:e.ca2||0,exam:e.exam||0};
+  });
+
+  var subjects=subj?[subj]:getSubjects().filter(function(s){
+    return Object.values(stuScores).some(function(ss){ return ss[s]; });
+  });
+
+  if(!subjects.length){ document.getElementById('override-content').innerHTML='<div class="empty"><div class="empty-ico">📊</div><div class="empty-txt">No scores found for this class</div></div>'; return; }
+
+  var html='<div style="overflow-x:auto;"><table class="score-table">'+
+    '<thead><tr><th>Student</th><th>Subject</th><th>CA1</th><th>CA2</th><th>Exam</th><th>Total</th><th>Action</th></tr></thead><tbody>';
+
+  students.forEach(function(s){
+    var sScores=stuScores[s.id]||{};
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    subjects.forEach(function(subj2){
+      var sc=sScores[subj2]; if(!sc) return;
+      var total=parseInt(sc.ca1||0)+parseInt(sc.ca2||0)+parseInt(sc.exam||0);
+      html+='<tr>'+
+        '<td style="font-weight:600;">'+name+'</td>'+
+        '<td style="color:var(--gold);">'+subj2+'</td>'+
+        '<td><input type="number" min="0" max="30" value="'+sc.ca1+'" id="ov-'+s.id+'-'+subj2+'-ca1" class="score-table input"/></td>'+
+        '<td><input type="number" min="0" max="30" value="'+sc.ca2+'" id="ov-'+s.id+'-'+subj2+'-ca2" class="score-table input"/></td>'+
+        '<td><input type="number" min="0" max="70" value="'+sc.exam+'" id="ov-'+s.id+'-'+subj2+'-exam" class="score-table input"/></td>'+
+        '<td style="font-weight:700;color:'+(total>=50?'var(--green)':'var(--red)')+';">'+total+'</td>'+
+        '<td><button class="btn btn-red btn-sm" onclick="promptOverride(\''+s.id+'\',\''+name+'\',\''+subj2+'\',\''+cls+'\',\''+term+'\',\''+sess+'\')">✏️</button></td>'+
+        '</tr>';
+    });
+  });
+  html+='</tbody></table></div>'+
+    '<button class="btn btn-red" style="margin-top:12px;" onclick="saveAllOverrides(\''+cls+'\',\''+term+'\',\''+sess+'\')">💾 Save All Changes</button>';
+  document.getElementById('override-content').innerHTML=html;
+}
+
+function promptOverride(stuId,name,subj,cls,term,sess){
+  var ca1=document.getElementById('ov-'+stuId+'-'+subj+'-ca1').value;
+  var ca2=document.getElementById('ov-'+stuId+'-'+subj+'-ca2').value;
+  var exam=document.getElementById('ov-'+stuId+'-'+subj+'-exam').value;
+  _pendingOverride={stuId:stuId,name:name,subj:subj,cls:cls,term:term,sess:sess,ca1:ca1,ca2:ca2,exam:exam};
+  document.getElementById('override-summary').innerHTML=
+    '<b>Student:</b> '+name+'<br><b>Subject:</b> '+subj+
+    '<br><b>New scores:</b> CA1='+ca1+' CA2='+ca2+' Exam='+exam+
+    '<br><b>New Total:</b> '+(parseInt(ca1)+parseInt(ca2)+parseInt(exam));
+  document.getElementById('override-reason').value='';
+  openModal('m-override-confirm');
+}
+
+function confirmOverride(){
+  if(!_pendingOverride) return;
+  var reason=document.getElementById('override-reason').value.trim();
+  if(!reason){ toast('Please state a reason','error'); return; }
+  var o=_pendingOverride;
+  var scores=getScores(o.cls,o.term,o.sess);
+  // Find and update
+  var found=false;
+  Object.keys(scores).forEach(function(k){
+    var e=scores[k];
+    if(e&&e.stuId===o.stuId&&e.subject===o.subj){
+      scores[k].ca1=o.ca1; scores[k].ca2=o.ca2; scores[k].exam=o.exam;
+      scores[k].total=parseInt(o.ca1)+parseInt(o.ca2)+parseInt(o.exam);
+      scores[k].overrideBy='Principal'; scores[k].overrideReason=reason;
+      scores[k].overrideTime=new Date().toLocaleString();
+      found=true;
+    }
+  });
+  if(!found){
+    var newKey=o.stuId+'_'+o.subj.replace(/\s+/g,'_');
+    scores[newKey]={stuId:o.stuId,student:o.name,subject:o.subj,ca1:o.ca1,ca2:o.ca2,exam:o.exam,
+      total:parseInt(o.ca1)+parseInt(o.ca2)+parseInt(o.exam),
+      overrideBy:'Principal',overrideReason:reason,overrideTime:new Date().toLocaleString()};
+  }
+  saveScores(o.cls,o.term,o.sess,scores);
+  logActivity('🔧','Score override: '+o.name+' '+o.subj+' → '+o.ca1+'/'+o.ca2+'/'+o.exam+' ('+reason+')');
+  closeModal('m-override-confirm');
+  toast('Score overridden ✅','success');
+  loadOverrideScores();
+}
+
+function saveAllOverrides(cls,term,sess){
+  var students=getStudents().filter(function(s){ return s.class===cls; });
+  var scores=getScores(cls,term,sess);
+  var changed=0;
+  students.forEach(function(s){
+    var subjects=getSubjects();
+    subjects.forEach(function(subj){
+      var ca1El=document.getElementById('ov-'+s.id+'-'+subj+'-ca1');
+      var ca2El=document.getElementById('ov-'+s.id+'-'+subj+'-ca2');
+      var examEl=document.getElementById('ov-'+s.id+'-'+subj+'-exam');
+      if(!ca1El) return;
+      var key=s.id+'_'+subj.replace(/\s+/g,'_');
+      var existing=Object.keys(scores).find(function(k){ return scores[k].stuId===s.id&&scores[k].subject===subj; });
+      if(existing){
+        scores[existing].ca1=ca1El.value; scores[existing].ca2=ca2El.value; scores[existing].exam=examEl.value;
+        scores[existing].total=parseInt(ca1El.value)+parseInt(ca2El.value)+parseInt(examEl.value);
+        scores[existing].overrideBy='Principal'; scores[existing].overrideTime=new Date().toLocaleString();
+        changed++;
+      }
+    });
+  });
+  saveScores(cls,term,sess,scores);
+  logActivity('🔧','Bulk score override for '+cls+' — '+changed+' scores updated');
+  toast(changed+' scores saved ✅','success');
+}
+
+/* ── PUBLISH ── */
+function approveClass(cls,term){
+  var pipeline=JSON.parse(_lsget('result_pipeline')||'{}');
+  if(!pipeline[cls]) pipeline[cls]={};
+  pipeline[cls][term]=3; // Principal approved
+  _lsset('result_pipeline',pipeline);
+  logActivity('✅','Approved results for '+cls+' — '+term);
+  toast(cls+' approved ✅','success');
+  renderPipeline();
+}
+function quickApprove(cls){
+  var school=getSchool();
+  approveClass(cls,school.term||'First Term');
+  renderHome();
+}
+function publishClass(cls,term){
+  var pipeline=JSON.parse(_lsget('result_pipeline')||'{}');
+  if(!pipeline[cls]) pipeline[cls]={};
+  pipeline[cls][term]=4; // Published
+  _lsset('result_pipeline',pipeline);
+  // Write published flag
+  var pub=JSON.parse(_lsget('published_results')||'{}');
+  if(!pub[cls]) pub[cls]={};
+  pub[cls][term]=new Date().toISOString();
+  _lsset('published_results',pub);
+  logActivity('📢','Published results for '+cls+' — '+term);
+  toast(cls+' results published! 🎉','success');
+  renderPipeline();
+}
+function renderPublishPage(){
+  var classes=getClasses();
+  var pipeline=JSON.parse(_lsget('result_pipeline')||'{}');
+  var pub=JSON.parse(_lsget('published_results')||'{}');
+  var school=getSchool();
+  var term=school.term||'First Term';
+  var html='';
+  classes.forEach(function(cls){
+    var stage=(pipeline[cls]&&pipeline[cls][term])||0;
+    var isPublished=pub[cls]&&pub[cls][term];
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);">'+
+      '<div style="flex:1;"><div style="font-weight:700;font-size:.9rem;">'+cls+'</div>'+
+      '<div style="font-size:.72rem;color:var(--t3);">'+term+'</div></div>'+
+      (isPublished?
+        '<span class="badge badge-green">✅ Published</span>':
+        stage>=3?
+          '<button class="btn btn-green btn-sm" onclick="publishClass(\''+cls+'\',\''+term+'\')">📢 Publish</button>':
+          stage>=2?
+            '<button class="btn btn-gold btn-sm" onclick="approveClass(\''+cls+'\',\''+term+'\')">✅ Approve First</button>':
+            '<span class="badge badge-red">⏳ Not Ready</span>')+
+      '</div>';
+  });
+  document.getElementById('publish-classes-list').innerHTML=html||'<div class="empty"><div class="empty-ico">📢</div><div class="empty-txt">No classes found</div></div>';
+}
+function publishAll(){
+  var classes=getClasses();
+  var pipeline=JSON.parse(_lsget('result_pipeline')||'{}');
+  var pub=JSON.parse(_lsget('published_results')||'{}');
+  var school=getSchool();
+  var term=school.term||'First Term';
+  var count=0;
+  classes.forEach(function(cls){
+    var stage=(pipeline[cls]&&pipeline[cls][term])||0;
+    if(stage>=3){
+      if(!pipeline[cls]) pipeline[cls]={}; pipeline[cls][term]=4;
+      if(!pub[cls]) pub[cls]={}; pub[cls][term]=new Date().toISOString();
+      count++;
+    }
+  });
+  _lsset('result_pipeline',pipeline);
+  _lsset('published_results',pub);
+  logActivity('📢','Published all approved results — '+count+' classes');
+  toast(count+' classes published! 🎉','success');
+  renderPublishPage();
+}
+
+/* ── STAFF PAGE ── */
+function renderStaffPage(){
+  var staff=getStaff();
+  var roles={};
+  staff.forEach(function(s){ roles[s.role||'Other']=(roles[s.role||'Other']||0)+1; });
+  var teachers=staff.filter(function(s){ return s.role&&s.role.toLowerCase().includes('teacher'); }).length;
+  document.getElementById('kpi-staff').innerHTML=[
+    {ico:'👥',val:staff.length,lbl:'Total Staff',cls:'blue'},
+    {ico:'🏫',val:teachers,lbl:'Teachers',cls:''},
+    {ico:'🎓',val:Object.keys(roles).length,lbl:'Roles',cls:'purple'},
+  ].map(function(k){
+    return '<div class="kpi '+k.cls+'"><div class="kpi-val">'+k.ico+' '+k.val+'</div><div class="kpi-lbl">'+k.lbl+'</div></div>';
+  }).join('')+'<div class="kpi green"><div class="kpi-val">✅</div><div class="kpi-lbl">All Active</div></div>';
+  var html='';
+  staff.forEach(function(s,i){
+    var name=(s.surname||s.name||'')+' '+(s.firstname||'');
+    html+='<div class="stu-row">'+
+      '<div class="stu-av">'+name.trim().charAt(0)+'</div>'+
+      '<div class="stu-info"><div class="stu-name">'+name.trim()+'</div>'+
+      '<div class="stu-sub">'+(s.role||'—')+' &nbsp;·&nbsp; '+(s.subject||'—')+'</div></div>'+
+      '<span class="badge badge-blue">'+(s.role||'Staff')+'</span></div>';
+  });
+  document.getElementById('staff-list').innerHTML=html||'<div class="empty"><div class="empty-ico">👨‍🏫</div><div class="empty-txt">No staff found</div></div>';
+}
+
+/* ── ANALYTICS ── */
+function renderAnalytics(){
+  var students=getStudents();
+  var school=getSchool();
+  var term=school.term||'First Term';
+  var sess=school.session||'2025/2026';
+  var classes=getClasses();
+
+  document.getElementById('kpi-analytics').innerHTML=[
+    {ico:'👨‍🎓',val:students.length,lbl:'Students',cls:'blue'},
+    {ico:'📚',val:classes.length,lbl:'Classes',cls:''},
+    {ico:'📊',val:term,lbl:'Current Term',cls:'gold'},
+    {ico:'🗓️',val:sess,lbl:'Session',cls:'purple'}
+  ].map(function(k){
+    return '<div class="kpi '+k.cls+'"><div class="kpi-val">'+k.ico+' '+k.val+'</div><div class="kpi-lbl">'+k.lbl+'</div></div>';
+  }).join('');
+
+  var html='';
+  classes.forEach(function(cls){
+    var classStu=students.filter(function(s){ return s.class===cls; });
+    var scores=getScores(cls,term,sess);
+    var stuScores={};
+    Object.values(scores).forEach(function(e){
+      if(!e||!e.stuId) return;
+      if(!stuScores[e.stuId]) stuScores[e.stuId]=[];
+      stuScores[e.stuId].push(parseInt(e.ca1||0)+parseInt(e.ca2||0)+parseInt(e.exam||0));
+    });
+    var avgs=classStu.map(function(s){
+      var sc=stuScores[s.id]||[];
+      return sc.length?sc.reduce(function(a,b){return a+b;},0)/sc.length:null;
+    }).filter(function(v){ return v!==null; });
+    var clsAvg=avgs.length?Math.round(avgs.reduce(function(a,b){return a+b;},0)/avgs.length):0;
+    var color=clsAvg>=70?'var(--green)':clsAvg>=50?'var(--gold)':'var(--red)';
+    html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);">'+
+      '<div style="flex:1;"><div style="font-weight:700;">'+cls+'</div>'+
+      '<div style="font-size:.72rem;color:var(--t3);">'+classStu.length+' students</div></div>'+
+      '<div style="font-weight:900;font-family:var(--serif);font-size:1.2rem;color:'+color+';">'+
+      (clsAvg||'—')+(clsAvg?'%':'')+'</div></div>';
+  });
+  document.getElementById('analytics-content').innerHTML=html||'<div class="empty"><div class="empty-ico">📈</div><div class="empty-txt">No data yet</div></div>';
+}
+
+/* ── PRINT PAGE ── */
+function renderPrintPage(){
+  var classes=getClasses();
+  var sel=document.getElementById('print-class');
+  sel.innerHTML='<option value="">All Classes</option>';
+  classes.forEach(function(c){
+    var o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o);
+  });
+}
+function openPrint(){
+  var cls=document.getElementById('print-class').value;
+  var url='rsms-results-print.html'+(cls?'?class='+encodeURIComponent(cls):'');
+  window.open(url,'_blank');
+}
+function openProgressReport(){
+  window.open('rsms-progress-report.html','_blank');
+}
+
+/* ── ACTIVITY LOG ── */
+function logActivity(ico,msg){
+  var log=JSON.parse(_lsget('principal_log')||'[]');
+  log.unshift({ico:ico,msg:msg,time:new Date().toLocaleString()});
+  _lsset('principal_log',log.slice(0,50));
+}
+
+/* ── INIT ── */
+window.addEventListener('load',function(){
+  // Load Firebase
+  if(typeof firebase==='undefined'){
+    var s1=document.createElement('script');
+    s1.src='https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js';
+    s1.onload=function(){
+      var s2=document.createElement('script');
+      s2.src='https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js';
+      s2.onload=function(){
+        if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+        initPortal();
+      };
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(s1);
+  } else { initPortal(); }
+});
+
+function initPortal(){
+  var school=getSchool();
+  var user=JSON.parse(sessionStorage.getItem('rsms_user')||'{}');
+  // Auth check
+  if(!school.schoolId){ location.href='rsms-login.html'; return; }
+  var role=(user.role||'').toLowerCase();
+  if(role&&role!=='admin'&&role!=='principal'&&role!=='vp'){ location.href='rsms-login.html'; return; }
+
+  // Set header
+  document.getElementById('hd-school').textContent=school.name||'School';
+  document.getElementById('hd-term').textContent=school.term||'Term';
+
+  // Populate selects
+  populateAllSelects();
+
+  // Warm cache
+  var sid=school.schoolId;
+  if(sid&&typeof RSMS_FB!=='undefined'){
+    RSMS_FB.warmCache(sid,function(){
+      populateAllSelects();
+      renderHome();
+    });
+  } else { renderHome(); }
+}
+</script>
+
+<!-- Load rsms-firebase.js -->
+<script src="rsms-firebase.js"></script>
+</body>
+</html>
