@@ -1,18 +1,18 @@
 // RSMS Service Worker — Rehoteq Technologies
 const CACHE_NAME = 'rsms-v1.0.0';
 const STATIC_ASSETS = [
-  '/rsms/rsms-app.html',
-  '/rsms/',
-  '/rsms/index.html',
-  '/rsms/rsms-admin.html',
-  '/rsms/rsms-teacher.html',
-  '/rsms/rsms-student.html',
-  '/rsms/rsms-parent.html',
-  '/rsms/rsms-cbt.html',
-  '/rsms/rsms-apply.html',
-  '/rsms/rsms-onboarding.html',
-  '/rsms/rsms-control.html',
-  '/rsms/manifest.json',
+  '/rsms-app.html',
+  '/',
+  '/index.html',
+  '/rsms-admin.html',
+  '/rsms-teacher.html',
+  '/rsms-student.html',
+  '/rsms-parent.html',
+  '/rsms-cbt.html',
+  '/rsms-apply.html',
+  '/rsms-onboarding.html',
+  '/rsms-control.html',
+  '/manifest.json',
   'https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap'
 ];
 
@@ -66,7 +66,7 @@ self.addEventListener('fetch', function(event) {
           if (cached) return cached;
           // Offline page for navigation
           if (event.request.mode === 'navigate') {
-            return caches.match('/rsms/index.html');
+            return caches.match('/index.html');
           }
           return new Response('Offline', { status: 503 });
         });
@@ -82,10 +82,10 @@ self.addEventListener('push', function(event) {
   }
   var options = {
     body: data.body || 'New notification from RSMS',
-    icon: '/rsms/icons/icon-192.png',
-    badge: '/rsms/icons/icon-72.png',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
     vibrate: [200, 100, 200],
-    data: data.url || '/rsms/',
+    data: data.url || '/',
     actions: data.actions || []
   };
   event.waitUntil(
@@ -96,6 +96,6 @@ self.addEventListener('push', function(event) {
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
   event.waitUntil(
-    clients.openWindow(event.notification.data || '/rsms/')
+    clients.openWindow(event.notification.data || '/')
   );
 });

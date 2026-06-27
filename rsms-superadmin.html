@@ -1078,7 +1078,10 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
    Manages all client schools, plans, tokens, branding
 ═══════════════════════════════════════════════════════ */
 
-var SA_PASS = (window.RSMS_CONFIG&&window.RSMS_CONFIG.platform&&window.RSMS_CONFIG.platform.superadminPw)||['rehoteq','@super','admin','2025'].join('');
+// Superadmin password is verified against a SHA-256 hash stored in Firebase
+// To set/change the password, run in browser console:
+//   _fbDB().ref('config/superadmin_hash').set('<sha256 hex hash of your new password>')
+// Generate hash: echo -n "YourNewPassword" | sha256sum
 var SA_KEY  = 'rsms_superadmin_auth';
 
 // ── DATA ────────────────────────────────────────────────
@@ -1175,11 +1178,36 @@ window.addEventListener('load', function(){
   }
 });
 
-function saLogin(){
+async function saLogin(){
   var pw = getVal('sa-password');
-  if(pw !== SA_PASS){ toast('Wrong password','error'); return; }
-  sessionStorage.setItem(SA_KEY,'true');
-  showDashboard();
+  if(!pw){ toast('Enter password','error'); return; }
+
+  // Hash the entered password with SHA-256
+  var encoder = new TextEncoder();
+  var data = encoder.encode(pw);
+  var hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  var hash = Array.from(new Uint8Array(hashBuffer))
+    .map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+
+  // Verify against Firebase-stored hash
+  var db = _fbDB();
+  if(!db){ toast('Firebase not available','error'); return; }
+
+  db.ref('config/superadmin_hash').once('value').then(function(snap){
+    var stored = snap.val();
+    if(!stored){
+      toast('Superadmin hash not configured in Firebase','error');
+      return;
+    }
+    if(hash === stored){
+      sessionStorage.setItem(SA_KEY,'true');
+      showDashboard();
+    } else {
+      toast('Wrong password','error');
+    }
+  }).catch(function(e){
+    toast('Auth check failed: '+e.message,'error');
+  });
 }
 
 function showDashboard(){
