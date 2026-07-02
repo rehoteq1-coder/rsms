@@ -509,6 +509,73 @@ select.fi option{background:var(--card);color:var(--t1);}
 .sis-meta{font-size:.75rem;color:var(--t3);margin-top:2px;}
 .sis-paid{font-size:.75rem;color:var(--green);margin-top:4px;font-weight:700;}
 
+
+/* ── STUDENT ACCOUNTS ── */
+.stu-card { cursor:pointer; transition:transform .15s,box-shadow .15s; }
+.stu-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,.08); }
+.progress-bar { height:8px; background:var(--card2); border-radius:4px; overflow:hidden; margin-top:6px; }
+.progress-fill { height:100%; border-radius:4px; transition:width .4s ease; }
+.stu-detail-hd { display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+.stu-detail-av { width:52px; height:52px; border-radius:50%; background:var(--gold); color:#000; font-weight:800; font-size:1.2rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.stu-detail-info h3 { font-size:1rem; color:var(--t1); margin-bottom:2px; }
+.stu-detail-info p { font-size:.75rem; color:var(--t3); }
+.account-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:16px; }
+.acct-tile { background:var(--card2); border-radius:var(--r2); padding:12px; text-align:center; }
+.acct-tile .av { font-size:1.1rem; font-weight:800; }
+.acct-tile .al { font-size:.65rem; color:var(--t3); margin-top:2px; }
+.history-tbl { width:100%; font-size:.78rem; border-collapse:collapse; }
+.history-tbl th { text-align:left; padding:8px 6px; color:var(--t3); font-weight:600; font-size:.7rem; border-bottom:2px solid var(--line); }
+.history-tbl td { padding:8px 6px; border-bottom:1px solid var(--line); color:var(--t2); }
+.class-group-hd { font-weight:700; font-size:.82rem; color:var(--gold); margin:18px 0 8px; padding-bottom:6px; border-bottom:2px solid var(--goldl); display:flex; justify-content:space-between; align-items:center; }
+.class-group-hd .cg-count { font-size:.68rem; font-weight:500; color:var(--t3); }
+.defaulter-badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:.65rem; font-weight:600; }
+
+/* ── STAFF PAYROLL ── */
+.payroll-card { border-left:4px solid var(--teal); }
+.payslip-box { border:2px dashed var(--line2); border-radius:var(--r2); padding:16px; margin-bottom:14px; }
+.payslip-hd { text-align:center; margin-bottom:14px; border-bottom:1px solid var(--line); padding-bottom:10px; }
+.payslip-row { display:flex; justify-content:space-between; padding:5px 0; font-size:.82rem; }
+.payslip-total { font-weight:700; border-top:2px solid var(--t1); margin-top:6px; padding-top:6px; }
+
+/* ── ENHANCED REPORTS ── */
+.report-section { margin-bottom:20px; }
+.bar-chart { display:flex; flex-direction:column; gap:8px; }
+.bar-row { display:flex; align-items:center; gap:10px; }
+.bar-label { flex:0 0 120px; font-size:.75rem; color:var(--t2); text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bar-track { flex:1; height:24px; background:var(--card2); border-radius:4px; overflow:hidden; position:relative; }
+.bar-fill { height:100%; border-radius:4px; display:flex; align-items:center; padding-left:8px; font-size:.68rem; font-weight:600; color:#fff; min-width:fit-content; transition:width .5s ease; }
+.bar-value { flex:0 0 80px; font-size:.75rem; font-weight:700; color:var(--t1); text-align:right; }
+.donut-container { display:flex; align-items:center; justify-content:center; gap:20px; flex-wrap:wrap; }
+.donut-legend { display:flex; flex-direction:column; gap:6px; }
+.legend-item { display:flex; align-items:center; gap:8px; font-size:.75rem; color:var(--t2); }
+.legend-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+.trend-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:6px; }
+.trend-cell { text-align:center; padding:10px 6px; border-radius:var(--r3); background:var(--card2); }
+.trend-cell .tv { font-size:.82rem; font-weight:700; }
+.trend-cell .tl { font-size:.6rem; color:var(--t3); }
+
+/* ── AUDIT TRAIL ── */
+.audit-entry { display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); font-size:.78rem; }
+.audit-ico { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:.9rem; }
+.audit-body { flex:1; }
+.audit-action { font-weight:600; color:var(--t1); }
+.audit-meta { font-size:.68rem; color:var(--t3); margin-top:2px; }
+
+/* ── PRINT STYLES ── */
+@media print {
+  .sidebar, .sb-overlay, .bottom-nav, .topbar, .btn, button, .menu-btn, .modal-ov { display:none !important; }
+  .main-area { overflow:visible !important; }
+  .main-scroll { overflow:visible !important; padding-bottom:0 !important; }
+  .page { display:none !important; }
+  .page.print-active { display:block !important; }
+  .card { break-inside:avoid; box-shadow:none !important; border:1px solid #ddd; }
+  body { background:#fff !important; }
+  .print-header { display:block !important; text-align:center; margin-bottom:20px; border-bottom:2px solid #333; padding-bottom:10px; }
+  .print-header h2 { font-size:1.2rem; }
+  .print-header p { font-size:.8rem; color:#666; }
+}
+.print-header { display:none; }
+
 </style>
 <script src="rsms-firebase.js"></script>
 <script src="rsms-plan-guard.js"></script>
@@ -532,11 +599,13 @@ select.fi option{background:var(--card);color:var(--t1);}
   <div class="sb-item" onclick="showPage('record',this)"><span class="ico">&#43;</span>Record Payment</div>
   <div class="sb-item" onclick="showPage('selfpay',this)"><span class="ico">&#128241;</span>Parent Self-Pay</div>
   <div class="sb-item" onclick="showPage('receipts',this)"><span class="ico">&#128442;</span>Receipts</div>
-  <div class="sb-item" onclick="showPage('ledger',this)"><span class="ico">&#128210;</span>Student Ledger</div>
+  <div class="sb-item" onclick="showPage('accounts',this)"><span class="ico">&#128100;</span>Student Accounts</div>
   <div class="sb-section">ACCOUNTS</div>
   <div class="sb-item" onclick="showPage('cashbook',this)"><span class="ico">&#128212;</span>Cashbook</div>
-  <div class="sb-section">REPORTS</div>
+  <div class="sb-item" onclick="showPage('payroll',this)"><span class="ico">&#128176;</span>Staff Payroll</div>
+  <div class="sb-section">REPORTS &amp; AUDIT</div>
   <div class="sb-item" onclick="showPage('reports',this)"><span class="ico">&#128202;</span>Financial Reports</div>
+  <div class="sb-item" onclick="showPage('audit',this)"><span class="ico">&#128270;</span>Audit Trail</div>
   <div class="sb-section">SYSTEM</div>
   <div class="sb-item" onclick="showPage('settings',this)"><span class="ico">&#9881;&#65039;</span>Settings</div>
   <div class="sb-item" onclick="window.open('rsms-admin.html','_blank')"><span class="ico">&#127979;</span>Admin Portal</div>
@@ -719,17 +788,54 @@ select.fi option{background:var(--card);color:var(--t1);}
   <div id="receipts-list"></div>
 </div>
 
-<!-- LEDGER -->
-<div class="page" id="pg-ledger">
-  <div class="pg-hd"><div class="pg-title">Student Ledger</div></div>
+<!-- STUDENT ACCOUNTS -->
+<div class="page" id="pg-accounts">
+  <div class="pg-hd">
+    <div><div class="pg-title">&#128100; Student Accounts</div>
+    <div style="font-size:.72rem;color:var(--t3);" id="acct-summary-lbl">Loading...</div></div>
+    <div style="display:flex;gap:6px;">
+      <button class="btn btn-ghost btn-sm" onclick="exportStudentAccounts()">&#8615; Export</button>
+      <button class="btn btn-ghost btn-sm" onclick="showDefaulters()">&#9888; Defaulters</button>
+    </div>
+  </div>
+  <div class="stat-grid" style="margin-bottom:12px;" id="acct-stats"></div>
   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-    <select class="fi" id="led-cls" onchange="renderLedger()" style="flex:1;height:40px;font-size:.82rem;min-width:130px;"><option value="">All Classes</option><option>Creche</option><option>Baby Class</option><option>Nursery 1</option><option>Nursery 2</option><option>KG 1</option><option>KG 2</option><option>Primary 1</option><option>Primary 2</option><option>Primary 3</option><option>Primary 4</option><option>Primary 5</option><option>Primary 6</option><option>JSS 1</option><option>JSS 2</option><option>JSS 3</option><option>SS 1 Science</option><option>SS 1 Commercial</option><option>SS 1 Art</option><option>SS 2 Science</option><option>SS 2 Commercial</option><option>SS 2 Art</option><option>SS 3 Science</option><option>SS 3 Commercial</option><option>SS 3 Art</option></select>
-    <select class="fi" id="led-status" onchange="renderLedger()" style="flex:1;height:40px;font-size:.82rem;min-width:120px;">
-      <option value="">All Students</option><option value="paid">Fully Paid</option>
+    <input class="fi" id="acct-search" placeholder="Search student name or reg no..." oninput="renderStudentAccounts()" style="flex:2;height:40px;font-size:.82rem;"/>
+    <select class="fi" id="acct-cls" onchange="renderStudentAccounts()" style="flex:1;height:40px;font-size:.82rem;min-width:130px;">
+      <option value="">All Classes</option>
+    </select>
+    <select class="fi" id="acct-status" onchange="renderStudentAccounts()" style="flex:1;height:40px;font-size:.82rem;min-width:120px;">
+      <option value="">All Status</option><option value="paid">Fully Paid</option>
       <option value="partial">Partial</option><option value="unpaid">Unpaid</option>
     </select>
   </div>
-  <div id="ledger-list"></div>
+  <div id="acct-list"></div>
+</div>
+
+<!-- STUDENT DETAIL MODAL -->
+<div class="modal-ov" id="m-stu-detail">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-handle"></div>
+    <div id="stu-detail-content"></div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-ghost" onclick="closeModal('m-stu-detail')" style="flex:1;">Close</button>
+      <button class="btn btn-gold" onclick="printStudentStatement()" style="flex:2;">&#128424; Print Statement</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEFAULTERS MODAL -->
+<div class="modal-ov" id="m-defaulters">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">&#9888;&#65039; Defaulters Report</div>
+    <div style="font-size:.75rem;color:var(--t3);margin-bottom:12px;">Students with outstanding balances, sorted by amount owed.</div>
+    <div id="defaulters-list"></div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-ghost" onclick="closeModal('m-defaulters')" style="flex:1;">Close</button>
+      <button class="btn btn-gold" onclick="exportDefaulters()" style="flex:2;">&#8615; Export Defaulters</button>
+    </div>
+  </div>
 </div>
 
 <!-- CASHBOOK -->
@@ -744,11 +850,44 @@ select.fi option{background:var(--card);color:var(--t1);}
 
 <!-- REPORTS -->
 <div class="page" id="pg-reports">
-  <div class="pg-title" style="margin-bottom:14px;">Financial Reports</div>
+  <div class="pg-hd">
+    <div><div class="pg-title">&#128202; Financial Reports</div></div>
+    <div style="display:flex;gap:6px;">
+      <button class="btn btn-ghost btn-sm" onclick="exportFullReport()">&#8615; Export</button>
+      <button class="btn btn-ghost btn-sm" onclick="printReport()">&#128424; Print</button>
+    </div>
+  </div>
+  <div class="print-header" id="report-print-hd"><h2 id="rpt-school-name"></h2><p id="rpt-term-info"></p></div>
   <div class="stat-grid" id="report-stats" style="margin-bottom:16px;"></div>
-  <div class="card">
-    <div class="card-title">Collection by Class</div>
+
+  <div class="report-section card">
+    <div class="card-title">&#128200; Income vs Expenditure</div>
+    <div id="income-vs-expenditure"></div>
+  </div>
+
+  <div class="report-section card">
+    <div class="card-title">&#127979; Collection by Class</div>
     <div id="class-collection"></div>
+  </div>
+
+  <div class="report-section card">
+    <div class="card-title">&#128179; Payment Method Breakdown</div>
+    <div id="payment-methods"></div>
+  </div>
+
+  <div class="report-section card">
+    <div class="card-title">&#128197; Monthly Collection Trend</div>
+    <div id="monthly-trend"></div>
+  </div>
+
+  <div class="report-section card">
+    <div class="card-title">&#128200; Fee Type Revenue</div>
+    <div id="fee-type-revenue"></div>
+  </div>
+
+  <div class="report-section card">
+    <div class="card-title">&#128203; Outstanding Balances Summary</div>
+    <div id="outstanding-summary"></div>
   </div>
 </div>
 
@@ -792,6 +931,120 @@ select.fi option{background:var(--card);color:var(--t1);}
   </div>
 </div>
 
+<!-- STAFF PAYROLL -->
+<div class="page" id="pg-payroll">
+  <div class="pg-hd">
+    <div><div class="pg-title">&#128176; Staff Payroll</div>
+    <div style="font-size:.72rem;color:var(--t3);" id="payroll-summary-lbl">Loading...</div></div>
+    <div style="display:flex;gap:6px;">
+      <button class="btn btn-gold btn-sm" onclick="openModal('m-record-salary')">+ Record Payment</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportPayroll()">&#8615; Export</button>
+    </div>
+  </div>
+  <div class="stat-grid" style="margin-bottom:12px;" id="payroll-stats"></div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+    <select class="fi" id="pay-month" onchange="renderPayroll()" style="flex:1;height:40px;font-size:.82rem;min-width:130px;">
+      <option value="">All Months</option>
+      <option>January</option><option>February</option><option>March</option><option>April</option>
+      <option>May</option><option>June</option><option>July</option><option>August</option>
+      <option>September</option><option>October</option><option>November</option><option>December</option>
+    </select>
+    <select class="fi" id="pay-status-filter" onchange="renderPayroll()" style="flex:1;height:40px;font-size:.82rem;min-width:120px;">
+      <option value="">All Staff</option><option value="paid">Paid</option><option value="unpaid">Not Paid</option>
+    </select>
+  </div>
+  <div id="payroll-list"></div>
+</div>
+
+<!-- RECORD SALARY MODAL -->
+<div class="modal-ov" id="m-record-salary">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">&#128176; Record Salary Payment</div>
+    <div class="fg"><label>Staff Member *</label>
+      <select class="fi" id="sal-staff" onchange="onSalaryStaffSelect()" style="height:46px;"><option value="">-- Select Staff --</option></select>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Month *</label>
+        <select class="fi" id="sal-month" style="height:46px;">
+          <option>January</option><option>February</option><option>March</option><option>April</option>
+          <option>May</option><option>June</option><option>July</option><option>August</option>
+          <option>September</option><option>October</option><option>November</option><option>December</option>
+        </select>
+      </div>
+      <div class="fg"><label>Year *</label>
+        <input class="fi" id="sal-year" type="number" value="2026"/>
+      </div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Amount (&#8358;) *</label>
+        <input class="fi" id="sal-amount" type="number" placeholder="0"/>
+      </div>
+      <div class="fg"><label>Payment Method</label>
+        <select class="fi" id="sal-method" style="height:46px;">
+          <option>Bank Transfer</option><option>Cash</option><option>Cheque</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Note (optional)</label>
+      <input class="fi" id="sal-note" placeholder="e.g. Includes overtime"/>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeModal('m-record-salary')" style="flex:1;">Cancel</button>
+      <button class="btn btn-gold" onclick="recordSalary()" style="flex:2;">&#9989; Record Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAYSLIP MODAL -->
+<div class="modal-ov" id="m-payslip">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-handle"></div>
+    <div id="payslip-content"></div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-ghost" onclick="closeModal('m-payslip')" style="flex:1;">Close</button>
+      <button class="btn btn-gold" onclick="printPayslip()" style="flex:2;">&#128424; Print Payslip</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIT TRAIL -->
+<div class="page" id="pg-audit">
+  <div class="pg-hd">
+    <div><div class="pg-title">&#128270; Audit Trail</div>
+    <div style="font-size:.72rem;color:var(--t3);">All financial actions are logged here for accountability.</div></div>
+    <div style="display:flex;gap:6px;">
+      <button class="btn btn-ghost btn-sm" onclick="exportAuditLog()">&#8615; Export</button>
+      <button class="btn btn-ghost btn-sm" onclick="runReconciliation()">&#9989; Reconcile</button>
+    </div>
+  </div>
+  <div class="stat-grid" style="margin-bottom:12px;" id="audit-stats"></div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+    <select class="fi" id="audit-type" onchange="renderAuditTrail()" style="flex:1;height:40px;font-size:.82rem;min-width:130px;">
+      <option value="">All Actions</option>
+      <option value="fee_payment">Fee Payment</option>
+      <option value="salary_payment">Salary Payment</option>
+      <option value="fee_edit">Fee Edit</option>
+      <option value="settings_change">Settings Change</option>
+    </select>
+    <input class="fi" id="audit-search" placeholder="Search..." oninput="renderAuditTrail()" style="flex:2;height:40px;font-size:.82rem;"/>
+  </div>
+  <div id="audit-list"></div>
+</div>
+
+<!-- RECONCILIATION MODAL -->
+<div class="modal-ov" id="m-reconcile">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">&#9989; Data Reconciliation</div>
+    <div style="font-size:.75rem;color:var(--t3);margin-bottom:14px;">Verifies financial data integrity across all records.</div>
+    <div id="reconcile-results"></div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-ghost" onclick="closeModal('m-reconcile')">Close</button>
+    </div>
+  </div>
+</div>
+
   </div>
 </div>
 </div>
@@ -800,8 +1053,8 @@ select.fi option{background:var(--card);color:var(--t1);}
 <nav class="bottom-nav">
   <button class="bn-item active" onclick="showPage('home',this)"><div class="bn-ico">&#127968;</div><div class="bn-lbl">Home</div></button>
   <button class="bn-item" onclick="showPage('record',this)"><div class="bn-ico">&#43;</div><div class="bn-lbl">Record</div></button>
-  <button class="bn-item" onclick="showPage('selfpay',this)"><div class="bn-ico">&#128241;</div><div class="bn-lbl">Self-Pay</div></button>
-  <button class="bn-item" onclick="showPage('ledger',this)"><div class="bn-ico">&#128210;</div><div class="bn-lbl">Ledger</div></button>
+  <button class="bn-item" onclick="showPage('accounts',this)"><div class="bn-ico">&#128100;</div><div class="bn-lbl">Accounts</div></button>
+  <button class="bn-item" onclick="showPage('payroll',this)"><div class="bn-ico">&#128176;</div><div class="bn-lbl">Payroll</div></button>
   <button class="bn-item" onclick="showPage('reports',this)"><div class="bn-ico">&#128202;</div><div class="bn-lbl">Reports</div></button>
 </nav>
 
@@ -1153,24 +1406,70 @@ function getVal(id){ var e=gEl(id);return e?e.value.trim():''; }
 function setVal(id,v){ var e=gEl(id);if(e)e.value=v||''; }
 
 // ── DATA ────────────────────────────────────────────
-function getStudents(){ var r=_lsget&&_lsget('students'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); }
-function getStaff(){    var r=_lsget&&_lsget('staff');    var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); }
-function getFees(){     var r=_lsget&&_lsget('fees');     var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); }
+function getStudents(){
+  var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+  var raw=sid?localStorage.getItem('rsms_'+sid+'_students'):null;
+  if(!raw) raw=localStorage.getItem('rsms_students');
+  var d=JSON.parse(raw||'[]');
+  return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean);
+}
+function getStaff(){
+  var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+  var raw=sid?localStorage.getItem('rsms_'+sid+'_staff'):null;
+  if(!raw) raw=localStorage.getItem('rsms_staff');
+  var d=JSON.parse(raw||'[]');
+  return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean);
+}
+function getFees(){
+  var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+  var raw=sid?localStorage.getItem('rsms_'+sid+'_fees'):null;
+  if(!raw) raw=localStorage.getItem('rsms_fees');
+  var d=JSON.parse(raw||'[]');
+  return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean);
+}
 function getSchool(){   return JSON.parse(localStorage.getItem('rsms_school')||'{"name":"","term":"First Term","session":"2025/2026"}'); }
 function saveFees(d){   localStorage.setItem('rsms_fees',JSON.stringify(d)); try{if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady())RSMS_FB.saveFees(d);}catch(e){} }
 function getFeeSchedule(){ return JSON.parse(localStorage.getItem('rsms_fee_schedule')||'[]'); }
 function getFlwConfig(){ return JSON.parse(localStorage.getItem('rsms_flw_config')||'{"publicKey":"","businessName":"","currency":"NGN"}'); }
 function saveFlwConfig(d){ localStorage.setItem('rsms_flw_config',JSON.stringify(d)); }
 
+// ── PAYROLL DATA ─────────────────────────────────────
+function getPayroll(){ return JSON.parse(localStorage.getItem('rsms_payroll')||'[]'); }
+function savePayroll(d){
+  localStorage.setItem('rsms_payroll',JSON.stringify(d));
+  try{if(typeof RSMS_DB!=='undefined'&&RSMS_DB.isReady())RSMS_DB.set('payroll',d);}catch(e){}
+}
+
+// ── AUDIT LOG ─────────────────────────────────────────
+function getAuditLog(){ return JSON.parse(localStorage.getItem('rsms_audit_log')||'[]'); }
+function saveAuditLog(d){ localStorage.setItem('rsms_audit_log',JSON.stringify(d)); try{if(typeof RSMS_DB!=='undefined'&&RSMS_DB.isReady())RSMS_DB.set('audit_log',d);}catch(e){} }
+function logAudit(action,type,details){
+  var log=getAuditLog();
+  log.push({id:'a'+Date.now(),action:action,type:type,details:details,timestamp:new Date().toISOString(),user:'Bursar'});
+  saveAuditLog(log);
+}
+
+// ── EXPECTED FEE HELPER ──────────────────────────────
+function getExpectedFee(cls){
+  var sched=getFeeSchedule();
+  var match=sched.find(function(f){return f.class===cls;});
+  if(match) return parseFloat(match.amount||0);
+  // Sum all fee types for this class if schedule has per-type entries
+  var total=sched.filter(function(f){return f.class===cls;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  return total||0;
+}
+
 // ── PAGE HOOKS ──────────────────────────────────────
 window.onPage_home     = renderDash;
 window.onPage_record   = function(){ populateClassFilters(); populatePayStudents(); };
 window.onPage_receipts = renderReceipts;
-window.onPage_ledger   = renderLedger;
+window.onPage_accounts = renderStudentAccounts;
 window.onPage_cashbook = renderCashbook;
 window.onPage_reports  = renderReports;
 window.onPage_settings = loadBursarSettings;
 window.onPage_selfpay  = renderSelfPay;
+window.onPage_payroll  = function(){ populateSalaryStaff(); renderPayroll(); };
+window.onPage_audit    = renderAuditTrail;
 
 // ── DASHBOARD ───────────────────────────────────────
 function renderDash(){
@@ -1515,37 +1814,278 @@ function renderReceipts(){
 }
 
 // ── LEDGER ──────────────────────────────────────────
-function renderLedger(){
-  populateClassFilters();
-  var el=gEl('ledger-list'); if(!el)return;
-  var cls=(gEl('led-cls')||{value:''}).value||'';
-  var status=(gEl('led-status')||{value:''}).value||'';
-  var fees=getFees(); var students=getStudents();
-  var sched=getFeeSchedule();
-  el.innerHTML='';
-  students.filter(function(s){return !cls||s.class===cls;}).forEach(function(stu){
-    var stuFees=fees.filter(function(f){return f.stuId===stu.id;});
-    var paid=stuFees.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
-    var expected=35000;
-    var match=sched.find(function(f){return f.class===stu.class;});
-    if(match)expected=parseFloat(match.amount||35000);
-    var isPaid=paid>=expected; var isPartial=paid>0&&!isPaid;
-    if(status==='paid'&&!isPaid)return;
-    if(status==='partial'&&!isPartial)return;
-    if(status==='unpaid'&&paid>0)return;
-    var name=(stu.surname||'')+' '+(stu.firstname||'');
-    var color=isPaid?'var(--green)':isPartial?'var(--orange)':'var(--red)';
-    var label=isPaid?'Fully Paid':isPartial?'Partial':'Unpaid';
-    var d=document.createElement('div');d.className='card';d.style.marginBottom='9px';
-    d.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;">'+
-      '<div><div style="font-weight:700;color:var(--t1);">'+name+'</div>'+
-      '<div style="font-size:.73rem;color:var(--t3);">'+(stu.class||'--')+' \u00b7 '+stu.reg+'</div></div>'+
-      '<div style="text-align:right;"><div style="font-weight:700;color:'+color+';">'+naira(paid)+'</div>'+
-      '<div style="font-size:.68rem;color:var(--t3);">of '+naira(expected)+'</div>'+
-      '<span class="badge" style="font-size:.58rem;background:'+color+'22;color:'+color+';">'+label+'</span></div></div>';
-    el.appendChild(d);
+// ═══════════════════════════════════════════════════
+// STUDENT ACCOUNTS — Full account management
+// ═══════════════════════════════════════════════════
+var _currentStuId=null;
+
+function renderStudentAccounts(){
+  var el=gEl('acct-list'); if(!el)return;
+  var students=getStudents(); var fees=getFees(); var sched=getFeeSchedule();
+  var q=(gEl('acct-search')||{value:''}).value.toLowerCase();
+  var cls=(gEl('acct-cls')||{value:''}).value||'';
+  var status=(gEl('acct-status')||{value:''}).value||'';
+
+  // Populate class filter dynamically
+  var clsSel=gEl('acct-cls');
+  if(clsSel && clsSel.options.length<=1){
+    var classes=uniqueArr(students.map(function(s){return s.class||'';})).filter(Boolean).sort();
+    classes.forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;clsSel.appendChild(o);});
+  }
+
+  // Compute totals for stats
+  var totalExpected=0, totalPaid=0, paidCount=0, partialCount=0, unpaidCount=0;
+  students.forEach(function(stu){
+    var expected=getExpectedFee(stu.class);
+    var paid=fees.filter(function(f){return f.stuId===stu.id;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+    totalExpected+=expected; totalPaid+=paid;
+    if(expected>0 && paid>=expected) paidCount++;
+    else if(paid>0) partialCount++;
+    else unpaidCount++;
   });
-  if(!el.children.length)el.innerHTML='<div class="empty-state">No students match filter</div>';
+
+  // Render stats
+  var statsEl=gEl('acct-stats');
+  if(statsEl) statsEl.innerHTML=[
+    {v:students.length,l:'Total Students',cls:'s-teal'},
+    {v:naira(totalPaid),l:'Total Collected',cls:'s-green'},
+    {v:naira(totalExpected-totalPaid),l:'Outstanding',cls:'s-red'},
+    {v:students.length?Math.round(paidCount/students.length*100)+'%':'0%',l:'Collection Rate',cls:'s-gold'}
+  ].map(function(s){return '<div class="stat-tile '+s.cls+'"><div class="stat-v">'+s.v+'</div><div class="stat-l">'+s.l+'</div></div>';}).join('');
+
+  var lbl=gEl('acct-summary-lbl');
+  if(lbl) lbl.textContent=paidCount+' paid \u00b7 '+partialCount+' partial \u00b7 '+unpaidCount+' unpaid';
+
+  // Filter students
+  var filtered=students.filter(function(s){
+    var name=((s.surname||'')+' '+(s.firstname||'')).toLowerCase();
+    var reg=(s.reg||s.registrationNumber||'').toLowerCase();
+    if(q && !name.includes(q) && !reg.includes(q)) return false;
+    if(cls && s.class!==cls) return false;
+    if(status){
+      var expected=getExpectedFee(s.class);
+      var paid=fees.filter(function(f){return f.stuId===s.id;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+      var isPaid=expected>0&&paid>=expected; var isPartial=paid>0&&!isPaid;
+      if(status==='paid'&&!isPaid) return false;
+      if(status==='partial'&&!isPartial) return false;
+      if(status==='unpaid'&&paid>0) return false;
+    }
+    return true;
+  });
+
+  // Group by class
+  var groups={};
+  filtered.forEach(function(s){
+    var c=s.class||'Unassigned';
+    if(!groups[c]) groups[c]=[];
+    groups[c].push(s);
+  });
+
+  el.innerHTML='';
+  var classNames=Object.keys(groups).sort();
+  classNames.forEach(function(className){
+    var grp=groups[className];
+    var hd=document.createElement('div');hd.className='class-group-hd';
+    hd.innerHTML=className+'<span class="cg-count">'+grp.length+' student'+(grp.length!==1?'s':'')+'</span>';
+    el.appendChild(hd);
+
+    grp.forEach(function(stu){
+      var stuFees=fees.filter(function(f){return f.stuId===stu.id;});
+      var paid=stuFees.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+      var expected=getExpectedFee(stu.class);
+      var isPaid=expected>0&&paid>=expected; var isPartial=paid>0&&!isPaid;
+      var pct=expected>0?Math.min(Math.round(paid/expected*100),100):0;
+      var color=isPaid?'var(--green)':isPartial?'var(--orange)':'var(--red)';
+      var label=isPaid?'Fully Paid':isPartial?'Partial ('+pct+'%)':'Unpaid';
+      var name=(stu.surname||'')+' '+(stu.firstname||'');
+
+      var d=document.createElement('div');d.className='card stu-card';d.style.marginBottom='8px';
+      d.onclick=(function(id){return function(){openStudentDetail(id);};})(stu.id);
+      d.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;">'+
+        '<div><div style="font-weight:700;color:var(--t1);font-size:.88rem;">'+name+'</div>'+
+        '<div style="font-size:.72rem;color:var(--t3);">'+(stu.reg||'--')+' \u00b7 '+(stu.class||'--')+'</div></div>'+
+        '<div style="text-align:right;"><div style="font-weight:700;color:'+color+';font-size:.88rem;">'+naira(paid)+'</div>'+
+        '<span class="defaulter-badge" style="background:'+color+'18;color:'+color+';">'+label+'</span></div></div>'+
+        '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%;background:'+color+';"></div></div>';
+      el.appendChild(d);
+    });
+  });
+
+  if(!el.children.length) el.innerHTML='<div class="empty-state">No students found</div>';
+}
+
+function openStudentDetail(stuId){
+  _currentStuId=stuId;
+  var students=getStudents(); var fees=getFees();
+  var stu=students.find(function(s){return s.id===stuId;});
+  if(!stu){toast('Student not found','error');return;}
+
+  var name=(stu.surname||'')+' '+(stu.firstname||'');
+  var stuFees=fees.filter(function(f){return f.stuId===stuId;}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  var paid=stuFees.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  var expected=getExpectedFee(stu.class);
+  var balance=expected-paid;
+  var isPaid=expected>0&&paid>=expected;
+  var color=isPaid?'var(--green)':paid>0?'var(--orange)':'var(--red)';
+  var statusLabel=isPaid?'Fully Paid':paid>0?'Partial':'Unpaid';
+  var initial=(stu.surname||'S').charAt(0).toUpperCase();
+
+  // Fee type breakdown
+  var feeTypes={};
+  stuFees.forEach(function(f){ var t=f.type||'General'; feeTypes[t]=(feeTypes[t]||0)+parseFloat(f.amount||0); });
+
+  var typeRows=Object.keys(feeTypes).map(function(t){
+    return '<div class="payslip-row"><span>'+t+'</span><span style="font-weight:600;color:var(--green);">'+naira(feeTypes[t])+'</span></div>';
+  }).join('');
+
+  // Payment history table
+  var histRows=stuFees.map(function(f){
+    var ch=f.channel==='parent_selfpay'?'Self-Pay':'Bursar';
+    return '<tr><td>'+f.date+'</td><td>'+f.type+'</td><td>'+f.method+'</td><td style="font-weight:600;color:var(--green);">'+naira(f.amount)+'</td><td style="font-size:.68rem;">'+ch+'</td><td style="font-size:.68rem;color:var(--t3);">'+(f.receiptNo||'--')+'</td></tr>';
+  }).join('');
+
+  var html='<div class="stu-detail-hd">'+
+    '<div class="stu-detail-av">'+initial+'</div>'+
+    '<div class="stu-detail-info"><h3>'+name+'</h3>'+
+    '<p>'+(stu.class||'--')+' \u00b7 '+(stu.reg||'N/A')+'</p>'+
+    '<span class="defaulter-badge" style="background:'+color+'18;color:'+color+';margin-top:4px;">'+statusLabel+'</span></div></div>'+
+    '<div class="account-summary">'+
+    '<div class="acct-tile"><div class="av" style="color:var(--teal);">'+naira(expected)+'</div><div class="al">Expected</div></div>'+
+    '<div class="acct-tile"><div class="av" style="color:var(--green);">'+naira(paid)+'</div><div class="al">Paid</div></div>'+
+    '<div class="acct-tile"><div class="av" style="color:'+(balance>0?'var(--red)':'var(--green)')+';">'+naira(Math.abs(balance))+'</div><div class="al">'+(balance>0?'Balance':'Overpaid')+'</div></div>'+
+    '<div class="acct-tile"><div class="av" style="color:var(--gold);">'+stuFees.length+'</div><div class="al">Payments</div></div></div>';
+
+  if(typeRows){
+    html+='<div class="card" style="margin-bottom:12px;"><div class="card-title">Fee Breakdown</div>'+typeRows+
+      '<div class="payslip-row payslip-total"><span>Total Paid</span><span>'+naira(paid)+'</span></div></div>';
+  }
+
+  html+='<div class="card"><div class="card-title">Payment History</div>';
+  if(stuFees.length){
+    html+='<div class="tbl-wrap"><table class="history-tbl"><thead><tr><th>Date</th><th>Type</th><th>Method</th><th>Amount</th><th>Via</th><th>Receipt</th></tr></thead><tbody>'+histRows+'</tbody></table></div>';
+  } else {
+    html+='<div class="empty-state">No payments recorded</div>';
+  }
+  html+='</div>';
+
+  gEl('stu-detail-content').innerHTML=html;
+  openModal('m-stu-detail');
+}
+
+function printStudentStatement(){
+  if(!_currentStuId) return;
+  var students=getStudents(); var fees=getFees(); var school=getSchool();
+  var stu=students.find(function(s){return s.id===_currentStuId;});
+  if(!stu) return;
+  var name=(stu.surname||'')+' '+(stu.firstname||'');
+  var stuFees=fees.filter(function(f){return f.stuId===_currentStuId;});
+  var paid=stuFees.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  var expected=getExpectedFee(stu.class);
+
+  var w=window.open('','_blank','width=600,height=700');
+  w.document.write('<html><head><title>Statement - '+name+'</title><style>'+
+    'body{font-family:Arial,sans-serif;padding:30px;color:#333;}'+
+    'h1{font-size:1.2rem;text-align:center;margin-bottom:4px;}'+
+    'h2{font-size:.9rem;text-align:center;color:#666;margin-bottom:20px;}'+
+    '.info{display:flex;justify-content:space-between;margin-bottom:16px;font-size:.85rem;}'+
+    'table{width:100%;border-collapse:collapse;margin-bottom:16px;}'+
+    'th,td{border:1px solid #ddd;padding:8px;font-size:.8rem;text-align:left;}'+
+    'th{background:#f5f5f5;font-weight:700;}'+
+    '.summary{display:flex;justify-content:space-around;margin-bottom:20px;padding:12px;background:#f8f8f8;border-radius:6px;}'+
+    '.summary div{text-align:center;} .summary .val{font-size:1.1rem;font-weight:700;} .summary .lbl{font-size:.7rem;color:#666;}'+
+    '.footer{text-align:center;font-size:.7rem;color:#999;margin-top:30px;border-top:1px solid #ddd;padding-top:10px;}'+
+    '</style></head><body>'+
+    '<h1>'+(school.name||'School')+'</h1>'+
+    '<h2>Student Fee Statement — '+(school.term||'')+' '+(school.session||'')+'</h2>'+
+    '<div class="info"><div><strong>'+name+'</strong><br/>'+
+    (stu.class||'')+' \u00b7 '+(stu.reg||'')+'</div><div style="text-align:right;">Date: '+new Date().toLocaleDateString()+'</div></div>'+
+    '<div class="summary">'+
+    '<div><div class="val">\u20a6'+expected.toLocaleString()+'</div><div class="lbl">Expected</div></div>'+
+    '<div><div class="val" style="color:#22c55e;">\u20a6'+paid.toLocaleString()+'</div><div class="lbl">Paid</div></div>'+
+    '<div><div class="val" style="color:'+(expected-paid>0?'#f43f5e':'#22c55e')+';">\u20a6'+Math.abs(expected-paid).toLocaleString()+'</div><div class="lbl">'+(expected-paid>0?'Balance':'Overpaid')+'</div></div></div>');
+
+  if(stuFees.length){
+    w.document.write('<table><thead><tr><th>#</th><th>Date</th><th>Fee Type</th><th>Method</th><th>Amount</th><th>Receipt</th></tr></thead><tbody>');
+    stuFees.forEach(function(f,i){
+      w.document.write('<tr><td>'+(i+1)+'</td><td>'+f.date+'</td><td>'+f.type+'</td><td>'+f.method+'</td><td>\u20a6'+parseFloat(f.amount).toLocaleString()+'</td><td>'+(f.receiptNo||'--')+'</td></tr>');
+    });
+    w.document.write('</tbody></table>');
+  } else {
+    w.document.write('<p style="text-align:center;color:#999;">No payments recorded.</p>');
+  }
+  w.document.write('<div class="footer">Generated by RSMS — Rehoteq School Management System<br/>'+new Date().toLocaleString()+'</div></body></html>');
+  w.document.close();
+  w.print();
+}
+
+function showDefaulters(){
+  var students=getStudents(); var fees=getFees();
+  var defaulters=[];
+  students.forEach(function(stu){
+    var expected=getExpectedFee(stu.class);
+    var paid=fees.filter(function(f){return f.stuId===stu.id;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+    var balance=expected-paid;
+    if(balance>0) defaulters.push({stu:stu,paid:paid,expected:expected,balance:balance});
+  });
+  defaulters.sort(function(a,b){return b.balance-a.balance;});
+
+  var el=gEl('defaulters-list');
+  if(!defaulters.length){el.innerHTML='<div class="empty-state">\u2705 No defaulters! All fees collected.</div>';openModal('m-defaulters');return;}
+
+  var totalOwed=defaulters.reduce(function(a,d){return a+d.balance;},0);
+  el.innerHTML='<div style="background:var(--redl);border-radius:var(--r2);padding:10px;margin-bottom:12px;font-size:.8rem;text-align:center;">'+
+    '<strong>'+defaulters.length+'</strong> student'+(defaulters.length!==1?'s':'')+' owe a total of <strong>'+naira(totalOwed)+'</strong></div>';
+
+  defaulters.forEach(function(d){
+    var name=(d.stu.surname||'')+' '+(d.stu.firstname||'');
+    var pct=d.expected>0?Math.round(d.paid/d.expected*100):0;
+    var div=document.createElement('div');div.className='card';div.style.marginBottom='8px';div.style.cursor='pointer';
+    div.onclick=(function(id){return function(){closeModal('m-defaulters');openStudentDetail(id);};})(d.stu.id);
+    div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;">'+
+      '<div><div style="font-weight:700;font-size:.85rem;">'+name+'</div>'+
+      '<div style="font-size:.7rem;color:var(--t3);">'+(d.stu.class||'')+' \u00b7 Paid '+pct+'%</div></div>'+
+      '<div style="text-align:right;"><div style="font-weight:700;color:var(--red);font-size:.85rem;">'+naira(d.balance)+'</div>'+
+      '<div style="font-size:.65rem;color:var(--t3);">owed</div></div></div>'+
+      '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%;background:var(--orange);"></div></div>';
+    el.appendChild(div);
+  });
+  openModal('m-defaulters');
+}
+
+function exportStudentAccounts(){
+  var students=getStudents(); var fees=getFees();
+  if(!students.length){toast('No student data','error');return;}
+  var rows=['Name,Class,Reg No,Expected (\u20a6),Paid (\u20a6),Balance (\u20a6),Status,Payments'];
+  students.forEach(function(s){
+    var name=((s.surname||'')+' '+(s.firstname||'')).replace(/,/g,' ');
+    var expected=getExpectedFee(s.class);
+    var paid=fees.filter(function(f){return f.stuId===s.id;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+    var balance=expected-paid;
+    var status=expected>0&&paid>=expected?'Fully Paid':paid>0?'Partial':'Unpaid';
+    var count=fees.filter(function(f){return f.stuId===s.id;}).length;
+    rows.push([name,s.class||'',s.reg||'',expected,paid,balance,status,count].join(','));
+  });
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.join('\n'));
+  a.download='Student_Accounts_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  toast('Student accounts exported','success');
+}
+
+function exportDefaulters(){
+  var students=getStudents(); var fees=getFees();
+  var rows=['Name,Class,Expected (\u20a6),Paid (\u20a6),Balance (\u20a6),% Paid'];
+  students.forEach(function(s){
+    var expected=getExpectedFee(s.class);
+    var paid=fees.filter(function(f){return f.stuId===s.id;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+    if(expected-paid>0){
+      var name=((s.surname||'')+' '+(s.firstname||'')).replace(/,/g,' ');
+      rows.push([name,s.class||'',expected,paid,expected-paid,expected>0?Math.round(paid/expected*100):0].join(','));
+    }
+  });
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.join('\n'));
+  a.download='Defaulters_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  toast('Defaulters report exported','success');
 }
 
 // ── CASHBOOK ────────────────────────────────────────
@@ -1673,7 +2213,7 @@ window.addEventListener('DOMContentLoaded', function(){
   if(typeof RSMS_DB !== 'undefined'){
     RSMS_DB.init(function(){
       // Sync students from Firebase → localStorage on load
-      var syncKeys = ['students','staff','fees','ct_remarks','broadcasts','fee_schedule'];
+      var syncKeys = ['students','staff','fees','ct_remarks','broadcasts','fee_schedule','payroll','audit_log'];
       syncKeys.forEach(function(key){
         RSMS_DB.get(key, function(err, data){
           if(data && data.length) localStorage.setItem('rsms_'+key, JSON.stringify(data));
@@ -1687,6 +2227,380 @@ window.addEventListener('DOMContentLoaded', function(){
 });
 
 /* Wrap save functions to also sync to Firebase */
+
+// ── PAYROLL MANAGEMENT ──────────────────────────────
+function populateSalaryStaff(){
+  var sel=gEl('sal-staff'); if(!sel)return;
+  var staff=getStaff();
+  // Keep only the default option
+  sel.innerHTML='<option value="">-- Select Staff --</option>';
+  staff.forEach(function(s){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    var role=s.role||s.myClass||'Staff';
+    var o=document.createElement('option');
+    o.value=s.id||s.staffId||'';
+    o.textContent=name+' ('+role+')';
+    o.setAttribute('data-salary',s.salary||'0');
+    sel.appendChild(o);
+  });
+}
+
+function onSalaryStaffSelect(){
+  var sel=gEl('sal-staff'); if(!sel)return;
+  var opt=sel.options[sel.selectedIndex];
+  if(opt && opt.getAttribute('data-salary')){
+    var amt=gEl('sal-amount');
+    if(amt) amt.value=opt.getAttribute('data-salary')||'';
+  }
+}
+
+function renderPayroll(){
+  var el=gEl('payroll-list'); if(!el)return;
+  var staff=getStaff(); var payroll=getPayroll();
+  var monthFilter=(gEl('pay-month')||{value:''}).value;
+  var statusFilter=(gEl('pay-status-filter')||{value:''}).value;
+
+  // Compute stats
+  var totalBudget=staff.reduce(function(a,s){return a+parseFloat(s.salary||0);},0);
+  var totalPaidAll=payroll.reduce(function(a,p){return a+parseFloat(p.amount||0);},0);
+  var currentMonth=new Date().toLocaleString('en',{month:'long'});
+  var currentYear=new Date().getFullYear();
+  var thisMonthPaid=payroll.filter(function(p){return p.month===currentMonth && parseInt(p.year)===currentYear;});
+  var thisMonthTotal=thisMonthPaid.reduce(function(a,p){return a+parseFloat(p.amount||0);},0);
+  var paidStaffIds=uniqueArr(thisMonthPaid.map(function(p){return p.staffId;}));
+
+  var statsEl=gEl('payroll-stats');
+  if(statsEl) statsEl.innerHTML=[
+    {v:staff.length,l:'Total Staff',cls:'s-teal'},
+    {v:naira(totalBudget),l:'Monthly Budget',cls:'s-blue'},
+    {v:naira(thisMonthTotal),l:currentMonth+' Paid',cls:'s-green'},
+    {v:paidStaffIds.length+'/'+staff.length,l:'Staff Paid ('+currentMonth+')',cls:'s-gold'}
+  ].map(function(s){return '<div class="stat-tile '+s.cls+'"><div class="stat-v">'+s.v+'</div><div class="stat-l">'+s.l+'</div></div>';}).join('');
+
+  var summaryLbl=gEl('payroll-summary-lbl');
+  if(summaryLbl) summaryLbl.textContent=paidStaffIds.length+' of '+staff.length+' paid this month \u00b7 '+naira(totalBudget-thisMonthTotal)+' remaining';
+
+  // Build list: show each staff member with their payment status
+  el.innerHTML='';
+  var targetMonth=monthFilter||currentMonth;
+
+  var filtered=staff.filter(function(s){
+    if(!statusFilter) return true;
+    var sid=s.id||s.staffId||'';
+    var isPaid=payroll.some(function(p){return p.staffId===sid && p.month===targetMonth;});
+    if(statusFilter==='paid') return isPaid;
+    if(statusFilter==='unpaid') return !isPaid;
+    return true;
+  });
+
+  if(!filtered.length){
+    el.innerHTML='<div class="empty-state">No staff records found</div>';
+    return;
+  }
+
+  filtered.forEach(function(s){
+    var sid=s.id||s.staffId||'';
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    var role=s.role||s.myClass||'Staff';
+    var salary=parseFloat(s.salary||0);
+    var staffPayments=payroll.filter(function(p){return p.staffId===sid;});
+    var monthPay=staffPayments.filter(function(p){return p.month===targetMonth;});
+    var isPaid=monthPay.length>0;
+    var paidAmt=monthPay.reduce(function(a,p){return a+parseFloat(p.amount||0);},0);
+    var totalEver=staffPayments.reduce(function(a,p){return a+parseFloat(p.amount||0);},0);
+
+    var d=document.createElement('div');
+    d.className='card payroll-card';
+    d.style.cssText='margin-bottom:8px;cursor:pointer;';
+    d.onclick=(function(id){return function(){openPayslip(id,targetMonth);};})(sid);
+    d.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;">'+
+      '<div><div style="font-weight:700;color:var(--t1);font-size:.88rem;">'+name+'</div>'+
+      '<div style="font-size:.72rem;color:var(--t3);">'+role+' \u00b7 Base: '+naira(salary)+'</div></div>'+
+      '<div style="text-align:right;">'+
+      '<div style="font-weight:700;color:'+(isPaid?'var(--green)':'var(--red)')+';font-size:.88rem;">'+(isPaid?naira(paidAmt):'Unpaid')+'</div>'+
+      '<span class="defaulter-badge" style="background:'+(isPaid?'var(--green)18':'var(--red)18')+';color:'+(isPaid?'var(--green)':'var(--red)')+';">'+(isPaid?'\u2713 Paid':'Pending')+'</span>'+
+      '</div></div>'+
+      '<div style="font-size:.68rem;color:var(--t3);margin-top:6px;">Total paid all-time: '+naira(totalEver)+' \u00b7 Payments: '+staffPayments.length+'</div>';
+    el.appendChild(d);
+  });
+}
+
+function recordSalary(){
+  var staffId=getVal('sal-staff');
+  var month=getVal('sal-month');
+  var year=getVal('sal-year');
+  var amount=parseFloat(getVal('sal-amount'));
+  var method=getVal('sal-method');
+  var note=getVal('sal-note');
+
+  if(!staffId){toast('Please select a staff member','error');return;}
+  if(!amount||amount<=0){toast('Please enter a valid amount','error');return;}
+
+  var staff=getStaff();
+  var sMember=staff.find(function(s){return (s.id||s.staffId)===staffId;});
+  var name=sMember?((sMember.surname||'')+' '+(sMember.firstname||'')):'Unknown';
+
+  // Check for duplicate payment
+  var payroll=getPayroll();
+  var existing=payroll.find(function(p){return p.staffId===staffId && p.month===month && parseInt(p.year)===parseInt(year);});
+  if(existing){
+    if(!confirm(name+' already has a '+month+' '+year+' payment of '+naira(parseFloat(existing.amount))+'. Record another?')) return;
+  }
+
+  var entry={
+    id:'SAL-'+Date.now(),
+    staffId:staffId,
+    staffName:name,
+    role:sMember?(sMember.role||sMember.myClass||'Staff'):'',
+    month:month,
+    year:parseInt(year),
+    amount:amount,
+    method:method,
+    note:note,
+    date:new Date().toISOString().split('T')[0],
+    timestamp:Date.now()
+  };
+
+  payroll.push(entry);
+  savePayroll(payroll);
+  logAudit('Salary Payment','salary_payment','Paid '+naira(amount)+' to '+name+' for '+month+' '+year+' via '+method);
+  toast(naira(amount)+' recorded for '+name,'success');
+  closeModal('m-record-salary');
+  // Reset form
+  setVal('sal-staff','');setVal('sal-amount','');setVal('sal-note','');
+  renderPayroll();
+  renderDash();
+}
+
+function openPayslip(staffId,month){
+  var staff=getStaff(); var payroll=getPayroll();
+  var sMember=staff.find(function(s){return (s.id||s.staffId)===staffId;});
+  if(!sMember){toast('Staff not found','error');return;}
+
+  var name=(sMember.surname||'')+' '+(sMember.firstname||'');
+  var role=sMember.role||sMember.myClass||'Staff';
+  var payments=payroll.filter(function(p){return p.staffId===staffId;}).sort(function(a,b){return b.timestamp-a.timestamp;});
+  var monthPayments=month?payments.filter(function(p){return p.month===month;}):payments;
+  var totalPaid=payments.reduce(function(a,p){return a+parseFloat(p.amount||0);},0);
+
+  var el=gEl('payslip-content');
+  if(!el)return;
+
+  var schoolName='';
+  try{schoolName=JSON.parse(localStorage.getItem('rsms_school_info')||'{}').name||'';}catch(e){}
+
+  el.innerHTML='<div style="text-align:center;margin-bottom:14px;">'+
+    '<div style="font-weight:700;font-size:1rem;color:var(--t1);">'+(schoolName||'School')+'</div>'+
+    '<div style="font-size:.72rem;color:var(--t3);">Staff Payment Record</div></div>'+
+    '<div style="background:var(--bg2);border-radius:10px;padding:12px;margin-bottom:12px;">'+
+    '<div style="font-weight:700;font-size:.95rem;color:var(--t1);">'+name+'</div>'+
+    '<div style="font-size:.75rem;color:var(--t3);">'+role+' \u00b7 Base Salary: '+naira(parseFloat(sMember.salary||0))+'</div>'+
+    '<div style="font-size:.75rem;color:var(--t3);margin-top:4px;">Total Paid All-Time: <span style="color:var(--green);font-weight:700;">'+naira(totalPaid)+'</span></div></div>'+
+    '<div style="font-weight:700;font-size:.82rem;color:var(--t1);margin-bottom:8px;">Payment History'+(month?' ('+month+')':'')+'</div>'+
+    (monthPayments.length?monthPayments.map(function(p){
+      return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:.78rem;">'+
+        '<div><div style="font-weight:600;color:var(--t1);">'+p.month+' '+p.year+'</div>'+
+        '<div style="font-size:.68rem;color:var(--t3);">'+p.method+' \u00b7 '+(p.date||'')+(p.note?' \u00b7 '+p.note:'')+'</div></div>'+
+        '<div style="font-weight:700;color:var(--green);">'+naira(parseFloat(p.amount))+'</div></div>';
+    }).join(''):'<div class="empty-state">No payments recorded</div>');
+
+  openModal('m-payslip');
+}
+
+function printPayslip(){
+  var content=gEl('payslip-content');
+  if(!content)return;
+  var w=window.open('','_blank','width=400,height=600');
+  w.document.write('<html><head><title>Payslip</title><style>body{font-family:Arial,sans-serif;padding:20px;font-size:13px;color:#222;} .stat-tile,.defaulter-badge{display:inline-block;}</style></head><body>'+content.innerHTML+'</body></html>');
+  w.document.close();
+  w.print();
+}
+
+function exportPayroll(){
+  var payroll=getPayroll(); var staff=getStaff();
+  if(!payroll.length){toast('No payroll data to export','info');return;}
+  var csv='Staff Name,Role,Month,Year,Amount,Method,Date,Note\n';
+  payroll.forEach(function(p){
+    csv+='"'+(p.staffName||'')+'","'+(p.role||'')+'","'+p.month+'",'+p.year+','+p.amount+',"'+(p.method||'')+'","'+(p.date||'')+'","'+(p.note||'')+'"\n';
+  });
+  var blob=new Blob([csv],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='payroll_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+  logAudit('Export','settings_change','Exported payroll data ('+payroll.length+' records)');
+}
+
+// ── AUDIT TRAIL ─────────────────────────────────────
+function renderAuditTrail(){
+  var el=gEl('audit-list'); if(!el)return;
+  var logs=getAuditLog();
+  var typeFilter=(gEl('audit-type')||{value:''}).value;
+  var searchQ=(gEl('audit-search')||{value:''}).value.toLowerCase();
+
+  // Stats
+  var today=new Date().toISOString().split('T')[0];
+  var todayLogs=logs.filter(function(l){return (l.date||'').startsWith(today);});
+  var feeActions=logs.filter(function(l){return l.type==='fee_payment';}).length;
+  var salaryActions=logs.filter(function(l){return l.type==='salary_payment';}).length;
+
+  var statsEl=gEl('audit-stats');
+  if(statsEl) statsEl.innerHTML=[
+    {v:logs.length,l:'Total Events',cls:'s-teal'},
+    {v:todayLogs.length,l:'Today',cls:'s-blue'},
+    {v:feeActions,l:'Fee Payments',cls:'s-green'},
+    {v:salaryActions,l:'Salary Payments',cls:'s-gold'}
+  ].map(function(s){return '<div class="stat-tile '+s.cls+'"><div class="stat-v">'+s.v+'</div><div class="stat-l">'+s.l+'</div></div>';}).join('');
+
+  // Filter
+  var filtered=logs.filter(function(l){
+    if(typeFilter && l.type!==typeFilter) return false;
+    if(searchQ){
+      var text=((l.action||'')+(l.details||'')).toLowerCase();
+      if(!text.includes(searchQ)) return false;
+    }
+    return true;
+  }).sort(function(a,b){return (b.timestamp||0)-(a.timestamp||0);});
+
+  el.innerHTML='';
+  if(!filtered.length){
+    el.innerHTML='<div class="empty-state">No audit entries found</div>';
+    return;
+  }
+
+  // Show max 100
+  var showing=filtered.slice(0,100);
+  var icons={fee_payment:'\ud83d\udcb0',salary_payment:'\ud83d\udcb6',fee_edit:'\u270f\ufe0f',settings_change:'\u2699\ufe0f'};
+  var colors={fee_payment:'var(--green)',salary_payment:'var(--teal)',fee_edit:'var(--orange)',settings_change:'var(--blue)'};
+
+  showing.forEach(function(log){
+    var ico=icons[log.type]||'\ud83d\udccb';
+    var color=colors[log.type]||'var(--t3)';
+    var d=document.createElement('div');
+    d.className='audit-entry';
+    d.innerHTML='<div class="audit-ico" style="background:'+color+'18;color:'+color+';">'+ico+'</div>'+
+      '<div class="audit-body"><div class="audit-action">'+log.action+'</div>'+
+      '<div class="audit-meta">'+(log.details||'')+'</div>'+
+      '<div class="audit-meta">'+(log.date||'')+' '+(log.time||'')+'</div></div>';
+    el.appendChild(d);
+  });
+
+  if(filtered.length>100){
+    var more=document.createElement('div');
+    more.style.cssText='text-align:center;padding:12px;font-size:.75rem;color:var(--t3);';
+    more.textContent='Showing 100 of '+filtered.length+' entries. Export for full log.';
+    el.appendChild(more);
+  }
+}
+
+function exportAuditLog(){
+  var logs=getAuditLog();
+  if(!logs.length){toast('No audit data to export','info');return;}
+  var csv='Date,Time,Action,Type,Details\n';
+  logs.forEach(function(l){
+    csv+='"'+(l.date||'')+'","'+(l.time||'')+'","'+(l.action||'')+'","'+(l.type||'')+'","'+(l.details||'')+'"\n';
+  });
+  var blob=new Blob([csv],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='audit_log_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+}
+
+// ── RECONCILIATION ──────────────────────────────────
+function runReconciliation(){
+  var students=getStudents(); var fees=getFees(); var payroll=getPayroll();
+  var results=[];
+
+  // 1. Check for orphaned payments (fees referencing non-existent students)
+  var studentIds=students.map(function(s){return s.id;});
+  var orphanedFees=fees.filter(function(f){return !studentIds.includes(f.stuId);});
+  results.push({
+    label:'Orphaned Fee Payments',
+    desc:'Payments referencing students not in current roster',
+    count:orphanedFees.length,
+    status:orphanedFees.length===0?'pass':'warn',
+    detail:orphanedFees.length?orphanedFees.slice(0,5).map(function(f){return (f.name||f.stuId)+': '+naira(parseFloat(f.amount||0));}).join(', '):''
+  });
+
+  // 2. Check for duplicate payments (same student, same date, same amount)
+  var dupeCount=0;
+  var seen={};
+  fees.forEach(function(f){
+    var key=f.stuId+'_'+f.date+'_'+f.amount;
+    if(seen[key]) dupeCount++;
+    seen[key]=true;
+  });
+  results.push({
+    label:'Duplicate Payments',
+    desc:'Same student, date, and amount recorded more than once',
+    count:dupeCount,
+    status:dupeCount===0?'pass':'warn',
+    detail:''
+  });
+
+  // 3. Check fee totals match cashbook
+  var totalFees=fees.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  results.push({
+    label:'Total Fee Revenue',
+    desc:'Sum of all recorded fee payments',
+    count:fees.length+' payments',
+    status:'info',
+    detail:naira(totalFees)
+  });
+
+  // 4. Check payroll totals
+  var totalPayroll=payroll.reduce(function(a,p){return a+parseFloat(p.amount||0);},0);
+  results.push({
+    label:'Total Payroll Disbursed',
+    desc:'Sum of all salary payments',
+    count:payroll.length+' payments',
+    status:'info',
+    detail:naira(totalPayroll)
+  });
+
+  // 5. Net position
+  var net=totalFees-totalPayroll;
+  results.push({
+    label:'Net Financial Position',
+    desc:'Revenue minus payroll expenses',
+    count:'',
+    status:net>=0?'pass':'warn',
+    detail:naira(net)+(net<0?' (DEFICIT)':' surplus')
+  });
+
+  // 6. Students without any payment
+  var paidStudentIds=uniqueArr(fees.map(function(f){return f.stuId;}));
+  var unpaidCount=students.filter(function(s){return !paidStudentIds.includes(s.id);}).length;
+  results.push({
+    label:'Students with Zero Payments',
+    desc:'Enrolled students with no fee records',
+    count:unpaidCount+'/'+students.length,
+    status:unpaidCount===0?'pass':'warn',
+    detail:''
+  });
+
+  // Render
+  var el=gEl('reconcile-results');
+  if(!el)return;
+
+  var statusColors={pass:'var(--green)',warn:'var(--orange)',info:'var(--blue)'};
+  var statusIcons={pass:'\u2705',warn:'\u26a0\ufe0f',info:'\u2139\ufe0f'};
+
+  el.innerHTML=results.map(function(r){
+    return '<div style="padding:10px 0;border-bottom:1px solid var(--line);">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;">'+
+      '<div style="display:flex;align-items:center;gap:8px;">'+
+      '<span>'+statusIcons[r.status]+'</span>'+
+      '<div><div style="font-weight:700;font-size:.82rem;color:var(--t1);">'+r.label+'</div>'+
+      '<div style="font-size:.68rem;color:var(--t3);">'+r.desc+'</div></div></div>'+
+      '<div style="font-weight:700;font-size:.82rem;color:'+statusColors[r.status]+';">'+(r.detail||r.count)+'</div></div>'+
+      (r.detail&&r.count?'<div style="font-size:.68rem;color:var(--t3);margin-top:2px;margin-left:30px;">'+r.count+' records</div>':'')+
+      '</div>';
+  }).join('');
+
+  logAudit('Reconciliation','settings_change','Ran data reconciliation check');
+  openModal('m-reconcile');
+}
+
 var _origSaveStudents = window.saveStudents;
 window.saveStudents = function(data){
   localStorage.setItem('rsms_students', JSON.stringify(data));
