@@ -1,10 +1,11 @@
 // RSMS Service Worker — Rehoteq Technologies
-const CACHE_NAME = 'rsms-v1.0.0';
+const CACHE_NAME = 'rsms-v2.0.0';
 const STATIC_ASSETS = [
   '/rsms/rsms-app.html',
   '/rsms/',
   '/rsms/index.html',
   '/rsms/rsms-admin.html',
+  '/rsms/rsms-bursar.html',
   '/rsms/rsms-teacher.html',
   '/rsms/rsms-student.html',
   '/rsms/rsms-parent.html',
@@ -12,11 +13,14 @@ const STATIC_ASSETS = [
   '/rsms/rsms-apply.html',
   '/rsms/rsms-onboarding.html',
   '/rsms/rsms-control.html',
+  '/rsms/rsms-core.js',
+  '/rsms/rsms-firebase.js',
+  '/rsms/rsms-config.js',
   '/rsms/manifest.json',
   'https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap'
 ];
 
-// Install — cache all static assets
+// Install — cache all static assets, force activate immediately
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
@@ -29,7 +33,7 @@ self.addEventListener('install', function(event) {
   );
 });
 
-// Activate — clean old caches
+// Activate — purge ALL old caches
 self.addEventListener('activate', function(event) {
   event.waitUntil(
     caches.keys().then(function(keys) {
@@ -43,15 +47,13 @@ self.addEventListener('activate', function(event) {
   );
 });
 
-// Fetch — network first, cache fallback
+// Fetch — network first, update cache, fallback to cache when offline
 self.addEventListener('fetch', function(event) {
-  // Skip non-GET and external requests (except fonts)
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
     fetch(event.request)
       .then(function(response) {
-        // Cache successful responses
         if (response && response.status === 200) {
           var responseClone = response.clone();
           caches.open(CACHE_NAME).then(function(cache) {
@@ -61,10 +63,8 @@ self.addEventListener('fetch', function(event) {
         return response;
       })
       .catch(function() {
-        // Offline fallback — serve from cache
         return caches.match(event.request).then(function(cached) {
           if (cached) return cached;
-          // Offline page for navigation
           if (event.request.mode === 'navigate') {
             return caches.match('/rsms/index.html');
           }
