@@ -18,7 +18,8 @@ window.RSMS_CONFIG = {
   // Platform settings
   platform: {
     baseUrl:     "https://rsms.rehoteq.com",
-    supportWA:   "2347036302585",
-    superadminPw:"rehoteq@superadmin2025"
+    supportWA:   "2347036302585"
+    // Superadmin password removed from client-side code for security.
+    // It is now verified via SHA-256 hash stored in Firebase at config/superadmin_hash.
   }
 };
