@@ -700,6 +700,7 @@ window.RSMS_DB = {
   <div class="sb-section">ACADEMIC</div>
   <div class="sb-item" onclick="showPage('qrcodes',this)"><span class="ico">&#128248;</span>QR Codes</div>
   <div class="sb-item" onclick="showPage('scores',this)"><span class="ico">&#128221;</span>Score Entry</div>
+  <div class="sb-item" onclick="showPage('promotion',this)"><span class="ico">&#127941;</span>Promotion</div>
   <div class="sb-item" onclick="window.open('rsms-timetable.html','_blank')"><span class="ico">&#128197;</span>Timetable</div>
   <div class="sb-item" onclick="window.open('rsms-alerts.html','_blank')"><span class="ico">&#128241;</span>Parent Alerts</div>
   <div class="sb-item" onclick="window.open('rsms-analytics.html','_blank')"><span class="ico">&#128202;</span>Analytics</div>
@@ -853,6 +854,22 @@ window.RSMS_DB = {
       <button class="btn btn-gold btn-sm" onclick="editStaffId=null;document.getElementById('m-staff-title').textContent='Add Staff';openModal('m-add-staff')">+ Add</button>
     </div>
   </div>
+  <div class="search-bar" style="margin-bottom:12px;">
+    <select class="fi" id="stf-role-filter" onchange="renderStaff()" style="max-width:180px;height:42px;">
+      <option value="">All Roles</option>
+      <option value="Class Teacher">Class Teacher</option>
+      <option value="Subject Teacher">Subject Teacher</option>
+      <option value="Admin Staff">Admin Staff</option>
+      <option value="Bursar">Bursar</option>
+      <option value="Principal">Principal</option>
+      <option value="Vice Principal">Vice Principal</option>
+      <option value="Librarian">Librarian</option>
+      <option value="Security">Security</option>
+      <option value="Driver">Driver</option>
+      <option value="Cleaner">Cleaner</option>
+    </select>
+    <input class="fi" id="stf-search" placeholder="&#128269; Search staff..." oninput="renderStaff()" style="height:42px;"/>
+  </div>
   <div id="staff-list"></div>
 </div>
 
@@ -1004,6 +1021,41 @@ window.RSMS_DB = {
   </div>
 </div>
 
+<!-- ════ PROMOTION ════ -->
+<div class="page" id="pg-promotion">
+  <div class="pg-hd">
+    <div><div class="pg-title">&#127941; Student Promotion</div><div class="pg-sub">End-of-session class advancement</div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-title">Promotion Settings</div>
+    <div class="f2">
+      <div class="fg"><label>From Class</label>
+        <select class="fi" id="promo-from" onchange="loadPromoStudents()" style="height:46px;"><option value="">-- Select Source Class --</option></select>
+      </div>
+      <div class="fg"><label>Promote To</label>
+        <select class="fi" id="promo-to" style="height:46px;"><option value="">-- Select Target Class --</option></select>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.82rem;color:var(--t2);">
+        <input type="checkbox" id="promo-select-all" onchange="togglePromoAll(this.checked)" style="width:16px;height:16px;accent-color:var(--gold);"/>
+        Select All
+      </label>
+      <span style="font-size:.78rem;color:var(--t3);" id="promo-sel-count">0 selected</span>
+      <div style="flex:1;"></div>
+      <button class="btn btn-teal btn-sm" onclick="undoLastPromotion()" style="min-width:100px;">&#8630; Undo Last</button>
+      <button class="btn btn-gold btn-sm" onclick="executePromotion()" style="min-width:150px;">&#127941; Promote Selected</button>
+    </div>
+  </div>
+  <div class="card" id="promo-student-list" style="padding:8px 14px;">
+    <div style="text-align:center;padding:30px;color:var(--t3);font-size:.85rem;">Select a source class to load students</div>
+  </div>
+  <div class="card" style="margin-top:14px;">
+    <div class="card-title">&#128220; Promotion History</div>
+    <div id="promo-history" style="font-size:.82rem;color:var(--t3);">No promotions yet this session</div>
+  </div>
+</div>
+
 <!-- ════ SETTINGS ════ -->
 <div class="page" id="pg-settings">
   <div class="pg-title" style="margin-bottom:14px;">&#9881;&#65039; School Settings</div>
@@ -1071,12 +1123,12 @@ window.RSMS_DB = {
         </label>
         <!-- URL input -->
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:0;">
-          <input class="fi" id="cfg-logo" placeholder="Or paste logo URL (https://...)" oninput="previewLogoUrl(this.value)" style="flex:1;font-size:.8rem;height:40px;"/>
-          <button onclick="previewLogoUrl(document.getElementById('cfg-logo').value)"
+          <input class="fi" id="cfg-logo-url" placeholder="Or paste logo URL (https://...)" oninput="previewLogoUrl(this.value)" style="flex:1;font-size:.8rem;height:40px;"/>
+          <button onclick="previewLogoUrl(document.getElementById('cfg-logo-url').value)"
             style="background:var(--card);border:1px solid var(--line2);color:var(--t2);border-radius:var(--r2);padding:0 12px;height:40px;cursor:pointer;font-size:.8rem;flex-shrink:0;">Preview</button>
         </div>
         <!-- Remove logo -->
-        <button onclick="document.getElementById('cfg-logo').value='';updateLogoPreview('');localStorage.removeItem('rsms_school_logo');"
+        <button onclick="document.getElementById('cfg-logo').value='';try{document.getElementById('cfg-logo-url').value='';}catch(e){}updateLogoPreview('');localStorage.removeItem('rsms_school_logo');"
           style="background:none;border:none;color:var(--t4);font-size:.72rem;cursor:pointer;margin-top:6px;font-family:var(--sans);">
           &#215; Remove logo
         </button>
@@ -2017,7 +2069,11 @@ function saveStudent(){
     }
     toast('Student updated','success');
   } else {
-    var reg=val('stu-reg')||((getSchool().regPrefix||'REG')+'/'+new Date().getFullYear()+'/'+String(all.length+1).padStart(3,'0'));
+    // FIX M5: use max existing reg counter instead of array length
+    var nextNum=1;
+    var prefix=(getSchool().regPrefix||'REG')+'/'+new Date().getFullYear()+'/';
+    all.forEach(function(s){if(s.reg&&s.reg.indexOf(prefix)===0){var n=parseInt(s.reg.substring(prefix.length))||0;if(n>=nextNum)nextNum=n+1;}});
+    var reg=val('stu-reg')||(prefix+String(nextNum).padStart(3,'0'));
     // Duplicate check
     var dup=all.find(function(s){return s.surname.toLowerCase()===sur.toLowerCase()&&s.firstname.toLowerCase()===fn.toLowerCase()&&s.class===cls;});
     if(dup){toast('Student already exists in this class!','error');return;}
@@ -2043,14 +2099,23 @@ function saveStudent(){
   var t=document.getElementById('m-student-title');if(t)t.textContent='Add Student';
 }
 
+// FIX M4: CSV helper that properly escapes commas, quotes, newlines
+function csvEscape(v){
+  v=String(v==null?'':v);
+  if(v.indexOf(',')>-1||v.indexOf('"')>-1||v.indexOf('\n')>-1) return '"'+v.replace(/"/g,'""')+'"';
+  return v;
+}
+function csvRow(arr){return arr.map(csvEscape).join(',');}
+
 function exportStudentsCSV(){
   var all=getStudents();
   if(!all.length){toast('No students to export','error');return;}
-  var rows=['Surname,Firstname,Class,Reg,Gender,DOB,Parent Phone,Parent Name'];
-  all.forEach(function(s){rows.push([s.surname,s.firstname,s.class,s.reg,s.gender||'',s.dob||'',s.parentPhone||'',s.parentName||''].join(','));});
-  var a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.join('\n'));
+  var rows=[csvRow(['Surname','Firstname','Class','Reg','Gender','DOB','Parent Phone','Parent Name'])];
+  all.forEach(function(s){rows.push(csvRow([s.surname,s.firstname,s.class,s.reg,s.gender||'',s.dob||'',s.parentPhone||'',s.parentName||'']));});
+  var blob=new Blob(['\ufeff'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='Students_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  URL.revokeObjectURL(a.href);
   toast('Students exported','success');
 }
 
@@ -2058,10 +2123,17 @@ function exportStudentsCSV(){
 var editStaffId=null;
 
 function renderStaff(){
-  var staff=getStaff();
-  el('staff-count-lbl',staff.length+' staff members');
+  var allStaff=getStaff();
+  var filterRole=(document.getElementById('stf-role-filter')||{value:''}).value;
+  var q=(document.getElementById('stf-search')||{value:''}).value.toLowerCase();
+  var staff=allStaff.filter(function(s){
+    var nameMatch=!q||(s.name||'').toLowerCase().indexOf(q)>=0||(s.phone||'').indexOf(q)>=0||(s.email||'').toLowerCase().indexOf(q)>=0;
+    var roleMatch=!filterRole||s.role===filterRole;
+    return nameMatch&&roleMatch;
+  });
+  el('staff-count-lbl',staff.length+' of '+allStaff.length+' staff members');
   var el2=document.getElementById('staff-list'); if(!el2)return;
-  if(!staff.length){
+  if(!allStaff.length){
     el2.innerHTML='<div style="text-align:center;padding:40px 20px;">'+
       '<div style="font-size:3rem;margin-bottom:12px;">&#128104;&#8205;&#127979;</div>'+
       '<div style="font-weight:700;color:var(--t1);margin-bottom:6px;">No staff yet</div>'+
@@ -2069,6 +2141,7 @@ function renderStaff(){
       '<button class="btn btn-gold btn-sm" onclick="openModal(\'m-add-staff\')">+ Add First Staff</button></div>';
     return;
   }
+  if(!staff.length){el2.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);">No staff match your filter</div>';return;}
   el2.innerHTML='';
   staff.forEach(function(s){
     var d=document.createElement('div');d.className='staff-card';
@@ -2147,11 +2220,12 @@ function onStaffRoleChange(){
 
 function exportStaffCSV(){
   var all=getStaff();if(!all.length){toast('No staff to export','error');return;}
-  var rows=['Name,Role,Department,Class,Subjects,Phone,Email,Staff ID'];
-  all.forEach(function(s){rows.push([s.name,s.role,s.dept||'',s.myClass||'',s.subjects||'',s.phone||'',s.email||'',s.staffId||''].join(','));});
-  var a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.join('\n'));
+  var rows=[csvRow(['Name','Role','Department','Class','Subjects','Phone','Email','Staff ID'])];
+  all.forEach(function(s){rows.push(csvRow([s.name,s.role,s.dept||'',s.myClass||'',s.subjects||'',s.phone||'',s.email||'',s.staffId||'']));});
+  var blob=new Blob(['\ufeff'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='Staff_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  URL.revokeObjectURL(a.href);
   toast('Staff exported','success');
 }
 
@@ -2336,20 +2410,32 @@ var PW_ROLES=[
   {id:'parent',label:'Parent',ico:'&#128106;',def:'parent123',portal:'rsms-parent.html'}
 ];
 
+function togglePwVis(id){
+  var el=document.getElementById('pw-show-'+id);if(!el)return;
+  var btn=document.getElementById('pw-tog-'+id);
+  if(el.dataset.masked==='1'){el.textContent=el.dataset.pw;el.dataset.masked='0';if(btn)btn.innerHTML='&#128064;';}
+  else{el.textContent='\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';el.dataset.masked='1';if(btn)btn.innerHTML='&#128065;';}
+}
 function renderPasswords(){
   var grid=document.getElementById('pw-grid'); if(!grid)return;
   grid.innerHTML='';
   PW_ROLES.forEach(function(r){
     var pw=localStorage.getItem('rsms_'+r.id+'_pw')||r.def;
     var card=document.createElement('div');card.className='pw-card';
+    var masked='\u2022'.repeat(pw.length||8);
     card.innerHTML=
       '<div class="pw-role-ico">'+r.ico+'</div>'+
       '<div class="pw-role-lbl">'+r.label+'</div>'+
-      '<div class="pw-val" id="pw-show-'+r.id+'">'+pw+'</div>'+
+      '<div class="pw-val" id="pw-show-'+r.id+'" data-masked="1">'+masked+'</div>'+
       '<div class="pw-actions">'+
-        '<button class="icon-btn teal" title="Copy" onclick="copyText(\''+pw+'\');toast(\'Copied!\',\'success\');">&#128203;</button>'+
+        '<button class="icon-btn" id="pw-tog-'+r.id+'" title="Show/Hide">&#128065;</button>'+
+        '<button class="icon-btn teal" title="Copy">&#128203;</button>'+
         '<a class="icon-btn" title="Open Portal" href="'+r.portal+'" target="_blank">&#128279;</a>'+
       '</div>';
+    // Store pw in dataset safely (avoid XSS from innerHTML injection)
+    card.querySelector('.pw-val').dataset.pw=pw;
+    card.querySelector('#pw-tog-'+r.id).onclick=(function(rid){return function(){togglePwVis(rid);};})(r.id);
+    card.querySelectorAll('.icon-btn.teal')[0].onclick=(function(p){return function(){copyText(p);toast('Copied!','success');};})(pw);
     grid.appendChild(card);
   });
   // Fill edit fields
@@ -2359,7 +2445,7 @@ function renderPasswords(){
     var pw=localStorage.getItem('rsms_'+r.id+'_pw')||r.def;
     var fg=document.createElement('div');fg.className='fg';
     fg.innerHTML='<label>'+r.ico+' '+r.label+'</label>'+
-      '<input class="fi" id="pw-inp-'+r.id+'" type="text" value="'+pw+'" placeholder="Password for '+r.label+'"/>';
+      '<input class="fi" id="pw-inp-'+r.id+'" type="password" value="'+pw+'" placeholder="Password for '+r.label+'"/>';
     fields.appendChild(fg);
   });
   // Individual staff
@@ -2578,12 +2664,16 @@ function loadSettings(){
 }
 
 function saveSettings(){
-  var school={name:val('cfg-name'),address:val('cfg-addr'),phone:val('cfg-phone'),
-    email:val('cfg-email'),session:val('cfg-session'),principal:val('cfg-principal'),
-    regPrefix:val('cfg-regprefix')||'REG',
-    term:document.getElementById('cfg-term').value,
-    plan:document.getElementById('cfg-plan').value};
-  var logo=val('cfg-logo');if(logo){localStorage.setItem('rsms_school_logo',logo);school.logo=logo;try{updateLogoPreview(logo);}catch(e){}}
+  // FIX C1/C2: Merge form values into existing school object to preserve schoolId, state, lga, etc.
+  var school=getSchool();
+  school.name=val('cfg-name');school.address=val('cfg-addr');school.phone=val('cfg-phone');
+  school.email=val('cfg-email');school.session=val('cfg-session');school.principal=val('cfg-principal');
+  school.regPrefix=val('cfg-regprefix')||'REG';
+  school.term=document.getElementById('cfg-term').value;
+  school.plan=document.getElementById('cfg-plan').value;
+  school.lastModified=Date.now();
+  var logo=val('cfg-logo')||val('cfg-logo-url');
+  if(logo){localStorage.setItem('rsms_school_logo',logo);school.logo=logo;try{updateLogoPreview(logo);}catch(e){}}
   localStorage.setItem('rsms_school',JSON.stringify(school));
   RSMS.school=school;
   el('hd-school-name',school.name||'School');
@@ -2609,7 +2699,7 @@ function saveSettings(){
 }
 
 function renderFeeSchedule(){
-  var sched=JSON.parse(localStorage.getItem('rsms_fee_schedule')||'[]');
+  var sched=JSON.parse(localStorage.getItem(_key('fee_schedule'))||localStorage.getItem('rsms_fee_schedule')||'[]');
   var el2=document.getElementById('fee-schedule-list');if(!el2)return;
   if(!sched.length){el2.innerHTML='<div class="text-muted">No fee schedule set yet</div>';return;}
   el2.innerHTML='';
@@ -2622,8 +2712,8 @@ function renderFeeSchedule(){
         '<div style="font-weight:700;color:var(--gold);">'+naira(f.amount)+'</div>';
     var db=document.createElement('button');db.className='icon-btn red';db.innerHTML='&#128465;';db.style.cssText='width:26px;height:26px;font-size:.7rem;';
     db.onclick=(function(idx){return function(){
-      var s2=JSON.parse(localStorage.getItem('rsms_fee_schedule')||'[]');
-      s2.splice(idx,1);localStorage.setItem('rsms_fee_schedule',JSON.stringify(s2));
+      var s2=JSON.parse(localStorage.getItem(_key('fee_schedule'))||'[]');
+      s2.splice(idx,1);localStorage.setItem(_key('fee_schedule'),JSON.stringify(s2));_fbSync('fee_schedule',s2);
       renderFeeSchedule();
     };})(i);
     d.lastElementChild.appendChild(db);
@@ -2636,10 +2726,156 @@ function addFeeSchedule(){
   var type=document.getElementById('fee-type').value;
   var amt=val('fee-amount');
   if(!cls||!type||!amt){toast('Fill all fee fields','error');return;}
-  var sched=JSON.parse(localStorage.getItem('rsms_fee_schedule')||'[]');
+  var sched=JSON.parse(localStorage.getItem(_key('fee_schedule'))||'[]');
   sched.push({class:cls,type:type,amount:parseFloat(amt)});
-  localStorage.setItem('rsms_fee_schedule',JSON.stringify(sched));
+  localStorage.setItem(_key('fee_schedule'),JSON.stringify(sched));_fbSync('fee_schedule',sched);
   setVal('fee-amount','');renderFeeSchedule();toast('Fee schedule added','success');
+}
+
+// ── PROMOTION ─────────────────────────────────────────────────────
+var PROMO_MAP={
+  'Creche':'Baby Class','Baby Class':'Nursery 1','Nursery 1':'Nursery 2','Nursery 2':'KG 1','KG 1':'KG 2','KG 2':'Primary 1',
+  'Primary 1':'Primary 2','Primary 2':'Primary 3','Primary 3':'Primary 4','Primary 4':'Primary 5','Primary 5':'Primary 6','Primary 6':'JSS 1',
+  'JSS 1':'JSS 2','JSS 2':'JSS 3','JSS 3':'SS 1 Science',
+  'SS 1 Science':'SS 2 Science','SS 1 Commercial':'SS 2 Commercial','SS 1 Art':'SS 2 Art',
+  'SS 2 Science':'SS 3 Science','SS 2 Commercial':'SS 3 Commercial','SS 2 Art':'SS 3 Art',
+  'SS 3 Science':'Graduated','SS 3 Commercial':'Graduated','SS 3 Art':'Graduated'
+};
+
+window.onPage_promotion=function(){
+  var from=document.getElementById('promo-from');
+  var to=document.getElementById('promo-to');
+  if(!from||!to)return;
+  var students=getStudents()||[];
+  var classes=[];
+  students.forEach(function(s){if(s.class&&classes.indexOf(s.class)<0)classes.push(s.class);});
+  classes.sort();
+  while(from.options.length>1) from.remove(1);
+  while(to.options.length>1) to.remove(1);
+  classes.forEach(function(c){
+    var o=document.createElement('option');o.value=c;
+    o.textContent=c+' ('+students.filter(function(s){return s.class===c;}).length+')';
+    from.appendChild(o);
+  });
+  var allClasses=['Creche','Baby Class','Nursery 1','Nursery 2','KG 1','KG 2','Primary 1','Primary 2','Primary 3','Primary 4','Primary 5','Primary 6','JSS 1','JSS 2','JSS 3','SS 1 Science','SS 1 Commercial','SS 1 Art','SS 2 Science','SS 2 Commercial','SS 2 Art','SS 3 Science','SS 3 Commercial','SS 3 Art','Graduated'];
+  allClasses.forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;to.appendChild(o);});
+  renderPromoHistory();
+};
+
+function loadPromoStudents(){
+  var fromCls=val('promo-from');
+  var toSel=document.getElementById('promo-to');
+  if(fromCls&&PROMO_MAP[fromCls]&&toSel){toSel.value=PROMO_MAP[fromCls];}
+  var el2=document.getElementById('promo-student-list');if(!el2)return;
+  if(!fromCls){el2.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:.85rem;">Select a source class to load students</div>';return;}
+  var students=(getStudents()||[]).filter(function(s){return s.class===fromCls;});
+  if(!students.length){el2.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);">No students in '+fromCls+'</div>';return;}
+  el2.innerHTML='';
+  students.forEach(function(s){
+    var name=(s.surname||'')+' '+(s.firstname||'');
+    var d=document.createElement('div');
+    d.style.cssText='display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);';
+    d.innerHTML='<input type="checkbox" class="promo-cb" data-id="'+s.id+'" onchange="updatePromoCount()" style="width:18px;height:18px;accent-color:var(--gold);flex-shrink:0;"/>'+
+      '<div class="stu-av" style="width:34px;height:34px;font-size:.75rem;">'+name.charAt(0).toUpperCase()+'</div>'+
+      '<div style="flex:1;"><div style="font-weight:600;color:var(--t1);font-size:.85rem;">'+name+'</div>'+
+      '<div style="font-size:.72rem;color:var(--t3);">'+s.reg+' \u00b7 '+fromCls+'</div></div>';
+    el2.appendChild(d);
+  });
+  updatePromoCount();
+  var sa=document.getElementById('promo-select-all');if(sa)sa.checked=false;
+}
+
+function togglePromoAll(checked){
+  var cbs=document.querySelectorAll('.promo-cb');
+  for(var i=0;i<cbs.length;i++) cbs[i].checked=checked;
+  updatePromoCount();
+}
+
+function updatePromoCount(){
+  var cbs=document.querySelectorAll('.promo-cb:checked');
+  var lbl=document.getElementById('promo-sel-count');
+  if(lbl) lbl.textContent=cbs.length+' selected';
+}
+
+function executePromotion(){
+  var fromCls=val('promo-from');
+  var toCls=val('promo-to');
+  if(!fromCls||!toCls){toast('Select both source and target classes','error');return;}
+  if(fromCls===toCls){toast('Source and target class cannot be the same','error');return;}
+  var cbs=document.querySelectorAll('.promo-cb:checked');
+  if(!cbs.length){toast('Select at least one student to promote','error');return;}
+  var ids=[];for(var i=0;i<cbs.length;i++) ids.push(cbs[i].dataset.id);
+  var isGrad=(toCls==='Graduated');
+  var msg=isGrad?'Graduate '+ids.length+' student(s) from '+fromCls+'? They will be marked as alumni.':'Promote '+ids.length+' student(s) from '+fromCls+' to '+toCls+'?';
+  confirmAction(msg,function(){
+    var students=getStudents()||[];
+    var promoted=0,names=[];
+    students.forEach(function(s){
+      if(ids.indexOf(s.id)>=0){
+        s.prevClass=s.class;
+        s.class=isGrad?'Alumni':toCls;
+        s.promotedDate=new Date().toISOString().slice(0,10);
+        s.promotedFrom=fromCls;
+        s.promotedTo=toCls;
+        promoted++;
+        names.push((s.surname||'')+' '+(s.firstname||''));
+      }
+    });
+    saveStudents(students);
+    var logs=JSON.parse(localStorage.getItem(_key('promo_log'))||'[]');
+    logs.unshift({
+      date:new Date().toISOString(),
+      from:fromCls,to:toCls,
+      count:promoted,
+      names:names,
+      session:(getSchool().session||''),
+      term:(getSchool().term||'')
+    });
+    localStorage.setItem(_key('promo_log'),JSON.stringify(logs));
+    _fbSync('promo_log',logs);
+    toast('\u2705 '+promoted+' student(s) '+(isGrad?'graduated':'promoted to '+toCls),'success');
+    loadPromoStudents();
+    renderStudents();
+    renderPromoHistory();
+  });
+}
+
+function renderPromoHistory(){
+  var el2=document.getElementById('promo-history');if(!el2)return;
+  var logs=JSON.parse(localStorage.getItem(_key('promo_log'))||'[]');
+  if(!logs.length){el2.innerHTML='No promotions yet this session';return;}
+  el2.innerHTML='';
+  logs.slice(0,20).forEach(function(log){
+    var d=document.createElement('div');
+    d.style.cssText='padding:8px 0;border-bottom:1px solid var(--line);';
+    d.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;">'+
+      '<div><span style="font-weight:600;color:var(--t1);">'+log.from+' \u2192 '+log.to+'</span>'+
+      '<span style="margin-left:8px;color:var(--t3);font-size:.72rem;">'+log.count+' students</span></div>'+
+      '<div style="font-size:.72rem;color:var(--t3);">'+new Date(log.date).toLocaleDateString()+'</div></div>'+
+      (log.session?'<div style="font-size:.7rem;color:var(--t3);">Session: '+log.session+' \u00b7 Term: '+log.term+'</div>':'');
+    el2.appendChild(d);
+  });
+}
+
+function undoLastPromotion(){
+  var logs=JSON.parse(localStorage.getItem(_key('promo_log'))||'[]');
+  if(!logs.length){toast('No promotion to undo','error');return;}
+  var last=logs[0];
+  confirmAction('Undo last promotion? ('+last.count+' students from '+last.from+' \u2192 '+last.to+')',function(){
+    var students=getStudents()||[];
+    students.forEach(function(s){
+      if(s.promotedFrom===last.from&&s.promotedTo===last.to&&s.promotedDate){
+        s.class=s.prevClass||last.from;
+        delete s.prevClass;delete s.promotedDate;delete s.promotedFrom;delete s.promotedTo;
+      }
+    });
+    saveStudents(students);
+    logs.shift();
+    localStorage.setItem(_key('promo_log'),JSON.stringify(logs));
+    _fbSync('promo_log',logs);
+    toast('Promotion undone','success');
+    loadPromoStudents();renderStudents();renderPromoHistory();
+  });
 }
 
 // ── INIT ───────────────────────────────────────────────
@@ -2962,9 +3198,35 @@ function printAllQRs(){
   w.onload = function(){w.print();};
 }
 
-// ── PHOTO HELPERS ──────────────────────────────────────
+// ── PHOTO HELPERS (FIX C3: compress to ~12KB thumbnails) ──────────
+function compressPhoto(base64, maxW, maxKB, cb){
+  maxW=maxW||120; maxKB=maxKB||12;
+  var img=new Image();
+  img.onload=function(){
+    var c=document.createElement('canvas');
+    var ratio=Math.min(maxW/img.width,maxW/img.height,1);
+    c.width=Math.round(img.width*ratio);c.height=Math.round(img.height*ratio);
+    var ctx=c.getContext('2d');ctx.drawImage(img,0,0,c.width,c.height);
+    var q=0.7;
+    var result=c.toDataURL('image/jpeg',q);
+    // If still too big, reduce quality
+    while(result.length>maxKB*1370 && q>0.2){q-=0.1;result=c.toDataURL('image/jpeg',q);}
+    cb(result);
+  };
+  img.onerror=function(){cb(base64);}; // fallback to original
+  img.src=base64;
+}
+
 function saveStudentPhoto(studentId, base64){
-  localStorage.setItem('rsms_photo_' + studentId, base64);
+  // Compress before saving to avoid localStorage quota issues
+  compressPhoto(base64, 120, 12, function(compressed){
+    try{
+      localStorage.setItem('rsms_photo_' + studentId, compressed);
+    }catch(e){
+      console.warn('Photo storage full for '+studentId+', skipping');
+      toast('Storage full — photo not saved for this student','error');
+    }
+  });
 }
 function getStudentPhoto(studentId){
   return localStorage.getItem('rsms_photo_' + studentId) || '';
@@ -2972,20 +3234,23 @@ function getStudentPhoto(studentId){
 
 function handleStudentPhotoInput(input){
   var file = input.files[0]; if(!file) return;
-  if(file.size > 300000){
-    toast('Photo too large. Max 300KB. Resize and try again.', 'error');
+  if(file.size > 2000000){
+    toast('Photo too large. Max 2MB.', 'error');
     input.value=''; return;
   }
   var reader = new FileReader();
   reader.onload = function(e){
     var b64 = e.target.result;
+    // Show full-res preview but store compressed
     var preview = document.getElementById('stu-photo-preview');
     if(preview){
       preview.src = b64;
       preview.style.display = 'block';
     }
-    // Store temporarily until save
-    window._pendingStudentPhoto = b64;
+    // Compress then store
+    compressPhoto(b64, 120, 12, function(compressed){
+      window._pendingStudentPhoto = compressed;
+    });
   };
   reader.readAsDataURL(file);
 }
@@ -3021,7 +3286,9 @@ function handleBatchPhotoUpload(input){
       }
 
       if(regMatch){
-        saveStudentPhoto(regMatch.id, b64);
+        compressPhoto(b64, 120, 12, function(comp){
+          try{localStorage.setItem('rsms_photo_'+regMatch.id, comp);}catch(e){}
+        });
         matched++;
       } else {
         unmatched++;
@@ -3121,8 +3388,7 @@ function loadAdminScoreTable(){
   var sess=(document.getElementById('asc-session')||{value:''}).value||'2025/2026';
   if(!cls){toast('Select a class','error');return;}
   if(!subj){toast('Select a subject','error');return;}
-  var students=JSON.parse(localStorage.getItem('rsms_students')||'[]')
-                .filter(function(s){return s.class===cls;});
+  var students=(getStudents()||[]).filter(function(s){return s.class===cls;});
   if(!students.length){toast('No students in '+cls,'error');return;}
   var scoreKey='rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
   var saved=JSON.parse(localStorage.getItem(scoreKey)||'{}');
@@ -3177,8 +3443,7 @@ function saveAdminScores(){
   var term=(document.getElementById('asc-term')||{}).value||'First Term';
   var sess=(document.getElementById('asc-session')||{value:''}).value||'2025/2026';
   if(!cls||!subj){toast('Select class and subject','error');return;}
-  var students=JSON.parse(localStorage.getItem('rsms_students')||'[]')
-                .filter(function(s){return s.class===cls;});
+  var students=(getStudents()||[]).filter(function(s){return s.class===cls;});
   var scoreKey='rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
   var saved=JSON.parse(localStorage.getItem(scoreKey)||'{}');
   var count=0;
@@ -3199,7 +3464,14 @@ function saveAdminScores(){
       count++;
     }
   });
+  saved._syncTs=Date.now();
   localStorage.setItem(scoreKey,JSON.stringify(saved));
+  localStorage.setItem(scoreKey+'_ts',String(Date.now()));
+  // FIX C4: sync scores to Firebase
+  try{
+    var fbKey=scoreKey.replace('rsms_','');
+    _fbSync(fbKey,saved);
+  }catch(e){}
   toast('\u2705 Admin override: saved '+count+' scores for '+subj,'success');
 }
 
@@ -3387,27 +3659,46 @@ window.addEventListener('DOMContentLoaded',function(){
       if(typeof RSMS_DB!=='undefined'){
         RSMS_DB.init(function(){
           try{
-            ['students','staff','fees','ct_remarks','broadcasts','fee_schedule'].forEach(function(key){
+            // FIX C4: Added scores to sync list. FIX C5: Use lastModified timestamps, not array length
+            var syncKeys=['students','staff','fees','ct_remarks','broadcasts','fee_schedule'];
+            // Also sync any score keys in localStorage
+            for(var si=0;si<localStorage.length;si++){
+              var sk=localStorage.key(si);
+              if(sk&&sk.indexOf('rsms_scores_')===0) syncKeys.push(sk.replace('rsms_',''));
+            }
+            syncKeys.forEach(function(key){
               RSMS_DB.get(key,function(err,data){
                 try{
-                  // Read from scoped key first, then unscoped fallback
                   var scopedKey = (typeof _key==='function') ? _key(key) : 'rsms_'+key;
-                  var local=JSON.parse(localStorage.getItem(scopedKey)||localStorage.getItem('rsms_'+key)||'[]');
-                  var localLen=Array.isArray(local)?local.length:Object.keys(local).length;
-                  var remoteLen=data?(Array.isArray(data)?data.length:Object.keys(data).length):0;
-                  if(remoteLen>localLen){
-                    // Firebase has more — write to BOTH scoped and unscoped keys
-                    if(typeof _set==='function') _set(key,data);
-                    localStorage.setItem('rsms_'+key,JSON.stringify(data));
-                  } else if(remoteLen>0&&localLen===0){
-                    if(typeof _set==='function') _set(key,data);
-                    localStorage.setItem('rsms_'+key,JSON.stringify(data));
+                  var localRaw=localStorage.getItem(scopedKey)||localStorage.getItem('rsms_'+key)||'[]';
+                  var local=JSON.parse(localRaw);
+                  var localTs=parseInt(localStorage.getItem(scopedKey+'_ts')||'0');
+                  var remoteTs=0;
+                  var remoteLen=0,localLen=0;
+                  if(data){
+                    remoteLen=Array.isArray(data)?data.length:Object.keys(data).length;
+                    remoteTs=parseInt((data._syncTs||0))||0;
                   }
-                  // If local has more — push local TO Firebase instead
-                  if(localLen>remoteLen&&localLen>0&&typeof RSMS_DB!=='undefined'&&RSMS_DB.isReady()){
+                  localLen=Array.isArray(local)?local.length:Object.keys(local).length;
+                  
+                  // Sync decision: prefer most-recently-modified, fallback to non-empty
+                  if(remoteTs>localTs && remoteLen>0){
+                    if(typeof _set==='function') _set(key,data);
+                    localStorage.setItem('rsms_'+key,JSON.stringify(data));
+                    localStorage.setItem(scopedKey+'_ts',String(remoteTs));
+                  } else if(localTs>remoteTs && localLen>0 && typeof RSMS_DB!=='undefined'&&RSMS_DB.isReady()){
+                    local._syncTs=Date.now();
+                    RSMS_DB.set(key,local);
+                  } else if(remoteLen>0 && localLen===0){
+                    // Fresh device — pull from Firebase
+                    if(typeof _set==='function') _set(key,data);
+                    localStorage.setItem('rsms_'+key,JSON.stringify(data));
+                  } else if(localLen>0 && remoteLen===0 && typeof RSMS_DB!=='undefined'&&RSMS_DB.isReady()){
+                    // First-time push to Firebase
+                    local._syncTs=Date.now();
                     RSMS_DB.set(key,local);
                   }
-                }catch(e2){}
+                }catch(e2){console.warn('Sync error for '+key+':',e2.message);}
               });
             });
           }catch(e){}
@@ -3421,19 +3712,24 @@ function _fbSync(key,data){
   try{ if(typeof RSMS_DB!=='undefined'&&RSMS_DB.isReady()) RSMS_DB.set(key,data); }catch(e){}
 }
 window.saveStudents=function(data){
-  /* FIX: save to BOTH scoped key (what getStudents reads first) AND unscoped (fallback) */
   try{ if(typeof _set==='function') _set('students',data); }catch(e){}
   try{ localStorage.setItem('rsms_students',JSON.stringify(data)); }catch(e){}
+  try{ var tk=(typeof _key==='function')?_key('students'):'rsms_students';localStorage.setItem(tk+'_ts',String(Date.now())); }catch(e){}
+  data._syncTs=Date.now();
   _fbSync('students',data);
 };
 window.saveStaff=function(data){
   try{ if(typeof _set==='function') _set('staff',data); }catch(e){}
   try{ localStorage.setItem('rsms_staff',JSON.stringify(data)); }catch(e){}
+  try{ var tk=(typeof _key==='function')?_key('staff'):'rsms_staff';localStorage.setItem(tk+'_ts',String(Date.now())); }catch(e){}
+  data._syncTs=Date.now();
   _fbSync('staff',data);
 };
 window.saveFees=function(data){
   try{ if(typeof _set==='function') _set('fees',data); }catch(e){}
   try{ localStorage.setItem('rsms_fees',JSON.stringify(data)); }catch(e){}
+  try{ var tk=(typeof _key==='function')?_key('fees'):'rsms_fees';localStorage.setItem(tk+'_ts',String(Date.now())); }catch(e){}
+  data._syncTs=Date.now();
   _fbSync('fees',data);
   try{ localStorage.setItem('rsms_new_payment',Date.now().toString()); }catch(e){}
 };
