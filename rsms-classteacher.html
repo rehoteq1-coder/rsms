@@ -541,7 +541,7 @@ var RSMS = {
   students: function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_students'):null)||localStorage.getItem('rsms_students')||'[]'); },
   staff:    function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_staff'):null)||localStorage.getItem('rsms_staff')||'[]'); },
   fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||localStorage.getItem('rsms_fees')||'[]'); },
-  pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||({admin:'admin123',bursar:'bursar123',teacher:'teacher123',classteacher:'ct123',hod:'hod123',vp:'vp123',student:'student123',parent:'parent123'}[role]||'pass123'); },
+  pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||''; },
   save:     function(key,data){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_'+key,JSON.stringify(data)); localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
   logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
 };
@@ -554,7 +554,7 @@ var SUBJECTS_SS_ART = ["English Language","Mathematics","Literature in English",
 
 function getSubjects(cls){
   // First try staff subjects for THIS teacher's class
-  var staff=JSON.parse((_lsget&&_lsget('staff'))||localStorage.getItem('rsms_staff')||'[]');
+  var staff=JSON.parse((typeof _lsget==='function'?_lsget('staff'):null)||localStorage.getItem('rsms_staff')||'[]');
   var myUser=RSMS&&RSMS.user?RSMS.user():(JSON.parse(sessionStorage.getItem('rsms_user')||'{}')||{});
   var myName=((myUser.surname||'')+' '+(myUser.firstname||myUser.name||'')).trim().toLowerCase();
   // Collect all subjects from staff whose class matches
@@ -644,6 +644,7 @@ function showPage(name,el){
   var bnItems=document.querySelectorAll('.bn-item');
   for(var k=0;k<bnItems.length;k++){bnItems[k].classList.remove('active');}
   closeSb();
+  window._currentPage = name;
   // Fire page hook
   var hook=window['onPage_'+name];
   if(typeof hook==='function')hook();
@@ -806,6 +807,13 @@ function checkToken(){
       sessionStorage.setItem('rsms_user',JSON.stringify(td));
       sessionStorage.setItem('rsms_auth','true');
       window.history.replaceState({},'',window.location.pathname);
+      // Sync school info so warmCache can fire
+      if(td.schoolId){
+        var schoolData = JSON.parse(localStorage.getItem('rsms_school')||'{}');
+        schoolData.schoolId = td.schoolId;
+        if(td.schoolName) schoolData.name = td.schoolName;
+        localStorage.setItem('rsms_school', JSON.stringify(schoolData));
+      }
     }
   }
 }
@@ -1380,7 +1388,7 @@ function renderDash(){
     if(alert){alert.style.display='block'; alert.textContent=pending+' document(s) returned by HOD. Please review and resubmit.';}
   }
 
-  var school = RSMS.school;
+  var school = RSMS.school();
   var hdEl = document.getElementById('t-hero-name');
   if(hdEl) hdEl.textContent = (ME.name||'Teacher')+' \u2014 '+(MY_CLASS||'Subject Teacher');
   var termEl = document.getElementById('t-hero-term');
@@ -1427,7 +1435,7 @@ function saveLessonPlan(action){
     materials:document.getElementById('lp-materials').value,
     content:document.getElementById('lp-content').value,
     references:document.getElementById('lp-references').value,
-    by:ME.name||'Teacher', term:RSMS.school.term, session:RSMS.school.session,
+    by:ME.name||'Teacher', term:RSMS.school().term, session:RSMS.school().session,
     createdAt:new Date().toISOString()
   };
   if(action==='submit'){
@@ -1459,7 +1467,7 @@ function saveLessonNote(action){
     content:document.getElementById('ln-content').value,
     attendance:document.getElementById('ln-attendance').value,
     reflection:document.getElementById('ln-reflection').value,
-    by:ME.name||'Teacher', term:RSMS.school.term, session:RSMS.school.session,
+    by:ME.name||'Teacher', term:RSMS.school().term, session:RSMS.school().session,
     createdAt:new Date().toISOString()
   };
   if(action==='submit'){
@@ -1491,7 +1499,7 @@ function saveExamQuestions(action){
     sectionA:document.getElementById('eq-section-a').value,
     sectionB:document.getElementById('eq-section-b').value,
     markingScheme:document.getElementById('eq-marking').value,
-    by:ME.name||'Teacher', term:RSMS.school.term, session:RSMS.school.session,
+    by:ME.name||'Teacher', term:RSMS.school().term, session:RSMS.school().session,
     createdAt:new Date().toISOString()
   };
   if(action==='submit'){
@@ -1567,7 +1575,7 @@ function createAssignment(){
     id:'asgn'+Date.now(), title:title, subject:subject, content:content,
     cls:document.getElementById('asgn-class').value||MY_CLASS,
     dueDate:due, by:ME.name||'Teacher',
-    createdAt:new Date().toISOString(), term:RSMS.school.term, session:RSMS.school.session
+    createdAt:new Date().toISOString(), term:RSMS.school().term, session:RSMS.school().session
   });
   _set('assignments', JSON.stringify(assigns));
   closeModal('m-add-assignment');
@@ -1677,7 +1685,7 @@ function renderMarkRegister(){
       // WhatsApp alert
       if(pphone){
         var msg = 'Dear Parent, your ward '+sname+' was ABSENT from school today ('+ATT.todayKey()+'). Please contact the school for information. '+
-          (RSMS.school.name||'School')+' \u2014 '+(RSMS.school.phone||'');
+          (RSMS.school().name||'School')+' \u2014 '+(RSMS.school().phone||'');
         setTimeout(function(){
           if(confirm('Send WhatsApp absent alert to parent of '+sname+'?')){
             window.open('https://wa.me/234'+pphone.replace(/^0/,'').replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
@@ -2324,16 +2332,16 @@ function saveTeacherScores(){
 
 /* ── RSMS DATA BRIDGE (localStorage + Firebase) ─────── */
 window.addEventListener('DOMContentLoaded', function(){
-  if(typeof RSMS_DB !== 'undefined'){
-    RSMS_DB.init(function(){
-      // Sync students from Firebase → localStorage on load
-      var syncKeys = ['students','staff','fees','ct_remarks','broadcasts','fee_schedule'];
-      syncKeys.forEach(function(key){
-        RSMS_DB.get(key, function(err, data){
-          if(data && data.length) localStorage.setItem('rsms_'+key, JSON.stringify(data));
-        });
-      });
-    });
+  // Re-render current page when Firebase warmCache delivers fresh data
+  if(typeof RSMS_FB !== 'undefined' && RSMS_FB.warmCache){
+    var _origWC = RSMS_FB.warmCache;
+    RSMS_FB.warmCache = function(){
+      _origWC.apply(this, arguments);
+      setTimeout(function(){
+        var hook = window['onPage_' + (window._currentPage || 'home')];
+        if(typeof hook === 'function') hook();
+      }, 500);
+    };
   }
   if(typeof PLAN_GUARD !== 'undefined'){
     PLAN_GUARD.applyGates();
@@ -2343,19 +2351,18 @@ window.addEventListener('DOMContentLoaded', function(){
 /* Wrap save functions to also sync to Firebase */
 var _origSaveStudents = window.saveStudents;
 window.saveStudents = function(data){
-  localStorage.setItem('rsms_students', JSON.stringify(data));
-  if(typeof RSMS_DB !== 'undefined' && RSMS_DB.isReady()) RSMS_DB.set('students', data);
+  RSMS.save('students', data);
+  if(typeof RSMS_FB !== 'undefined' && RSMS_FB.save) RSMS_FB.save('students', data);
 };
 var _origSaveStaff = window.saveStaff;
 window.saveStaff = function(data){
-  localStorage.setItem('rsms_staff', JSON.stringify(data));
-  if(typeof RSMS_DB !== 'undefined' && RSMS_DB.isReady()) RSMS_DB.set('staff', data);
+  RSMS.save('staff', data);
+  if(typeof RSMS_FB !== 'undefined' && RSMS_FB.save) RSMS_FB.save('staff', data);
 };
 var _origSaveFees = window.saveFees;
 window.saveFees = function(data){
-  localStorage.setItem('rsms_fees', JSON.stringify(data));
-  if(typeof RSMS_DB !== 'undefined' && RSMS_DB.isReady()) RSMS_DB.set('fees', data);
-  // Notify student/parent portals of new payment
+  RSMS.save('fees', data);
+  if(typeof RSMS_FB !== 'undefined' && RSMS_FB.save) RSMS_FB.save('fees', data);
   localStorage.setItem('rsms_new_payment', Date.now().toString());
 };
 
@@ -2431,7 +2438,7 @@ window.saveFees = function(data){
 
 <script>
 // ── CT PIPELINE HELPERS ────────────────────────────────────
-function getPipelineCT(){ return JSON.parse((_lsget&&_lsget('result_pipeline'))||localStorage.getItem('rsms_result_pipeline')||'{}'); }
+function getPipelineCT(){ return JSON.parse((typeof _lsget==='function'?_lsget('result_pipeline'):null)||localStorage.getItem('rsms_result_pipeline')||'{}'); }
 function savePipelineCT(p){
   var id=typeof _sid==='function'?_sid():'';
   var json=JSON.stringify(p);
