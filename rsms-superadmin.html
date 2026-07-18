@@ -1211,10 +1211,13 @@ async function saLogin(){
 }
 
 function showDashboard(){
-  // Firebase config inline
   gEl('screen-login').style.display = 'none';
   gEl('screen-main').style.display  = 'block';
-  showPage('home');
+
+  // Auto-sync schools from Firebase on every dashboard load
+  syncSchoolsFromFirebase(function(){
+    showPage('home');
+  });
 }
 
 function saLogout(){
@@ -1835,6 +1838,85 @@ function publishAllToFirebase(){
 }
 
 // ── RECOVER SCHOOLS FROM FIREBASE ────────────────────────────────
+
+// ── AUTO-SYNC: pull schools from Firebase on every login ──
+function syncSchoolsFromFirebase(cb){
+  try{
+    var cfg={
+      apiKey:'AIzaSyDKkmeHjIJm1vTg9A-o_AZnhIp1f3jmG2M',
+      databaseURL:'https://rsms-a84ff-default-rtdb.europe-west1.firebasedatabase.app',
+      projectId:'rsms-a84ff'
+    };
+    if(typeof firebase==='undefined'){
+      var s1=document.createElement('script');
+      s1.src='https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js';
+      s1.onload=function(){
+        var s2=document.createElement('script');
+        s2.src='https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js';
+        s2.onload=function(){ syncSchoolsFromFirebase(cb); };
+        document.head.appendChild(s2);
+      };
+      document.head.appendChild(s1);
+      return;
+    }
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    var db=firebase.database();
+
+    // Also pull school detail from schools/{id}/info for richer data
+    db.ref('public_schools').once('value').then(function(snap){
+      var data=snap.val();
+      if(!data){ if(cb) cb(); return; }
+      var schools=[];
+      var tokens={};
+      Object.keys(data).forEach(function(k){
+        var sc=data[k];
+        if(!sc||!sc.schoolId) return;
+        if(schools.find(function(s){return s.schoolId===sc.schoolId;})) return;
+        schools.push({
+          schoolId:   sc.schoolId,
+          name:       sc.name||'Unknown School',
+          plan:       sc.plan||'Standard',
+          state:      sc.state||'',
+          subdomain:  sc.subdomain||'',
+          status:     'active',
+          adminToken: sc.adminToken||'',
+          createdAt:  sc.updatedAt||new Date().toISOString(),
+          address:    sc.address||'',
+          phone:      sc.phone||'',
+          email:      sc.email||'',
+          principal:  sc.principal||'',
+          branding:{
+            brandColor: sc.brandColor||'#d4a843',
+            logoUrl:    sc.logoUrl||'',
+            bgImages:   sc.bgImages||[]
+          }
+        });
+        if(sc.adminToken){
+          tokens[sc.adminToken]={
+            role:'admin',schoolId:sc.schoolId,schoolName:sc.name,
+            plan:sc.plan,brandColor:sc.brandColor||'#d4a843',
+            logoUrl:sc.logoUrl||'',subdomain:sc.subdomain||''
+          };
+        }
+      });
+
+      if(schools.length){
+        localStorage.setItem('rsms_sa_schools',JSON.stringify(schools));
+        if(Object.keys(tokens).length)
+          localStorage.setItem('rsms_sa_tokens',JSON.stringify(tokens));
+        console.log('RSMS SA: synced '+schools.length+' schools from Firebase');
+      }
+      if(cb) cb();
+    }).catch(function(e){
+      console.warn('RSMS SA sync error:',e.message);
+      if(cb) cb();
+    });
+  }catch(e){
+    console.warn('RSMS SA sync error:',e);
+    if(cb) cb();
+  }
+}
+
 function recoverSchoolsFromFirebase(){
   toast('Connecting to Firebase...','info');
   try{
@@ -1908,7 +1990,7 @@ function recoverSchoolsFromFirebase(){
         localStorage.setItem('rsms_sa_tokens',JSON.stringify(tokens));
 
       toast('Recovered '+schools.length+' school'+(schools.length!==1?'s':'')+' from Firebase!','success');
-      setTimeout(function(){ showPage('schools'); renderSchools(); },500);
+      setTimeout(function(){ renderSADash(); showPage('schools'); renderSchools(); },500);
     }).catch(function(e){
       toast('Firebase error: '+e.message.slice(0,50),'error');
     });
