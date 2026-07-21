@@ -519,305 +519,6 @@ select.fi option { background: var(--card); color: var(--t1); }
 </style>
 <script src="rsms-firebase.js"></script>
 <script src="rsms-plan-guard.js"></script>
-<script>
-/* rsms-core standalone */
-/* ═══════════════════════════════════════════════════════
-   RSMS STANDALONE CORE — All globals, Android-safe
-   No external dependencies, works offline
-═══════════════════════════════════════════════════════ */
-
-// ── DATA ────────────────────────────────────────────────
-var RSMS = {
-  school:   function(){ return JSON.parse(localStorage.getItem('rsms_school')||'{"name":"","term":"First Term","session":"2025/2026","plan":"Standard"}'); },
-  user:     function(){ return JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"Admin","role":"admin"}'); },
-  students: function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_students'):null)||localStorage.getItem('rsms_students'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
-  staff:    function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_staff'):null)||localStorage.getItem('rsms_staff'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
-  fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||localStorage.getItem('rsms_fees'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
-  pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||({admin:'admin123',bursar:'bursar123',teacher:'teacher123',classteacher:'ct123',hod:'hod123',vp:'vp123',student:'student123',parent:'parent123'}[role]||'pass123'); },
-  save:     function(key,data){ localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
-  logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
-};
-
-// ── SUBJECTS ───────────────────────────────────────────
-var SUBJECTS_JSS = ["English Language","Mathematics","Basic Science & Technology","Social Studies","Civic Education","Cultural & Creative Arts","Physical & Health Education","Computer Studies","Agricultural Science","Home Economics","Business Studies","Yoruba Language","Christian Religious Studies","Islamic Religious Studies","Security Education","Basic Technology","French Language"];
-var SUBJECTS_SS_SCI = ["English Language","Mathematics","Physics","Chemistry","Biology","Further Mathematics","Computer Studies","Agricultural Science","Christian Religious Studies","Islamic Religious Studies","Civic Education","Physical & Health Education","Yoruba Language","Geography","Technical Drawing"];
-var SUBJECTS_SS_COM = ["English Language","Mathematics","Economics","Commerce","Financial Accounting","Business Studies","Office Practice","Computer Studies","Christian Religious Studies","Islamic Religious Studies","Civic Education","Physical & Health Education","Yoruba Language","Literature in English","Marketing"];
-var SUBJECTS_SS_ART = ["English Language","Mathematics","Literature in English","Government","History","Christian Religious Studies","Islamic Religious Studies","Yoruba Language","French Language","Fine Arts","Music","Geography","Economics","Civic Education","Physical & Health Education"];
-
-function getSubjects(cls){
-  var c=(cls||'').toLowerCase();
-  if(c.includes('science'))    return SUBJECTS_SS_SCI;
-  if(c.includes('commercial')) return SUBJECTS_SS_COM;
-  if(c.includes('art'))        return SUBJECTS_SS_ART;
-  if(c.includes('ss')||c.includes('senior')) return SUBJECTS_SS_SCI;
-  return SUBJECTS_JSS;
-}
-
-function populateSelect(selId,cls,selected){
-  var sel=document.getElementById(selId); if(!sel)return;
-  var subjects=getSubjects(cls);
-  sel.innerHTML='<option value="">-- Select Subject --</option>'+subjects.map(function(s){
-    return '<option value="'+s+'"'+(s===selected?' selected':'')+'>'+s+'</option>';
-  }).join('');
-}
-
-// ── UTILS ──────────────────────────────────────────────
-function uniqueArr(arr){
-  var seen={},out=[];
-  for(var i=0;i<arr.length;i++){if(arr[i]!==undefined&&arr[i]!==null&&arr[i]!==''&&!seen[arr[i]]){seen[arr[i]]=1;out.push(arr[i]);}}
-  return out;
-}
-
-// ── TOAST ──────────────────────────────────────────────
-function toast(msg,type){
-  var t=document.getElementById('rsms-toast');
-  if(!t){t=document.createElement('div');t.id='rsms-toast';t.className='toast';document.body.appendChild(t);}
-  t.className='toast show '+(type==='success'?'ok':type==='error'?'err':'info');
-  t.textContent=msg;
-  clearTimeout(t._t);
-  t._t=setTimeout(function(){t.classList.remove('show');},3200);
-}
-
-// ── MODAL ──────────────────────────────────────────────
-function openModal(id){
-  var el=document.getElementById(id);
-  if(el)el.classList.add('open');
-}
-function closeModal(id){
-  var el=document.getElementById(id);
-  if(el)el.classList.remove('open');
-}
-
-// ── SIDEBAR ────────────────────────────────────────────
-function openSb(){
-  var sb=document.getElementById('sidebar');
-  var ov=document.getElementById('sb-ov');
-  if(sb)sb.classList.add('open');
-  if(ov)ov.classList.add('show');
-}
-function closeSb(){
-  var sb=document.getElementById('sidebar');
-  var ov=document.getElementById('sb-ov');
-  if(sb)sb.classList.remove('open');
-  if(ov)ov.classList.remove('show');
-}
-
-// ── PAGE NAVIGATION ────────────────────────────────────
-function showPage(name,el){
-  // Hide all pages
-  var pages=document.querySelectorAll('.page');
-  for(var i=0;i<pages.length;i++){
-    pages[i].classList.remove('active');
-  }
-  // Show target page
-  var pg=document.getElementById('pg-'+name);
-  if(pg){
-    pg.classList.add('active');
-  }
-  // Update sidebar active
-  var items=document.querySelectorAll('.sb-item');
-  for(var j=0;j<items.length;j++){items[j].classList.remove('active');}
-  if(el&&el.classList)el.classList.add('active');
-  // Update bottom nav active
-  var bnItems=document.querySelectorAll('.bn-item');
-  for(var k=0;k<bnItems.length;k++){bnItems[k].classList.remove('active');}
-  closeSb();
-  // Fire page hook
-  var hook=window['onPage_'+name];
-  if(typeof hook==='function')hook();
-}
-
-// ── CAROUSEL ──────────────────────────────────────────
-function initCarousel(slides,trackId,dotsId){
-  var track=document.getElementById(trackId);
-  var dotsEl=document.getElementById(dotsId);
-  if(!track||!slides||!slides.length)return;
-  var idx=0;
-  track.innerHTML=slides.map(function(s){
-    return '<div class="banner" style="min-width:280px;height:110px;flex-shrink:0;scroll-snap-align:start;" onclick="'+s.onclick+'">'+
-      '<div class="banner-bg" style="background:'+s.bg+';"></div>'+
-      '<div class="banner-content">'+
-        '<div><div class="banner-tag">'+s.tag+'</div><div class="banner-title">'+s.title+'</div>'+
-        '<div class="banner-sub">'+s.sub+'</div></div>'+
-        '<div class="flex-between">'+
-          '<button class="banner-btn" onclick="event.stopPropagation();'+s.onclick+'">'+s.btn+' &#8594;</button>'+
-          '<span style="font-size:1.8rem;opacity:.5;">'+s.ico+'</span>'+
-        '</div>'+
-      '</div></div>';
-  }).join('');
-  if(dotsEl){
-    dotsEl.innerHTML=slides.map(function(s,i){
-      return '<div class="dot'+(i===0?' active':'')+'"></div>';
-    }).join('');
-  }
-  function goTo(n){
-    idx=((n%slides.length)+slides.length)%slides.length;
-    var card=track.querySelector('.banner');
-    if(card)track.scrollTo({left:idx*(card.offsetWidth+10),behavior:'smooth'});
-    if(dotsEl){
-      var dots=dotsEl.querySelectorAll('.dot');
-      for(var i=0;i<dots.length;i++)dots[i].className='dot'+(i===idx?' active':'');
-    }
-  }
-  var timer=setInterval(function(){goTo(idx+1);},4500);
-  track.addEventListener('scroll',function(){
-    var card=track.querySelector('.banner');
-    if(!card)return;
-    var n=Math.round(track.scrollLeft/(card.offsetWidth+10));
-    if(n!==idx){idx=n;clearInterval(timer);timer=setInterval(function(){goTo(idx+1);},4500);}
-  });
-}
-
-// ── WORKFLOW ENGINE ────────────────────────────────────
-var WF={
-  getAll:function(t){return JSON.parse(localStorage.getItem('rsms_wf_'+t)||'[]');},
-  saveAll:function(t,d){localStorage.setItem('rsms_wf_'+t,JSON.stringify(d));},
-  badge:function(status){
-    var map={draft:'bg-gray',submitted:'bg-teal',hod_reviewed:'bg-gold',vp_approved:'bg-green',returned:'bg-red'};
-    var lbl={draft:'Draft',submitted:'Submitted',hod_reviewed:'HOD OK',vp_approved:'VP Approved ✅',returned:'Returned ↩'};
-    return '<span class="badge '+(map[status]||'bg-gray')+'" style="font-size:.6rem;">'+(lbl[status]||status)+'</span>';
-  },
-  submit:function(type,doc){
-    var all=WF.getAll(type);
-    doc.id=doc.id||('wf'+Date.now());doc.status='submitted';
-    doc.submittedAt=new Date().toISOString();
-    doc.history=doc.history||[];
-    doc.history.push({action:'submitted',by:doc.by,at:new Date().toISOString()});
-    var i=all.findIndex(function(d){return d.id===doc.id;});
-    if(i>-1)all[i]=doc;else all.push(doc);
-    WF.saveAll(type,all);return doc;
-  },
-  review:function(type,id,action,note,by){
-    var all=WF.getAll(type);
-    var i=all.findIndex(function(d){return d.id===id;});if(i<0)return false;
-    all[i].status=action==='approve'?'hod_reviewed':'returned';
-    all[i].hodNote=note;all[i].hodBy=by;all[i].hodAt=new Date().toISOString();
-    all[i].history=all[i].history||[];
-    all[i].history.push({action:all[i].status,by:by,at:new Date().toISOString(),note:note});
-    WF.saveAll(type,all);return all[i];
-  },
-  vpApprove:function(type,id,action,note,by){
-    var all=WF.getAll(type);
-    var i=all.findIndex(function(d){return d.id===id;});if(i<0)return false;
-    all[i].status=action==='approve'?'vp_approved':'returned';
-    all[i].vpNote=note;all[i].vpBy=by;all[i].vpAt=new Date().toISOString();
-    all[i].history=all[i].history||[];
-    all[i].history.push({action:all[i].status,by:by,at:new Date().toISOString(),note:note});
-    WF.saveAll(type,all);return all[i];
-  },
-  pending:function(role){
-    var count=0;
-    ['plans','notes','exams'].forEach(function(t){
-      var all=WF.getAll(t);
-      if(role==='hod')count+=all.filter(function(d){return d.status==='submitted';}).length;
-      if(role==='vp') count+=all.filter(function(d){return d.status==='hod_reviewed';}).length;
-    });
-    return count;
-  }
-};
-
-// ── LESSON AI ──────────────────────────────────────────
-var LESSON_AI={
-  URL:'https://rehoteq.com/lesson-ai.html',
-  UNITS_PER_TERM:10,
-  giftLink:function(teacher){
-    var token=btoa((teacher.id||teacher.name)+'|'+(teacher.email||'')+'|'+Date.now()).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
-    var email=encodeURIComponent(teacher.email||(teacher.name.replace(/\s+/g,''))+'@rsms.school');
-    return LESSON_AI.URL+'?rsms_gift='+token+'&units='+LESSON_AI.UNITS_PER_TERM+'&teacher='+email;
-  },
-  giftAll:function(){
-    var school=RSMS.school();
-    var term=school.term||'First Term';
-    var session=school.session||'2025/2026';
-    var key='gift_'+term.replace(/\s+/g,'_')+'_'+session.replace('/','_');
-    var done=localStorage.getItem(key)==='done';
-    var staff=JSON.parse((_lsget&&_lsget('staff'))||localStorage.getItem('rsms_staff')||'[]');
-    var teachers=staff.filter(function(s){
-      var r=(s.role||'').toLowerCase();
-      return r.includes('teacher')||r.includes('hod')||r.includes('principal');
-    });
-    if(!done)localStorage.setItem(key,'done');
-    return {alreadyDone:done,teachers:teachers,count:teachers.length};
-  }
-};
-
-// ── LINK GENERATOR ─────────────────────────────────────
-var LINKS={
-  BASE:'https://rsms.rehoteq.com/',
-  PORTAL:{
-    'Class Teacher':'rsms-classteacher.html','Subject Teacher':'rsms-teacher.html',
-    'Teacher':'rsms-teacher.html','HOD':'rsms-hod.html',
-    'Vice Principal Academic':'rsms-vp.html','Vice Principal Admin':'rsms-vp.html',
-    'Principal':'rsms-vp.html','Head Mistress':'rsms-vp.html',
-    'Admin Staff':'rsms-admin.html','Security':'rsms-clock.html'
-  },
-  _token:function(seed){return btoa(seed+'|'+Date.now()).replace(/[^a-zA-Z0-9]/g,'').slice(0,16);},
-  _save:function(tk,data){
-    var tokens=JSON.parse(localStorage.getItem('rsms_tokens')||'{}');
-    tokens[tk]=data;localStorage.setItem('rsms_tokens',JSON.stringify(tokens));
-  },
-  staff:function(s){
-    var tk=LINKS._token(s.id||s.name);
-    LINKS._save(tk,{role:s.role,name:s.name,id:s.id,email:s.email||'',myClass:s.myClass||'',subjects:s.subjects||'',staffId:s.staffId||''});
-    return LINKS.BASE+(LINKS.PORTAL[s.role]||'rsms-teacher.html')+'?token='+tk;
-  },
-  student:function(s){
-    var tk=LINKS._token(s.id||s.reg);
-    LINKS._save(tk,{role:'student',name:(s.surname||'')+' '+(s.firstname||''),id:s.id,stuId:s.id,class:s.class,reg:s.reg,parentPhone:s.parentPhone||''});
-    return LINKS.BASE+'rsms-student.html?token='+tk;
-  },
-  parent:function(s){
-    var tk=LINKS._token('p'+(s.id||s.reg));
-    LINKS._save(tk,{role:'parent',childId:s.id,childName:(s.surname||'')+' '+(s.firstname||''),class:s.class,parentPhone:s.parentPhone||''});
-    return LINKS.BASE+'rsms-parent.html?token='+tk;
-  }
-};
-
-// ── AUTH HELPERS ───────────────────────────────────────
-function checkToken(){
-  var params=new URLSearchParams(window.location.search);
-  var token=params.get('token');
-  if(token){
-    var tokens=JSON.parse(localStorage.getItem('rsms_tokens')||'{}');
-    var td=tokens[token];
-    if(td){
-      sessionStorage.setItem('rsms_user',JSON.stringify(td));
-      sessionStorage.setItem('rsms_auth','true');
-      window.history.replaceState({},'',window.location.pathname);
-    }
-  }
-}
-
-function setHeaderInfo(){
-  var user=RSMS.user();
-  var school=RSMS.school();
-  function s(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  s('sb-name',user.name||'User');
-  s('sb-role',user.role||'');
-  s('sb-av',(user.name||'U').charAt(0).toUpperCase());
-  s('sb-school',school.name||'School');
-  s('hd-av',(user.name||'U').charAt(0).toUpperCase());
-  var logoEl=document.getElementById('sb-logo-img');
-  var logo=localStorage.getItem('rsms_school_logo')||'';
-  if(logoEl&&logo){logoEl.src=logo;logoEl.style.display='block';}
-}
-
-// ── COPY ───────────────────────────────────────────────
-function copyText(text){
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(function(){toast('Copied!','success');});
-  } else {
-    var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
-    document.body.appendChild(ta);ta.focus();ta.select();
-    try{document.execCommand('copy');toast('Copied!','success');}catch(e){toast('Copy failed','error');}
-    document.body.removeChild(ta);
-  }
-}
-
-// ── CONFIRM ────────────────────────────────────────────
-function confirmAction(msg,fn){if(window.confirm(msg))fn();}
-
-</script>
 
 </head>
 <body>
@@ -963,7 +664,7 @@ var RSMS = {
   students: function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_students'):null)||localStorage.getItem('rsms_students'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
   staff:    function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_staff'):null)||localStorage.getItem('rsms_staff'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
   fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||localStorage.getItem('rsms_fees'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
-  pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||({admin:'admin123',bursar:'bursar123',teacher:'teacher123',classteacher:'ct123',hod:'hod123',vp:'vp123',student:'student123',parent:'parent123'}[role]||'pass123'); },
+  pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||''; },
   save:     function(key,data){ localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
   logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
 };
@@ -1377,9 +1078,16 @@ function renderDash(){
   // Unpaid alert
   var outstanding = document.getElementById('p-unpaid-alert');
   if(outstanding){
-    var expected = 35000;
-    outstanding.style.display = totalPaid < expected ? 'block' : 'none';
-    outstanding.textContent = 'Fees outstanding: \u20a6'+(expected-totalPaid).toLocaleString()+'. Please pay at the bursar\'s office.';
+    var schedule = JSON.parse(localStorage.getItem(_key('fee_schedule'))||localStorage.getItem('rsms_fee_schedule')||'[]');
+    var childClass = CHILD_CLASS||'';
+    var classSchedule = schedule.filter(function(s){return s.class===childClass;});
+    var expected = classSchedule.reduce(function(a,s){return a+parseFloat(s.amount||0);},0);
+    if(expected > 0){
+      outstanding.style.display = totalPaid < expected ? 'block' : 'none';
+      outstanding.textContent = 'Fees outstanding: \u20a6'+(expected-totalPaid).toLocaleString()+'. Please pay at the bursar\'s office.';
+    } else {
+      outstanding.style.display = 'none';
+    }
   }
 }
 
@@ -1454,7 +1162,8 @@ function renderChildResults(){
   var childClass = CHILD_CLASS||'';
   var classSchedule = schedule.filter(function(s){return s.class===childClass;});
   var totalExpected = classSchedule.reduce(function(a,s){return a+parseFloat(s.amount||0);},0);
-  var outstanding = Math.max(0, totalExpected - total);
+  var totalPaid = childFees().reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  var outstanding = Math.max(0, totalExpected - totalPaid);
 
   if(outstanding > 0 || classSchedule.length > 0){
     var payCard = document.createElement('div');
@@ -1509,11 +1218,7 @@ function gradeResult(score){
   return 'F9';
 }
 
-function grade(s){
-  if(s>=75)return 'A1'; if(s>=70)return 'B2'; if(s>=65)return 'B3';
-  if(s>=60)return 'C4'; if(s>=55)return 'C5'; if(s>=50)return 'C6';
-  if(s>=45)return 'D7'; if(s>=40)return 'E8'; return 'F9';
-}
+function grade(s){ return gradeResult(s); }
 
 function renderChildFees(){
   var el = document.getElementById('p-fees-list'); if(!el)return;
@@ -1657,45 +1362,19 @@ function renderChildAttendance(){
   });
 }
 
-// ── RSMS DATA BRIDGE (localStorage + Firebase) ────────
+// ── RSMS DATA BRIDGE (Firebase via rsms-firebase.js) ────────
 window.addEventListener('DOMContentLoaded', function(){
-  if(typeof RSMS_DB !== 'undefined'){
-    RSMS_DB.init(function(){
-      var syncKeys = ['students','staff','fees','ct_remarks','broadcasts','fee_schedule','assignments'];
-      syncKeys.forEach(function(key){
-        RSMS_DB.get(key, function(err, data){
-          if(data && data.length){
-            // Write to BOTH scoped and unscoped so all portals can read
-            localStorage.setItem(_key(key), JSON.stringify(data));
-            localStorage.setItem('rsms_'+key, JSON.stringify(data));
-          }
-        });
-      });
-    });
-  }
   if(typeof PLAN_GUARD !== 'undefined'){
     PLAN_GUARD.applyGates();
   }
 });
 
-/* Wrap save functions to also sync to Firebase */
-var _origSaveStudents = window.saveStudents;
-window.saveStudents = function(data){
-  localStorage.setItem('rsms_students', JSON.stringify(data));
-  if(typeof RSMS_DB !== 'undefined' && RSMS_DB.isReady()) RSMS_DB.set('students', data);
-};
-var _origSaveStaff = window.saveStaff;
-window.saveStaff = function(data){
-  localStorage.setItem('rsms_staff', JSON.stringify(data));
-  if(typeof RSMS_DB !== 'undefined' && RSMS_DB.isReady()) RSMS_DB.set('staff', data);
-};
-var _origSaveFees = window.saveFees;
-window.saveFees = function(data){
-  localStorage.setItem('rsms_fees', JSON.stringify(data));
-  if(typeof RSMS_DB !== 'undefined' && RSMS_DB.isReady()) RSMS_DB.set('fees', data);
-  // Notify student/parent portals of new payment
-  localStorage.setItem('rsms_new_payment', Date.now().toString());
-};
+// Re-render when warmCache delivers fresh data from Firebase
+window.addEventListener('storage', function(e){
+  if(e.key && e.key.indexOf('rsms_') === 0 && window.initPortal) {
+    initPortal();
+  }
+});
 
 </script>
 <script src="rsms-notifications.js"></script>
