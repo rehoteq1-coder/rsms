@@ -3781,11 +3781,17 @@ function saveFlwConfig(){
   if(!cfg.publicKey){toast('Enter your Flutterwave Public Key','error');return;}
   if(cfg.publicKey.indexOf('FLWPUBK')<0){toast('Invalid key — must start with FLWPUBK','error');return;}
   localStorage.setItem('rsms_flw_config',JSON.stringify(cfg));
-  toast('Payment gateway configured!','success');
+  var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+  if(sid) localStorage.setItem('rsms_'+sid+'_flw_config',JSON.stringify(cfg));
+  try{if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady()) RSMS_FB.saveFlwConfig(cfg);}catch(e){}
+  toast('Payment gateway configured & synced!','success');
 }
 
 function loadFlwConfig(){
-  var cfg=JSON.parse(localStorage.getItem('rsms_flw_config')||'{}');
+  var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+  var raw=sid?localStorage.getItem('rsms_'+sid+'_flw_config'):null;
+  if(!raw) raw=localStorage.getItem('rsms_flw_config');
+  var cfg=JSON.parse(raw||'{}');
   var pk=document.getElementById('flw-public-key');
   var bn=document.getElementById('flw-business-name');
   var cu=document.getElementById('flw-currency');

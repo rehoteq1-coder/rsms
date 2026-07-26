@@ -166,7 +166,8 @@ var RSMS_NOTIFY = (function(){
       hod:        ['scores_submitted','ct_remarks_saved'],
       vp:         ['hod_approved'],
       principal:  ['vp_approved','hod_approved'],
-      admin:      ['school_registered','scores_submitted','results_published'],
+      admin:      ['school_registered','scores_submitted','results_published','parent_payment'],
+      bursar:     ['parent_payment','scores_submitted'],
       teacher:    ['scores_returned','exam_approved'],
       classteacher:['scores_returned','remarks_returned'],
       student:    ['results_published'],
@@ -228,6 +229,11 @@ var RSMS_NOTIFY = (function(){
       attendance_alert: {
         title:'Attendance Alert', type:'warning', icon:'📍',
         body: (n.data.student||'Your child')+' was marked absent today'
+      },
+      parent_payment: {
+        title:'💰 Parent Payment Received!', type:'success', icon:'💳',
+        body: (n.data.student||'A parent')+' paid ₦'+(Number(n.data.amount||0).toLocaleString())+' via '+(n.data.method||'online'),
+        action:{label:'View Fees', fn:function(){ if(typeof showPage==='function') showPage('fees'); }}
       },
       scores_returned: {
         title:'Scores Returned', type:'warning', icon:'↩️',
@@ -302,7 +308,7 @@ var RSMS_NOTIFY = (function(){
     if(id&&typeof firebase!=='undefined'){
       var user=JSON.parse(sessionStorage.getItem('rsms_user')||'{}');
       var myRole=(user.role||'').toLowerCase();
-      var ROLE_EVENTS={hod:['scores_submitted','ct_remarks_saved'],vp:['hod_approved'],principal:['vp_approved','hod_approved'],admin:['scores_submitted','results_published'],teacher:['scores_returned','exam_approved'],classteacher:['scores_returned'],student:['results_published'],parent:['results_published','fee_reminder','attendance_alert']};
+      var ROLE_EVENTS={hod:['scores_submitted','ct_remarks_saved'],vp:['hod_approved'],principal:['vp_approved','hod_approved'],admin:['scores_submitted','results_published','parent_payment'],bursar:['parent_payment','scores_submitted'],teacher:['scores_returned','exam_approved'],classteacher:['scores_returned'],student:['results_published'],parent:['results_published','fee_reminder','attendance_alert']};
       var myEvents=ROLE_EVENTS[myRole]||[];
       firebase.database().ref('schools/'+id+'/notifications').orderByChild('createdAt').limitToLast(15).once('value').then(function(snap){
         var items=[];

@@ -1184,25 +1184,182 @@ function renderChildResults(){
 
 function payFeeOnline(amount){
   // Check plan — card payment requires Premium+
-  if(!PLAN_GUARD.canUse('card_payment')&&!PLAN_GUARD.canUse('self_pay')){
+  if(typeof PLAN_GUARD!=='undefined'&&!PLAN_GUARD.canUse('card_payment')&&!PLAN_GUARD.canUse('self_pay')){
     PLAN_GUARD.upgradeModal('self_pay'); return;
   }
-  var cfg = JSON.parse(localStorage.getItem('rsms_flw_config')||'{}');
+  // Read Flutterwave config (synced from Firebase via warmCache)
+  var sid=_sid();
+  var raw=sid?localStorage.getItem('rsms_'+sid+'_flw_config'):null;
+  if(!raw) raw=localStorage.getItem('rsms_flw_config');
+  var cfg=JSON.parse(raw||'{}');
   if(!cfg.publicKey){
-    toast('Online payment not yet configured by school. Please contact the bursar directly.','error');
+    toast('Online payment not yet configured by school. Please contact the bursar.','error');
     return;
   }
-  // ── Direct to Bursar Self-Pay page ──
-  // Pass student token so bursar self-pay can pre-fill student details
+  if(!amount||amount<=0){
+    toast('No outstanding fees to pay.','info');
+    return;
+  }
+  var school=RSMS.school()||{};
   var user=RSMS.user()||{};
-  var tokens=JSON.parse(localStorage.getItem('rsms_tokens')||'{}');
-  // Find token for this student
-  var studentToken='';
-  Object.keys(tokens).forEach(function(t){
-    if(tokens[t].stuId===user.stuId||tokens[t].name===user.name) studentToken=t;
-  });
-  var url='rsms-bursar.html?page=selfpay'+(studentToken?'&token='+studentToken:'');
-  window.open(url,'_blank');
+  var txRef='RSMS-SP-'+Date.now()+'-'+Math.random().toString(36).substr(2,6);
+
+  // Show payment method chooser
+  var modal=document.createElement('div');
+  modal.id='pay-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML=
+    '<div style="background:var(--card);border-radius:var(--r);padding:24px;max-width:400px;width:100%;">'+
+      '<div style="font-weight:800;font-size:1.1rem;color:var(--t1);margin-bottom:4px;">Pay School Fees</div>'+
+      '<div style="font-size:.82rem;color:var(--t3);margin-bottom:16px;">Student: <strong>'+CHILD_NAME+'</strong> &middot; '+(CHILD_CLASS||'')+'</div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.2);border-radius:var(--r2);padding:12px;margin-bottom:16px;">'+
+        '<span style="font-size:.82rem;color:var(--t2);">Amount</span>'+
+        '<span style="font-weight:900;font-size:1.2rem;color:var(--gold);">&#8358;'+Number(amount).toLocaleString()+'</span>'+
+      '</div>'+
+      '<div style="font-size:.78rem;color:var(--t3);margin-bottom:10px;">Select payment method:</div>'+
+      '<button id="pay-card-btn" style="width:100%;padding:13px;background:linear-gradient(135deg,var(--gold),#b8932a);color:#000;border:none;border-radius:var(--r2);font-weight:800;font-size:.9rem;cursor:pointer;margin-bottom:8px;font-family:var(--sans);">&#128179; Pay with Card</button>'+
+      '<button id="pay-transfer-btn" style="width:100%;padding:13px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:var(--green);border-radius:var(--r2);font-weight:700;font-size:.85rem;cursor:pointer;margin-bottom:12px;font-family:var(--sans);">&#127974; Pay via Bank Transfer</button>'+
+      '<button id="pay-cancel-btn" style="width:100%;padding:10px;background:transparent;border:1px solid rgba(255,255,255,.1);color:var(--t3);border-radius:var(--r2);font-size:.82rem;cursor:pointer;font-family:var(--sans);">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(modal);
+
+  document.getElementById('pay-cancel-btn').onclick=function(){ modal.remove(); };
+  modal.onclick=function(e){ if(e.target===modal) modal.remove(); };
+
+  // ── Card Payment via Flutterwave ──
+  document.getElementById('pay-card-btn').onclick=function(){
+    modal.remove();
+    if(typeof FlutterwaveCheckout==='undefined'){
+      toast('Loading payment gateway...','info');
+      var s=document.createElement('script');
+      s.src='https://checkout.flutterwave.com/v3.js';
+      s.onload=function(){ launchFlw(); };
+      s.onerror=function(){ toast('Could not load payment gateway. Check your connection.','error'); };
+      document.head.appendChild(s);
+    } else { launchFlw(); }
+
+    function launchFlw(){
+      FlutterwaveCheckout({
+        public_key: cfg.publicKey,
+        tx_ref: txRef,
+        amount: amount,
+        currency: cfg.currency||'NGN',
+        payment_options: cfg.methods||'card,banktransfer,ussd',
+        customer: {
+          name: user.parentName||user.name||CHILD_NAME+' (Parent)',
+          email: user.parentEmail||user.email||'parent@'+txRef+'.pay',
+          phone_number: user.parentPhone||user.phone||''
+        },
+        customizations: {
+          title: (school.name||'School')+' Fee Payment',
+          description: 'Fee payment for '+CHILD_NAME,
+          logo: localStorage.getItem('rsms_school_logo')||''
+        },
+        callback: function(response){
+          if(response.status==='successful'||response.status==='completed'){
+            recordParentPayment(amount,'Card (Flutterwave)',response.transaction_id||response.tx_ref);
+            toast('\u2705 Payment successful!','success');
+          } else {
+            toast('Payment was not completed.','error');
+          }
+        },
+        onclose: function(){}
+      });
+    }
+  };
+
+  // ── Bank Transfer ──
+  document.getElementById('pay-transfer-btn').onclick=function(){
+    modal.remove();
+    var ref='RSMS-BT-'+Date.now().toString(36).toUpperCase();
+    var tModal=document.createElement('div');
+    tModal.id='transfer-modal';
+    tModal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    tModal.innerHTML=
+      '<div style="background:var(--card);border-radius:var(--r);padding:24px;max-width:400px;width:100%;">'+
+        '<div style="font-weight:800;font-size:1.05rem;color:var(--t1);margin-bottom:12px;">&#127974; Bank Transfer</div>'+
+        '<div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.15);border-radius:var(--r2);padding:14px;margin-bottom:14px;">'+
+          '<div style="font-size:.78rem;color:var(--t3);margin-bottom:6px;">Transfer exactly:</div>'+
+          '<div style="font-weight:900;font-size:1.3rem;color:var(--green);">&#8358;'+Number(amount).toLocaleString()+'</div>'+
+          '<div style="font-size:.78rem;color:var(--t3);margin-top:8px;">Use this reference: <strong style="color:var(--gold);">'+ref+'</strong></div>'+
+          '<div style="font-size:.72rem;color:var(--t3);margin-top:4px;">Contact school bursar for bank details.</div>'+
+        '</div>'+
+        '<div style="font-size:.78rem;color:var(--t3);margin-bottom:8px;">After transferring, click below to record:</div>'+
+        '<button id="confirm-transfer-btn" style="width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:var(--r2);font-weight:700;font-size:.88rem;cursor:pointer;margin-bottom:8px;font-family:var(--sans);">\u2705 I\'ve Made the Transfer</button>'+
+        '<button id="cancel-transfer-btn" style="width:100%;padding:10px;background:transparent;border:1px solid rgba(255,255,255,.1);color:var(--t3);border-radius:var(--r2);font-size:.82rem;cursor:pointer;font-family:var(--sans);">Cancel</button>'+
+      '</div>';
+    document.body.appendChild(tModal);
+    document.getElementById('cancel-transfer-btn').onclick=function(){ tModal.remove(); };
+    tModal.onclick=function(e){ if(e.target===tModal) tModal.remove(); };
+    document.getElementById('confirm-transfer-btn').onclick=function(){
+      tModal.remove();
+      recordParentPayment(amount,'Bank Transfer',ref);
+      toast('\u2705 Transfer recorded! The bursar will verify and confirm.','success');
+    };
+  };
+}
+
+function recordParentPayment(amount,method,ref){
+  var school=RSMS.school()||{};
+  var fees=RSMS.fees?RSMS.fees():[];
+  var receiptNo='SP-'+Date.now().toString(36).toUpperCase();
+  var rec={
+    id:'f'+Date.now(),
+    receiptNo:receiptNo,
+    stuId:CHILD_ID,
+    student:CHILD_NAME,
+    class:CHILD_CLASS||'--',
+    reg:'',
+    type:'School Fee',
+    amount:amount,
+    method:method,
+    date:new Date().toISOString().slice(0,10),
+    ref:ref||('SELF-'+Date.now()),
+    term:school.term||'First Term',
+    session:school.session||'2025/2026',
+    recordedAt:new Date().toISOString(),
+    channel:'parent_selfpay'
+  };
+  fees.push(rec);
+  // Save to localStorage + Firebase
+  var sid=_sid();
+  if(sid) localStorage.setItem('rsms_'+sid+'_fees',JSON.stringify(fees));
+  localStorage.setItem('rsms_fees',JSON.stringify(fees));
+  try{if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady()){
+    RSMS_FB.saveFees(fees);
+    RSMS_FB.pushPaymentAlert(rec);
+  }}catch(e){}
+  // Refresh fee display
+  if(typeof renderChildFees==='function') renderChildFees();
+  if(typeof renderDash==='function') renderDash();
+  // Show receipt modal
+  showPaymentReceipt(rec);
+}
+
+function showPaymentReceipt(rec){
+  var m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  m.innerHTML=
+    '<div style="background:var(--card);border-radius:var(--r);padding:24px;max-width:380px;width:100%;text-align:center;">'+
+      '<div style="font-size:2.5rem;margin-bottom:8px;">\u2705</div>'+
+      '<div style="font-weight:800;font-size:1.1rem;color:var(--green);margin-bottom:4px;">Payment Confirmed</div>'+
+      '<div style="font-size:.78rem;color:var(--t3);margin-bottom:16px;">The school bursar has been notified.</div>'+
+      '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:var(--r2);padding:14px;text-align:left;margin-bottom:16px;">'+
+        '<div style="font-size:.78rem;color:var(--t3);margin-bottom:4px;">Receipt No</div>'+
+        '<div style="font-weight:700;color:var(--gold);margin-bottom:10px;">'+rec.receiptNo+'</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.78rem;">'+
+          '<div><div style="color:var(--t3);">Student</div><div style="color:var(--t1);font-weight:600;">'+rec.student+'</div></div>'+
+          '<div><div style="color:var(--t3);">Class</div><div style="color:var(--t1);font-weight:600;">'+rec.class+'</div></div>'+
+          '<div><div style="color:var(--t3);">Amount</div><div style="color:var(--green);font-weight:700;">&#8358;'+Number(rec.amount).toLocaleString()+'</div></div>'+
+          '<div><div style="color:var(--t3);">Method</div><div style="color:var(--t1);font-weight:600;">'+rec.method+'</div></div>'+
+          '<div><div style="color:var(--t3);">Date</div><div style="color:var(--t1);font-weight:600;">'+rec.date+'</div></div>'+
+          '<div><div style="color:var(--t3);">Reference</div><div style="color:var(--t1);font-weight:600;font-size:.7rem;word-break:break-all;">'+(rec.ref||'')+'</div></div>'+
+        '</div>'+
+      '</div>'+
+      '<button onclick="this.closest('div[style]').parentElement.remove();" style="width:100%;padding:11px;background:var(--gold);color:#000;border:none;border-radius:var(--r2);font-weight:700;font-size:.88rem;cursor:pointer;font-family:var(--sans);">Done</button>'+
+    '</div>';
+  document.body.appendChild(m);
+  m.onclick=function(e){if(e.target===m)m.remove();};
 }
 
 function gradeResult(score){
