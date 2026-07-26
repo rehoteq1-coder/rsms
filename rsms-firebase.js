@@ -166,6 +166,53 @@ var RSMS_FB = (function(){
     if(_sid) _write('schools/'+_sid+'/assignments', data);
   }
 
+  function saveFlwConfig(data){
+    var json=JSON.stringify(data);
+    try{ localStorage.setItem('rsms_flw_config', json); }catch(e){}
+    if(_sid){
+      try{ localStorage.setItem('rsms_'+_sid+'_flw_config', json); }catch(e){}
+      _write('schools/'+_sid+'/flw_config', data);
+    }
+  }
+
+  function pushPaymentAlert(rec){
+    if(_sid&&_ready){
+      // Push to notifications path so rsms-notifications.js picks it up
+      _db.ref('schools/'+_sid+'/notifications').push({
+        event:'parent_payment',
+        data:{
+          student:rec.student||'Unknown',
+          class:rec.class||'--',
+          amount:rec.amount||0,
+          type:rec.type||'School Fee',
+          method:rec.method||'Card',
+          receiptNo:rec.receiptNo||''
+        },
+        from:rec.student||'Parent',
+        fromRole:'parent',
+        schoolId:_sid,
+        createdAt:new Date().toISOString(),
+        read:false
+      });
+    }
+  }
+
+  function listenPaymentAlerts(onAlert){
+    if(!_ready||!_sid) return;
+    _db.ref('schools/'+_sid+'/payment_alerts')
+      .orderByChild('seen').equalTo(false)
+      .on('child_added', function(snap){
+        var val=snap.val();
+        if(val && onAlert) onAlert(val, snap.key);
+      });
+  }
+
+  function markAlertSeen(alertKey){
+    if(_sid&&_ready){
+      _db.ref('schools/'+_sid+'/payment_alerts/'+alertKey+'/seen').set(true);
+    }
+  }
+
   function saveAttendance(cls, date, data){
     var attKey = 'att_'+cls+'_'+date;
     _lsSet(attKey, data);
@@ -218,7 +265,7 @@ var RSMS_FB = (function(){
                 'fee_schedule','stream_config','broadcasts',
                 'info','clock_logs','clock_cfg','assignments'];
     var done  = 0;
-    var total = keys.length + 2; // +1 score_entries, +1 attendance
+    var total = keys.length + 3; // +1 score_entries, +1 attendance, +1 flw_config
 
     function tick(){
       done++;
@@ -269,6 +316,17 @@ var RSMS_FB = (function(){
             if(_sid){ try{ localStorage.setItem('rsms_'+_sid+'_'+attKey, json); }catch(e){} }
           });
         });
+      }
+      tick();
+    }).catch(function(){ tick(); });
+
+    // Fetch Flutterwave config
+    _db.ref('schools/'+_sid+'/flw_config').once('value').then(function(snap){
+      var val=snap.val();
+      if(val){
+        var json=JSON.stringify(val);
+        try{ localStorage.setItem('rsms_flw_config', json); }catch(e){}
+        if(_sid){ try{ localStorage.setItem('rsms_'+_sid+'_flw_config', json); }catch(e){} }
       }
       tick();
     }).catch(function(){ tick(); });
@@ -357,6 +415,10 @@ var RSMS_FB = (function(){
     saveSchool:       saveSchool,
     saveAssignments:  saveAssignments,
     saveAttendance:   saveAttendance,
+    saveFlwConfig:    saveFlwConfig,
+    pushPaymentAlert: pushPaymentAlert,
+    listenPaymentAlerts: listenPaymentAlerts,
+    markAlertSeen:    markAlertSeen,
     // Reads
     getStudents:      getStudents,
     getStaff:         getStaff,

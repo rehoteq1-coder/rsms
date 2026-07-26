@@ -2222,6 +2222,40 @@ window.addEventListener('load',function(){
     }catch(e){}
   }
   setTimeout(_warmAndRefresh, 500);
+  // Listen for real-time parent payments via Firebase
+  setTimeout(function(){
+    try{
+      if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady()){
+        var _sc=JSON.parse(localStorage.getItem('rsms_school')||'{}');
+        if(_sc.schoolId&&typeof firebase!=='undefined'){
+          var lastCount=getFees().length;
+          firebase.database().ref('schools/'+_sc.schoolId+'/fees').on('value',function(snap){
+            var val=snap.val();
+            if(!val) return;
+            var data=Array.isArray(val)?val.filter(Boolean):Object.values(val).filter(Boolean);
+            if(data.length>lastCount){
+              var newest=data[data.length-1];
+              if(newest&&newest.channel==='parent_selfpay'){
+                var sid=_sc.schoolId;
+                localStorage.setItem('rsms_fees',JSON.stringify(data));
+                if(sid) localStorage.setItem('rsms_'+sid+'_fees',JSON.stringify(data));
+                try{
+                  var active=document.querySelector('.page.active');
+                  if(active){
+                    var pid=active.id.replace('pg-','');
+                    var hook=window['onPage_'+pid];
+                    if(typeof hook==='function') hook();
+                    else if(pid==='home') renderDash();
+                  }
+                }catch(e2){}
+              }
+              lastCount=data.length;
+            }
+          });
+        }
+      }
+    }catch(e){}
+  },4000);
   checkToken(); setHeaderInfo();
   gEl('pay-date')&&(gEl('pay-date').value=new Date().toISOString().slice(0,10));
   // ── Direct page routing via URL param ──
