@@ -1,45 +1,143 @@
-// RSMS Service Worker — Rehoteq Technologies
-const CACHE_NAME = 'rsms-v2.0.0';
-const STATIC_ASSETS = [
-  '/rsms/rsms-app.html',
-  '/rsms/',
-  '/rsms/index.html',
-  '/rsms/rsms-admin.html',
-  '/rsms/rsms-bursar.html',
-  '/rsms/rsms-teacher.html',
-  '/rsms/rsms-student.html',
-  '/rsms/rsms-parent.html',
-  '/rsms/rsms-cbt.html',
-  '/rsms/rsms-apply.html',
-  '/rsms/rsms-onboarding.html',
-  '/rsms/rsms-control.html',
-  '/rsms/rsms-core.js',
-  '/rsms/rsms-firebase.js',
-  '/rsms/rsms-config.js',
-  '/rsms/manifest.json',
+/*  ═══════════════════════════════════════════════════════
+    RSMS Service Worker  —  v3.0.0
+    Strategy: Network-first, cache-fallback
+    Domain:   rsms.rehoteq.com (root paths, no prefix)
+    ═══════════════════════════════════════════════════════ */
+
+var CACHE_NAME = 'rsms-v3.0.0';
+
+var STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/rsms-app.html',
+  '/rsms-login.html',
+  '/rsms-admin.html',
+  '/rsms-bursar.html',
+  '/rsms-teacher.html',
+  '/rsms-classteacher.html',
+  '/rsms-parent.html',
+  '/rsms-student.html',
+  '/rsms-cbt.html',
+  '/rsms-cbt-questions.html',
+  '/rsms-superadmin.html',
+  '/rsms-control.html',
+  '/rsms-onboarding.html',
+  '/rsms-apply.html',
+  '/rsms-attendance.html',
+  '/rsms-analytics.html',
+  '/rsms-hod.html',
+  '/rsms-vp.html',
+  '/rsms-principal.html',
+  '/rsms-timetable.html',
+  '/rsms-results-print.html',
+  '/rsms-progress-report.html',
+  '/rsms-fees-receipt.html',
+  '/rsms-receipt.html',
+  '/rsms-links.html',
+  '/rsms-qrcodes.html',
+  '/rsms-alerts.html',
+  '/rsms-reset.html',
+  '/rsms-flier.html',
+  '/rsms-clock.html',
+  '/rsms-staff-clock.html',
+  '/rsms-demo-setup.html',
+  '/rsms-dashboard.html',
+  '/rsms-voice-ai.html',
+  '/rsms-ai-guardian.html',
+  '/rsms-migrate.html',
+  '/rsms-core.js',
+  '/rsms-core.css',
+  '/rsms-firebase.js',
+  '/rsms-config.js',
+  '/rsms-auth.js',
+  '/rsms-notifications.js',
+  '/rsms-plan-guard.js',
+  '/rsms-subjects.js',
+  '/rsms-school-detect.js',
+  '/rsms-pwa.js',
+  '/manifest.json',
+  '/icon-192.png'
+];
+
+var FONT_URLS = [
   'https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap'
 ];
 
-// Install — cache all static assets, force activate immediately
+/* ── Offline fallback page ──────────────────────────── */
+
+var OFFLINE_PAGE = [
+  '<!DOCTYPE html>',
+  '<html lang="en">',
+  '<head>',
+  '<meta charset="UTF-8"/>',
+  '<meta name="viewport" content="width=device-width,initial-scale=1.0"/>',
+  '<title>RSMS — Offline</title>',
+  '<style>',
+  '@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap");',
+  '*{margin:0;padding:0;box-sizing:border-box;}',
+  'body{background:#030305;color:#f0f2ff;font-family:Outfit,system-ui,sans-serif;',
+  '  display:flex;align-items:center;justify-content:center;height:100vh;',
+  '  text-align:center;padding:24px;}',
+  '.container{max-width:400px;}',
+  '.logo{font-size:2rem;font-weight:700;color:#d4a843;margin-bottom:8px;letter-spacing:.04em;}',
+  '.spin{width:52px;height:52px;border:3px solid rgba(212,168,67,.15);',
+  '  border-top-color:#d4a843;border-radius:50%;',
+  '  animation:spin .8s linear infinite;margin:0 auto 24px;}',
+  '@keyframes spin{to{transform:rotate(360deg);}}',
+  'h1{font-size:1.35rem;font-weight:600;margin-bottom:10px;color:rgba(240,242,255,.85);}',
+  'p{font-size:.92rem;color:rgba(240,242,255,.45);line-height:1.5;margin-bottom:28px;}',
+  '.retry{display:inline-block;padding:12px 36px;background:#d4a843;color:#030305;',
+  '  border:none;border-radius:10px;font-family:Outfit,sans-serif;font-size:.95rem;',
+  '  font-weight:600;cursor:pointer;text-decoration:none;transition:background .2s;}',
+  '.retry:hover{background:#e2b94f;}',
+  '</style>',
+  '</head>',
+  '<body>',
+  '<div class="container">',
+  '  <div class="spin"></div>',
+  '  <div class="logo">RSMS</div>',
+  '  <h1>You are currently offline</h1>',
+  '  <p>Please check your internet connection and try again.</p>',
+  '  <button class="retry" onclick="location.reload()">Retry</button>',
+  '</div>',
+  '</body>',
+  '</html>'
+].join('\n');
+
+/* ── Install event — pre-cache static assets ────────── */
+
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
-      return cache.addAll(STATIC_ASSETS.map(function(url) {
-        return new Request(url, { mode: 'no-cors' });
-      }));
+      // Cache fonts separately (cross-origin, may fail gracefully)
+      var fontPromises = FONT_URLS.map(function(url) {
+        return cache.add(url).catch(function(err) {
+          console.warn('[SW] Font cache skipped:', url, err);
+        });
+      });
+
+      return Promise.all([
+        cache.addAll(STATIC_ASSETS),
+        Promise.all(fontPromises)
+      ]);
     }).then(function() {
       return self.skipWaiting();
     })
   );
 });
 
-// Activate — purge ALL old caches
+/* ── Activate event — clean old caches ──────────────── */
+
 self.addEventListener('activate', function(event) {
   event.waitUntil(
-    caches.keys().then(function(keys) {
+    caches.keys().then(function(names) {
       return Promise.all(
-        keys.filter(function(key) { return key !== CACHE_NAME; })
-          .map(function(key) { return caches.delete(key); })
+        names.filter(function(name) {
+          return name !== CACHE_NAME;
+        }).map(function(name) {
+          console.log('[SW] Deleting old cache:', name);
+          return caches.delete(name);
+        })
       );
     }).then(function() {
       return self.clients.claim();
@@ -47,55 +145,122 @@ self.addEventListener('activate', function(event) {
   );
 });
 
-// Fetch — network first, update cache, fallback to cache when offline
-self.addEventListener('fetch', function(event) {
-  if (event.request.method !== 'GET') return;
+/* ── Fetch event — network-first, cache-fallback ────── */
 
-  event.respondWith(
-    fetch(event.request)
-      .then(function(response) {
-        if (response && response.status === 200) {
+self.addEventListener('fetch', function(event) {
+  var request = event.request;
+
+  // Skip non-GET requests
+  if (request.method !== 'GET') return;
+
+  // Skip chrome-extension and other non-http(s) schemes
+  if (request.url.indexOf('http') !== 0) return;
+
+  // For navigation requests (HTML pages)
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).then(function(response) {
+        // Cache successful navigation responses
+        if (response.ok) {
           var responseClone = response.clone();
           caches.open(CACHE_NAME).then(function(cache) {
-            cache.put(event.request, responseClone);
+            cache.put(request, responseClone);
           });
         }
         return response;
-      })
-      .catch(function() {
-        return caches.match(event.request).then(function(cached) {
+      }).catch(function() {
+        // Try cache, then offline fallback
+        return caches.match(request).then(function(cached) {
           if (cached) return cached;
-          if (event.request.mode === 'navigate') {
-            return caches.match('/rsms/index.html');
-          }
-          return new Response('Offline', { status: 503 });
+          return new Response(OFFLINE_PAGE, {
+            status: 503,
+            statusText: 'Offline',
+            headers: { 'Content-Type': 'text/html; charset=utf-8' }
+          });
         });
       })
+    );
+    return;
+  }
+
+  // For all other requests (assets, scripts, styles, fonts, images)
+  event.respondWith(
+    fetch(request).then(function(response) {
+      // Cache successful responses
+      if (response.ok) {
+        var responseClone = response.clone();
+        caches.open(CACHE_NAME).then(function(cache) {
+          cache.put(request, responseClone);
+        });
+      }
+      return response;
+    }).catch(function() {
+      return caches.match(request).then(function(cached) {
+        return cached || new Response('', { status: 408, statusText: 'Offline' });
+      });
+    })
   );
 });
 
-// Push notifications
+/* ── Push notification support ──────────────────────── */
+
 self.addEventListener('push', function(event) {
   var data = {};
   if (event.data) {
-    try { data = event.data.json(); } catch(e) { data = { title: 'RSMS', body: event.data.text() }; }
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data = { title: 'RSMS', body: event.data.text() };
+    }
   }
+
+  var title = data.title || 'RSMS Notification';
   var options = {
-    body: data.body || 'New notification from RSMS',
-    icon: '/rsms/icons/icon-192.png',
-    badge: '/rsms/icons/icon-72.png',
+    body: data.body || '',
+    icon: data.icon || '/icon-192.png',
+    badge: data.badge || '/icon-192.png',
+    tag: data.tag || 'rsms-notification',
+    data: data.data || {},
     vibrate: [200, 100, 200],
-    data: data.url || '/rsms/',
     actions: data.actions || []
   };
+
   event.waitUntil(
-    self.registration.showNotification(data.title || 'RSMS Notification', options)
+    self.registration.showNotification(title, options)
   );
 });
 
+/* ── Notification click handler ─────────────────────── */
+
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
+
+  var url = '/';
+  if (event.notification.data && event.notification.data.url) {
+    url = event.notification.data.url;
+  }
+
   event.waitUntil(
-    clients.openWindow(event.notification.data || '/rsms/')
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      // Focus existing window if available
+      for (var i = 0; i < clientList.length; i++) {
+        var client = clientList[i];
+        if (client.url.indexOf(self.location.origin) === 0 && 'focus' in client) {
+          client.navigate(url);
+          return client.focus();
+        }
+      }
+      // Otherwise open new window
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(url);
+      }
+    })
   );
+});
+
+/* ── Notification close handler ─────────────────────── */
+
+self.addEventListener('notificationclose', function(event) {
+  // Analytics hook — can be extended
+  console.log('[SW] Notification dismissed:', event.notification.tag);
 });
