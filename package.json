@@ -1,0 +1,12 @@
+{
+  "name": "rsms-offline-foundation-tests",
+  "private": true,
+  "version": "1.0.0",
+  "description": "No-build tests for the RSMS offline-sync foundation",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "6.2.5"
+  }
+}

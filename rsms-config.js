@@ -21,5 +21,10 @@ window.RSMS_CONFIG = {
     supportWA:   "2347036302585"
     // Superadmin password removed from client-side code for security.
     // It is now verified via SHA-256 hash stored in Firebase at config/superadmin_hash.
+  },
+  // Offline-sync foundation: local IndexedDB only. No sync transport is active.
+  sync: {
+    enabled: false,
+    transport: "disabled" // Interface names reserved for future pilots: firebaseGateway, lanHub
   }
 };
