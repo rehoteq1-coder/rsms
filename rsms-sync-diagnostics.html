@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RSMS Offline Sync Diagnostics</title>
+<style>body{font:16px system-ui,sans-serif;max-width:44rem;margin:2rem auto;padding:0 1rem;color:#172033}button{padding:.6rem 1rem}pre{background:#f3f5f7;padding:1rem;overflow:auto}small{color:#536070}</style>
+</head>
+<body>
+<h1>Offline Sync Diagnostics</h1>
+<p>This page displays aggregate local-store counts only. It never renders IDs, records, payloads, account data, or configuration values.</p>
+<button id="refresh" type="button">Refresh safe diagnostics</button>
+<button id="clear" type="button">Clear pilot data</button>
+<pre id="output" aria-live="polite">Loading…</pre>
+<small>Clearing removes only the separate RSMS offline-sync pilot database. It does not modify Firebase, authentication, legacy storage, or existing RSMS data.</small>
+<script src="rsms-sync.js"></script>
+<script>
+(function () {
+  'use strict';
+  var output = document.getElementById('output');
+  function show() {
+    window.RSMS_SYNC.exportDiagnostics().then(function (diagnostics) {
+      output.textContent = JSON.stringify(diagnostics, null, 2);
+    }).catch(function () { output.textContent = 'Offline sync diagnostics are unavailable in this browser.'; });
+  }
+  document.getElementById('refresh').addEventListener('click', show);
+  document.getElementById('clear').addEventListener('click', function () {
+    if (!window.confirm('Clear only offline-sync pilot data?')) return;
+    window.RSMS_SYNC.clearPilotData().then(show).catch(function () { output.textContent = 'Could not clear offline-sync pilot data.'; });
+  });
+  show();
+})();
+</script>
+</body>
+</html>

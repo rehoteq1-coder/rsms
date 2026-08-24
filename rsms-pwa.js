@@ -49,7 +49,24 @@
     });
   }
 
-  /* ── 4. Capture beforeinstallprompt ────────────────── */
+  /* ── 4. Initialize the optional offline foundation safely ─ */
+
+  function initializeOfflineFoundation() {
+    // The foundation is opt-in: it is initialized only when rsms-sync.js was
+    // explicitly included by a page. It does not start, schedule, or send sync.
+    if (!window.RSMS_SYNC || typeof window.RSMS_SYNC.initialize !== 'function') return;
+    window.RSMS_SYNC.initialize().catch(function(err) {
+      console.warn('[RSMS-PWA] Offline foundation unavailable:', err && err.message ? err.message : err);
+    });
+  }
+
+  if (document.readyState === 'complete') {
+    initializeOfflineFoundation();
+  } else {
+    window.addEventListener('load', initializeOfflineFoundation);
+  }
+
+  /* ── 5. Capture beforeinstallprompt ────────────────── */
 
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
@@ -57,7 +74,7 @@
     showInstallBanner();
   });
 
-  /* ── 5. Install banner ────────────────────────────── */
+  /* ── 6. Install banner ────────────────────────────── */
 
   function createBannerStyles() {
     if (document.getElementById('rsms-pwa-banner-styles')) return;
@@ -170,7 +187,7 @@
     });
   }
 
-  /* ── 6. Expose window.RSMS_PWA ────────────────────── */
+  /* ── 7. Expose window.RSMS_PWA ────────────────────── */
 
   function isStandalone() {
     return window.matchMedia('(display-mode: standalone)').matches ||
@@ -189,7 +206,7 @@
     }
   };
 
-  /* ── 7. Listen for appinstalled ───────────────────── */
+  /* ── 8. Listen for appinstalled ───────────────────── */
 
   window.addEventListener('appinstalled', function() {
     console.log('[RSMS-PWA] App was installed');

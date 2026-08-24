@@ -1,10 +1,10 @@
 /*  ═══════════════════════════════════════════════════════
-    RSMS Service Worker  —  v3.0.0
+    RSMS Service Worker  —  v3.1.0
     Strategy: Network-first, cache-fallback
     Domain:   rsms.rehoteq.com (root paths, no prefix)
     ═══════════════════════════════════════════════════════ */
 
-var CACHE_NAME = 'rsms-v3.0.0';
+var CACHE_NAME = 'rsms-v3.1.0';
 
 var STATIC_ASSETS = [
   '/',
@@ -55,6 +55,10 @@ var STATIC_ASSETS = [
   '/rsms-subjects.js',
   '/rsms-school-detect.js',
   '/rsms-pwa.js',
+  '/rsms-sync.js',
+  '/rsms-sync-config.example.js',
+  '/rsms-sync-diagnostics.html',
+  '/lesson-ai.html',
   '/manifest.json',
   '/icon-192.png'
 ];
@@ -147,11 +151,26 @@ self.addEventListener('activate', function(event) {
 
 /* ── Fetch event — network-first, cache-fallback ────── */
 
+function isFirebaseRequest(url) {
+  try {
+    var host = new URL(url).hostname.toLowerCase();
+    return host === 'firebaseio.com' || host.slice(-15) === '.firebaseio.com' ||
+      host === 'firebasedatabase.app' || host.slice(-21) === '.firebasedatabase.app' ||
+      host === 'firebaseapp.com' || host.slice(-16) === '.firebaseapp.com' ||
+      host === 'firebase.googleapis.com' || host === 'identitytoolkit.googleapis.com' ||
+      host === 'securetoken.googleapis.com' || host === 'firebasestorage.googleapis.com' ||
+      host === 'googleapis.com' || host.slice(-15) === '.googleapis.com';
+  } catch (e) {
+    return false;
+  }
+}
+
 self.addEventListener('fetch', function(event) {
   var request = event.request;
 
-  // Skip non-GET requests
-  if (request.method !== 'GET') return;
+  // Never intercept writes or Firebase traffic. Firebase requests must pass
+  // straight through so this cache cannot alter auth/database semantics.
+  if (request.method !== 'GET' || isFirebaseRequest(request.url)) return;
 
   // Skip chrome-extension and other non-http(s) schemes
   if (request.url.indexOf('http') !== 0) return;
