@@ -517,7 +517,12 @@ select.fi option { background: var(--card); color: var(--t1); }
 .tbl-wrap { border-color: var(--line); }
 
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="rsms-config.js"></script>
 <script src="rsms-firebase.js"></script>
+<script src="rsms-finance.js"></script>
 <script src="rsms-plan-guard.js"></script>
 
 </head>
@@ -1299,42 +1304,7 @@ function payFeeOnline(amount){
   };
 }
 
-function recordParentPayment(amount,method,ref){
-  var school=RSMS.school()||{};
-  var fees=RSMS.fees?RSMS.fees():[];
-  var receiptNo='SP-'+Date.now().toString(36).toUpperCase();
-  var rec={
-    id:'f'+Date.now(),
-    receiptNo:receiptNo,
-    stuId:CHILD_ID,
-    student:CHILD_NAME,
-    class:CHILD_CLASS||'--',
-    reg:'',
-    type:'School Fee',
-    amount:amount,
-    method:method,
-    date:new Date().toISOString().slice(0,10),
-    ref:ref||('SELF-'+Date.now()),
-    term:school.term||'First Term',
-    session:school.session||'2025/2026',
-    recordedAt:new Date().toISOString(),
-    channel:'parent_selfpay'
-  };
-  fees.push(rec);
-  // Save to localStorage + Firebase
-  var sid=_sid();
-  if(sid) localStorage.setItem('rsms_'+sid+'_fees',JSON.stringify(fees));
-  localStorage.setItem('rsms_fees',JSON.stringify(fees));
-  try{if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady()){
-    RSMS_FB.saveFees(fees);
-    RSMS_FB.pushPaymentAlert(rec);
-  }}catch(e){}
-  // Refresh fee display
-  if(typeof renderChildFees==='function') renderChildFees();
-  if(typeof renderDash==='function') renderDash();
-  // Show receipt modal
-  showPaymentReceipt(rec);
-}
+/* Parent fee entry is implemented by the FIND integration below. */
 
 function showPaymentReceipt(rec){
   var m=document.createElement('div');
@@ -1356,7 +1326,7 @@ function showPaymentReceipt(rec){
           '<div><div style="color:var(--t3);">Reference</div><div style="color:var(--t1);font-weight:600;font-size:.7rem;word-break:break-all;">'+(rec.ref||'')+'</div></div>'+
         '</div>'+
       '</div>'+
-      '<button onclick="this.closest('div[style]').parentElement.remove();" style="width:100%;padding:11px;background:var(--gold);color:#000;border:none;border-radius:var(--r2);font-weight:700;font-size:.88rem;cursor:pointer;font-family:var(--sans);">Done</button>'+
+      '<button onclick="this.closest(\'div[style]\').parentElement.remove();" style="width:100%;padding:11px;background:var(--gold);color:#000;border:none;border-radius:var(--r2);font-weight:700;font-size:.88rem;cursor:pointer;font-family:var(--sans);">Done</button>'+
     '</div>';
   document.body.appendChild(m);
   m.onclick=function(e){if(e.target===m)m.remove();};
@@ -1533,6 +1503,44 @@ window.addEventListener('storage', function(e){
   }
 });
 
+</script>
+<script>
+/* School Finance Platform — parent payment bridge (Phase 1). */
+function recordParentPayment(amount,method,ref){
+  if(!window.FIND || typeof window.FIND.pay!=='function'){
+    toast('The finance engine is still loading. Please try again.','error');
+    return null;
+  }
+  var school=RSMS.school()||{};
+  try{
+    var rec=window.FIND.pay({
+      stuId:CHILD_ID,
+      student:CHILD_NAME,
+      class:CHILD_CLASS||'--',
+      reg:'',
+      type:'School Fee',
+      amount:amount,
+      method:method,
+      channel:'parent_selfpay',
+      ref:ref||('SELF-'+Date.now()),
+      status:'Paid',
+      by:(RSMS.user()||{}).name||'Parent',
+      source:'parent',
+      term:school.term||'First Term',
+      session:school.session||'2025/2026'
+    });
+    try{
+      if(typeof RSMS_FB!=='undefined'&&typeof RSMS_FB.pushPaymentAlert==='function') RSMS_FB.pushPaymentAlert(rec);
+    }catch(e){}
+    if(typeof renderChildFees==='function') renderChildFees();
+    if(typeof renderDash==='function') renderDash();
+    showPaymentReceipt(rec);
+    return rec;
+  }catch(error){
+    toast(error.message||'Could not record payment.','error');
+    return null;
+  }
+}
 </script>
 <script src="rsms-notifications.js"></script>
 </body>

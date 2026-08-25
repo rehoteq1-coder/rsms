@@ -69,7 +69,9 @@ var RSMS_FB = (function(){
   // ── REAL-TIME LISTENERS ─────────────────────────────────────
   function _setupListeners(){
     var keys = ['students','staff','fees','scores','ct_remarks',
-                'fee_schedule','stream_config','broadcasts'];
+                'fee_schedule','stream_config','broadcasts',
+                'fee_structures','student_fees','payments','recurring',
+                'recurring_schedule','expenses','wallet','audit_log'];
     keys.forEach(function(key){
       _db.ref('schools/'+_sid+'/'+key).on('value', function(snap){
         var val = snap.val();
@@ -124,6 +126,13 @@ var RSMS_FB = (function(){
   function saveFees(data){
     _lsSet('fees', data);
     if(_sid) _write('schools/'+_sid+'/fees', data);
+  }
+
+  // Generic collection save for portal modules such as the finance engine.
+  // Mirrors the established scoped + fallback cache and Firebase write pattern.
+  function saveCollection(key, data){
+    _lsSet(key, data);
+    if(_sid) _write('schools/'+_sid+'/'+key, data);
   }
 
   function saveScores(cls, term, sess, data){
@@ -263,6 +272,8 @@ var RSMS_FB = (function(){
 
     var keys = ['students','staff','fees','ct_remarks',
                 'fee_schedule','stream_config','broadcasts',
+                'fee_structures','student_fees','payments','recurring',
+                'recurring_schedule','expenses','wallet','audit_log',
                 'info','clock_logs','clock_cfg','assignments'];
     var done  = 0;
     var total = keys.length + 3; // +1 score_entries, +1 attendance, +1 flw_config
@@ -405,6 +416,7 @@ var RSMS_FB = (function(){
     saveStudents:     saveStudents,
     saveStaff:        saveStaff,
     saveFees:         saveFees,
+    saveCollection:   saveCollection,
     saveScores:       saveScores,
     saveCTRemarks:    saveCTRemarks,
     saveFeeSchedule:  saveFeeSchedule,
