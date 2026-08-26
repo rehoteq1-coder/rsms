@@ -693,7 +693,10 @@ var RSMS = {
   fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||localStorage.getItem('rsms_fees'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
   pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||''; },
   save:     function(key,data){ localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
-  logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
+  logout:   function(){
+    if(window.RSMS_FB&&typeof RSMS_FB.logout==='function'){RSMS_FB.logout();return;}
+    sessionStorage.clear(); location.href='rsms-login.html';
+  }
 };
 
 // ── SUBJECTS ───────────────────────────────────────────
