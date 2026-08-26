@@ -1254,46 +1254,86 @@ function payFeeOnline(amount){
   document.getElementById('pay-cancel-btn').onclick=function(){ modal.remove(); };
   modal.onclick=function(e){ if(e.target===modal) modal.remove(); };
 
-  // ── Card Payment via Flutterwave ──
+  // ── Card payment: create the intent before checkout, then let the server
+  // confirm it. A gateway callback alone never makes this payment paid. ──
   document.getElementById('pay-card-btn').onclick=function(){
+    var provider=String(cfg.provider||'flutterwave').toLowerCase();
+    var pending;
     modal.remove();
-    if(typeof FlutterwaveCheckout==='undefined'){
-      toast('Loading payment gateway...','info');
-      var s=document.createElement('script');
-      s.src='https://checkout.flutterwave.com/v3.js';
-      s.onload=function(){ launchFlw(); };
-      s.onerror=function(){ toast('Could not load payment gateway. Check your connection.','error'); };
-      document.head.appendChild(s);
-    } else { launchFlw(); }
+    pending=recordParentPayment(amount,'Card ('+(provider==='paystack'?'Paystack':'Flutterwave')+')',txRef,{
+      status:'Pending', mirrorPending:true, gatewayProvider:provider, gatewayVerification:'required', quiet:true,
+      note:'Awaiting gateway verification'
+    });
+    if(!pending) return;
+    if(typeof showPaymentReceipt==='function') showPaymentReceipt(pending);
 
-    function launchFlw(){
-      FlutterwaveCheckout({
-        public_key: cfg.publicKey,
-        tx_ref: txRef,
-        amount: amount,
-        currency: cfg.currency||'NGN',
-        payment_options: cfg.methods||'card,banktransfer,ussd',
-        customer: {
-          name: user.parentName||user.name||CHILD_NAME+' (Parent)',
-          email: user.parentEmail||user.email||'parent@'+txRef+'.pay',
-          phone_number: user.parentPhone||user.phone||''
-        },
-        customizations: {
-          title: (school.name||'School')+' Fee Payment',
-          description: 'Fee payment for '+CHILD_NAME,
-          logo: localStorage.getItem('rsms_school_logo')||''
-        },
-        callback: function(response){
-          if(response.status==='successful'||response.status==='completed'){
-            recordParentPayment(amount,'Card (Flutterwave)',response.transaction_id||response.tx_ref);
-            toast('\u2705 Payment successful!','success');
-          } else {
-            toast('Payment was not completed.','error');
-          }
-        },
-        onclose: function(){}
+    function verifyPending(){
+      if(!window.FIND||typeof window.FIND.gatewayVerify!=='function'){
+        toast('Payment submitted. It remains Pending for school review.','info');
+        return;
+      }
+      toast('Verifying payment…','info');
+      window.FIND.gatewayVerify(txRef,provider).then(function(data){
+        var result=window.FIND.applyVerification(data);
+        if(result.pending) toast('Payment is still processing and remains Pending.','info');
+        else if(result.changed.some(function(row){return row.status==='Confirmed';})) toast('\u2713 Payment verified.','success');
+        else if(result.rejected) toast('Payment could not be confirmed and was marked Rejected.','error');
+        else toast('Could not confirm — stays Pending for bursar review.','info');
+        renderChildFees(); renderDash();
+      }).catch(function(){
+        toast('Could not confirm — stays Pending for bursar review.','info');
       });
     }
+
+    function launchFlutterwave(){
+      FlutterwaveCheckout({
+        public_key:cfg.publicKey,
+        tx_ref:txRef,
+        amount:amount,
+        currency:cfg.currency||'NGN',
+        payment_options:cfg.methods||'card,banktransfer,ussd',
+        customer:{name:user.parentName||user.name||CHILD_NAME+' (Parent)',email:user.parentEmail||user.email||'parent@'+txRef+'.pay',phone_number:user.parentPhone||user.phone||''},
+        customizations:{title:(school.name||'School')+' Fee Payment',description:'Fee payment for '+CHILD_NAME,logo:localStorage.getItem('rsms_school_logo')||''},
+        callback:function(response){
+          if(response.status==='successful'||response.status==='completed') verifyPending();
+          else toast('Payment was not completed. The record remains Pending only if payment is completed later.','info');
+        },
+        onclose:function(){}
+      });
+    }
+
+    function launchPaystack(){
+      var handler=window.PaystackPop&&window.PaystackPop.setup({
+        key:cfg.publicKey,
+        email:user.parentEmail||user.email||'parent@'+txRef+'.pay',
+        amount:Math.round(Number(amount)*100),
+        currency:cfg.currency||'NGN',
+        ref:txRef,
+        metadata:{custom_fields:[{display_name:'Student',variable_name:'student',value:CHILD_NAME}]},
+        callback:function(){verifyPending();},
+        onClose:function(){}
+      });
+      if(handler&&typeof handler.openIframe==='function') handler.openIframe();
+      else toast('Could not start the Paystack checkout. The pending record was retained.','error');
+    }
+
+    if(provider==='paystack'){
+      if(typeof window.PaystackPop==='undefined'){
+        toast('Loading payment gateway…','info');
+        var paystackScript=document.createElement('script');
+        paystackScript.src='https://js.paystack.co/v1/inline.js';
+        paystackScript.onload=launchPaystack;
+        paystackScript.onerror=function(){toast('Could not load payment gateway. The pending record was retained.','error');};
+        document.head.appendChild(paystackScript);
+      }else launchPaystack();
+    }else if(typeof FlutterwaveCheckout==='undefined'){
+      toast('Loading payment gateway…','info');
+      var flutterwaveScript=document.createElement('script');
+      flutterwaveScript.src='https://checkout.flutterwave.com/v3.js';
+      flutterwaveScript.onload=launchFlutterwave;
+      flutterwaveScript.onerror=function(){toast('Could not load payment gateway. The pending record was retained.','error');};
+      document.head.appendChild(flutterwaveScript);
+    }else launchFlutterwave();
   };
 
   // ── Bank Transfer ──
@@ -1529,11 +1569,12 @@ window.addEventListener('storage', function(e){
 </script>
 <script>
 /* School Finance Platform — parent payment bridge (Phase 1). */
-function recordParentPayment(amount,method,ref){
+function recordParentPayment(amount,method,ref,options){
   if(!window.FIND || typeof window.FIND.pay!=='function'){
     toast('The finance engine is still loading. Please try again.','error');
     return null;
   }
+  options=options||{};
   var school=RSMS.school()||{};
   try{
     var rec=window.FIND.pay({
@@ -1546,18 +1587,22 @@ function recordParentPayment(amount,method,ref){
       method:method,
       channel:'parent_selfpay',
       ref:ref||('SELF-'+Date.now()),
-      status:'Paid',
+      status:options.status||'Paid',
       by:(RSMS.user()||{}).name||'Parent',
       source:'parent',
       term:school.term||'First Term',
-      session:school.session||'2025/2026'
+      session:school.session||'2025/2026',
+      mirrorPending:!!options.mirrorPending,
+      gatewayProvider:options.gatewayProvider||'',
+      gatewayVerification:options.gatewayVerification||'',
+      note:options.note||''
     });
     try{
-      if(typeof RSMS_FB!=='undefined'&&typeof RSMS_FB.pushPaymentAlert==='function') RSMS_FB.pushPaymentAlert(rec);
+      if(rec.status!=='Pending'&&typeof RSMS_FB!=='undefined'&&typeof RSMS_FB.pushPaymentAlert==='function') RSMS_FB.pushPaymentAlert(rec);
     }catch(e){}
     if(typeof renderChildFees==='function') renderChildFees();
     if(typeof renderDash==='function') renderDash();
-    showPaymentReceipt(rec);
+    if(!options.quiet) showPaymentReceipt(rec);
     return rec;
   }catch(error){
     toast(error.message||'Could not record payment.','error');
@@ -1710,12 +1755,31 @@ function fundParentWallet(){
     return;
   }
   var cfg=parentFlwConfig();
+  var provider=String(cfg.provider||'flutterwave').toLowerCase();
   if(!cfg.publicKey){toast('Online wallet funding is not configured by the school.','error');return;}
+  base.gatewayProvider=provider; base.gatewayVerification='required';
   var pending;
   try{
     pending=find.walletCredit(parentWalletCreditOptions(base,'Pending','Card wallet top-up'));
   }catch(error){toast(error.message||'Could not create wallet top-up.','error');return;}
-  function launchCard(){
+  function verifyPendingWallet(){
+    if(!find||typeof find.gatewayVerify!=='function'||!find.gatewayConfig().verifyUrl){
+      toast('Payment submitted. Your wallet credit remains Pending until the school deploys verification.','info');
+      return;
+    }
+    toast('Verifying wallet funding…','info');
+    find.gatewayVerify(pending.ref,provider).then(function(data){
+      var result=find.applyVerification(data);
+      if(result.pending) toast('Payment is still processing and the wallet credit remains Pending.','info');
+      else if(result.changed.some(function(row){return row.status==='Confirmed';})) toast('✓ Wallet funding verified.','success');
+      else if(result.rejected) toast('Wallet funding could not be confirmed and was marked Rejected.','error');
+      else toast('Could not confirm — the wallet credit stays Pending for bursar review.','info');
+      renderParentWallet(); renderChildFees(); renderDash();
+    }).catch(function(){
+      toast('Could not confirm — the wallet credit stays Pending for bursar review.','info');
+    });
+  }
+  function launchFlutterwaveWallet(){
     FlutterwaveCheckout({
       public_key:cfg.publicKey,
       tx_ref:pending.ref,
@@ -1725,16 +1789,35 @@ function fundParentWallet(){
       customer:{name:user.parentName||user.name||CHILD_NAME+' (Parent)',email:user.parentEmail||user.email||'parent@'+pending.ref+'.pay',phone_number:user.parentPhone||user.phone||''},
       customizations:{title:(school.name||'School')+' Wallet Funding',description:'Wallet top-up for '+CHILD_NAME,logo:localStorage.getItem('rsms_school_logo')||''},
       callback:function(response){
-        if(response.status==='successful'||response.status==='completed') toast('Payment submitted. Your wallet credit is pending verification.','info');
-        else toast('Payment was not completed. The wallet credit remains pending only if you finish payment later.','info');
+        if(response.status==='successful'||response.status==='completed') verifyPendingWallet();
+        else toast('Payment was not completed. The wallet credit remains Pending only if you finish payment later.','info');
         renderParentWallet();
       },onclose:function(){renderParentWallet();}
     });
   }
-  if(typeof FlutterwaveCheckout==='undefined'){
-    toast('Loading payment gateway...','info');
-    var script=document.createElement('script');script.src='https://checkout.flutterwave.com/v3.js';script.onload=launchCard;script.onerror=function(){toast('Could not load payment gateway. The pending credit was retained.','error');};document.head.appendChild(script);
-  }else launchCard();
+  function launchPaystackWallet(){
+    var handler=window.PaystackPop&&window.PaystackPop.setup({
+      key:cfg.publicKey,
+      email:user.parentEmail||user.email||'parent@'+pending.ref+'.pay',
+      amount:Math.round(amount*100),
+      currency:cfg.currency||'NGN',
+      ref:pending.ref,
+      metadata:{custom_fields:[{display_name:'Student',variable_name:'student',value:CHILD_NAME}]},
+      callback:function(){verifyPendingWallet();},
+      onClose:function(){renderParentWallet();}
+    });
+    if(handler&&typeof handler.openIframe==='function') handler.openIframe();
+    else toast('Could not start the Paystack checkout. The pending credit was retained.','error');
+  }
+  if(provider==='paystack'){
+    if(typeof window.PaystackPop==='undefined'){
+      toast('Loading payment gateway…','info');
+      var paystackScript=document.createElement('script');paystackScript.src='https://js.paystack.co/v1/inline.js';paystackScript.onload=launchPaystackWallet;paystackScript.onerror=function(){toast('Could not load payment gateway. The pending credit was retained.','error');};document.head.appendChild(paystackScript);
+    }else launchPaystackWallet();
+  }else if(typeof FlutterwaveCheckout==='undefined'){
+    toast('Loading payment gateway…','info');
+    var flutterwaveScript=document.createElement('script');flutterwaveScript.src='https://checkout.flutterwave.com/v3.js';flutterwaveScript.onload=launchFlutterwaveWallet;flutterwaveScript.onerror=function(){toast('Could not load payment gateway. The pending credit was retained.','error');};document.head.appendChild(flutterwaveScript);
+  }else launchFlutterwaveWallet();
 }
 function payFromWallet(){
   var find=parentFind(), balance=parentWalletBalance(), outstanding=parentFeeOutstanding();

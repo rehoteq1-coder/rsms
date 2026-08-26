@@ -13,6 +13,8 @@
   ];
   var _syncHandlers = [];
   var _initialised = false;
+  var _gatewaySweepTimer = 0;
+  var _gatewaySweepBusy = false;
 
   function safeParse(raw, fallback){
     try { return raw ? JSON.parse(raw) : fallback; }
@@ -171,7 +173,9 @@
   }
 
   function isPaidStatus(status){
-    return status === 'Paid' || status === 'Partially Paid';
+    // Gateway-confirmed card payments use Confirmed; legacy/manual payments
+    // retain the existing Paid / Partially Paid vocabulary.
+    return status === 'Paid' || status === 'Partially Paid' || status === 'Confirmed';
   }
 
   function audit(action, type, details, before, after){
@@ -450,9 +454,10 @@
     return highest + 1;
   }
 
-  function legacyMirror(payment){
+  function legacyMirror(payment, forcePendingMirror){
     var fees = readCollection('fees');
     var found = null;
+    var changed = false;
     fees.some(function(fee){
       if((fee.txId && fee.txId === payment.txId) ||
         (fee.receiptNo && fee.receiptNo === payment.receiptNo)){
@@ -461,7 +466,19 @@
       }
       return false;
     });
-    if(found) return found;
+    if(found){
+      // A legacy mirror is not a second money record. Keep its identity and
+      // amount intact, and only carry across the audited status transition.
+      ['status','statusNote','note','gatewayProvider','gatewayId','verifiedAmount','verifiedAt'].forEach(function(key){
+        if(payment[key] !== undefined && found[key] !== payment[key]){
+          found[key] = payment[key];
+          changed = true;
+        }
+      });
+      if(changed) saveLegacyFees(fees);
+      return found;
+    }
+    if(!forcePendingMirror && !isPaidStatus(payment.status)) return null;
     var legacy = {
       id:'f-'+payment.id,
       txId:payment.txId,
@@ -479,7 +496,13 @@
       session:payment.session,
       recordedAt:payment.recordedAt,
       channel:payment.channel,
-      status:payment.status
+      status:payment.status,
+      statusNote:payment.statusNote || '',
+      note:payment.note || '',
+      gatewayProvider:payment.gatewayProvider || '',
+      gatewayId:payment.gatewayId || '',
+      verifiedAmount:payment.verifiedAmount,
+      verifiedAt:payment.verifiedAt || ''
     };
     fees.push(legacy);
     saveLegacyFees(fees);
@@ -528,33 +551,56 @@
       date:paymentDate,
       recordedAt:options.recordedAt || now(),
       source:options.source || 'finance',
-      note:options.note || ''
+      note:options.note || '',
+      statusNote:options.statusNote || '',
+      gatewayProvider:options.gatewayProvider || '',
+      gatewayVerification:options.gatewayVerification || '',
+      gatewayId:options.gatewayId || '',
+      verifiedAmount:options.verifiedAmount,
+      verifiedAt:options.verifiedAt || ''
     };
     payments.push(payment);
     saveCollection('payments', payments);
-    if(isPaidStatus(payment.status)) legacyMirror(payment);
+    if(isPaidStatus(payment.status) || options.mirrorPending) legacyMirror(payment, !!options.mirrorPending);
     audit('Payment recorded', 'fee_payment', 'Payment '+payment.txId+': none → '+payment.status, null, payment);
     return copy(payment);
   }
 
-  function setPaymentStatus(txId, status, note){
+  function setPaymentStatus(txId, status, note, options){
     var payments = readCollection('payments');
     var before = null;
     var updated = null;
+    var changed = false;
+    options = options || {};
     payments = payments.map(function(payment){
       if(payment.txId !== txId) return payment;
+      if(payment.status === status){
+        updated = payment;
+        return payment;
+      }
       before = copy(payment);
       payment.status = status;
       payment.note = note || payment.note || '';
       payment.statusNote = note || payment.statusNote || '';
+      if(options.gatewayProvider) payment.gatewayProvider = options.gatewayProvider;
+      if(options.gatewayId) payment.gatewayId = options.gatewayId;
+      if(options.verifiedAmount !== undefined) payment.verifiedAmount = money(options.verifiedAmount);
+      if(options.verifiedAt) payment.verifiedAt = options.verifiedAt;
       payment.updatedAt = now();
       updated = payment;
+      changed = true;
       return payment;
     });
     if(!updated) throw new Error('Payment '+txId+' was not found.');
+    if(!changed) return copy(updated);
     saveCollection('payments', payments);
-    if(isPaidStatus(updated.status)) legacyMirror(updated);
-    audit('Payment status updated', 'fee_payment', 'Payment '+txId+': '+(before.status || 'Unknown')+' → '+status, before, updated);
+    // If a parent-created Pending legacy mirror exists, this synchronizes its
+    // status instead of appending another record. Confirmed payments without a
+    // mirror still receive the established compatibility mirror.
+    legacyMirror(updated, false);
+    if(!options.skipAudit){
+      audit('Payment status updated', 'fee_payment', 'Payment '+txId+': '+(before.status || 'Unknown')+' → '+status, before, updated);
+    }
     return copy(updated);
   }
 
@@ -615,7 +661,13 @@
       date:options.date || today(),
       recordedAt:options.recordedAt || now(),
       note:options.note || '',
+      statusNote:options.statusNote || '',
       feeTxId:feeTxId || options.feeTxId || '',
+      gatewayProvider:options.gatewayProvider || '',
+      gatewayVerification:options.gatewayVerification || '',
+      gatewayId:options.gatewayId || '',
+      verifiedAmount:options.verifiedAmount,
+      verifiedAt:options.verifiedAt || '',
       term:term,
       session:session
     };
@@ -685,27 +737,38 @@
     return result;
   }
 
-  function setWalletStatus(walId, status, note){
+  function setWalletStatus(walId, status, note, options){
     if(status !== 'Confirmed' && status !== 'Rejected'){
       throw new Error('A pending wallet entry can only be Confirmed or Rejected.');
     }
     var wallet = readCollection('wallet');
     var before = null;
     var updated = null;
+    var changed = false;
+    options = options || {};
     wallet = wallet.map(function(entry){
       if(entry.walId !== walId) return entry;
+      if(entry.status === status){ updated = entry; return entry; }
       if(entry.status !== 'Pending') throw new Error('Only pending wallet entries can be updated.');
       before = copy(entry);
       entry.status = status;
       entry.note = note || entry.note || '';
       entry.statusNote = note || entry.statusNote || '';
+      if(options.gatewayProvider) entry.gatewayProvider = options.gatewayProvider;
+      if(options.gatewayId) entry.gatewayId = options.gatewayId;
+      if(options.verifiedAmount !== undefined) entry.verifiedAmount = money(options.verifiedAmount);
+      if(options.verifiedAt) entry.verifiedAt = options.verifiedAt;
       entry.updatedAt = now();
       updated = entry;
+      changed = true;
       return entry;
     });
     if(!updated) throw new Error('Wallet receipt '+walId+' was not found.');
+    if(!changed) return copy(updated);
     saveCollection('wallet', wallet);
-    audit('Wallet status updated', updated.type === 'debit' ? 'wallet_debit' : 'wallet_credit', 'Wallet '+walId+': '+before.status+' → '+status, before, updated);
+    if(!options.skipAudit){
+      audit('Wallet status updated', updated.type === 'debit' ? 'wallet_debit' : 'wallet_credit', 'Wallet '+walId+': '+before.status+' → '+status, before, updated);
+    }
     return copy(updated);
   }
 
@@ -841,6 +904,205 @@
     return {migrated:count > 0, count:count};
   }
 
+  // ── GATEWAY VERIFICATION ────────────────────────────────────
+  // Public keys and endpoint URLs are school configuration, not secrets. The
+  // corresponding gateway secret stays inside functions/src/index.js.
+  function gatewayConfig(){
+    var sid = schoolId();
+    var raw = sid ? localStorage.getItem('rsms_'+sid+'_flw_config') : null;
+    var config;
+    if(!raw) raw = localStorage.getItem('rsms_flw_config');
+    config = safeParse(raw, {}) || {};
+    config.provider = String(config.provider || 'flutterwave').toLowerCase();
+    if(config.provider === 'flw') config.provider = 'flutterwave';
+    if(config.provider === 'ps') config.provider = 'paystack';
+    config.verifyUrl = String(config.verifyUrl || '').replace(/^\s+|\s+$/g, '');
+    config.webhookUrl = String(config.webhookUrl || '').replace(/^\s+|\s+$/g, '');
+    return config;
+  }
+
+  function gatewayResponseError(payload, fallback){
+    var detail = payload && payload.error;
+    if(detail && typeof detail === 'object') detail = detail.message || detail.status || '';
+    return new Error(String(detail || fallback || 'Gateway verification could not be completed.'));
+  }
+
+  function gatewayVerify(ref, provider){
+    var config = gatewayConfig();
+    var endpoint = config.verifyUrl;
+    var body;
+    if(!ref) return Promise.reject(new Error('A payment reference is required for verification.'));
+    if(!endpoint) return Promise.reject(new Error('Payment verification has not been deployed by this school.'));
+    if(typeof window.fetch !== 'function') return Promise.reject(new Error('This browser cannot contact the payment verification service.'));
+    body = {data:{ref:String(ref), provider:provider || config.provider || 'flutterwave', schoolId:schoolId()}};
+    return window.fetch(endpoint, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    }).then(function(response){
+      return response.json().catch(function(){ return {}; }).then(function(payload){
+        if(!response.ok) throw gatewayResponseError(payload, 'Gateway verification could not be completed.');
+        // Firebase callable HTTP responses use result; a proxy may expose data.
+        return payload.result || payload.data || payload;
+      });
+    });
+  }
+
+  function gatewayStatusNote(item){
+    var detail = item && item.statusNote ? String(item.statusNote) : '';
+    return 'Gateway verified (server)'+(detail ? ': '+detail : '');
+  }
+
+  function matchingPayment(txId){
+    var found = null;
+    readCollection('payments').some(function(payment){
+      if(String(payment.txId || '') === String(txId || '')){ found = payment; return true; }
+      return false;
+    });
+    return found;
+  }
+
+  function applyVerification(payload){
+    var data = payload && payload.data ? payload.data : (payload || {});
+    var applied = Array.isArray(data.applied) ? data.applied : [];
+    var paymentItems = [];
+    var walletItems = [];
+    var feeItems = [];
+    var paymentIds = {};
+    var changed = [];
+
+    // Process real payment rows first. This also synchronizes a matching
+    // legacy fee mirror without creating a second money record.
+    applied.forEach(function(item){
+      if(item && item.collection === 'payments') paymentItems.push(item);
+      else if(item && item.collection === 'wallet') walletItems.push(item);
+      else if(item && item.collection === 'fees') feeItems.push(item);
+    });
+    paymentItems.forEach(function(item){
+      var current = matchingPayment(item.txId);
+      if(!item.txId || !current || current.status !== 'Pending') return;
+      if(item.status !== 'Confirmed' && item.status !== 'Rejected') return;
+      try{
+        setPaymentStatus(item.txId, item.status, gatewayStatusNote(item), {
+          skipAudit:true,
+          gatewayProvider:item.provider || gatewayConfig().provider,
+          gatewayId:item.gatewayId || '',
+          verifiedAmount:item.verifiedAmount,
+          verifiedAt:item.verifiedAt || now()
+        });
+        paymentIds[item.txId] = true;
+        changed.push(item);
+      }catch(e){}
+    });
+    walletItems.forEach(function(item){
+      var current = null;
+      if(!item.walId || (item.status !== 'Confirmed' && item.status !== 'Rejected')) return;
+      readCollection('wallet').some(function(entry){
+        if(entry.walId === item.walId){ current = entry; return true; }
+        return false;
+      });
+      if(!current || current.status !== 'Pending') return;
+      try{
+        setWalletStatus(item.walId, item.status, gatewayStatusNote(item), {
+          skipAudit:true,
+          gatewayProvider:item.provider || gatewayConfig().provider,
+          gatewayId:item.gatewayId || '',
+          verifiedAmount:item.verifiedAmount,
+          verifiedAt:item.verifiedAt || now()
+        });
+        changed.push(item);
+      }catch(e2){}
+    });
+
+    // A historical fee-only Pending record has no FIND payment to transition.
+    // Preserve it and change only its status metadata; the server already
+    // appended the authoritative audit record for this case.
+    feeItems.forEach(function(item){
+      var fees;
+      var feeChanged = false;
+      var linkedPayment;
+      if(!item || !item.txId || paymentIds[item.txId]) return;
+      linkedPayment = matchingPayment(item.txId);
+      if(linkedPayment){
+        // A listener may have delivered the payment transition before its
+        // legacy fee mirror. Sync that mirror without creating another row.
+        if(linkedPayment.status === item.status) legacyMirror(linkedPayment, false);
+        return;
+      }
+      if(item.status !== 'Confirmed' && item.status !== 'Rejected') return;
+      fees = readCollection('fees').map(function(fee){
+        if(String(fee.txId || '') === String(item.txId) && fee.status === 'Pending'){
+          fee.status = item.status;
+          fee.statusNote = gatewayStatusNote(item);
+          fee.note = fee.statusNote;
+          fee.gatewayProvider = item.provider || gatewayConfig().provider;
+          fee.gatewayId = item.gatewayId || '';
+          fee.verifiedAmount = item.verifiedAmount;
+          fee.verifiedAt = item.verifiedAt || now();
+          feeChanged = true;
+        }
+        return fee;
+      });
+      if(feeChanged){ saveLegacyFees(fees); changed.push(item); }
+    });
+    return {changed:changed, verified:!!data.verified, pending:!!data.pending, rejected:!!data.rejected, reason:data.reason || ''};
+  }
+
+  function isGatewayPending(record){
+    if(!record || record.status !== 'Pending' || !record.ref) return false;
+    return record.gatewayVerification === 'required' || !!record.gatewayProvider || /card|flutterwave|paystack/i.test(String(record.method || ''));
+  }
+
+  function pendingGatewayReferences(){
+    var config = gatewayConfig();
+    var seen = {};
+    var refs = [];
+    function add(record){
+      var provider;
+      var key;
+      if(!isGatewayPending(record)) return;
+      provider = String(record.gatewayProvider || config.provider || 'flutterwave').toLowerCase();
+      key = provider+'|'+record.ref;
+      if(seen[key]) return;
+      seen[key] = true;
+      refs.push({ref:record.ref, provider:provider});
+    }
+    readCollection('wallet').forEach(add);
+    readCollection('payments').forEach(add);
+    // Include a legacy fee-only intent too; duplicate refs are collapsed above.
+    readCollection('fees').forEach(add);
+    return refs.slice(0, 3);
+  }
+
+  function sweepPending(){
+    var config = gatewayConfig();
+    if(_gatewaySweepTimer) clearTimeout(_gatewaySweepTimer);
+    return new Promise(function(resolve){
+      _gatewaySweepTimer = setTimeout(function(){
+        var refs;
+        var outcomes = [];
+        var index = 0;
+        _gatewaySweepTimer = 0;
+        if(_gatewaySweepBusy || !config.verifyUrl){ resolve(outcomes); return; }
+        refs = pendingGatewayReferences();
+        if(!refs.length){ resolve(outcomes); return; }
+        _gatewaySweepBusy = true;
+        function next(){
+          var row = refs[index++];
+          if(!row){ _gatewaySweepBusy = false; resolve(outcomes); return; }
+          gatewayVerify(row.ref, row.provider).then(function(data){
+            outcomes.push(applyVerification(data));
+            next();
+          }).catch(function(error){
+            outcomes.push({ref:row.ref, error:error.message || 'Verification unavailable'});
+            next();
+          });
+        }
+        next();
+      }, 1200);
+    });
+  }
+
   function onSync(handler){
     if(typeof handler === 'function') _syncHandlers.push(handler);
     return function(){
@@ -848,6 +1110,13 @@
       if(i > -1) _syncHandlers.splice(i, 1);
     };
   }
+
+  // Every Firebase/local collection update is a chance to settle a small
+  // batch of pending card references. The debounce prevents write/listener
+  // feedback from creating a request storm.
+  onSync(function(key){
+    if(key === 'wallet' || key === 'payments' || key === 'fees') sweepPending();
+  });
 
   function init(){
     if(_initialised) return;
@@ -918,6 +1187,10 @@
     termStats:termStats,
     pay:pay,
     setPaymentStatus:setPaymentStatus,
+    gatewayConfig:gatewayConfig,
+    gatewayVerify:gatewayVerify,
+    applyVerification:applyVerification,
+    sweepPending:sweepPending,
     migrateLegacy:migrateLegacy,
     isPaidStatus:isPaidStatus,
     audit:audit

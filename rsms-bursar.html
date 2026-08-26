@@ -1063,12 +1063,12 @@ select.fi option{background:var(--card);color:var(--t1);}
 <div class="page" id="pg-settings">
   <div class="pg-title" style="margin-bottom:14px;">&#9881;&#65039; Payment Settings</div>
   <div class="card" style="margin-bottom:12px;">
-    <div class="card-title">Flutterwave Configuration</div>
+    <div class="card-title">Card Checkout Configuration</div>
     <div style="background:var(--goldl);border:1px solid rgba(212,168,67,.2);border-radius:var(--r2);padding:10px 14px;margin-bottom:14px;font-size:.78rem;color:var(--t2);">
-      &#128273; Each school applies for their own Flutterwave account at <strong>flutterwave.com</strong>, then pastes their Public Key below to activate card payments.
+      &#128273; Each school uses its own Flutterwave or Paystack account. Paste the provider's <strong>public</strong> checkout key below; server secret keys are never entered here.
     </div>
-    <div class="fg"><label>Flutterwave Public Key</label>
-      <input class="fi" id="flw-public-key" placeholder="FLWPUBK-xxxxxxxxxxxx-X" type="password"/>
+    <div class="fg"><label>Gateway Public Key</label>
+      <input class="fi" id="flw-public-key" placeholder="FLWPUBK-… or pk_…" type="password"/>
     </div>
     <div class="f2">
       <div class="fg"><label>Business/School Name</label>
@@ -1079,6 +1079,23 @@ select.fi option{background:var(--card);color:var(--t1);}
           <option value="NGN">NGN (Naira)</option><option value="USD">USD</option><option value="GHS">GHS</option>
         </select>
       </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">Payment Verification</div>
+    <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:var(--r2);padding:10px 14px;margin-bottom:14px;font-size:.78rem;color:var(--t2);">
+      &#128274; Card payments and card wallet top-ups stay <strong>Pending</strong> until the deployed Cloud Function confirms them with the gateway. Save only public URLs here; secret keys belong in Firebase Function secrets.
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Provider</label>
+        <select class="fi" id="flw-provider" style="height:46px;"><option value="flutterwave">Flutterwave</option><option value="paystack">Paystack</option></select>
+      </div>
+      <div class="fg"><label>Verify Endpoint URL</label>
+        <input class="fi" id="flw-verify-url" placeholder="https://…/verifyPayment" inputmode="url"/>
+      </div>
+    </div>
+    <div class="fg"><label>Webhook URL</label>
+      <input class="fi" id="flw-webhook-url" placeholder="https://…/paymentWebhook" inputmode="url"/>
     </div>
   </div>
   <div class="card">
@@ -1606,7 +1623,7 @@ function getSchool(){   return JSON.parse(localStorage.getItem('rsms_school')||'
 function saveFees(d){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_fees',JSON.stringify(d)); localStorage.setItem('rsms_fees',JSON.stringify(d)); try{if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady())RSMS_FB.saveFees(d);}catch(e){} }
 function getFeeSchedule(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var raw=sid?localStorage.getItem('rsms_'+sid+'_fee_schedule'):null; if(!raw) raw=localStorage.getItem('rsms_fee_schedule'); return JSON.parse(raw||'[]'); }
 function getFlwConfig(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var raw=sid?localStorage.getItem('rsms_'+sid+'_flw_config'):null; if(!raw) raw=localStorage.getItem('rsms_flw_config'); return JSON.parse(raw||'{"publicKey":"","businessName":"","currency":"NGN"}'); }
-function saveFlwConfig(d){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_flw_config',JSON.stringify(d)); localStorage.setItem('rsms_flw_config',JSON.stringify(d)); }
+function saveFlwConfig(d){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_flw_config',JSON.stringify(d)); localStorage.setItem('rsms_flw_config',JSON.stringify(d)); try{if(typeof RSMS_FB!=='undefined'&&typeof RSMS_FB.saveFlwConfig==='function')RSMS_FB.saveFlwConfig(d);}catch(e){} }
 
 // ── PAYROLL DATA ─────────────────────────────────────
 function getPayroll(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var raw=sid?localStorage.getItem('rsms_'+sid+'_payroll'):null; if(!raw) raw=localStorage.getItem('rsms_payroll'); return JSON.parse(raw||'[]'); }
@@ -1823,45 +1840,90 @@ function payByCard_orig(){
   var amount=parseFloat(getVal('sp-amount')||0);
   var email=getVal('sp-email')||'parent@rsms.school';
   var phone=getVal('sp-phone')||'';
+  var cfg=getFlwConfig();
+  var provider=String(cfg.provider||'flutterwave').toLowerCase();
+  var ref='RSMS-SP-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,8).toUpperCase();
+  var pending;
   if(!stuId||!type||!amount){toast('Fill all fields first','error');return;}
   var stu=getStudents().find(function(s){return s.id===stuId;});
   var name=stu?(stu.surname||'')+' '+(stu.firstname||''):'Student';
-  var cfg=getFlwConfig();
   if(!cfg.publicKey){
     toast('Payment gateway not configured. Contact school office.','error');
-    showPaymentPending(stuId,name,type,amount,'Card');
     return;
   }
-  // Fire Flutterwave
-  if(typeof FlutterwaveCheckout==='undefined'){
-    toast('Loading payment gateway...','info');
-    var s=document.createElement('script');
-    s.src='https://checkout.flutterwave.com/v3.js';
-    s.onload=function(){payByCard();};
-    document.head.appendChild(s);
-    return;
-  }
-  FlutterwaveCheckout({
-    public_key: cfg.publicKey,
-    tx_ref: 'RSMS-'+Date.now(),
-    amount: amount,
-    currency: cfg.currency||'NGN',
-    payment_options: 'card,ussd,banktransfer',
-    customer:{email:email,phone_number:phone,name:name},
-    customizations:{
-      title:(getSchool().name||'School')+' Fee Payment',
-      description:type+' for '+name,
-      logo: localStorage.getItem('rsms_school_logo')||''
-    },
-    callback: function(response){
-      if(response.status==='successful'||response.status==='completed'){
-        recordSelfPayment(stuId,name,stu,type,amount,'Card (Flutterwave)',response.transaction_id||response.tx_ref);
-      } else {
-        toast('Payment not completed','error');
-      }
-    },
-    onclose: function(){}
+  pending=recordSelfPayment(stuId,name,stu,type,amount,'Card ('+(provider==='paystack'?'Paystack':'Flutterwave')+')',ref,{
+    status:'Pending', mirrorPending:true, gatewayProvider:provider, gatewayVerification:'required', quiet:true
   });
+  if(!pending) return;
+
+  function verifyPending(){
+    var find=finFind();
+    if(!find||typeof find.gatewayVerify!=='function'||!find.gatewayConfig().verifyUrl){
+      toast('Payment submitted. It remains Pending until verification is deployed.','info');
+      return;
+    }
+    toast('Verifying payment…','info');
+    find.gatewayVerify(ref,provider).then(function(data){
+      var result=find.applyVerification(data);
+      if(result.pending) toast('Payment is still processing and remains Pending.','info');
+      else if(result.changed.some(function(row){return row.status==='Confirmed';})) toast('✓ Payment verified — '+pending.receiptNo,'success');
+      else if(result.rejected) toast('Payment could not be confirmed and was marked Rejected.','error');
+      else toast('Could not confirm — stays Pending for bursar review.','info');
+      renderDash();
+    }).catch(function(){
+      toast('Could not confirm — stays Pending for bursar review.','info');
+    });
+  }
+
+  function launchFlutterwave(){
+    FlutterwaveCheckout({
+      public_key:cfg.publicKey,
+      tx_ref:ref,
+      amount:amount,
+      currency:cfg.currency||'NGN',
+      payment_options:cfg.methods||'card,ussd,banktransfer',
+      customer:{email:email,phone_number:phone,name:name},
+      customizations:{title:(getSchool().name||'School')+' Fee Payment',description:type+' for '+name,logo:localStorage.getItem('rsms_school_logo')||''},
+      callback:function(response){
+        if(response.status==='successful'||response.status==='completed') verifyPending();
+        else toast('Payment was not completed. The record remains Pending only if payment is completed later.','info');
+      },
+      onclose:function(){}
+    });
+  }
+
+  function launchPaystack(){
+    var handler=window.PaystackPop&&window.PaystackPop.setup({
+      key:cfg.publicKey,
+      email:email,
+      amount:Math.round(amount*100),
+      currency:cfg.currency||'NGN',
+      ref:ref,
+      metadata:{custom_fields:[{display_name:'Student',variable_name:'student',value:name},{display_name:'Fee type',variable_name:'fee_type',value:type}]},
+      callback:function(){verifyPending();},
+      onClose:function(){}
+    });
+    if(handler&&typeof handler.openIframe==='function') handler.openIframe();
+    else toast('Could not start the Paystack checkout. The pending record was retained.','error');
+  }
+
+  if(provider==='paystack'){
+    if(typeof window.PaystackPop==='undefined'){
+      toast('Loading payment gateway…','info');
+      var paystackScript=document.createElement('script');
+      paystackScript.src='https://js.paystack.co/v1/inline.js';
+      paystackScript.onload=launchPaystack;
+      paystackScript.onerror=function(){toast('Could not load payment gateway. The pending record was retained.','error');};
+      document.head.appendChild(paystackScript);
+    }else launchPaystack();
+  }else if(typeof FlutterwaveCheckout==='undefined'){
+    toast('Loading payment gateway…','info');
+    var flutterwaveScript=document.createElement('script');
+    flutterwaveScript.src='https://checkout.flutterwave.com/v3.js';
+    flutterwaveScript.onload=launchFlutterwave;
+    flutterwaveScript.onerror=function(){toast('Could not load payment gateway. The pending record was retained.','error');};
+    document.head.appendChild(flutterwaveScript);
+  }else launchFlutterwave();
 }
 
 function payByBankTransfer(){
@@ -2279,6 +2341,9 @@ function loadBursarSettings(){
   setVal('flw-public-key',cfg.publicKey);
   setVal('flw-currency',cfg.currency||'NGN');
   setVal('flw-business-name',cfg.businessName);
+  setVal('flw-provider',cfg.provider||'flutterwave');
+  setVal('flw-verify-url',cfg.verifyUrl||'');
+  setVal('flw-webhook-url',cfg.webhookUrl||'');
   setVal('flw-bank-name',cfg.bankName||'');
   setVal('flw-account-no',cfg.accountNo||'');
   setVal('flw-account-name',cfg.accountName||'');
@@ -2289,6 +2354,9 @@ function saveFlwSettings(){
     publicKey:getVal('flw-public-key'),
     currency:getVal('flw-currency')||'NGN',
     businessName:getVal('flw-business-name'),
+    provider:getVal('flw-provider')||'flutterwave',
+    verifyUrl:getVal('flw-verify-url'),
+    webhookUrl:getVal('flw-webhook-url'),
     bankName:getVal('flw-bank-name'),
     accountNo:getVal('flw-account-no'),
     accountName:getVal('flw-account-name')
@@ -2945,23 +3013,26 @@ function recordPayment(){
   }catch(error){ toast(error.message||'Could not record payment.','error'); }
 }
 
-function recordSelfPayment(stuId,name,stu,type,amount,method,ref){
+function recordSelfPayment(stuId,name,stu,type,amount,method,ref,options){
   var find=finFind(); if(!find){ toast('Finance engine is still loading.','error'); return; }
+  options=options||{};
   try{
     var payment=find.pay({
       stuId:stuId, student:name, class:stu?stu.class:'--', reg:stu?stu.reg:'--',
       amount:amount, type:type, method:method, channel:'parent_selfpay',
-      ref:ref||('SELF-'+Date.now()), status:'Paid', by:'Parent self-pay', source:'selfpay'
+      ref:ref||('SELF-'+Date.now()), status:options.status||'Paid', by:'Parent self-pay', source:'selfpay',
+      mirrorPending:!!options.mirrorPending, gatewayProvider:options.gatewayProvider||'',
+      gatewayVerification:options.gatewayVerification||'', note:options.note||''
     });
     localStorage.setItem('rsms_new_payment','1');
-    toast('✓ Payment confirmed! Receipt: '+payment.receiptNo,'success');
+    if(!options.quiet) toast(payment.status==='Pending'?'Payment is Pending verification: '+payment.receiptNo:'✓ Payment confirmed! Receipt: '+payment.receiptNo,payment.status==='Pending'?'info':'success');
     var sp=finEl('sp-student-sel'); if(sp) sp.value='';
     var info=finEl('sp-student-info'); if(info) info.style.display='none';
     finSet('sp-amount','');
-    var summary=finEl('sp-receipt-summary');
+    var summary=finEl('sp-receipt-summary'), pending=payment.status==='Pending';
     if(summary){
       summary.style.display='block';
-      summary.innerHTML='<div style="background:var(--greenl);border:1px solid var(--green);border-radius:var(--r2);padding:14px;"><div style="font-weight:700;color:var(--green);margin-bottom:6px;">&#10003; Payment Successful</div><div style="font-size:.82rem;color:var(--t2);">Receipt: <strong>'+finEsc(payment.receiptNo)+'</strong></div><div style="font-size:.82rem;color:var(--t2);">Student: '+finEsc(payment.student)+'</div><div style="font-size:.82rem;color:var(--t2);">Amount: '+finNaira(payment.amount)+'</div><div style="font-size:.82rem;color:var(--t2);">Method: '+finEsc(payment.method)+'</div></div>';
+      summary.innerHTML='<div style="background:'+(pending?'rgba(249,115,22,.08)':'var(--greenl)')+';border:1px solid '+(pending?'var(--orange)':'var(--green)')+';border-radius:var(--r2);padding:14px;"><div style="font-weight:700;color:'+(pending?'var(--orange)':'var(--green)')+';margin-bottom:6px;">'+(pending?'&#9203; Pending Verification':'&#10003; Payment Successful')+'</div><div style="font-size:.82rem;color:var(--t2);">Receipt: <strong>'+finEsc(payment.receiptNo)+'</strong></div><div style="font-size:.82rem;color:var(--t2);">Student: '+finEsc(payment.student)+'</div><div style="font-size:.82rem;color:var(--t2);">Amount: '+finNaira(payment.amount)+'</div><div style="font-size:.82rem;color:var(--t2);">Method: '+finEsc(payment.method)+'</div></div>';
     }
     renderDash();
     return payment;
