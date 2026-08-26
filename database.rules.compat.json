@@ -1,0 +1,23 @@
+{
+  "rules": {
+    ".read": true,
+    "config": {
+      ".write": false
+    },
+    "users": {
+      ".read": "auth != null",
+      ".write": false
+    },
+    "schools": {
+      "$schoolId": {
+        ".write": true
+      }
+    },
+    "public_schools": {
+      ".write": true
+    },
+    "public_schools_by_subdomain": {
+      ".write": true
+    }
+  }
+}

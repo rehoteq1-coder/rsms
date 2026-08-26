@@ -517,7 +517,12 @@ select.fi option { background: var(--card); color: var(--t1); }
 .tbl-wrap { border-color: var(--line); }
 
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="rsms-config.js"></script>
 <script src="rsms-firebase.js"></script>
+<script src="rsms-finance.js"></script>
 <script src="rsms-plan-guard.js"></script>
 
 </head>
@@ -541,6 +546,7 @@ select.fi option { background: var(--card); color: var(--t1); }
   <div class="sb-item" onclick="showPage('results',this)"><span class="ico">&#128196;</span>Results</div>
   <div class="sb-item" onclick="showPage('attendance',this)"><span class="ico">&#9201;</span>Attendance</div>
   <div class="sb-item" onclick="showPage('fees',this)"><span class="ico">&#128176;</span>Fee Status</div>
+  <div class="sb-item" onclick="showPage('wallet',this)"><span class="ico">&#128179;</span>Wallet</div>
   <div class="sb-item" onclick="showPage('assigns',this)"><span class="ico">&#128203;</span>Assignments</div>
   <div class="sb-section">SCHOOL</div>
   <div class="sb-item" onclick="showPage('messages',this)"><span class="ico">&#128172;</span>Messages</div>
@@ -576,6 +582,7 @@ select.fi option { background: var(--card); color: var(--t1); }
       <div class="qa-item" onclick="showPage('results')"><span class="qa-ico">&#128196;</span><div class="qa-lbl">Results</div></div>
       <div class="qa-item" onclick="showPage('attendance')"><span class="qa-ico">&#9201;</span><div class="qa-lbl">Attendance</div></div>
       <div class="qa-item" onclick="showPage('fees')"><span class="qa-ico">&#128176;</span><div class="qa-lbl">Fees</div></div>
+      <div class="qa-item" onclick="showPage('wallet')"><span class="qa-ico">&#128179;</span><div class="qa-lbl">Wallet</div></div>
       <div class="qa-item" onclick="showPage('assigns')"><span class="qa-ico">&#128203;</span><div class="qa-lbl">Assignments</div></div>
     </div>
   </div>
@@ -608,9 +615,29 @@ select.fi option { background: var(--card); color: var(--t1); }
 <div class="page" id="pg-fees">
   <div class="pg-hd">
     <div><div class="pg-title">Fee Status</div></div>
-    <button class="btn btn-gold btn-sm" onclick="payFeeOnline(0)">&#128176; Pay Fees</button>
+    <button class="btn btn-gold btn-sm" onclick="payFeeOnline(parentFeeOutstanding())">&#128176; Pay Fees</button>
   </div>
   <div id="p-fees-list"></div>
+</div>
+
+<!-- WALLET -->
+<div class="page" id="pg-wallet">
+  <div class="pg-hd"><div><div class="pg-title">&#128179; Student Wallet</div><div class="pg-sub">Fund the wallet, then use the available balance to pay school fees.</div></div></div>
+  <div class="hero-card" style="margin:0 0 14px;">
+    <div class="hc-label">Available wallet balance</div>
+    <div class="hc-val" id="p-wallet-balance">&#8358;0</div>
+    <div class="hc-sub" id="p-wallet-child">Your child</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Fund Wallet</div>
+    <div class="f2">
+      <div class="fg"><label>Amount (&#8358;) *</label><input class="fi" id="p-wallet-amount" type="number" min="0" placeholder="0.00"/></div>
+      <div class="fg"><label>Funding method</label><select class="fi" id="p-wallet-method" onchange="parentWalletMethodNote()" style="height:46px;"><option value="Card">Card</option><option value="Bank Transfer">Bank Transfer</option><option value="Cash">Cash (at school)</option></select></div>
+    </div>
+    <div id="p-wallet-method-note" style="font-size:.75rem;color:var(--t3);margin:2px 0 12px;">Card top-ups remain pending until verified by the payment gateway.</div>
+    <button class="btn btn-gold btn-full" onclick="fundParentWallet()">+ Fund Wallet</button>
+  </div>
+  <div class="card"><div class="card-title">Transactions</div><div id="p-wallet-list"></div></div>
 </div>
 
 <!-- ASSIGNMENTS -->
@@ -666,7 +693,10 @@ var RSMS = {
   fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||localStorage.getItem('rsms_fees'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
   pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||''; },
   save:     function(key,data){ localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
-  logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
+  logout:   function(){
+    if(window.RSMS_FB&&typeof RSMS_FB.logout==='function'){RSMS_FB.logout();return;}
+    sessionStorage.clear(); location.href='rsms-login.html';
+  }
 };
 
 // ── SUBJECTS ───────────────────────────────────────────
@@ -985,6 +1015,7 @@ function initPortal(){
 window.onPage_home    = renderDash;
 window.onPage_results = renderChildResults;
 window.onPage_fees    = renderChildFees;
+window.onPage_wallet  = function(){ if(typeof renderParentWallet==='function') renderParentWallet(); };
 window.onPage_assigns = renderChildAssigns;
 window.onPage_messages    = renderParentMessages;
 window.onPage_attendance  = renderChildAttendance;
@@ -1162,7 +1193,7 @@ function renderChildResults(){
   var childClass = CHILD_CLASS||'';
   var classSchedule = schedule.filter(function(s){return s.class===childClass;});
   var totalExpected = classSchedule.reduce(function(a,s){return a+parseFloat(s.amount||0);},0);
-  var totalPaid = childFees().reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  var totalPaid = paidFees().reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
   var outstanding = Math.max(0, totalExpected - totalPaid);
 
   if(outstanding > 0 || classSchedule.length > 0){
@@ -1226,46 +1257,86 @@ function payFeeOnline(amount){
   document.getElementById('pay-cancel-btn').onclick=function(){ modal.remove(); };
   modal.onclick=function(e){ if(e.target===modal) modal.remove(); };
 
-  // ── Card Payment via Flutterwave ──
+  // ── Card payment: create the intent before checkout, then let the server
+  // confirm it. A gateway callback alone never makes this payment paid. ──
   document.getElementById('pay-card-btn').onclick=function(){
+    var provider=String(cfg.provider||'flutterwave').toLowerCase();
+    var pending;
     modal.remove();
-    if(typeof FlutterwaveCheckout==='undefined'){
-      toast('Loading payment gateway...','info');
-      var s=document.createElement('script');
-      s.src='https://checkout.flutterwave.com/v3.js';
-      s.onload=function(){ launchFlw(); };
-      s.onerror=function(){ toast('Could not load payment gateway. Check your connection.','error'); };
-      document.head.appendChild(s);
-    } else { launchFlw(); }
+    pending=recordParentPayment(amount,'Card ('+(provider==='paystack'?'Paystack':'Flutterwave')+')',txRef,{
+      status:'Pending', mirrorPending:true, gatewayProvider:provider, gatewayVerification:'required', quiet:true,
+      note:'Awaiting gateway verification'
+    });
+    if(!pending) return;
+    if(typeof showPaymentReceipt==='function') showPaymentReceipt(pending);
 
-    function launchFlw(){
-      FlutterwaveCheckout({
-        public_key: cfg.publicKey,
-        tx_ref: txRef,
-        amount: amount,
-        currency: cfg.currency||'NGN',
-        payment_options: cfg.methods||'card,banktransfer,ussd',
-        customer: {
-          name: user.parentName||user.name||CHILD_NAME+' (Parent)',
-          email: user.parentEmail||user.email||'parent@'+txRef+'.pay',
-          phone_number: user.parentPhone||user.phone||''
-        },
-        customizations: {
-          title: (school.name||'School')+' Fee Payment',
-          description: 'Fee payment for '+CHILD_NAME,
-          logo: localStorage.getItem('rsms_school_logo')||''
-        },
-        callback: function(response){
-          if(response.status==='successful'||response.status==='completed'){
-            recordParentPayment(amount,'Card (Flutterwave)',response.transaction_id||response.tx_ref);
-            toast('\u2705 Payment successful!','success');
-          } else {
-            toast('Payment was not completed.','error');
-          }
-        },
-        onclose: function(){}
+    function verifyPending(){
+      if(!window.FIND||typeof window.FIND.gatewayVerify!=='function'){
+        toast('Payment submitted. It remains Pending for school review.','info');
+        return;
+      }
+      toast('Verifying payment…','info');
+      window.FIND.gatewayVerify(txRef,provider).then(function(data){
+        var result=window.FIND.applyVerification(data);
+        if(result.pending) toast('Payment is still processing and remains Pending.','info');
+        else if(result.changed.some(function(row){return row.status==='Confirmed';})) toast('\u2713 Payment verified.','success');
+        else if(result.rejected) toast('Payment could not be confirmed and was marked Rejected.','error');
+        else toast('Could not confirm — stays Pending for bursar review.','info');
+        renderChildFees(); renderDash();
+      }).catch(function(){
+        toast('Could not confirm — stays Pending for bursar review.','info');
       });
     }
+
+    function launchFlutterwave(){
+      FlutterwaveCheckout({
+        public_key:cfg.publicKey,
+        tx_ref:txRef,
+        amount:amount,
+        currency:cfg.currency||'NGN',
+        payment_options:cfg.methods||'card,banktransfer,ussd',
+        customer:{name:user.parentName||user.name||CHILD_NAME+' (Parent)',email:user.parentEmail||user.email||'parent@'+txRef+'.pay',phone_number:user.parentPhone||user.phone||''},
+        customizations:{title:(school.name||'School')+' Fee Payment',description:'Fee payment for '+CHILD_NAME,logo:localStorage.getItem('rsms_school_logo')||''},
+        callback:function(response){
+          if(response.status==='successful'||response.status==='completed') verifyPending();
+          else toast('Payment was not completed. The record remains Pending only if payment is completed later.','info');
+        },
+        onclose:function(){}
+      });
+    }
+
+    function launchPaystack(){
+      var handler=window.PaystackPop&&window.PaystackPop.setup({
+        key:cfg.publicKey,
+        email:user.parentEmail||user.email||'parent@'+txRef+'.pay',
+        amount:Math.round(Number(amount)*100),
+        currency:cfg.currency||'NGN',
+        ref:txRef,
+        metadata:{custom_fields:[{display_name:'Student',variable_name:'student',value:CHILD_NAME}]},
+        callback:function(){verifyPending();},
+        onClose:function(){}
+      });
+      if(handler&&typeof handler.openIframe==='function') handler.openIframe();
+      else toast('Could not start the Paystack checkout. The pending record was retained.','error');
+    }
+
+    if(provider==='paystack'){
+      if(typeof window.PaystackPop==='undefined'){
+        toast('Loading payment gateway…','info');
+        var paystackScript=document.createElement('script');
+        paystackScript.src='https://js.paystack.co/v1/inline.js';
+        paystackScript.onload=launchPaystack;
+        paystackScript.onerror=function(){toast('Could not load payment gateway. The pending record was retained.','error');};
+        document.head.appendChild(paystackScript);
+      }else launchPaystack();
+    }else if(typeof FlutterwaveCheckout==='undefined'){
+      toast('Loading payment gateway…','info');
+      var flutterwaveScript=document.createElement('script');
+      flutterwaveScript.src='https://checkout.flutterwave.com/v3.js';
+      flutterwaveScript.onload=launchFlutterwave;
+      flutterwaveScript.onerror=function(){toast('Could not load payment gateway. The pending record was retained.','error');};
+      document.head.appendChild(flutterwaveScript);
+    }else launchFlutterwave();
   };
 
   // ── Bank Transfer ──
@@ -1299,42 +1370,7 @@ function payFeeOnline(amount){
   };
 }
 
-function recordParentPayment(amount,method,ref){
-  var school=RSMS.school()||{};
-  var fees=RSMS.fees?RSMS.fees():[];
-  var receiptNo='SP-'+Date.now().toString(36).toUpperCase();
-  var rec={
-    id:'f'+Date.now(),
-    receiptNo:receiptNo,
-    stuId:CHILD_ID,
-    student:CHILD_NAME,
-    class:CHILD_CLASS||'--',
-    reg:'',
-    type:'School Fee',
-    amount:amount,
-    method:method,
-    date:new Date().toISOString().slice(0,10),
-    ref:ref||('SELF-'+Date.now()),
-    term:school.term||'First Term',
-    session:school.session||'2025/2026',
-    recordedAt:new Date().toISOString(),
-    channel:'parent_selfpay'
-  };
-  fees.push(rec);
-  // Save to localStorage + Firebase
-  var sid=_sid();
-  if(sid) localStorage.setItem('rsms_'+sid+'_fees',JSON.stringify(fees));
-  localStorage.setItem('rsms_fees',JSON.stringify(fees));
-  try{if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady()){
-    RSMS_FB.saveFees(fees);
-    RSMS_FB.pushPaymentAlert(rec);
-  }}catch(e){}
-  // Refresh fee display
-  if(typeof renderChildFees==='function') renderChildFees();
-  if(typeof renderDash==='function') renderDash();
-  // Show receipt modal
-  showPaymentReceipt(rec);
-}
+/* Parent fee entry is implemented by the FIND integration below. */
 
 function showPaymentReceipt(rec){
   var m=document.createElement('div');
@@ -1356,7 +1392,7 @@ function showPaymentReceipt(rec){
           '<div><div style="color:var(--t3);">Reference</div><div style="color:var(--t1);font-weight:600;font-size:.7rem;word-break:break-all;">'+(rec.ref||'')+'</div></div>'+
         '</div>'+
       '</div>'+
-      '<button onclick="this.closest('div[style]').parentElement.remove();" style="width:100%;padding:11px;background:var(--gold);color:#000;border:none;border-radius:var(--r2);font-weight:700;font-size:.88rem;cursor:pointer;font-family:var(--sans);">Done</button>'+
+      '<button onclick="this.closest(\'div[style]\').parentElement.remove();" style="width:100%;padding:11px;background:var(--gold);color:#000;border:none;border-radius:var(--r2);font-weight:700;font-size:.88rem;cursor:pointer;font-family:var(--sans);">Done</button>'+
     '</div>';
   document.body.appendChild(m);
   m.onclick=function(e){if(e.target===m)m.remove();};
@@ -1533,6 +1569,315 @@ window.addEventListener('storage', function(e){
   }
 });
 
+</script>
+<script>
+/* School Finance Platform — parent payment bridge (Phase 1). */
+function recordParentPayment(amount,method,ref,options){
+  if(!window.FIND || typeof window.FIND.pay!=='function'){
+    toast('The finance engine is still loading. Please try again.','error');
+    return null;
+  }
+  options=options||{};
+  var school=RSMS.school()||{};
+  try{
+    var rec=window.FIND.pay({
+      stuId:CHILD_ID,
+      student:CHILD_NAME,
+      class:CHILD_CLASS||'--',
+      reg:'',
+      type:'School Fee',
+      amount:amount,
+      method:method,
+      channel:'parent_selfpay',
+      ref:ref||('SELF-'+Date.now()),
+      status:options.status||'Paid',
+      by:(RSMS.user()||{}).name||'Parent',
+      source:'parent',
+      term:school.term||'First Term',
+      session:school.session||'2025/2026',
+      mirrorPending:!!options.mirrorPending,
+      gatewayProvider:options.gatewayProvider||'',
+      gatewayVerification:options.gatewayVerification||'',
+      note:options.note||''
+    });
+    try{
+      if(rec.status!=='Pending'&&typeof RSMS_FB!=='undefined'&&typeof RSMS_FB.pushPaymentAlert==='function') RSMS_FB.pushPaymentAlert(rec);
+    }catch(e){}
+    if(typeof renderChildFees==='function') renderChildFees();
+    if(typeof renderDash==='function') renderDash();
+    if(!options.quiet) showPaymentReceipt(rec);
+    return rec;
+  }catch(error){
+    toast(error.message||'Could not record payment.','error');
+    return null;
+  }
+}
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════
+   SCHOOL FINANCE PLATFORM — PARENT WALLETS (Phase 2)
+═══════════════════════════════════════════════════════ */
+
+function parentFind(){ return window.FIND || null; }
+function parentMoney(value){ var number=parseFloat(value); return isFinite(number)?Math.round(number*100)/100:0; }
+function parentNaira(value){ return '\u20a6'+parentMoney(value).toLocaleString(); }
+function parentEscape(value){ return String(value===undefined||value===null?'':value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function parentCurrentSchool(){ return RSMS.school?RSMS.school():{}; }
+function parentCurrentUser(){ return RSMS.user?RSMS.user():{}; }
+function parentLegacyFees(){
+  var all=_get('fees','[]');
+  return all.filter(function(fee){ return fee.stuId===CHILD_ID||fee.student===CHILD_NAME; });
+}
+function childFees(){
+  var find=parentFind();
+  if(find&&typeof find.payments==='function'){
+    var records=find.payments().filter(function(payment){ return payment.stuId===CHILD_ID||payment.student===CHILD_NAME; });
+    if(records.length||find.collection('fees').length===0) return records;
+  }
+  return parentLegacyFees();
+}
+function parentPaymentConfirmed(payment){
+  if(!payment.status) return true;
+  if(payment.status==='Confirmed') return true;
+  return !!(parentFind()&&typeof parentFind().isPaidStatus==='function'&&parentFind().isPaidStatus(payment.status));
+}
+function paidFees(){
+  return childFees().filter(parentPaymentConfirmed);
+}
+function parentFeePayable(){
+  var find=parentFind();
+  if(find&&CHILD_ID){
+    var payable=find.studentPayable(CHILD_ID);
+    if(payable>0) return payable;
+  }
+  var schedule=_get('fee_schedule','[]');
+  return schedule.filter(function(item){return item.class===CHILD_CLASS;}).reduce(function(total,item){return total+parentMoney(item.amount);},0);
+}
+function parentFeeOutstanding(){
+  return Math.max(0,parentMoney(parentFeePayable()-paidFees().reduce(function(total,payment){return total+parentMoney(payment.amount);},0)));
+}
+function parentWalletBalance(){
+  var find=parentFind();
+  return find&&CHILD_ID&&typeof find.walletBalance==='function'?find.walletBalance(CHILD_ID):0;
+}
+function parentWalletRecords(){
+  var find=parentFind();
+  return find&&typeof find.wallet==='function'?find.wallet().filter(function(entry){return entry.stuId===CHILD_ID||entry.student===CHILD_NAME;}):[];
+}
+function parentWalletReference(){
+  return 'RSMS-WAL-'+Date.now()+'-'+Math.random().toString(36).slice(2,8).toUpperCase();
+}
+function parentFlwConfig(){
+  var sid=_sid(), raw=sid?localStorage.getItem('rsms_'+sid+'_flw_config'):null;
+  if(!raw) raw=localStorage.getItem('rsms_flw_config');
+  try{return JSON.parse(raw||'{}')||{};}catch(e){return {};}
+}
+function parentWalletCreditOptions(base,status,reason){
+  var options={}, keys=Object.keys(base||{});
+  keys.forEach(function(key){options[key]=base[key];});
+  options.status=status; options.reason=reason;
+  return options;
+}
+
+function renderDash(){
+  var fees=paidFees();
+  var totalPaid=fees.reduce(function(total,fee){return total+parentMoney(fee.amount);},0);
+  var results=childResults(), assigns=childAssigns();
+  var stats=document.getElementById('p-stats');
+  if(stats) stats.innerHTML=[
+    {v:CHILD_CLASS||'--',l:'Class',cls:'s-teal'},
+    {v:parentNaira(totalPaid),l:'Total Paid',cls:'s-green'},
+    {v:results.length,l:'Terms Results',cls:'s-gold'},
+    {v:assigns.length,l:'Assignments',cls:'s-blue'}
+  ].map(function(row){return '<div class="stat-tile '+row.cls+'"><div class="stat-v">'+row.v+'</div><div class="stat-l">'+row.l+'</div></div>';}).join('');
+  var recent=document.getElementById('p-activity');
+  if(recent){
+    var latest=fees.slice().sort(function(a,b){return String(b.recordedAt||b.date||'').localeCompare(String(a.recordedAt||a.date||''));}).slice(0,4);
+    recent.innerHTML=latest.length?latest.map(function(fee){return '<div class="act-item"><div class="act-ico c-green">&#128176;</div><div class="act-info"><div class="act-title">'+parentEscape(fee.type)+'</div><div class="act-sub">'+parentEscape(fee.date||'')+' · '+parentEscape(fee.method||'')+'</div></div><div class="act-right"><div class="act-val">'+parentNaira(fee.amount)+'</div></div></div>';}).join(''):'<div class="empty-state">No confirmed payments recorded yet</div>';
+  }
+  var unpaid=document.getElementById('p-unpaid-alert'), outstanding=parentFeeOutstanding();
+  if(unpaid){
+    unpaid.style.display=outstanding>0?'block':'none';
+    if(outstanding>0) unpaid.textContent='Fees outstanding: '+parentNaira(outstanding)+'. You can pay online or from a confirmed wallet balance.';
+  }
+}
+
+function parentWalletMethodNote(){
+  var method=(document.getElementById('p-wallet-method')||{}).value||'Card';
+  var note=document.getElementById('p-wallet-method-note'); if(!note) return;
+  if(method==='Cash') note.textContent='Cash top-ups recorded at school are confirmed immediately.';
+  else if(method==='Bank Transfer') note.textContent='A pending credit and transfer reference will be created for bursar verification.';
+  else note.textContent='Card top-ups remain pending until verified by the payment gateway.';
+}
+function renderParentWallet(){
+  var find=parentFind(), balance=parentWalletBalance(), card=document.getElementById('p-wallet-balance');
+  if(card) card.textContent=parentNaira(balance);
+  var child=document.getElementById('p-wallet-child'); if(child) child.textContent=CHILD_NAME+' · '+(CHILD_CLASS||'');
+  parentWalletMethodNote();
+  var list=document.getElementById('p-wallet-list'); if(!list) return;
+  var entries=parentWalletRecords().slice().sort(function(a,b){return String(b.recordedAt||b.date||'').localeCompare(String(a.recordedAt||a.date||''));});
+  list.innerHTML=entries.length?entries.map(function(entry){
+    var credit=entry.type==='credit', color=credit?'var(--green)':'var(--red)', icon=credit?'&#10133;':'&#10134;';
+    return '<div class="act-item" style="padding:12px 0;border-bottom:1px solid var(--line);"><div class="act-ico '+(credit?'c-green':'c-red')+'">'+icon+'</div><div class="act-info"><div class="act-title">'+parentEscape(entry.reason||'Wallet transaction')+'</div><div class="act-sub">'+(credit?'Credit':'Debit')+' · '+parentEscape(entry.date||'')+' · '+parentEscape(entry.ref||entry.walId||'')+'</div><div style="font-size:.68rem;margin-top:4px;">'+parentWalletBadge(entry.status)+'</div></div><div class="act-right"><div class="act-val" style="color:'+color+'">'+(credit?'+':'-')+parentNaira(entry.amount)+'</div><div class="act-time">'+parentEscape(entry.method||'')+'</div></div></div>';
+  }).join(''):'<div class="empty-state">No wallet transactions yet</div>';
+}
+function parentWalletBadge(status){
+  var pending=status==='Pending', rejected=status==='Rejected';
+  var color=pending?'var(--orange)':(rejected?'var(--red)':'var(--green)');
+  var background=pending?'rgba(249,115,22,.12)':(rejected?'rgba(244,63,94,.12)':'rgba(34,197,94,.12)');
+  return '<span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:.62rem;font-weight:800;color:'+color+';background:'+background+';">'+parentEscape(status||'Pending')+'</span>';
+}
+function parentWalletBankModal(entry){
+  var cfg=parentFlwConfig(), detail=cfg.bankName?(cfg.bankName+'\nAccount: '+(cfg.accountNo||'')+'\nName: '+(cfg.accountName||'')):'Contact the school bursar for bank account details.';
+  var modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML='<div style="background:var(--card);border-radius:var(--r);padding:22px;max-width:390px;width:100%;"><div style="font-weight:800;font-size:1.05rem;color:var(--t1);margin-bottom:10px;">&#127974; Fund Wallet by Transfer</div><div style="font-size:.8rem;color:var(--t3);margin-bottom:12px;">Transfer exactly <strong style="color:var(--green);">'+parentNaira(entry.amount)+'</strong> and use this reference:</div><div style="background:var(--goldl);border-radius:var(--r2);padding:12px;color:var(--gold);font-family:var(--mono);font-size:.78rem;word-break:break-all;margin-bottom:12px;">'+parentEscape(entry.ref)+'</div><div style="white-space:pre-line;background:var(--card2);border-radius:var(--r2);padding:12px;font-size:.8rem;color:var(--t2);margin-bottom:14px;">'+parentEscape(detail)+'</div><div style="font-size:.75rem;color:var(--orange);margin-bottom:14px;">This top-up is pending until the school verifies it.</div><button id="close-wallet-transfer" class="btn btn-gold btn-full">Done</button></div>';
+  document.body.appendChild(modal);
+  document.getElementById('close-wallet-transfer').onclick=function(){modal.remove();};
+  modal.onclick=function(event){if(event.target===modal)modal.remove();};
+}
+function fundParentWallet(){
+  var find=parentFind(), amount=parentMoney((document.getElementById('p-wallet-amount')||{}).value||0), method=(document.getElementById('p-wallet-method')||{}).value||'Card';
+  if(!find||!CHILD_ID){toast('Your child wallet is still loading.','error');return;}
+  if(amount<=0){toast('Enter a valid wallet amount.','error');return;}
+  var school=parentCurrentSchool(), user=parentCurrentUser(), ref=parentWalletReference();
+  var base={stuId:CHILD_ID,student:CHILD_NAME,class:CHILD_CLASS||'--',amount:amount,reason:'Parent wallet funding',method:method,ref:ref,by:user.name||'Parent',term:school.term||'First Term',session:school.session||'2025/2026'};
+  if(method==='Cash'){
+    try{
+      find.walletCredit(parentWalletCreditOptions(base,'Confirmed','Cash top-up at school'));
+      document.getElementById('p-wallet-amount').value=''; renderParentWallet(); renderChildFees();
+      toast('Wallet funded with cash.','success');
+    }catch(error){toast(error.message||'Could not fund wallet.','error');}
+    return;
+  }
+  if(method==='Bank Transfer'){
+    try{
+      var transfer=find.walletCredit(parentWalletCreditOptions(base,'Pending','Bank transfer top-up'));
+      document.getElementById('p-wallet-amount').value=''; renderParentWallet(); parentWalletBankModal(transfer);
+    }catch(error){toast(error.message||'Could not create transfer top-up.','error');}
+    return;
+  }
+  var cfg=parentFlwConfig();
+  var provider=String(cfg.provider||'flutterwave').toLowerCase();
+  if(!cfg.publicKey){toast('Online wallet funding is not configured by the school.','error');return;}
+  base.gatewayProvider=provider; base.gatewayVerification='required';
+  var pending;
+  try{
+    pending=find.walletCredit(parentWalletCreditOptions(base,'Pending','Card wallet top-up'));
+  }catch(error){toast(error.message||'Could not create wallet top-up.','error');return;}
+  function verifyPendingWallet(){
+    if(!find||typeof find.gatewayVerify!=='function'||!find.gatewayConfig().verifyUrl){
+      toast('Payment submitted. Your wallet credit remains Pending until the school deploys verification.','info');
+      return;
+    }
+    toast('Verifying wallet funding…','info');
+    find.gatewayVerify(pending.ref,provider).then(function(data){
+      var result=find.applyVerification(data);
+      if(result.pending) toast('Payment is still processing and the wallet credit remains Pending.','info');
+      else if(result.changed.some(function(row){return row.status==='Confirmed';})) toast('✓ Wallet funding verified.','success');
+      else if(result.rejected) toast('Wallet funding could not be confirmed and was marked Rejected.','error');
+      else toast('Could not confirm — the wallet credit stays Pending for bursar review.','info');
+      renderParentWallet(); renderChildFees(); renderDash();
+    }).catch(function(){
+      toast('Could not confirm — the wallet credit stays Pending for bursar review.','info');
+    });
+  }
+  function launchFlutterwaveWallet(){
+    FlutterwaveCheckout({
+      public_key:cfg.publicKey,
+      tx_ref:pending.ref,
+      amount:amount,
+      currency:cfg.currency||'NGN',
+      payment_options:cfg.methods||'card,banktransfer,ussd',
+      customer:{name:user.parentName||user.name||CHILD_NAME+' (Parent)',email:user.parentEmail||user.email||'parent@'+pending.ref+'.pay',phone_number:user.parentPhone||user.phone||''},
+      customizations:{title:(school.name||'School')+' Wallet Funding',description:'Wallet top-up for '+CHILD_NAME,logo:localStorage.getItem('rsms_school_logo')||''},
+      callback:function(response){
+        if(response.status==='successful'||response.status==='completed') verifyPendingWallet();
+        else toast('Payment was not completed. The wallet credit remains Pending only if you finish payment later.','info');
+        renderParentWallet();
+      },onclose:function(){renderParentWallet();}
+    });
+  }
+  function launchPaystackWallet(){
+    var handler=window.PaystackPop&&window.PaystackPop.setup({
+      key:cfg.publicKey,
+      email:user.parentEmail||user.email||'parent@'+pending.ref+'.pay',
+      amount:Math.round(amount*100),
+      currency:cfg.currency||'NGN',
+      ref:pending.ref,
+      metadata:{custom_fields:[{display_name:'Student',variable_name:'student',value:CHILD_NAME}]},
+      callback:function(){verifyPendingWallet();},
+      onClose:function(){renderParentWallet();}
+    });
+    if(handler&&typeof handler.openIframe==='function') handler.openIframe();
+    else toast('Could not start the Paystack checkout. The pending credit was retained.','error');
+  }
+  if(provider==='paystack'){
+    if(typeof window.PaystackPop==='undefined'){
+      toast('Loading payment gateway…','info');
+      var paystackScript=document.createElement('script');paystackScript.src='https://js.paystack.co/v1/inline.js';paystackScript.onload=launchPaystackWallet;paystackScript.onerror=function(){toast('Could not load payment gateway. The pending credit was retained.','error');};document.head.appendChild(paystackScript);
+    }else launchPaystackWallet();
+  }else if(typeof FlutterwaveCheckout==='undefined'){
+    toast('Loading payment gateway…','info');
+    var flutterwaveScript=document.createElement('script');flutterwaveScript.src='https://checkout.flutterwave.com/v3.js';flutterwaveScript.onload=launchFlutterwaveWallet;flutterwaveScript.onerror=function(){toast('Could not load payment gateway. The pending credit was retained.','error');};document.head.appendChild(flutterwaveScript);
+  }else launchFlutterwaveWallet();
+}
+function payFromWallet(){
+  var find=parentFind(), balance=parentWalletBalance(), outstanding=parentFeeOutstanding();
+  if(!find){toast('Wallet is still loading.','error');return;}
+  if(balance<=0){toast('There is no confirmed wallet balance available.','error');return;}
+  if(outstanding<=0){toast('There are no outstanding fees to pay.','info');return;}
+  var max=Math.min(balance,outstanding), response=window.prompt('Enter an amount up to '+parentNaira(max)+' to pay from the wallet:',String(max));
+  if(response===null) return;
+  var amount=parentMoney(response);
+  if(amount<=0||amount>balance||amount>outstanding){toast('Enter an amount within the wallet balance and outstanding fee.','error');return;}
+  if(!window.confirm('Pay '+parentNaira(amount)+' from the confirmed wallet balance?')) return;
+  try{
+    var school=parentCurrentSchool(), user=parentCurrentUser();
+    var result=find.walletDebit({stuId:CHILD_ID,student:CHILD_NAME,class:CHILD_CLASS||'--',amount:amount,reason:'School fee payment',method:'Wallet',paymentMethod:'Wallet',channel:'parent_wallet',paymentType:'School Fee',ref:'PARENT-WAL-'+Date.now().toString(36).toUpperCase(),by:user.name||'Parent',term:school.term||'First Term',session:school.session||'2025/2026',note:'Paid from parent wallet'});
+    renderParentWallet(); renderChildFees(); renderDash(); showPaymentReceipt(result.payment);
+  }catch(error){toast(error.message||'Could not pay from wallet.','error');}
+}
+
+function renderChildFees(){
+  var list=document.getElementById('p-fees-list'); if(!list)return;
+  var all=childFees(), confirmed=paidFees(), paid=confirmed.reduce(function(total,row){return total+parentMoney(row.amount);},0), payable=parentFeePayable(), outstanding=Math.max(0,parentMoney(payable-paid)), balance=parentWalletBalance();
+  list.innerHTML='';
+  var payButton=document.createElement('button');
+  payButton.style.cssText='width:100%;padding:14px;background:linear-gradient(135deg,var(--gold,#d4a843),#b8932a);color:#000;border:none;border-radius:10px;font-weight:900;font-size:.95rem;cursor:pointer;font-family:var(--sans);margin-bottom:10px;';
+  payButton.innerHTML='&#128176; Pay School Fees Online'; payButton.onclick=function(){payFeeOnline(outstanding);}; list.appendChild(payButton);
+  var summary=document.createElement('div');summary.style.cssText='background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:var(--r);padding:16px;margin-bottom:12px;';
+  summary.innerHTML='<div style="color:rgba(255,255,255,.55);font-size:.72rem;margin-bottom:4px;">'+parentEscape(CHILD_NAME)+' | '+parentEscape(CHILD_CLASS)+' — Fees Summary</div><div style="font-family:var(--serif);font-size:1.55rem;font-weight:900;color:#fff;">'+parentNaira(paid)+' <span style="font-family:var(--sans);font-size:.72rem;font-weight:500;color:rgba(255,255,255,.55);">confirmed paid</span></div><div style="font-size:.75rem;color:rgba(255,255,255,.6);margin-top:6px;">Payable: '+parentNaira(payable)+' · Outstanding: '+parentNaira(outstanding)+'</div>';
+  list.appendChild(summary);
+  var walletRow=document.createElement('div');walletRow.className='card';walletRow.style.marginBottom='12px';
+  walletRow.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;"><div><div style="font-size:.72rem;color:var(--t3);">Wallet Balance</div><div style="font-weight:900;font-size:1.15rem;color:var(--teal);">'+parentNaira(balance)+'</div><div style="font-size:.7rem;color:var(--t3);margin-top:2px;">Only confirmed wallet funds can be used for fees.</div></div><button id="pay-from-wallet-btn" class="btn btn-gold btn-sm">Pay from Wallet</button></div>';
+  list.appendChild(walletRow); var walletButton=document.getElementById('pay-from-wallet-btn'); if(walletButton) walletButton.onclick=payFromWallet;
+  if(!all.length){var empty=document.createElement('div');empty.className='empty-state';empty.textContent='No payment records yet';list.appendChild(empty);return;}
+  all.slice().sort(function(a,b){return String(b.recordedAt||b.date||'').localeCompare(String(a.recordedAt||a.date||''));}).forEach(function(payment){
+    var confirmedPayment=parentPaymentConfirmed(payment), pending=payment.status==='Pending', color=confirmedPayment?'var(--green)':(pending?'var(--orange)':'var(--red)');
+    var row=document.createElement('div');row.className='card';row.style.marginBottom='8px';
+    row.innerHTML='<div class="flex-between"><div><div style="font-weight:700;">'+parentEscape(payment.type||'School Fee')+'</div><div style="font-size:.73rem;color:var(--t3);">'+parentEscape(payment.receiptNo||payment.txId||'')+' · '+parentEscape(payment.date||'')+'</div>'+(pending?'<div style="display:inline-block;margin-top:5px;padding:3px 7px;border-radius:20px;background:rgba(249,115,22,.12);color:var(--orange);font-size:.62rem;font-weight:800;">&#9203; PENDING VERIFICATION</div>':'')+'</div><div style="font-weight:700;color:'+color+';">'+parentNaira(payment.amount)+'</div></div>';
+    list.appendChild(row);
+  });
+}
+function showPaymentReceipt(rec){
+  var confirmed=parentPaymentConfirmed(rec), pending=rec.status==='Pending', icon=confirmed?'&#9989;':'&#9203;', color=confirmed?'var(--green)':'var(--orange)', title=confirmed?'Payment Confirmed':'Pending Verification';
+  var modal=document.createElement('div');modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML='<div style="background:var(--card);border-radius:var(--r);padding:24px;max-width:380px;width:100%;text-align:center;"><div style="font-size:2.5rem;margin-bottom:8px;">'+icon+'</div><div style="font-weight:800;font-size:1.1rem;color:'+color+';margin-bottom:4px;">'+title+'</div><div style="font-size:.78rem;color:var(--t3);margin-bottom:16px;">'+(confirmed?'This payment is included in your fee balance.':'Card and bank payments remain pending until school verification.')+'</div><div style="background:var(--card2);border:1px solid var(--line);border-radius:var(--r2);padding:14px;text-align:left;margin-bottom:16px;"><div style="font-size:.78rem;color:var(--t3);margin-bottom:4px;">Receipt No</div><div style="font-weight:700;color:var(--gold);margin-bottom:10px;">'+parentEscape(rec.receiptNo||rec.txId||'')+'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.78rem;"><div><div style="color:var(--t3);">Amount</div><div style="color:'+color+';font-weight:700;">'+parentNaira(rec.amount)+'</div></div><div><div style="color:var(--t3);">Method</div><div style="color:var(--t1);font-weight:600;">'+parentEscape(rec.method||'')+'</div></div><div><div style="color:var(--t3);">Date</div><div style="color:var(--t1);font-weight:600;">'+parentEscape(rec.date||'')+'</div></div><div><div style="color:var(--t3);">Status</div><div style="color:'+color+';font-weight:700;">'+parentEscape(rec.status||'Paid')+'</div></div></div></div><button id="close-parent-receipt" style="width:100%;padding:11px;background:var(--gold);color:#000;border:none;border-radius:var(--r2);font-weight:700;font-size:.88rem;cursor:pointer;font-family:var(--sans);">Done</button></div>';
+  document.body.appendChild(modal);document.getElementById('close-parent-receipt').onclick=function(){modal.remove();};modal.onclick=function(event){if(event.target===modal)modal.remove();};
+}
+
+window.onPage_home=function(){renderDash();};
+window.onPage_fees=function(){renderChildFees();};
+window.onPage_wallet=function(){renderParentWallet();};
+if(window.FIND&&typeof window.FIND.onSync==='function') window.FIND.onSync(function(key){
+  if(key==='wallet'||key==='payments'||key==='fees'){
+    var active=document.querySelector('.page.active');
+    if(active&&active.id==='pg-wallet') renderParentWallet();
+    if(active&&active.id==='pg-fees') renderChildFees();
+    if(active&&active.id==='pg-home') renderDash();
+  }
+});
 </script>
 <script src="rsms-notifications.js"></script>
 </body>

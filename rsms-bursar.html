@@ -561,6 +561,36 @@ select.fi option{background:var(--card);color:var(--t1);}
 .audit-action { font-weight:600; color:var(--t1); }
 .audit-meta { font-size:.68rem; color:var(--t3); margin-top:2px; }
 
+/* ── FINANCE PLATFORM ── */
+.finance-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:end; margin-bottom:12px; }
+.finance-toolbar .fg { flex:1; min-width:145px; margin-bottom:0; }
+.finance-toolbar .btn { min-height:42px; }
+.finance-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-bottom:14px; }
+.fin-table-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:var(--r2); background:var(--card); }
+.fin-table { width:100%; min-width:630px; border-collapse:collapse; font-size:.77rem; }
+.fin-table th { background:var(--card2); color:var(--t3); text-align:left; padding:10px; font-size:.65rem; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; }
+.fin-table td { padding:10px; border-top:1px solid var(--line); color:var(--t2); vertical-align:middle; }
+.fin-table td.num, .fin-table th.num { text-align:right; font-family:var(--mono); }
+.fin-table tr:hover td { background:rgba(212,168,67,.035); }
+.fin-status { display:inline-block; border-radius:20px; padding:3px 8px; font-size:.63rem; font-weight:800; white-space:nowrap; }
+.fin-status.paid { background:var(--greenl); color:var(--green); }
+.fin-status.partial { background:var(--orangel); color:var(--orange); }
+.fin-status.unpaid { background:var(--redl); color:var(--red); }
+.fin-status.neutral { background:var(--card2); color:var(--t3); }
+.fin-progress { height:8px; border-radius:20px; overflow:hidden; background:rgba(255,255,255,.13); margin-top:10px; }
+.fin-progress > span { display:block; height:100%; min-width:0; border-radius:inherit; background:linear-gradient(90deg,var(--gold),#f4d77c); transition:width .3s ease; }
+.fin-item { display:flex; gap:10px; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); }
+.fin-item:last-child { border-bottom:none; }
+.fin-item-main { flex:1; min-width:0; }
+.fin-item-title { font-weight:700; font-size:.82rem; color:var(--t1); }
+.fin-item-meta { font-size:.69rem; color:var(--t3); margin-top:2px; }
+.fin-icon-btn { border:1px solid var(--line2); border-radius:7px; padding:5px 8px; background:var(--card); cursor:pointer; color:var(--red); font-family:var(--sans); font-size:.7rem; }
+.fin-note { font-size:.75rem; color:var(--t3); background:var(--card2); border-radius:var(--r3); padding:9px 10px; margin-top:8px; }
+.fin-empty { padding:20px; color:var(--t3); text-align:center; font-size:.8rem; }
+.finance-actions { display:flex; gap:7px; flex-wrap:wrap; align-items:center; }
+.finance-actions .btn { margin:0; }
+@media (max-width:640px) { .fin-table { min-width:570px; } .finance-grid { grid-template-columns:1fr 1fr; } }
+
 /* ── PRINT STYLES ── */
 @media print {
   .sidebar, .sb-overlay, .bottom-nav, .topbar, .btn, button, .menu-btn, .modal-ov { display:none !important; }
@@ -577,7 +607,12 @@ select.fi option{background:var(--card);color:var(--t1);}
 .print-header { display:none; }
 
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="rsms-config.js"></script>
 <script src="rsms-firebase.js"></script>
+<script src="rsms-finance.js"></script>
 <script src="rsms-plan-guard.js"></script>
 </head>
 <body>
@@ -600,10 +635,16 @@ select.fi option{background:var(--card);color:var(--t1);}
   <div class="sb-item" onclick="showPage('selfpay',this)"><span class="ico">&#128241;</span>Parent Self-Pay</div>
   <div class="sb-item" onclick="showPage('receipts',this)"><span class="ico">&#128442;</span>Receipts</div>
   <div class="sb-item" onclick="showPage('accounts',this)"><span class="ico">&#128100;</span>Student Accounts</div>
+  <div class="sb-item" onclick="showPage('fees',this)"><span class="ico">&#128203;</span>Classes &amp; Fees</div>
+  <div class="sb-item" onclick="showPage('recurring',this)"><span class="ico">&#128260;</span>Recurring Payments</div>
   <div class="sb-section">ACCOUNTS</div>
   <div class="sb-item" onclick="showPage('cashbook',this)"><span class="ico">&#128212;</span>Cashbook</div>
+  <div class="sb-item" onclick="showPage('expenses',this)"><span class="ico">&#128196;</span>Expenses</div>
+  <div class="sb-item" onclick="showPage('projection',this)"><span class="ico">&#128200;</span>Term Projection</div>
+  <div class="sb-item" onclick="showPage('wallet',this)"><span class="ico">&#128179;</span>Wallet Actions</div>
   <div class="sb-item" onclick="showPage('payroll',this)"><span class="ico">&#128176;</span>Staff Payroll</div>
   <div class="sb-section">REPORTS &amp; AUDIT</div>
+  <div class="sb-item" onclick="showPage('reportcenter',this)"><span class="ico">&#128202;</span>Report Center</div>
   <div class="sb-item" onclick="showPage('reports',this)"><span class="ico">&#128202;</span>Financial Reports</div>
   <div class="sb-item" onclick="showPage('audit',this)"><span class="ico">&#128270;</span>Audit Trail</div>
   <div class="sb-section">SYSTEM</div>
@@ -625,49 +666,52 @@ select.fi option{background:var(--card);color:var(--t1);}
 <div class="page active" id="pg-home">
   <div class="hero-card" style="margin:16px 16px 0;">
     <div class="hc-row">
-      <div><div class="hc-label">Total Collected</div><div class="hc-val" id="b-total">&#8358;0</div><div class="hc-sub" id="b-term">This term</div></div>
-      <div style="text-align:right;"><div class="hc-badge" id="b-paid-count">0 paid</div><div style="font-size:.72rem;color:rgba(255,255,255,.4);margin-top:5px;" id="b-outstanding">&#8358;0 outstanding</div></div>
+      <div><div class="hc-label">Projected Term Revenue</div><div class="hc-val" id="b-total">&#8358;0</div><div class="hc-sub" id="b-term">This term</div></div>
+      <div style="text-align:right;"><div class="hc-badge" id="b-paid-count">0 paid</div><div style="font-size:.72rem;color:rgba(255,255,255,.58);margin-top:5px;" id="b-outstanding">&#8358;0 outstanding</div></div>
     </div>
+    <div class="fin-progress"><span id="b-collection-bar" style="width:0%"></span></div>
+    <div style="display:flex;justify-content:space-between;font-size:.67rem;color:rgba(255,255,255,.55);margin-top:5px;"><span>Collection rate</span><span id="b-collection-rate">0%</span></div>
   </div>
-  <!-- Carousel -->
   <div style="margin-top:14px;display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:0 16px 6px;">
     <div class="banner" style="min-width:280px;height:110px;flex-shrink:0;scroll-snap-align:start;" onclick="showPage('record')">
       <div class="banner-bg" style="background:linear-gradient(135deg,#14532d,#22c55e);"></div>
-      <div class="banner-content"><div><div class="banner-tag">Collection</div><div class="banner-title">Record Payment</div><div class="banner-sub">Search student and record fees</div></div><div class="flex-between"><button class="banner-btn" onclick="event.stopPropagation();showPage('record')">Record &#8594;</button><span style="font-size:1.8rem;opacity:.5;">&#128176;</span></div></div>
+      <div class="banner-content"><div><div class="banner-tag">Collection</div><div class="banner-title">Record Payment</div><div class="banner-sub">Record an audited fee payment</div></div><div class="flex-between"><button class="banner-btn" onclick="event.stopPropagation();showPage('record')">Record &#8594;</button><span style="font-size:1.8rem;opacity:.5;">&#128176;</span></div></div>
     </div>
-    <div class="banner" style="min-width:280px;height:110px;flex-shrink:0;scroll-snap-align:start;" onclick="showPage('selfpay')">
-      <div class="banner-bg" style="background:linear-gradient(135deg,#0f1535,#1a2347);"></div>
-      <div class="banner-content"><div><div class="banner-tag">Self-Pay</div><div class="banner-title">Parent Online Payment</div><div class="banner-sub">Card or bank transfer</div></div><div class="flex-between"><button class="banner-btn" onclick="event.stopPropagation();showPage('selfpay')">Open &#8594;</button><span style="font-size:1.8rem;opacity:.5;">&#128241;</span></div></div>
+    <div class="banner" style="min-width:280px;height:110px;flex-shrink:0;scroll-snap-align:start;" onclick="showPage('fees')">
+      <div class="banner-bg" style="background:linear-gradient(135deg,#0f1535,#4152a0);"></div>
+      <div class="banner-content"><div><div class="banner-tag">Configuration</div><div class="banner-title">Classes &amp; Fees</div><div class="banner-sub">Set fees, charges and discounts</div></div><div class="flex-between"><button class="banner-btn" onclick="event.stopPropagation();showPage('fees')">Open &#8594;</button><span style="font-size:1.8rem;opacity:.5;">&#128203;</span></div></div>
     </div>
-    <div class="banner" style="min-width:280px;height:110px;flex-shrink:0;scroll-snap-align:start;" onclick="showPage('reports')">
+    <div class="banner" style="min-width:280px;height:110px;flex-shrink:0;scroll-snap-align:start;" onclick="showPage('projection')">
       <div class="banner-bg" style="background:linear-gradient(135deg,#92400e,#d4a843);"></div>
-      <div class="banner-content"><div><div class="banner-tag">Reports</div><div class="banner-title">Financial Reports</div><div class="banner-sub">Collection summary by class</div></div><div class="flex-between"><button class="banner-btn" onclick="event.stopPropagation();showPage('reports')">View &#8594;</button><span style="font-size:1.8rem;opacity:.5;">&#128202;</span></div></div>
+      <div class="banner-content"><div><div class="banner-tag">Forecast</div><div class="banner-title">Term Projection</div><div class="banner-sub">Expected, collected and outstanding</div></div><div class="flex-between"><button class="banner-btn" onclick="event.stopPropagation();showPage('projection')">View &#8594;</button><span style="font-size:1.8rem;opacity:.5;">&#128200;</span></div></div>
     </div>
   </div>
-  <!-- Quick actions -->
   <div class="section" style="margin-top:14px;">
     <div class="qa-grid" style="grid-template-columns:repeat(4,1fr);">
       <div class="qa-item" onclick="showPage('record')"><span class="qa-ico">&#43;</span><div class="qa-lbl">Record</div></div>
-      <div class="qa-item" onclick="showPage('selfpay')"><span class="qa-ico">&#128241;</span><div class="qa-lbl">Self-Pay</div></div>
-      <div class="qa-item" onclick="showPage('ledger')"><span class="qa-ico">&#128210;</span><div class="qa-lbl">Ledger</div></div>
-      <div class="qa-item" onclick="showPage('reports')"><span class="qa-ico">&#128202;</span><div class="qa-lbl">Reports</div></div>
+      <div class="qa-item" onclick="showPage('fees')"><span class="qa-ico">&#128203;</span><div class="qa-lbl">Fees</div></div>
+      <div class="qa-item" onclick="showPage('projection')"><span class="qa-ico">&#128200;</span><div class="qa-lbl">Projection</div></div>
+      <div class="qa-item" onclick="showPage('reportcenter')"><span class="qa-ico">&#128202;</span><div class="qa-lbl">Reports</div></div>
     </div>
   </div>
-  <!-- Stats -->
   <div class="section">
     <div class="stat-grid">
-      <div class="stat-tile s-green"><div class="stat-v" id="sv-total">&#8358;0</div><div class="stat-l">Total Collected</div></div>
-      <div class="stat-tile s-red"><div class="stat-v" id="sv-outstanding">&#8358;0</div><div class="stat-l">Outstanding</div></div>
-      <div class="stat-tile s-gold"><div class="stat-v" id="sv-rate">0%</div><div class="stat-l">Collection Rate</div></div>
-      <div class="stat-tile s-teal"><div class="stat-v" id="sv-count">0/0</div><div class="stat-l">Students Paid</div></div>
+      <div class="stat-tile s-gold"><div class="stat-v" id="sv-projected">&#8358;0</div><div class="stat-l">Projected Term Revenue</div></div>
+      <div class="stat-tile s-green"><div class="stat-v" id="sv-collected">&#8358;0</div><div class="stat-l">Revenue Collected</div></div>
+      <div class="stat-tile s-red"><div class="stat-v" id="sv-outstanding">&#8358;0</div><div class="stat-l">Outstanding Revenue</div></div>
+      <div class="stat-tile s-teal"><div class="stat-v" id="sv-avg-fee">&#8358;0</div><div class="stat-l">Average Fee / Student</div></div>
     </div>
+  </div>
+  <div class="section">
+    <div class="sec-hd"><div class="sec-title">Class-by-class projection</div><div class="sec-action" onclick="showPage('projection')">Full projection &#8594;</div></div>
+    <div class="fin-table-wrap"><table class="fin-table"><thead><tr><th>Class</th><th class="num">Students</th><th class="num">Expected</th><th class="num">Collected</th><th class="num">Outstanding</th></tr></thead><tbody id="b-class-projection"></tbody></table></div>
   </div>
   <div class="section">
     <div class="sec-hd"><div class="sec-title">Recent Receipts</div><div class="sec-action" onclick="showPage('receipts')">View all &#8594;</div></div>
     <div class="card" id="b-recent"></div>
   </div>
   <div class="section">
-    <div class="sec-hd"><div class="sec-title">Top Defaulters</div><div class="sec-action" onclick="showPage('ledger')">Full list &#8594;</div></div>
+    <div class="sec-hd"><div class="sec-title">Top 5 Unpaid</div><div class="sec-action" onclick="showPage('accounts')">Student accounts &#8594;</div></div>
     <div class="card" id="b-defaulters"></div>
   </div>
 </div>
@@ -891,16 +935,140 @@ select.fi option{background:var(--card);color:var(--t1);}
   </div>
 </div>
 
+<!-- CLASSES & FEES -->
+<div class="page" id="pg-fees">
+  <div class="pg-hd">
+    <div><div class="pg-title">&#128203; Classes &amp; Fees</div><div class="pg-sub">Build term fee structures and individual student adjustments.</div></div>
+  </div>
+  <div class="card">
+    <div class="finance-toolbar">
+      <div class="fg"><label>Term</label><select class="fi" id="fin-fee-term" onchange="renderFinanceFees()" style="height:42px;"><option>First Term</option><option>Second Term</option><option>Third Term</option></select></div>
+      <div class="fg"><label>Session</label><input class="fi" id="fin-fee-session" onchange="renderFinanceFees()" placeholder="2025/2026"/></div>
+      <div class="fg"><label>Class</label><select class="fi" id="fin-fee-class" onchange="renderFinanceFees()" style="height:42px;"><option value="">Select class</option></select></div>
+    </div>
+    <div class="fin-note">Each class structure is the base fee. Student charges and discounts are applied on top of it, and all figures update live below.</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Fee items for <span id="fin-fee-class-label">selected class</span></div>
+    <div id="fin-fee-items"></div>
+    <div class="finance-toolbar" style="margin-top:12px;margin-bottom:0;">
+      <div class="fg"><label>Fee item</label><input class="fi" id="fin-item-type" placeholder="e.g. School Fees"/></div>
+      <div class="fg"><label>Amount (&#8358;)</label><input class="fi" id="fin-item-amount" type="number" min="0" placeholder="0.00"/></div>
+      <button class="btn btn-gold" onclick="financeAddFeeItem()">+ Add Item</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Per-student charges &amp; discounts</div>
+    <div class="finance-toolbar">
+      <div class="fg" style="flex:2;"><label>Student</label><select class="fi" id="fin-adjust-student" onchange="renderStudentAdjustments()" style="height:42px;"><option value="">Select student</option></select></div>
+    </div>
+    <div id="fin-student-adjustments" class="fin-empty">Choose a student to add an adjustment.</div>
+    <div class="finance-toolbar" style="margin-top:12px;margin-bottom:0;">
+      <div class="fg"><label>Label</label><input class="fi" id="fin-adjust-label" placeholder="e.g. Scholarship"/></div>
+      <div class="fg"><label>Amount (&#8358;)</label><input class="fi" id="fin-adjust-amount" type="number" min="0" placeholder="0.00"/></div>
+      <button class="btn btn-ghost" onclick="financeAddAdjustment('charge')">+ Charge</button>
+      <button class="btn btn-gold" onclick="financeAddAdjustment('discount')">+ Discount</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Live payable matrix</div>
+    <div class="finance-toolbar"><div class="fg" style="flex:2;"><label>Search</label><input class="fi" id="fin-matrix-search" oninput="renderPayableMatrix()" placeholder="Student name, registration or class"/></div></div>
+    <div class="fin-table-wrap"><table class="fin-table"><thead><tr><th>Student</th><th>Class</th><th class="num">Payable</th><th class="num">Paid</th><th class="num">Outstanding</th><th>Status</th></tr></thead><tbody id="fin-payable-matrix"></tbody></table></div>
+  </div>
+</div>
+
+<!-- RECURRING PAYMENTS -->
+<div class="page" id="pg-recurring">
+  <div class="pg-hd"><div><div class="pg-title">&#128260; Recurring Payments</div><div class="pg-sub">Schedule recurring dues and turn each paid due into a real receipt.</div></div></div>
+  <div class="card">
+    <div class="finance-toolbar">
+      <div class="fg" style="flex:2;"><label>Student *</label><select class="fi" id="rec-student" style="height:42px;"><option value="">Select student</option></select></div>
+      <div class="fg"><label>Amount (&#8358;) *</label><input class="fi" id="rec-amount" type="number" min="0" placeholder="0.00"/></div>
+      <div class="fg"><label>Category</label><input class="fi" id="rec-category" placeholder="e.g. Bus Fee"/></div>
+      <div class="fg"><label>Frequency</label><select class="fi" id="rec-frequency" style="height:42px;"><option>Weekly</option><option>Bi-weekly</option><option>Monthly</option><option value="Termly">Termly (about 4 months)</option></select></div>
+      <div class="fg"><label>Start *</label><input class="fi" id="rec-start" type="date"/></div>
+      <div class="fg"><label>End (optional)</label><input class="fi" id="rec-end" type="date"/></div>
+      <button class="btn btn-gold" onclick="createRecurringPlan()">+ Create Plan</button>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">Plans &amp; due dates</div><div id="recurring-list"></div></div>
+</div>
+
+<!-- EXPENSES -->
+<div class="page" id="pg-expenses">
+  <div class="pg-hd"><div><div class="pg-title">&#128196; Expenses</div><div class="pg-sub">Retain every expense record and include only approved items in totals.</div></div></div>
+  <div class="card">
+    <div class="finance-toolbar">
+      <div class="fg" style="flex:2;"><label>Title *</label><input class="fi" id="exp-title" placeholder="e.g. Generator repair"/></div>
+      <div class="fg" style="flex:2;"><label>Description</label><input class="fi" id="exp-description" placeholder="Optional detail"/></div>
+      <div class="fg"><label>Amount (&#8358;) *</label><input class="fi" id="exp-amount" type="number" min="0" placeholder="0.00"/></div>
+      <div class="fg"><label>Category</label><select class="fi" id="exp-category" style="height:42px;"><option>Staff Salary</option><option>Utilities</option><option>Repairs &amp; Maintenance</option><option>Supplies</option><option>Transport</option><option>Food &amp; Catering</option><option>Security</option><option>General</option></select></div>
+      <div class="fg"><label>Date</label><input class="fi" id="exp-date" type="date"/></div>
+      <div class="fg"><label>Person</label><input class="fi" id="exp-person" placeholder="Paid to / requested by"/></div>
+      <div class="fg"><label>Reference</label><input class="fi" id="exp-ref" placeholder="Optional reference"/></div>
+      <div class="fg"><label>Status</label><select class="fi" id="exp-status" style="height:42px;"><option>Pending</option><option>Approved</option></select></div>
+      <button class="btn btn-gold" onclick="recordExpense()">+ Record Expense</button>
+    </div>
+  </div>
+  <div class="finance-grid" id="expense-stats"></div>
+  <div class="card"><div class="card-title">Expense register</div><div id="expense-list"></div></div>
+</div>
+
+<!-- TERM PROJECTION -->
+<div class="page" id="pg-projection">
+  <div class="pg-hd"><div><div class="pg-title">&#128200; Term Projection</div><div class="pg-sub" id="projection-context"></div></div></div>
+  <div class="finance-grid" id="projection-stats"></div>
+  <div class="card"><div class="card-title">Class financial projection</div><div class="fin-table-wrap"><table class="fin-table"><thead><tr><th>Class</th><th class="num">Fee Avg</th><th class="num">Students</th><th class="num">Paid</th><th class="num">Unpaid</th><th class="num">Expected</th><th class="num">Collected</th><th class="num">Outstanding</th></tr></thead><tbody id="projection-table"></tbody><tfoot id="projection-total"></tfoot></table></div></div>
+</div>
+
+<!-- WALLET ACTIONS -->
+<div class="page" id="pg-wallet">
+  <div class="pg-hd"><div><div class="pg-title">&#128179; Wallet Actions</div><div class="pg-sub">Credit student wallets and review the append-only wallet ledger.</div></div></div>
+  <div class="finance-grid" id="wallet-stats"></div>
+  <div class="card">
+    <div class="card-title">+ Credit Wallet</div>
+    <div class="finance-toolbar">
+      <div class="fg" style="flex:2;"><label>Student *</label><select class="fi" id="wallet-credit-student" onchange="updateWalletCreditBalance()" style="height:42px;"><option value="">Select student</option></select></div>
+      <div class="fg"><label>Live balance</label><div class="fi" id="wallet-credit-balance" style="height:42px;display:flex;align-items:center;font-weight:800;color:var(--teal);">&#8358;0</div></div>
+      <div class="fg"><label>Amount (&#8358;) *</label><input class="fi" id="wallet-credit-amount" type="number" min="0" placeholder="0.00"/></div>
+      <div class="fg"><label>Reason *</label><input class="fi" id="wallet-credit-reason" placeholder="e.g. Parent top-up"/></div>
+      <div class="fg"><label>Method</label><select class="fi" id="wallet-credit-method" style="height:42px;"><option>Cash</option><option>Bank Transfer</option><option>Card</option><option>Wallet Top-up</option></select></div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:flex-start;font-size:.78rem;color:var(--t2);margin:4px 0 12px;cursor:pointer;"><input id="wallet-credit-confirm" type="checkbox" style="margin-top:3px;"/> I confirm the amount has been received and should be added to this student wallet.</label>
+    <button class="btn btn-gold" onclick="creditStudentWallet()">+ Credit Wallet</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Wallet ledger</div>
+    <div class="finance-toolbar">
+      <div class="fg" style="flex:2;"><label>Search</label><input class="fi" id="wallet-search" oninput="renderWalletActions()" placeholder="Student, receipt ID, reason or reference"/></div>
+      <div class="fg"><label>Type</label><select class="fi" id="wallet-type-filter" onchange="renderWalletActions()" style="height:42px;"><option value="">All types</option><option value="credit">Credits</option><option value="debit">Debits</option></select></div>
+    </div>
+    <div class="fin-table-wrap"><table class="fin-table"><thead><tr><th>Receipt ID</th><th>Student</th><th class="num">Amount</th><th>Reason</th><th>Date</th><th>By</th><th>Status</th><th>Actions</th></tr></thead><tbody id="wallet-actions-list"></tbody></table></div>
+  </div>
+</div>
+
+<!-- REPORT CENTER -->
+<div class="page" id="pg-reportcenter">
+  <div class="pg-hd"><div><div class="pg-title">&#128202; Report Center</div><div class="pg-sub">Live financial reports from the finance ledger.</div></div></div>
+  <div class="card">
+    <div class="finance-toolbar" style="margin-bottom:0;">
+      <div class="fg" style="flex:2;"><label>Report</label><select class="fi" id="report-kind" onchange="renderReportCenter()" style="height:42px;"><option value="student">Student Fee</option><option value="outstanding">Outstanding Fee</option><option value="payment">Payment</option><option value="wallet">Wallet</option><option value="expense">Expense</option><option value="term">Term Financial</option><option value="class">Class Financial</option></select></div>
+      <button class="btn btn-ghost" onclick="downloadFinanceCSV()">&#8615; Download CSV</button>
+      <button class="btn btn-gold" onclick="printFinanceReport()">&#128424; Print / Save as PDF</button>
+    </div>
+  </div>
+  <div class="card"><div class="card-title" id="reportcenter-title">Student Fee Report</div><div class="fin-table-wrap"><table class="fin-table"><thead id="reportcenter-head"></thead><tbody id="reportcenter-table"></tbody></table></div></div>
+</div>
 <!-- SETTINGS -->
 <div class="page" id="pg-settings">
   <div class="pg-title" style="margin-bottom:14px;">&#9881;&#65039; Payment Settings</div>
   <div class="card" style="margin-bottom:12px;">
-    <div class="card-title">Flutterwave Configuration</div>
+    <div class="card-title">Card Checkout Configuration</div>
     <div style="background:var(--goldl);border:1px solid rgba(212,168,67,.2);border-radius:var(--r2);padding:10px 14px;margin-bottom:14px;font-size:.78rem;color:var(--t2);">
-      &#128273; Each school applies for their own Flutterwave account at <strong>flutterwave.com</strong>, then pastes their Public Key below to activate card payments.
+      &#128273; Each school uses its own Flutterwave or Paystack account. Paste the provider's <strong>public</strong> checkout key below; server secret keys are never entered here.
     </div>
-    <div class="fg"><label>Flutterwave Public Key</label>
-      <input class="fi" id="flw-public-key" placeholder="FLWPUBK-xxxxxxxxxxxx-X" type="password"/>
+    <div class="fg"><label>Gateway Public Key</label>
+      <input class="fi" id="flw-public-key" placeholder="FLWPUBK-… or pk_…" type="password"/>
     </div>
     <div class="f2">
       <div class="fg"><label>Business/School Name</label>
@@ -911,6 +1079,23 @@ select.fi option{background:var(--card);color:var(--t1);}
           <option value="NGN">NGN (Naira)</option><option value="USD">USD</option><option value="GHS">GHS</option>
         </select>
       </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">Payment Verification</div>
+    <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:var(--r2);padding:10px 14px;margin-bottom:14px;font-size:.78rem;color:var(--t2);">
+      &#128274; Card payments and card wallet top-ups stay <strong>Pending</strong> until the deployed Cloud Function confirms them with the gateway. Save only public URLs here; secret keys belong in Firebase Function secrets.
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Provider</label>
+        <select class="fi" id="flw-provider" style="height:46px;"><option value="flutterwave">Flutterwave</option><option value="paystack">Paystack</option></select>
+      </div>
+      <div class="fg"><label>Verify Endpoint URL</label>
+        <input class="fi" id="flw-verify-url" placeholder="https://…/verifyPayment" inputmode="url"/>
+      </div>
+    </div>
+    <div class="fg"><label>Webhook URL</label>
+      <input class="fi" id="flw-webhook-url" placeholder="https://…/paymentWebhook" inputmode="url"/>
     </div>
   </div>
   <div class="card">
@@ -1105,7 +1290,10 @@ var RSMS = {
   fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||localStorage.getItem('rsms_fees')||'[]'); },
   pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||''; },
   save:     function(key,data){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_'+key,JSON.stringify(data)); localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
-  logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
+  logout:   function(){
+    if(window.RSMS_FB&&typeof RSMS_FB.logout==='function'){RSMS_FB.logout();return;}
+    sessionStorage.clear(); location.href='rsms-login.html';
+  }
 };
 
 // ── SUBJECTS ───────────────────────────────────────────
@@ -1438,7 +1626,7 @@ function getSchool(){   return JSON.parse(localStorage.getItem('rsms_school')||'
 function saveFees(d){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_fees',JSON.stringify(d)); localStorage.setItem('rsms_fees',JSON.stringify(d)); try{if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady())RSMS_FB.saveFees(d);}catch(e){} }
 function getFeeSchedule(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var raw=sid?localStorage.getItem('rsms_'+sid+'_fee_schedule'):null; if(!raw) raw=localStorage.getItem('rsms_fee_schedule'); return JSON.parse(raw||'[]'); }
 function getFlwConfig(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var raw=sid?localStorage.getItem('rsms_'+sid+'_flw_config'):null; if(!raw) raw=localStorage.getItem('rsms_flw_config'); return JSON.parse(raw||'{"publicKey":"","businessName":"","currency":"NGN"}'); }
-function saveFlwConfig(d){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_flw_config',JSON.stringify(d)); localStorage.setItem('rsms_flw_config',JSON.stringify(d)); }
+function saveFlwConfig(d){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_flw_config',JSON.stringify(d)); localStorage.setItem('rsms_flw_config',JSON.stringify(d)); try{if(typeof RSMS_FB!=='undefined'&&typeof RSMS_FB.saveFlwConfig==='function')RSMS_FB.saveFlwConfig(d);}catch(e){} }
 
 // ── PAYROLL DATA ─────────────────────────────────────
 function getPayroll(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var raw=sid?localStorage.getItem('rsms_'+sid+'_payroll'):null; if(!raw) raw=localStorage.getItem('rsms_payroll'); return JSON.parse(raw||'[]'); }
@@ -1451,10 +1639,11 @@ function savePayroll(d){
 
 // ── AUDIT LOG ─────────────────────────────────────────
 function getAuditLog(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var raw=sid?localStorage.getItem('rsms_'+sid+'_audit_log'):null; if(!raw) raw=localStorage.getItem('rsms_audit_log'); return JSON.parse(raw||'[]'); }
-function saveAuditLog(d){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_audit_log',JSON.stringify(d)); localStorage.setItem('rsms_audit_log',JSON.stringify(d)); try{if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady()){var sc=JSON.parse(localStorage.getItem('rsms_school')||'{}');if(sc.schoolId)RSMS_FB.warmCache(sc.schoolId);}}catch(e){} }
-function logAudit(action,type,details){
-  var log=getAuditLog();
-  log.push({id:'a'+Date.now(),action:action,type:type,details:details,timestamp:new Date().toISOString(),user:'Bursar'});
+function saveAuditLog(d){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_audit_log',JSON.stringify(d)); localStorage.setItem('rsms_audit_log',JSON.stringify(d)); try{if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady()&&typeof RSMS_FB.saveCollection==='function'){RSMS_FB.saveCollection('audit_log',d);}}catch(e){} }
+function logAudit(action,type,details,before,after){
+  var log=getAuditLog(); var stamp=new Date();
+  var user=(RSMS.user&&RSMS.user())||{};
+  log.push({id:'a'+Date.now(),action:action,type:type,details:details,before:before||null,after:after||null,timestamp:stamp.toISOString(),date:stamp.toISOString().slice(0,10),time:stamp.toLocaleTimeString(),user:user.name||'Bursar'});
   saveAuditLog(log);
 }
 
@@ -1478,7 +1667,7 @@ window.onPage_reports  = renderReports;
 window.onPage_settings = loadBursarSettings;
 window.onPage_selfpay  = renderSelfPay;
 window.onPage_payroll  = function(){ populateSalaryStaff(); renderPayroll(); };
-window.onPage_audit    = renderAuditTrail;
+window.onPage_audit    = function(){ if(typeof renderAuditTrail==='function') renderAuditTrail(); };
 
 // ── DASHBOARD ───────────────────────────────────────
 function renderDash(){
@@ -1582,35 +1771,7 @@ function autoFillAmount(){
   if(match)setVal('pay-amount',match.amount);
 }
 
-function recordPayment(){
-  var stuId=getVal('pay-stu-sel')||(gEl('pay-stu-sel')||{}).value||'';
-  var type=(gEl('pay-type')||{}).value||'';
-  var amount=parseFloat(getVal('pay-amount')||0);
-  var method=(gEl('pay-method')||{}).value||'Cash';
-  if(!stuId){toast('Select a student','error');return;}
-  if(!type){toast('Select fee type','error');return;}
-  if(!amount||amount<=0){toast('Enter valid amount','error');return;}
-  var stu=getStudents().find(function(s){return s.id===stuId;});
-  var all=getFees();
-  var rec={
-    id:'f'+Date.now(),
-    receiptNo:genReceiptNo(all.length),
-    stuId:stuId,
-    student:stu?(stu.surname||'')+' '+(stu.firstname||''):'Unknown',
-    class:stu?stu.class:'--',reg:stu?stu.reg:'--',
-    type:type,amount:amount,method:method,
-    date:getVal('pay-date')||new Date().toISOString().slice(0,10),
-    ref:getVal('pay-ref'),
-    term:getSchool().term||'First Term',
-    session:getSchool().session||'2025/2026',
-    recordedAt:new Date().toISOString(),
-    channel:'bursar'
-  };
-  all.push(rec);saveFees(all);
-  toast('\u2705 Payment recorded \u2014 '+rec.receiptNo,'success');
-  resetPayForm();
-  renderDash();
-}
+/* Payment entry is implemented by the FIND integration below. */
 
 function genReceiptNo(count){
   var school=getSchool();
@@ -1682,45 +1843,90 @@ function payByCard_orig(){
   var amount=parseFloat(getVal('sp-amount')||0);
   var email=getVal('sp-email')||'parent@rsms.school';
   var phone=getVal('sp-phone')||'';
+  var cfg=getFlwConfig();
+  var provider=String(cfg.provider||'flutterwave').toLowerCase();
+  var ref='RSMS-SP-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,8).toUpperCase();
+  var pending;
   if(!stuId||!type||!amount){toast('Fill all fields first','error');return;}
   var stu=getStudents().find(function(s){return s.id===stuId;});
   var name=stu?(stu.surname||'')+' '+(stu.firstname||''):'Student';
-  var cfg=getFlwConfig();
   if(!cfg.publicKey){
     toast('Payment gateway not configured. Contact school office.','error');
-    showPaymentPending(stuId,name,type,amount,'Card');
     return;
   }
-  // Fire Flutterwave
-  if(typeof FlutterwaveCheckout==='undefined'){
-    toast('Loading payment gateway...','info');
-    var s=document.createElement('script');
-    s.src='https://checkout.flutterwave.com/v3.js';
-    s.onload=function(){payByCard();};
-    document.head.appendChild(s);
-    return;
-  }
-  FlutterwaveCheckout({
-    public_key: cfg.publicKey,
-    tx_ref: 'RSMS-'+Date.now(),
-    amount: amount,
-    currency: cfg.currency||'NGN',
-    payment_options: 'card,ussd,banktransfer',
-    customer:{email:email,phone_number:phone,name:name},
-    customizations:{
-      title:(getSchool().name||'School')+' Fee Payment',
-      description:type+' for '+name,
-      logo: localStorage.getItem('rsms_school_logo')||''
-    },
-    callback: function(response){
-      if(response.status==='successful'||response.status==='completed'){
-        recordSelfPayment(stuId,name,stu,type,amount,'Card (Flutterwave)',response.transaction_id||response.tx_ref);
-      } else {
-        toast('Payment not completed','error');
-      }
-    },
-    onclose: function(){}
+  pending=recordSelfPayment(stuId,name,stu,type,amount,'Card ('+(provider==='paystack'?'Paystack':'Flutterwave')+')',ref,{
+    status:'Pending', mirrorPending:true, gatewayProvider:provider, gatewayVerification:'required', quiet:true
   });
+  if(!pending) return;
+
+  function verifyPending(){
+    var find=finFind();
+    if(!find||typeof find.gatewayVerify!=='function'||!find.gatewayConfig().verifyUrl){
+      toast('Payment submitted. It remains Pending until verification is deployed.','info');
+      return;
+    }
+    toast('Verifying payment…','info');
+    find.gatewayVerify(ref,provider).then(function(data){
+      var result=find.applyVerification(data);
+      if(result.pending) toast('Payment is still processing and remains Pending.','info');
+      else if(result.changed.some(function(row){return row.status==='Confirmed';})) toast('✓ Payment verified — '+pending.receiptNo,'success');
+      else if(result.rejected) toast('Payment could not be confirmed and was marked Rejected.','error');
+      else toast('Could not confirm — stays Pending for bursar review.','info');
+      renderDash();
+    }).catch(function(){
+      toast('Could not confirm — stays Pending for bursar review.','info');
+    });
+  }
+
+  function launchFlutterwave(){
+    FlutterwaveCheckout({
+      public_key:cfg.publicKey,
+      tx_ref:ref,
+      amount:amount,
+      currency:cfg.currency||'NGN',
+      payment_options:cfg.methods||'card,ussd,banktransfer',
+      customer:{email:email,phone_number:phone,name:name},
+      customizations:{title:(getSchool().name||'School')+' Fee Payment',description:type+' for '+name,logo:localStorage.getItem('rsms_school_logo')||''},
+      callback:function(response){
+        if(response.status==='successful'||response.status==='completed') verifyPending();
+        else toast('Payment was not completed. The record remains Pending only if payment is completed later.','info');
+      },
+      onclose:function(){}
+    });
+  }
+
+  function launchPaystack(){
+    var handler=window.PaystackPop&&window.PaystackPop.setup({
+      key:cfg.publicKey,
+      email:email,
+      amount:Math.round(amount*100),
+      currency:cfg.currency||'NGN',
+      ref:ref,
+      metadata:{custom_fields:[{display_name:'Student',variable_name:'student',value:name},{display_name:'Fee type',variable_name:'fee_type',value:type}]},
+      callback:function(){verifyPending();},
+      onClose:function(){}
+    });
+    if(handler&&typeof handler.openIframe==='function') handler.openIframe();
+    else toast('Could not start the Paystack checkout. The pending record was retained.','error');
+  }
+
+  if(provider==='paystack'){
+    if(typeof window.PaystackPop==='undefined'){
+      toast('Loading payment gateway…','info');
+      var paystackScript=document.createElement('script');
+      paystackScript.src='https://js.paystack.co/v1/inline.js';
+      paystackScript.onload=launchPaystack;
+      paystackScript.onerror=function(){toast('Could not load payment gateway. The pending record was retained.','error');};
+      document.head.appendChild(paystackScript);
+    }else launchPaystack();
+  }else if(typeof FlutterwaveCheckout==='undefined'){
+    toast('Loading payment gateway…','info');
+    var flutterwaveScript=document.createElement('script');
+    flutterwaveScript.src='https://checkout.flutterwave.com/v3.js';
+    flutterwaveScript.onload=launchFlutterwave;
+    flutterwaveScript.onerror=function(){toast('Could not load payment gateway. The pending record was retained.','error');};
+    document.head.appendChild(flutterwaveScript);
+  }else launchFlutterwave();
 }
 
 function payByBankTransfer(){
@@ -1753,44 +1959,7 @@ function confirmBankTransfer(){
   localStorage.removeItem('rsms_pending_pay');
 }
 
-function recordSelfPayment(stuId,name,stu,type,amount,method,ref){
-  var all=getFees();
-  var rec={
-    id:'f'+Date.now(),
-    receiptNo:genReceiptNo(all.length),
-    stuId:stuId,student:name,
-    class:stu?stu.class:'--',reg:stu?stu.reg:'--',
-    type:type,amount:amount,method:method,
-    date:new Date().toISOString().slice(0,10),
-    ref:ref||('SELF-'+Date.now()),
-    term:getSchool().term||'First Term',
-    session:getSchool().session||'2025/2026',
-    recordedAt:new Date().toISOString(),
-    channel:'parent_selfpay'
-  };
-  all.push(rec);saveFees(all);
-  // Notify student+parent portals via localStorage event flag
-  localStorage.setItem('rsms_new_payment','1');
-  toast('\u2705 Payment confirmed! Receipt: '+rec.receiptNo,'success');
-  // Reset self-pay form
-  var sp=gEl('sp-student-sel');if(sp)sp.value='';
-  var info=gEl('sp-student-info');if(info)info.style.display='none';
-  setVal('sp-amount','');
-  // Show receipt summary
-  var summary=gEl('sp-receipt-summary');
-  if(summary){
-    summary.style.display='block';
-    summary.innerHTML='<div style="background:var(--greenl);border:1px solid var(--green);border-radius:var(--r2);padding:14px;">' +
-      '<div style="font-weight:700;color:var(--green);margin-bottom:6px;">&#10003; Payment Successful</div>'+
-      '<div style="font-size:.82rem;color:var(--t2);">Receipt: <strong>'+rec.receiptNo+'</strong></div>'+
-      '<div style="font-size:.82rem;color:var(--t2);">Student: '+name+'</div>'+
-      '<div style="font-size:.82rem;color:var(--t2);">Amount: '+naira(amount)+'</div>'+
-      '<div style="font-size:.82rem;color:var(--t2);">Method: '+method+'</div>'+
-      '<div style="font-size:.78rem;color:var(--t3);margin-top:6px;">This payment is now reflected on the student and parent portal.</div>'+
-    '</div>';
-  }
-  renderDash();
-}
+/* Self-pay entry is implemented by the FIND integration below. */
 
 function showPaymentPending(stuId,name,type,amount,method){
   toast('Payment gateway not set up. Contact school to record manually.','info');
@@ -2175,6 +2344,9 @@ function loadBursarSettings(){
   setVal('flw-public-key',cfg.publicKey);
   setVal('flw-currency',cfg.currency||'NGN');
   setVal('flw-business-name',cfg.businessName);
+  setVal('flw-provider',cfg.provider||'flutterwave');
+  setVal('flw-verify-url',cfg.verifyUrl||'');
+  setVal('flw-webhook-url',cfg.webhookUrl||'');
   setVal('flw-bank-name',cfg.bankName||'');
   setVal('flw-account-no',cfg.accountNo||'');
   setVal('flw-account-name',cfg.accountName||'');
@@ -2185,6 +2357,9 @@ function saveFlwSettings(){
     publicKey:getVal('flw-public-key'),
     currency:getVal('flw-currency')||'NGN',
     businessName:getVal('flw-business-name'),
+    provider:getVal('flw-provider')||'flutterwave',
+    verifyUrl:getVal('flw-verify-url'),
+    webhookUrl:getVal('flw-webhook-url'),
     bankName:getVal('flw-bank-name'),
     accountNo:getVal('flw-account-no'),
     accountName:getVal('flw-account-name')
@@ -2676,6 +2851,536 @@ function payByCard(stuId, amount){
   payByCard_orig(stuId, amount);
 }
 
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════
+   SCHOOL FINANCE PLATFORM — BURSAR UI (Phase 1)
+═══════════════════════════════════════════════════════ */
+
+var _financeRefreshTimer = 0;
+var FINANCE_DEFAULT_CLASSES = ['Creche','Baby Class','Nursery 1','Nursery 2','KG 1','KG 2','Primary 1','Primary 2','Primary 3','Primary 4','Primary 5','Primary 6','JSS 1','JSS 2','JSS 3','SS 1 Science','SS 1 Commercial','SS 1 Art','SS 2 Science','SS 2 Commercial','SS 2 Art','SS 3 Science','SS 3 Commercial','SS 3 Art'];
+
+function finEl(id){ return document.getElementById(id); }
+function finVal(id){ var el=finEl(id); return el ? String(el.value || '').replace(/^\s+|\s+$/g,'') : ''; }
+function finSet(id, value){ var el=finEl(id); if(el) el.value=value || ''; }
+function finNumber(value){ var n=parseFloat(value); return isFinite(n) ? n : 0; }
+function finMoney(value){ return Math.round(finNumber(value)*100)/100; }
+function finNaira(value){ return '\u20a6'+finMoney(value).toLocaleString(); }
+function finEsc(value){ return String(value === undefined || value === null ? '' : value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function finFind(){ return window.FIND || null; }
+function finSchool(){ return typeof getSchool==='function' ? getSchool() : (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}); }
+function finStudentName(student){
+  if(!student) return 'Unknown Student';
+  return student.name || ((student.surname||'')+' '+(student.firstname||'')).replace(/^\s+|\s+$/g,'') || student.student || 'Unknown Student';
+}
+function finDate(){ return new Date().toISOString().slice(0,10); }
+function finContext(){
+  var school=finSchool();
+  return {
+    term:finVal('fin-fee-term') || school.term || 'First Term',
+    session:finVal('fin-fee-session') || school.session || '2025/2026'
+  };
+}
+function finBadge(status){
+  var s=String(status||'').toLowerCase();
+  var cls=s==='paid'||s==='approved'||s==='active'||s==='confirmed' ? 'paid' :
+    (s.indexOf('partial')>-1||s==='pending'||s==='due' ? 'partial' :
+    (s==='unpaid'||s==='rejected'||s==='voided'||s==='stopped' ? 'unpaid' : 'neutral'));
+  return '<span class="fin-status '+cls+'">'+finEsc(status||'—')+'</span>';
+}
+function finStat(value,label,cls){
+  return '<div class="stat-tile '+(cls||'s-teal')+'"><div class="stat-v">'+value+'</div><div class="stat-l">'+finEsc(label)+'</div></div>';
+}
+function finPaymentRows(){
+  var find=finFind(); return find ? find.collection('payments') : [];
+}
+function finClasses(context){
+  var find=finFind(), seen={}, out=[];
+  if(!find) return out;
+  FINANCE_DEFAULT_CLASSES.forEach(function(cls){ seen[cls]=true; out.push(cls); });
+  find.students().forEach(function(student){
+    var cls=student.class||'';
+    if(cls&&!seen[cls]){seen[cls]=true;out.push(cls);}
+  });
+  find.collection('fee_structures').forEach(function(structure){
+    if(structure.class && structure.term===context.term && structure.session===context.session && !seen[structure.class]){
+      seen[structure.class]=true;out.push(structure.class);
+    }
+  });
+  return out.sort();
+}
+function finFillOptions(select, rows, placeholder, selected, formatter){
+  if(!select) return;
+  var current=selected===undefined ? select.value : selected;
+  select.innerHTML='<option value="">'+finEsc(placeholder||'Select')+'</option>';
+  rows.forEach(function(row){
+    var value=typeof row==='object' ? (row.id||row.stuId||row.value||'') : row;
+    var label=formatter ? formatter(row) : (typeof row==='object' ? (row.label||row.name||value) : row);
+    var option=document.createElement('option'); option.value=value; option.textContent=label;
+    if(String(value)===String(current)) option.selected=true;
+    select.appendChild(option);
+  });
+}
+function finPopulateSelectors(){
+  var find=finFind(); if(!find) return;
+  var context=finContext();
+  var clsEl=finEl('fin-fee-class');
+  finFillOptions(clsEl,finClasses(context),'Select class',clsEl?clsEl.value:'');
+  var students=find.students().slice().sort(function(a,b){return finStudentName(a).localeCompare(finStudentName(b));});
+  var formatter=function(student){ return finStudentName(student)+' ('+(student.class||'No class')+(student.reg?' · '+student.reg:'')+')'; };
+  finFillOptions(finEl('fin-adjust-student'),students,'Select student',finEl('fin-adjust-student')?finEl('fin-adjust-student').value:'',formatter);
+  finFillOptions(finEl('rec-student'),students,'Select student',finEl('rec-student')?finEl('rec-student').value:'',formatter);
+  finFillOptions(finEl('wallet-credit-student'),students,'Select student',finEl('wallet-credit-student')?finEl('wallet-credit-student').value:'',formatter);
+}
+function financeInitialise(){
+  var school=finSchool();
+  if(!finVal('fin-fee-term')) finSet('fin-fee-term',school.term||'First Term');
+  if(!finVal('fin-fee-session')) finSet('fin-fee-session',school.session||'2025/2026');
+  if(!finVal('rec-start')) finSet('rec-start',finDate());
+  if(!finVal('exp-date')) finSet('exp-date',finDate());
+  finPopulateSelectors();
+  renderDash();
+}
+function financeRefreshVisible(){
+  clearTimeout(_financeRefreshTimer);
+  _financeRefreshTimer=setTimeout(function(){
+    var active=document.querySelector('.page.active');
+    var id=active ? active.id : 'pg-home';
+    if(id==='pg-home') renderDash();
+    else if(id==='pg-fees') renderFinanceFees();
+    else if(id==='pg-recurring') renderRecurring();
+    else if(id==='pg-expenses') renderExpenses();
+    else if(id==='pg-projection') renderProjection();
+    else if(id==='pg-wallet') renderWalletActions();
+    else if(id==='pg-reportcenter') renderReportCenter();
+  },80);
+}
+
+/* ── Dashboard and payment entry ─────────────────────── */
+function renderDash(){
+  var find=finFind(); if(!find) return;
+  var stats=find.termStats();
+  var rate=Math.max(0,Math.min(100,finNumber(stats.collectionRate)));
+  if(finEl('b-total')) finEl('b-total').textContent=finNaira(stats.projected);
+  if(finEl('b-term')) finEl('b-term').textContent=(stats.term||'Term')+' · '+(stats.session||'');
+  if(finEl('b-paid-count')) finEl('b-paid-count').textContent=stats.paidStudents+' paid';
+  if(finEl('b-outstanding')) finEl('b-outstanding').textContent=finNaira(stats.outstanding)+' outstanding';
+  if(finEl('b-collection-rate')) finEl('b-collection-rate').textContent=rate.toFixed(rate%1?1:0)+'%';
+  if(finEl('b-collection-bar')) finEl('b-collection-bar').style.width=rate+'%';
+  if(finEl('sv-projected')) finEl('sv-projected').textContent=finNaira(stats.projected);
+  if(finEl('sv-collected')) finEl('sv-collected').textContent=finNaira(stats.collected);
+  if(finEl('sv-outstanding')) finEl('sv-outstanding').textContent=finNaira(stats.outstanding);
+  if(finEl('sv-avg-fee')) finEl('sv-avg-fee').textContent=finNaira(stats.avgFee);
+
+  var classEl=finEl('b-class-projection');
+  if(classEl){
+    classEl.innerHTML=stats.classes.length ? stats.classes.map(function(row){
+      return '<tr><td><strong>'+finEsc(row.class)+'</strong></td><td class="num">'+row.students+'</td><td class="num">'+finNaira(row.expected)+'</td><td class="num" style="color:var(--green)">'+finNaira(row.collected)+'</td><td class="num" style="color:var(--red)">'+finNaira(row.outstanding)+'</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="fin-empty">Set a class fee structure to start projecting revenue.</td></tr>';
+  }
+
+  var recentEl=finEl('b-recent');
+  if(recentEl){
+    var recent=finPaymentRows().filter(function(payment){ return payment.term===stats.term && payment.session===stats.session; }).slice().sort(function(a,b){ return String(b.recordedAt||'').localeCompare(String(a.recordedAt||'')); }).slice(0,5);
+    recentEl.innerHTML=recent.length ? recent.map(function(payment){
+      return '<div class="act-item"><div class="act-ico c-green">&#128176;</div><div class="act-info"><div class="act-title">'+finEsc(payment.student)+'</div><div class="act-sub">'+finEsc(payment.type)+' · '+finEsc(payment.status)+'</div></div><div class="act-right"><div class="act-val">'+finNaira(payment.amount)+'</div><div class="act-time">'+finEsc(payment.date||'')+'</div></div></div>';
+    }).join('') : '<div class="empty-state">No payments recorded for this term.</div>';
+  }
+
+  var unpaidEl=finEl('b-defaulters');
+  if(unpaidEl){
+    unpaidEl.innerHTML=stats.topUnpaid.length ? stats.topUnpaid.map(function(row){
+      return '<div class="act-item"><div class="act-ico c-red">&#9201;</div><div class="act-info"><div class="act-title">'+finEsc(row.student)+'</div><div class="act-sub">'+finEsc(row.class)+(row.reg?' · '+finEsc(row.reg):'')+'</div></div><div class="act-right"><div class="act-val" style="color:var(--red);">'+finNaira(row.outstanding)+'</div><div class="act-time">'+finEsc(row.status)+'</div></div></div>';
+    }).join('') : '<div class="empty-state" style="color:var(--green);">&#127881; No outstanding balances in the current fee matrix.</div>';
+  }
+}
+
+function recordPayment(){
+  var find=finFind(); if(!find){ toast('Finance engine is still loading.','error'); return; }
+  var stuId=(finEl('pay-stu-sel')||{}).value||'';
+  var type=(finEl('pay-type')||{}).value||'';
+  var amount=finMoney(finVal('pay-amount'));
+  var method=(finEl('pay-method')||{}).value||'Cash';
+  if(!stuId){ toast('Select a student','error'); return; }
+  if(!type){ toast('Select fee type','error'); return; }
+  if(amount<=0){ toast('Enter a valid amount','error'); return; }
+  try{
+    var payment=find.pay({
+      stuId:stuId, amount:amount, type:type, method:method, channel:'bursar',
+      ref:finVal('pay-ref'), status:'Paid', by:(RSMS.user()||{}).name||'Bursar',
+      source:'bursar', date:finVal('pay-date')||finDate()
+    });
+    toast('✓ Payment recorded — '+payment.receiptNo,'success');
+    resetPayForm();
+    renderDash();
+  }catch(error){ toast(error.message||'Could not record payment.','error'); }
+}
+
+function recordSelfPayment(stuId,name,stu,type,amount,method,ref,options){
+  var find=finFind(); if(!find){ toast('Finance engine is still loading.','error'); return; }
+  options=options||{};
+  try{
+    var payment=find.pay({
+      stuId:stuId, student:name, class:stu?stu.class:'--', reg:stu?stu.reg:'--',
+      amount:amount, type:type, method:method, channel:'parent_selfpay',
+      ref:ref||('SELF-'+Date.now()), status:options.status||'Paid', by:'Parent self-pay', source:'selfpay',
+      mirrorPending:!!options.mirrorPending, gatewayProvider:options.gatewayProvider||'',
+      gatewayVerification:options.gatewayVerification||'', note:options.note||''
+    });
+    localStorage.setItem('rsms_new_payment','1');
+    if(!options.quiet) toast(payment.status==='Pending'?'Payment is Pending verification: '+payment.receiptNo:'✓ Payment confirmed! Receipt: '+payment.receiptNo,payment.status==='Pending'?'info':'success');
+    var sp=finEl('sp-student-sel'); if(sp) sp.value='';
+    var info=finEl('sp-student-info'); if(info) info.style.display='none';
+    finSet('sp-amount','');
+    var summary=finEl('sp-receipt-summary'), pending=payment.status==='Pending';
+    if(summary){
+      summary.style.display='block';
+      summary.innerHTML='<div style="background:'+(pending?'rgba(249,115,22,.08)':'var(--greenl)')+';border:1px solid '+(pending?'var(--orange)':'var(--green)')+';border-radius:var(--r2);padding:14px;"><div style="font-weight:700;color:'+(pending?'var(--orange)':'var(--green)')+';margin-bottom:6px;">'+(pending?'&#9203; Pending Verification':'&#10003; Payment Successful')+'</div><div style="font-size:.82rem;color:var(--t2);">Receipt: <strong>'+finEsc(payment.receiptNo)+'</strong></div><div style="font-size:.82rem;color:var(--t2);">Student: '+finEsc(payment.student)+'</div><div style="font-size:.82rem;color:var(--t2);">Amount: '+finNaira(payment.amount)+'</div><div style="font-size:.82rem;color:var(--t2);">Method: '+finEsc(payment.method)+'</div></div>';
+    }
+    renderDash();
+    return payment;
+  }catch(error){ toast(error.message||'Could not record payment.','error'); return null; }
+}
+
+/* ── Classes and fees ─────────────────────────────────── */
+function renderFinanceFees(){
+  var find=finFind(); if(!find) return;
+  finPopulateSelectors();
+  var context=finContext();
+  var className=finVal('fin-fee-class');
+  var label=finEl('fin-fee-class-label'); if(label) label.textContent=className||'selected class';
+  var itemsEl=finEl('fin-fee-items');
+  if(itemsEl){
+    if(!className){ itemsEl.innerHTML='<div class="fin-empty">Select a class to add fee items.</div>'; }
+    else {
+      var structure=find.getFeeStructure(className,context.term,context.session);
+      itemsEl.innerHTML=structure.items.length ? structure.items.map(function(item){
+        return '<div class="fin-item"><div class="fin-item-main"><div class="fin-item-title">'+finEsc(item.type)+'</div><div class="fin-item-meta">Included in '+finEsc(className)+' base fees</div></div><strong>'+finNaira(item.amount)+'</strong><button class="fin-icon-btn" onclick="financeRemoveFeeItem(\''+finEsc(item.id)+'\')">Remove</button></div>';
+      }).join('')+'<div class="fin-note">Class total: <strong>'+finNaira(find.classTotal(className,context.term,context.session))+'</strong></div>' : '<div class="fin-empty">No fee items yet for this class.</div>';
+    }
+  }
+  renderStudentAdjustments();
+  renderPayableMatrix();
+}
+function financeAddFeeItem(){
+  var find=finFind(), context=finContext(), className=finVal('fin-fee-class');
+  var type=finVal('fin-item-type'), amount=finMoney(finVal('fin-item-amount'));
+  if(!find||!className){ toast('Select a class first.','error'); return; }
+  if(!type||amount<=0){ toast('Enter a fee item and amount.','error'); return; }
+  var structure=find.getFeeStructure(className,context.term,context.session);
+  structure.items.push({type:type,amount:amount});
+  find.saveFeeStructure(structure);
+  finSet('fin-item-type',''); finSet('fin-item-amount','');
+  renderFinanceFees();
+  toast('Fee item added.','success');
+}
+function financeRemoveFeeItem(itemId){
+  var find=finFind(), context=finContext(), className=finVal('fin-fee-class');
+  if(!find||!className) return;
+  if(!window.confirm('Remove this fee item?')) return;
+  var structure=find.getFeeStructure(className,context.term,context.session);
+  structure.items=structure.items.filter(function(item){ return item.id!==itemId; });
+  find.saveFeeStructure(structure);
+  renderFinanceFees();
+}
+function renderStudentAdjustments(){
+  var find=finFind(), el=finEl('fin-student-adjustments'), stuId=(finEl('fin-adjust-student')||{}).value||'';
+  if(!el||!find) return;
+  if(!stuId){ el.className='fin-empty'; el.innerHTML='Choose a student to add an adjustment.'; return; }
+  var context=finContext(), record=find.getStudentFees(stuId,context.term,context.session);
+  function block(title, rows, kind, empty){
+    return '<div style="flex:1;min-width:220px;"><div style="font-weight:800;font-size:.75rem;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">'+title+'</div>'+(rows.length?rows.map(function(row){ return '<div class="fin-item"><div class="fin-item-main"><div class="fin-item-title">'+finEsc(row.label)+'</div></div><strong>'+finNaira(row.amount)+'</strong><button class="fin-icon-btn" onclick="financeRemoveAdjustment(\''+kind+'\',\''+finEsc(row.id)+'\')">Remove</button></div>'; }).join(''):'<div class="fin-note">'+empty+'</div>')+'</div>';
+  }
+  el.className='';
+  el.innerHTML='<div style="display:flex;gap:18px;flex-wrap:wrap;">'+block('Additional charges',record.charges,'charge','No charges.')+block('Discounts',record.discounts,'discount','No discounts.')+'</div>';
+}
+function financeAddAdjustment(kind){
+  var find=finFind(), stuId=(finEl('fin-adjust-student')||{}).value||'', label=finVal('fin-adjust-label'), amount=finMoney(finVal('fin-adjust-amount'));
+  if(!find||!stuId){ toast('Choose a student first.','error'); return; }
+  if(!label||amount<=0){ toast('Enter an adjustment label and amount.','error'); return; }
+  var name=kind==='discount'?'discount':'additional charge';
+  if(!window.confirm('Add this '+name+' of '+finNaira(amount)+'?')) return;
+  try{
+    var context=finContext();
+    find.addStudentAdjustment(stuId,kind,label,amount,context.term,context.session);
+    finSet('fin-adjust-label',''); finSet('fin-adjust-amount','');
+    renderFinanceFees();
+    toast('Student '+name+' saved.','success');
+  }catch(error){ toast(error.message||'Could not save adjustment.','error'); }
+}
+function financeRemoveAdjustment(kind, adjustmentId){
+  var find=finFind(), stuId=(finEl('fin-adjust-student')||{}).value||'';
+  if(!find||!stuId) return;
+  if(!window.confirm('Remove this '+(kind==='discount'?'discount':'charge')+'?')) return;
+  var context=finContext();
+  find.removeStudentAdjustment(stuId,kind,adjustmentId,context.term,context.session);
+  renderFinanceFees();
+}
+function renderPayableMatrix(){
+  var find=finFind(), el=finEl('fin-payable-matrix'); if(!find||!el) return;
+  var context=finContext(), search=finVal('fin-matrix-search').toLowerCase();
+  var rows=find.termStats(context.term,context.session).rows.filter(function(row){
+    var text=(row.student+' '+row.class+' '+row.reg).toLowerCase(); return !search||text.indexOf(search)>-1;
+  });
+  el.innerHTML=rows.length ? rows.map(function(row){
+    return '<tr><td><strong>'+finEsc(row.student)+'</strong><br><span style="font-size:.68rem;color:var(--t3);">'+finEsc(row.reg||'')+'</span></td><td>'+finEsc(row.class)+'</td><td class="num">'+finNaira(row.payable)+'</td><td class="num" style="color:var(--green)">'+finNaira(row.paid)+'</td><td class="num" style="color:var(--red)">'+finNaira(row.outstanding)+'</td><td>'+finBadge(row.status)+'</td></tr>';
+  }).join('') : '<tr><td colspan="6" class="fin-empty">No students match this matrix.</td></tr>';
+}
+
+/* ── Recurring payments ───────────────────────────────── */
+function finParseDate(value){ var p=String(value||'').split('-'); return p.length===3 ? new Date(Number(p[0]),Number(p[1])-1,Number(p[2])) : new Date(); }
+function finFormatDate(date){ return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0'); }
+function finNextDue(date, frequency){
+  var next=new Date(date.getTime());
+  if(frequency==='Weekly') next.setDate(next.getDate()+7);
+  else if(frequency==='Bi-weekly') next.setDate(next.getDate()+14);
+  else if(frequency==='Termly') next.setMonth(next.getMonth()+4);
+  else next.setMonth(next.getMonth()+1);
+  return next;
+}
+function finGenerateSchedule(plan){
+  var start=finParseDate(plan.start), end=plan.end ? finParseDate(plan.end) : new Date(start.getFullYear()+1,start.getMonth(),start.getDate());
+  var entries=[], cursor=new Date(start.getTime()), count=0;
+  while(cursor.getTime()<=end.getTime()&&count<120){
+    entries.push({id:'rec-due-'+plan.id+'-'+finFormatDate(cursor),planId:plan.id,dueDate:finFormatDate(cursor),status:'Due',createdAt:new Date().toISOString()});
+    cursor=finNextDue(cursor,plan.frequency); count++;
+  }
+  return entries;
+}
+function createRecurringPlan(){
+  var find=finFind(), stuId=(finEl('rec-student')||{}).value||'', amount=finMoney(finVal('rec-amount'));
+  if(!find||!stuId||amount<=0){ toast('Select a student and valid amount.','error'); return; }
+  var student=find.studentFor(stuId)||{}, start=finVal('rec-start')||finDate(), end=finVal('rec-end');
+  if(end&&end<start){ toast('The end date must be after the start date.','error'); return; }
+  var context=finContext();
+  var plan={id:'rec-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6),stuId:stuId,student:finStudentName(student),class:student.class||'--',amount:amount,category:finVal('rec-category')||'Recurring Fee',frequency:(finEl('rec-frequency')||{}).value||'Monthly',start:start,end:end||'',status:'Active',term:context.term,session:context.session,createdAt:new Date().toISOString(),by:(RSMS.user()||{}).name||'Bursar'};
+  var plans=find.collection('recurring'); plans.push(plan); find.saveCollection('recurring',plans);
+  var schedule=find.collection('recurring_schedule').concat(finGenerateSchedule(plan)); find.saveCollection('recurring_schedule',schedule);
+  find.audit('Recurring plan created','recurring','Created '+plan.frequency+' '+finNaira(plan.amount)+' plan for '+plan.student,null,plan);
+  finSet('rec-amount',''); finSet('rec-category','');
+  renderRecurring(); toast('Recurring plan created.','success');
+}
+function renderRecurring(){
+  var find=finFind(), el=finEl('recurring-list'); if(!find||!el) return;
+  finPopulateSelectors();
+  var context=finContext();
+  var plans=find.collection('recurring').filter(function(plan){ return plan.term===context.term&&plan.session===context.session; }).sort(function(a,b){ return String(b.createdAt||'').localeCompare(String(a.createdAt||'')); });
+  var schedule=find.collection('recurring_schedule');
+  if(!plans.length){ el.innerHTML='<div class="fin-empty">No recurring plans for this term.</div>'; return; }
+  el.innerHTML=plans.map(function(plan){
+    var dues=schedule.filter(function(due){ return due.planId===plan.id; }).sort(function(a,b){ return String(a.dueDate).localeCompare(String(b.dueDate)); });
+    var dueHtml=dues.length?dues.map(function(due){
+      var action=due.status==='Due'&&plan.status==='Active'?'<button class="btn btn-gold btn-sm" onclick="markRecurringPaid(\''+finEsc(plan.id)+'\',\''+finEsc(due.id)+'\')">Mark Paid</button>':'';
+      return '<div class="fin-item"><div class="fin-item-main"><div class="fin-item-title">Due '+finEsc(due.dueDate)+'</div><div class="fin-item-meta">'+(due.paidTxId?'Receipt: '+finEsc(due.paidTxId):'Awaiting payment')+'</div></div>'+finBadge(due.status)+action+'</div>';
+    }).join(''):'<div class="fin-note">No due dates generated.</div>';
+    return '<div style="padding:12px 0;border-bottom:1px solid var(--line);"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;"><div><div class="fin-item-title">'+finEsc(plan.student)+' <span style="font-weight:500;color:var(--t3);">· '+finEsc(plan.category)+'</span></div><div class="fin-item-meta">'+finEsc(plan.class)+' · '+finEsc(plan.frequency)+' · Starts '+finEsc(plan.start)+(plan.end?' · Ends '+finEsc(plan.end):'')+'</div></div><div class="finance-actions"><strong>'+finNaira(plan.amount)+'</strong>'+finBadge(plan.status)+(plan.status==='Active'?'<button class="btn btn-ghost btn-sm" onclick="stopRecurringPlan(\''+finEsc(plan.id)+'\')">Stop Plan</button>':'')+'</div></div><div style="margin-top:8px;">'+dueHtml+'</div></div>';
+  }).join('');
+}
+function markRecurringPaid(planId,dueId){
+  var find=finFind(); if(!find) return;
+  var plans=find.collection('recurring'), schedule=find.collection('recurring_schedule'), plan=null, due=null;
+  plans.some(function(row){if(row.id===planId){plan=row;return true;}return false;});
+  schedule.some(function(row){if(row.id===dueId){due=row;return true;}return false;});
+  if(!plan||!due||due.status!=='Due'){ toast('This due entry is no longer payable.','error'); return; }
+  if(!window.confirm('Record '+finNaira(plan.amount)+' as paid for '+plan.student+'?')) return;
+  try{
+    var payment=find.pay({stuId:plan.stuId,student:plan.student,class:plan.class,amount:plan.amount,type:plan.category,method:'Recurring',channel:'recurring',ref:'REC-'+String(plan.id).slice(-6)+'-'+due.dueDate,status:'Paid',by:(RSMS.user()||{}).name||'Bursar',source:'recurring'});
+    schedule=schedule.map(function(row){ if(row.id===due.id){row.status='Paid';row.paidTxId=payment.txId;row.paidAt=new Date().toISOString();} return row; });
+    find.saveCollection('recurring_schedule',schedule);
+    find.audit('Recurring due marked paid','recurring','Marked '+due.dueDate+' paid for '+plan.student,null,{planId:plan.id,dueId:due.id,txId:payment.txId});
+    renderRecurring(); renderDash(); toast('Recurring payment recorded.','success');
+  }catch(error){ toast(error.message||'Could not record recurring payment.','error'); }
+}
+function stopRecurringPlan(planId){
+  var find=finFind(); if(!find||!window.confirm('Stop this recurring plan? Future due dates will be retained but stopped.')) return;
+  var plans=find.collection('recurring'), schedule=find.collection('recurring_schedule'), before=null;
+  plans=plans.map(function(plan){ if(plan.id===planId){before=JSON.parse(JSON.stringify(plan));plan.status='Stopped';plan.stoppedAt=new Date().toISOString();} return plan; });
+  schedule=schedule.map(function(due){ if(due.planId===planId&&due.status==='Due') due.status='Stopped'; return due; });
+  find.saveCollection('recurring',plans); find.saveCollection('recurring_schedule',schedule);
+  find.audit('Recurring plan stopped','recurring','Stopped recurring plan '+planId,before,{id:planId,status:'Stopped'});
+  renderRecurring();
+}
+
+/* ── Expenses ─────────────────────────────────────────── */
+function renderExpenses(){
+  var find=finFind(); if(!find) return;
+  var context=finContext(), all=find.collection('expenses').filter(function(expense){ return expense.term===context.term&&expense.session===context.session; });
+  var approved=all.filter(function(expense){ return expense.status==='Approved'; }).reduce(function(total,expense){ return total+finMoney(expense.amount); },0);
+  var income=find.termStats(context.term,context.session).collected;
+  var statsEl=finEl('expense-stats');
+  if(statsEl) statsEl.innerHTML=finStat(finNaira(income),'Total Income','s-green')+finStat(finNaira(approved),'Total Expenses','s-red')+finStat(finNaira(income-approved),'Net','s-teal');
+  var list=finEl('expense-list'); if(!list) return;
+  var rows=all.slice().sort(function(a,b){ return String(b.recordedAt||b.date||'').localeCompare(String(a.recordedAt||a.date||'')); });
+  list.innerHTML=rows.length?rows.map(function(expense){
+    var actions='';
+    if(expense.status==='Pending') actions='<button class="btn btn-gold btn-sm" onclick="setExpenseStatus(\''+finEsc(expense.id)+'\',\'Approved\')">Approve</button><button class="btn btn-ghost btn-sm" onclick="setExpenseStatus(\''+finEsc(expense.id)+'\',\'Rejected\')">Reject</button>';
+    if(expense.status==='Pending'||expense.status==='Approved') actions+='<button class="btn btn-ghost btn-sm" onclick="setExpenseStatus(\''+finEsc(expense.id)+'\',\'Voided\')">Void</button>';
+    return '<div class="fin-item"><div class="fin-item-main"><div class="fin-item-title">'+finEsc(expense.title)+'</div><div class="fin-item-meta">'+finEsc(expense.category||'General')+' · '+finEsc(expense.date||'')+(expense.person?' · '+finEsc(expense.person):'')+(expense.ref?' · Ref: '+finEsc(expense.ref):'')+'</div>'+(expense.description?'<div class="fin-item-meta">'+finEsc(expense.description)+'</div>':'')+'</div><div style="text-align:right"><strong style="color:var(--red)">-'+finNaira(expense.amount)+'</strong><div style="margin-top:5px">'+finBadge(expense.status)+'</div></div><div class="finance-actions">'+actions+'</div></div>';
+  }).join(''):'<div class="fin-empty">No expenses recorded for this term.</div>';
+}
+function recordExpense(){
+  var find=finFind(), title=finVal('exp-title'), amount=finMoney(finVal('exp-amount'));
+  if(!find||!title||amount<=0){ toast('Enter an expense title and valid amount.','error'); return; }
+  var context=finContext(), record={id:'exp-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6),title:title,description:finVal('exp-description'),amount:amount,category:(finEl('exp-category')||{}).value||'General',date:finVal('exp-date')||finDate(),person:finVal('exp-person'),ref:finVal('exp-ref'),status:(finEl('exp-status')||{}).value||'Pending',term:context.term,session:context.session,by:(RSMS.user()||{}).name||'Bursar',recordedAt:new Date().toISOString()};
+  var all=find.collection('expenses'); all.push(record); find.saveCollection('expenses',all);
+  find.audit('Expense recorded','expense','Recorded '+record.status.toLowerCase()+' expense '+record.title,null,record);
+  ['exp-title','exp-description','exp-amount','exp-person','exp-ref'].forEach(function(key){finSet(key,'');});
+  renderExpenses(); toast('Expense recorded.','success');
+}
+function setExpenseStatus(expenseId,status){
+  var find=finFind(); if(!find) return;
+  var verb=status==='Voided'?'void':status.toLowerCase();
+  if(!window.confirm('Mark this expense as '+verb+'? The record will be retained.')) return;
+  var all=find.collection('expenses'), before=null, updated=null;
+  all=all.map(function(expense){ if(expense.id===expenseId){before=JSON.parse(JSON.stringify(expense));expense.status=status;expense.updatedAt=new Date().toISOString();updated=expense;} return expense; });
+  if(!updated){toast('Expense not found.','error');return;}
+  find.saveCollection('expenses',all); find.audit('Expense status updated','expense','Expense '+updated.title+': '+before.status+' → '+status,before,updated);
+  renderExpenses();
+}
+
+/* ── Wallet actions ───────────────────────────────────── */
+function updateWalletCreditBalance(){
+  var find=finFind(), studentId=(finEl('wallet-credit-student')||{}).value||'';
+  var label=finEl('wallet-credit-balance');
+  if(label) label.textContent=finNaira(find&&studentId?find.walletBalance(studentId):0);
+}
+function creditStudentWallet(){
+  var find=finFind(), studentId=(finEl('wallet-credit-student')||{}).value||'', amount=finMoney(finVal('wallet-credit-amount'));
+  var reason=finVal('wallet-credit-reason'), method=(finEl('wallet-credit-method')||{}).value||'Cash';
+  var confirmed=(finEl('wallet-credit-confirm')||{}).checked;
+  if(!find||!studentId){ toast('Select a student wallet.','error'); return; }
+  if(amount<=0||!reason){ toast('Enter a reason and valid credit amount.','error'); return; }
+  if(!confirmed){ toast('Confirm that the amount has been received first.','error'); return; }
+  if(!window.confirm('Credit '+finNaira(amount)+' to this student wallet?')) return;
+  try{
+    var student=find.studentFor(studentId)||{};
+    var entry=find.walletCredit({
+      stuId:studentId, student:finStudentName(student), class:student.class||'--',
+      amount:amount, reason:reason, method:method, status:'Confirmed',
+      ref:'BURSAR-WAL-'+Date.now().toString(36).toUpperCase(),
+      by:(RSMS.user()||{}).name||'Bursar', date:finDate(), note:'Bursar-confirmed credit'
+    });
+    finSet('wallet-credit-amount',''); finSet('wallet-credit-reason','');
+    var check=finEl('wallet-credit-confirm'); if(check) check.checked=false;
+    updateWalletCreditBalance(); renderWalletActions();
+    toast('Wallet credited — '+entry.walId,'success');
+  }catch(error){ toast(error.message||'Could not credit wallet.','error'); }
+}
+function confirmWalletEntry(walId){
+  var find=finFind(); if(!find) return;
+  if(!window.confirm('Confirm this pending wallet credit?')) return;
+  try{
+    find.setWalletStatus(walId,'Confirmed','Confirmed by bursar');
+    renderWalletActions(); updateWalletCreditBalance();
+    toast('Wallet credit confirmed.','success');
+  }catch(error){ toast(error.message||'Could not confirm wallet credit.','error'); }
+}
+function printWalletEntry(walId){
+  var find=finFind(); if(!find) return;
+  try{ find.printWalletReceipt(walId); }catch(error){ toast(error.message||'Could not print wallet receipt.','error'); }
+}
+function renderWalletActions(){
+  var find=finFind(); if(!find) return;
+  finPopulateSelectors();
+  updateWalletCreditBalance();
+  var totals=find.walletTotals(), stats=finEl('wallet-stats');
+  if(stats) stats.innerHTML=finStat(finNaira(totals.totalBalance),'Total Wallet Balance','s-teal')+finStat(totals.activeWallets,'Active Wallets','s-green')+finStat(finNaira(totals.totalCredits),'Total Credits','s-gold')+finStat(finNaira(totals.totalDebits),'Total Debits','s-red');
+  var search=finVal('wallet-search').toLowerCase(), type=(finEl('wallet-type-filter')||{}).value||'';
+  var entries=find.wallet().filter(function(entry){
+    var text=((entry.walId||'')+' '+(entry.student||'')+' '+(entry.reason||'')+' '+(entry.ref||'')).toLowerCase();
+    return (!type||entry.type===type)&&(!search||text.indexOf(search)>-1);
+  }).slice().sort(function(a,b){ return String(b.recordedAt||b.date||'').localeCompare(String(a.recordedAt||a.date||'')); });
+  var list=finEl('wallet-actions-list'); if(!list) return;
+  list.innerHTML=entries.length?entries.map(function(entry){
+    var isCredit=entry.type==='credit';
+    var amount=(isCredit?'+':'-')+finNaira(entry.amount);
+    var color=isCredit?'var(--green)':'var(--red)';
+    var confirm=entry.status==='Pending'?'<button class="btn btn-gold btn-sm" onclick="confirmWalletEntry(&quot;'+finEsc(entry.walId)+'&quot;)">Confirm</button>':'';
+    return '<tr><td><strong>'+finEsc(entry.walId)+'</strong><br><span style="font-size:.66rem;color:var(--t3);">'+finEsc(entry.ref||'')+'</span></td><td>'+finEsc(entry.student)+'<br><span style="font-size:.66rem;color:var(--t3);">'+finEsc(entry.class||'')+'</span></td><td class="num" style="font-weight:800;color:'+color+'">'+amount+'</td><td>'+finEsc(entry.reason)+'</td><td>'+finEsc(entry.date)+'</td><td>'+finEsc(entry.by||'')+'</td><td>'+finBadge(entry.status)+'</td><td><div class="finance-actions">'+confirm+'<button class="btn btn-ghost btn-sm" onclick="printWalletEntry(&quot;'+finEsc(entry.walId)+'&quot;)">&#129534;</button></div></td></tr>';
+  }).join(''):'<tr><td colspan="8" class="fin-empty">No wallet actions match this filter.</td></tr>';
+}
+
+/* ── Projection ───────────────────────────────────────── */
+function renderProjection(){
+  var find=finFind(); if(!find) return;
+  var context=finContext(), stats=find.termStats(context.term,context.session), rate=finNumber(stats.collectionRate);
+  var label=finEl('projection-context'); if(label) label.textContent=stats.term+' · '+stats.session;
+  var statEl=finEl('projection-stats');
+  if(statEl) statEl.innerHTML=finStat(finNaira(stats.projected),'Expected','s-gold')+finStat(finNaira(stats.collected),'Collected','s-green')+finStat(finNaira(stats.outstanding),'Outstanding','s-red')+finStat(stats.paidStudents+' / '+stats.unpaidStudents,'Students Paid / Not Paid','s-teal')+finStat(finNaira(stats.avgFee),'Average Fee','s-blue')+finStat(rate.toFixed(rate%1?1:0)+'%','Collection Rate','s-gold');
+  var table=finEl('projection-table'); if(table) table.innerHTML=stats.classes.length?stats.classes.map(function(row){
+    return '<tr><td><strong>'+finEsc(row.class)+'</strong></td><td class="num">'+finNaira(row.feeAvg)+'</td><td class="num">'+row.students+'</td><td class="num" style="color:var(--green)">'+row.paid+'</td><td class="num" style="color:var(--red)">'+row.unpaid+'</td><td class="num">'+finNaira(row.expected)+'</td><td class="num">'+finNaira(row.collected)+'</td><td class="num">'+finNaira(row.outstanding)+'</td></tr>';
+  }).join(''):'<tr><td colspan="8" class="fin-empty">No fee structures or students are available for this term.</td></tr>';
+  var total=finEl('projection-total'); if(total) total.innerHTML='<tr><th>TOTAL</th><th class="num">'+finNaira(stats.avgFee)+'</th><th class="num">'+stats.students+'</th><th class="num">'+stats.paidStudents+'</th><th class="num">'+stats.unpaidStudents+'</th><th class="num">'+finNaira(stats.projected)+'</th><th class="num">'+finNaira(stats.collected)+'</th><th class="num">'+finNaira(stats.outstanding)+'</th></tr>';
+}
+
+/* ── Report center ────────────────────────────────────── */
+function financeReportModel(){
+  var find=finFind(), context=finContext(), kind=(finEl('report-kind')||{}).value||'student';
+  var stats=find?find.termStats(context.term,context.session):{rows:[],classes:[]};
+  var payments=find?find.collection('payments').filter(function(row){return row.term===context.term&&row.session===context.session;}):[];
+  var expenses=find?find.collection('expenses').filter(function(row){return row.term===context.term&&row.session===context.session;}):[];
+  var wallet=find?find.collection('wallet').filter(function(row){return row.term===context.term&&row.session===context.session;}):[];
+  var model={kind:kind,title:'',headers:[],rows:[]};
+  if(kind==='outstanding'){
+    model.title='Outstanding Fee Report'; model.headers=['Student','Class','Registration','Payable','Paid','Outstanding','Status'];
+    model.rows=stats.rows.filter(function(row){return row.outstanding>0;}).map(function(row){return [row.student,row.class,row.reg,finNaira(row.payable),finNaira(row.paid),finNaira(row.outstanding),row.status];});
+  }else if(kind==='payment'){
+    model.title='Payment Report'; model.headers=['Date','Receipt','Transaction','Student','Class','Type','Method','Amount','Status','Reference'];
+    model.rows=payments.slice().sort(function(a,b){return String(b.recordedAt||'').localeCompare(String(a.recordedAt||''));}).map(function(row){return [row.date,row.receiptNo,row.txId,row.student,row.class,row.type,row.method,finNaira(row.amount),row.status,row.ref||''];});
+  }else if(kind==='wallet'){
+    model.title='Wallet Report'; model.headers=['Date','Wallet ID','Student','Class','Type','Reason','Amount','Status','Reference'];
+    model.rows=wallet.map(function(row){return [row.date,row.walId||row.id,row.student,row.class,row.type,row.reason,finNaira(row.amount),row.status,row.ref||''];});
+  }else if(kind==='expense'){
+    model.title='Expense Report'; model.headers=['Date','Title','Category','Person','Reference','Amount','Status'];
+    model.rows=expenses.slice().sort(function(a,b){return String(b.recordedAt||'').localeCompare(String(a.recordedAt||''));}).map(function(row){return [row.date,row.title,row.category,row.person||'',row.ref||'',finNaira(row.amount),row.status];});
+  }else if(kind==='term'){
+    model.title='Term Financial Report'; model.headers=['Term','Session','Projected','Collected','Outstanding','Average Fee','Collection Rate','Paid Students','Unpaid Students'];
+    model.rows=[[stats.term,stats.session,finNaira(stats.projected),finNaira(stats.collected),finNaira(stats.outstanding),finNaira(stats.avgFee),finNumber(stats.collectionRate).toFixed(1)+'%',stats.paidStudents,stats.unpaidStudents]];
+  }else if(kind==='class'){
+    model.title='Class Financial Report'; model.headers=['Class','Fee Average','Students','Paid','Unpaid','Expected','Collected','Outstanding'];
+    model.rows=stats.classes.map(function(row){return [row.class,finNaira(row.feeAvg),row.students,row.paid,row.unpaid,finNaira(row.expected),finNaira(row.collected),finNaira(row.outstanding)];});
+  }else{
+    model.title='Student Fee Report'; model.headers=['Student','Class','Registration','Payable','Paid','Outstanding','Status'];
+    model.rows=stats.rows.map(function(row){return [row.student,row.class,row.reg,finNaira(row.payable),finNaira(row.paid),finNaira(row.outstanding),row.status];});
+  }
+  return model;
+}
+function renderReportCenter(){
+  var model=financeReportModel(), title=finEl('reportcenter-title'), head=finEl('reportcenter-head'), body=finEl('reportcenter-table');
+  window._financeReportModel=model;
+  if(title) title.textContent=model.title;
+  if(head) head.innerHTML='<tr>'+model.headers.map(function(header){return '<th>'+finEsc(header)+'</th>';}).join('')+'</tr>';
+  if(body) body.innerHTML=model.rows.length?model.rows.map(function(row){return '<tr>'+row.map(function(cell){return '<td>'+finEsc(cell)+'</td>';}).join('')+'</tr>';}).join(''):'<tr><td colspan="'+Math.max(1,model.headers.length)+'" class="fin-empty">No records found for this report.</td></tr>';
+}
+function downloadFinanceCSV(){
+  var model=window._financeReportModel||financeReportModel();
+  var rows=[model.headers].concat(model.rows);
+  var csv='\uFEFF'+rows.map(function(row){ return row.map(function(cell){ return '"'+String(cell===undefined||cell===null?'':cell).replace(/"/g,'""')+'"'; }).join(','); }).join('\r\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}), link=document.createElement('a');
+  link.href=URL.createObjectURL(blob); link.download=model.title.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')+'.csv';
+  document.body.appendChild(link); link.click(); document.body.removeChild(link); setTimeout(function(){URL.revokeObjectURL(link.href);},1000);
+}
+function printFinanceReport(){
+  var model=window._financeReportModel||financeReportModel(), school=finSchool(), context=finContext();
+  var table='<table><thead><tr>'+model.headers.map(function(header){return '<th>'+finEsc(header)+'</th>';}).join('')+'</tr></thead><tbody>'+(model.rows.length?model.rows.map(function(row){return '<tr>'+row.map(function(cell){return '<td>'+finEsc(cell)+'</td>';}).join('')+'</tr>';}).join(''):'<tr><td colspan="'+Math.max(1,model.headers.length)+'">No records found.</td></tr>')+'</tbody></table>';
+  var page=window.open('','_blank','width=1000,height=720');
+  if(!page){toast('Please allow pop-ups to print this report.','error');return;}
+  page.document.write('<!doctype html><html><head><title>'+finEsc(model.title)+'</title><style>body{font-family:Arial,sans-serif;color:#172033;padding:28px}h1{margin:0 0 4px;font-size:22px}p{margin:0 0 20px;color:#586174;font-size:12px}table{border-collapse:collapse;width:100%;font-size:11px}th{background:#0f1535;color:#fff;text-align:left;padding:8px}td{border:1px solid #dce1eb;padding:7px;vertical-align:top}@media print{body{padding:12px}}</style></head><body><h1>'+finEsc(school.name||'School')+' — '+finEsc(model.title)+'</h1><p>'+finEsc(context.term)+' · '+finEsc(context.session)+' · Generated '+finEsc(new Date().toLocaleString())+'</p>'+table+'<script>setTimeout(function(){window.print();},180);<\/script></body></html>');
+  page.document.close();
+}
+
+/* ── Page hooks and live updates ──────────────────────── */
+window.onPage_home=function(){renderDash();};
+window.onPage_record=function(){populateClassFilters();populatePayStudents();};
+window.onPage_fees=function(){renderFinanceFees();};
+window.onPage_recurring=function(){renderRecurring();};
+window.onPage_expenses=function(){renderExpenses();};
+window.onPage_projection=function(){renderProjection();};
+window.onPage_wallet=function(){renderWalletActions();};
+window.onPage_reportcenter=function(){renderReportCenter();};
+
+if(window.FIND&&typeof window.FIND.onSync==='function') window.FIND.onSync(financeRefreshVisible);
+window.addEventListener('load',function(){ setTimeout(financeInitialise,0); });
 </script>
 <script src="rsms-notifications.js"></script>
 </body>

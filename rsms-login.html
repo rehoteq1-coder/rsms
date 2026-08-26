@@ -572,6 +572,20 @@ body{background:var(--bg);min-height:100vh;font-family:var(--sans);}
   border-radius:var(--r2);padding:12px 14px;cursor:pointer;margin-bottom:6px;transition:all .18s;}
 .search-result:hover{border-color:var(--brand,var(--gold));}
 
+/* STAFF EMAIL SIGN-IN */
+.staff-login-divider{display:flex;align-items:center;gap:10px;margin:22px 0 14px;color:var(--t4);font-size:.68rem;font-weight:800;letter-spacing:.1em;}
+.staff-login-divider:before,.staff-login-divider:after{content:'';height:1px;flex:1;background:var(--line2);}
+.staff-login-card{background:linear-gradient(145deg,rgba(30,42,69,.95),rgba(20,28,48,.95));border:1px solid var(--line2);border-radius:var(--r);padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.12);}
+.staff-login-title{display:flex;align-items:center;gap:9px;color:var(--t1);font-size:.91rem;font-weight:800;margin-bottom:4px;}
+.staff-login-title .staff-login-icon{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(212,168,67,.14);font-size:.9rem;}
+.staff-login-sub{color:var(--t3);font-size:.74rem;line-height:1.4;margin:0 0 12px;}
+.staff-login-field{width:100%;background:rgba(8,13,28,.5);border:1.5px solid var(--line2);border-radius:var(--r2);padding:11px 12px;color:var(--t1);font-family:var(--sans);font-size:.86rem;margin:0 0 9px;}
+.staff-login-field:focus{outline:none;border-color:var(--brand,var(--gold));box-shadow:0 0 0 3px rgba(212,168,67,.1);}
+.staff-login-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--brand,var(--gold)),#b8932a);border:0;border-radius:var(--r2);color:#111827;font-family:var(--sans);font-size:.88rem;font-weight:800;cursor:pointer;transition:transform .18s,filter .18s;}
+.staff-login-btn:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.05);}
+.staff-login-btn:disabled{opacity:.6;cursor:wait;}
+.staff-login-note{min-height:17px;color:var(--t4);font-size:.69rem;text-align:center;margin:9px 0 0;}
+
 @media(max-width:640px){
   .app{flex-direction:column;}
   .left-panel{width:100%;min-height:auto;padding:24px 20px 20px;}
@@ -584,8 +598,9 @@ body{background:var(--bg);min-height:100vh;font-family:var(--sans);}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<script src="rsms-firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="rsms-config.js"></script>
+<script src="rsms-firebase.js"></script>
 <script src="rsms-pwa.js"></script>
 </head>
 <body>
@@ -642,6 +657,18 @@ body{background:var(--bg);min-height:100vh;font-family:var(--sans);}
     <div id="school-auto-msg" style="display:none;background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:12px 14px;font-size:.82rem;color:var(--t2);">
       &#128269; Detected your school automatically
     </div>
+
+    <div class="staff-login-divider"><span>OR</span></div>
+    <section class="staff-login-card" id="staff-email-card" aria-labelledby="staff-login-heading">
+      <div class="staff-login-title" id="staff-login-heading"><span class="staff-login-icon">&#128100;</span>Staff Email Sign-In</div>
+      <p class="staff-login-sub">Use the verified email account issued by your school. Your role and school access are checked securely.</p>
+      <label for="staff-email" style="display:none;">Staff email</label>
+      <input class="staff-login-field" id="staff-email" type="email" autocomplete="username" placeholder="staff@school.edu"/>
+      <label for="staff-password" style="display:none;">Password</label>
+      <input class="staff-login-field" id="staff-password" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter'){emailLogin();}"/>
+      <button type="button" class="staff-login-btn" id="staff-email-btn" onclick="emailLogin()">Sign In</button>
+      <p class="staff-login-note" id="staff-login-note">School PIN sign-in remains available above.</p>
+    </section>
   </div>
 
   <!-- ── STEP 2: ROLE ── -->
@@ -1017,6 +1044,107 @@ var PORTAL_MAP = {
 var NEEDS_IDENTITY = ['classteacher','teacher','student','parent'];
 // Roles that go straight through (only 1 per school)
 var DIRECT_ROLES = ['admin','hod','vp','bursar','principal'];
+
+// Firebase Auth is intentionally separate from the existing school/PIN flow.
+// Claim roles determine the destination; legacy PIN users still use doLogin().
+var STAFF_PORTAL_MAP = {
+  admin:'rsms-admin.html',
+  bursar:'rsms-bursar.html',
+  teacher:'rsms-teacher.html',
+  classteacher:'rsms-classteacher.html',
+  hod:'rsms-hod.html',
+  vp:'rsms-vp.html',
+  principal:'rsms-principal.html',
+  parent:'rsms-parent.html',
+  student:'rsms-student.html',
+  control:'rsms-control.html',
+  superadmin:'rsms-superadmin.html'
+};
+
+function staffLoginRoles(value){
+  var rows=[];
+  var seen={};
+  var out=[];
+  if(Array.isArray(value)) rows=value;
+  else if(value&&typeof value==='object') rows=Object.keys(value).filter(function(key){return value[key]===true||value[key]==='true'||value[key]===1;});
+  else if(value) rows=[value];
+  rows.forEach(function(role){
+    role=String(role||'').replace(/^\s+|\s+$/g,'').toLowerCase();
+    if(role&&!seen[role]){seen[role]=true;out.push(role);}
+  });
+  return out;
+}
+
+function staffLoginSession(){
+  try{return JSON.parse(sessionStorage.getItem('rsms_user')||'{}')||{};}catch(e){return {};}
+}
+
+function staffPortalForRoles(roles){
+  var i;
+  for(i=0;i<roles.length;i++) if(STAFF_PORTAL_MAP[roles[i]]) return STAFF_PORTAL_MAP[roles[i]];
+  return '';
+}
+
+function setStaffLoginBusy(busy, note){
+  var btn=document.getElementById('staff-email-btn');
+  var noteEl=document.getElementById('staff-login-note');
+  if(btn){btn.disabled=!!busy;btn.textContent=busy?'Signing in...':'Sign In';}
+  if(noteEl&&note!==undefined) noteEl.textContent=note;
+}
+
+function staffLoginError(error){
+  var code=String((error&&error.code)||'').toLowerCase();
+  var message=(error&&error.message)||'Sign-in could not be completed. Please try again.';
+  if(code==='auth/invalid-credential'||code==='auth/wrong-password'||code==='auth/user-not-found'||code==='auth/invalid-login-credentials'){
+    message='Incorrect email or password. Please try again.';
+  }else if(code==='auth/too-many-requests'){
+    message='Too many sign-in attempts. Please wait a moment and try again.';
+  }else if(code==='auth/network-request-failed'){
+    message='Network error. Check your connection and try again.';
+  }
+  return String(message).replace(/^Firebase:\s*/i,'');
+}
+
+function waitForStaffSession(attempt){
+  var session=staffLoginSession();
+  var roles=staffLoginRoles(session.roles||session.roleMap||session.role);
+  var portal=staffPortalForRoles(roles);
+  if((session.realAuth===true||session.realAuth==='true')&&portal){
+    setStaffLoginBusy(true,'Verified. Opening your portal...');
+    window.location.href=portal;
+    return;
+  }
+  if(attempt>=24){
+    setStaffLoginBusy(false,'');
+    toast('Your account signed in, but its portal role could not be confirmed. Contact your administrator.','error');
+    return;
+  }
+  setTimeout(function(){waitForStaffSession(attempt+1);},250);
+}
+
+function emailLogin(){
+  var email=(document.getElementById('staff-email')||{value:''}).value.replace(/^\s+|\s+$/g,'');
+  var password=(document.getElementById('staff-password')||{value:''}).value;
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    toast('Enter a valid staff email address.','error');
+    return;
+  }
+  if(!password){toast('Enter your password.','error');return;}
+  if(typeof RSMS_FB==='undefined'||typeof RSMS_FB.login!=='function'){
+    toast('Secure email sign-in is unavailable. Please refresh and try again.','error');
+    return;
+  }
+  setStaffLoginBusy(true,'Verifying your account...');
+  RSMS_FB.login(email,password).then(function(){
+    waitForStaffSession(0);
+  }).catch(function(error){
+    setStaffLoginBusy(false,'');
+    toast(staffLoginError(error),'error');
+  });
+}
+
+// A descriptive alias keeps integrations that used the card name readable.
+function staffEmailLogin(){ return emailLogin(); }
 
 // ── SCOPED STORAGE HELPERS ────────────────────────────────
 function _lsid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
