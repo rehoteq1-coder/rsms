@@ -1021,10 +1021,30 @@ select.fi option{background:var(--card);color:var(--t1);}
   <div class="card"><div class="card-title">Class financial projection</div><div class="fin-table-wrap"><table class="fin-table"><thead><tr><th>Class</th><th class="num">Fee Avg</th><th class="num">Students</th><th class="num">Paid</th><th class="num">Unpaid</th><th class="num">Expected</th><th class="num">Collected</th><th class="num">Outstanding</th></tr></thead><tbody id="projection-table"></tbody><tfoot id="projection-total"></tfoot></table></div></div>
 </div>
 
-<!-- WALLET (PHASE 2) -->
+<!-- WALLET ACTIONS -->
 <div class="page" id="pg-wallet">
-  <div class="pg-hd"><div><div class="pg-title">&#128179; Wallet Actions</div><div class="pg-sub">Student wallets are introduced in Phase 2.</div></div></div>
-  <div class="card"><div class="card-title">Wallet ledger</div><div class="fin-empty">Wallet actions are not enabled yet. This page is ready for the append-only student wallet ledger in Phase 2.</div></div>
+  <div class="pg-hd"><div><div class="pg-title">&#128179; Wallet Actions</div><div class="pg-sub">Credit student wallets and review the append-only wallet ledger.</div></div></div>
+  <div class="finance-grid" id="wallet-stats"></div>
+  <div class="card">
+    <div class="card-title">+ Credit Wallet</div>
+    <div class="finance-toolbar">
+      <div class="fg" style="flex:2;"><label>Student *</label><select class="fi" id="wallet-credit-student" onchange="updateWalletCreditBalance()" style="height:42px;"><option value="">Select student</option></select></div>
+      <div class="fg"><label>Live balance</label><div class="fi" id="wallet-credit-balance" style="height:42px;display:flex;align-items:center;font-weight:800;color:var(--teal);">&#8358;0</div></div>
+      <div class="fg"><label>Amount (&#8358;) *</label><input class="fi" id="wallet-credit-amount" type="number" min="0" placeholder="0.00"/></div>
+      <div class="fg"><label>Reason *</label><input class="fi" id="wallet-credit-reason" placeholder="e.g. Parent top-up"/></div>
+      <div class="fg"><label>Method</label><select class="fi" id="wallet-credit-method" style="height:42px;"><option>Cash</option><option>Bank Transfer</option><option>Card</option><option>Wallet Top-up</option></select></div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:flex-start;font-size:.78rem;color:var(--t2);margin:4px 0 12px;cursor:pointer;"><input id="wallet-credit-confirm" type="checkbox" style="margin-top:3px;"/> I confirm the amount has been received and should be added to this student wallet.</label>
+    <button class="btn btn-gold" onclick="creditStudentWallet()">+ Credit Wallet</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Wallet ledger</div>
+    <div class="finance-toolbar">
+      <div class="fg" style="flex:2;"><label>Search</label><input class="fi" id="wallet-search" oninput="renderWalletActions()" placeholder="Student, receipt ID, reason or reference"/></div>
+      <div class="fg"><label>Type</label><select class="fi" id="wallet-type-filter" onchange="renderWalletActions()" style="height:42px;"><option value="">All types</option><option value="credit">Credits</option><option value="debit">Debits</option></select></div>
+    </div>
+    <div class="fin-table-wrap"><table class="fin-table"><thead><tr><th>Receipt ID</th><th>Student</th><th class="num">Amount</th><th>Reason</th><th>Date</th><th>By</th><th>Status</th><th>Actions</th></tr></thead><tbody id="wallet-actions-list"></tbody></table></div>
+  </div>
 </div>
 
 <!-- REPORT CENTER -->
@@ -2839,6 +2859,7 @@ function finPopulateSelectors(){
   var formatter=function(student){ return finStudentName(student)+' ('+(student.class||'No class')+(student.reg?' · '+student.reg:'')+')'; };
   finFillOptions(finEl('fin-adjust-student'),students,'Select student',finEl('fin-adjust-student')?finEl('fin-adjust-student').value:'',formatter);
   finFillOptions(finEl('rec-student'),students,'Select student',finEl('rec-student')?finEl('rec-student').value:'',formatter);
+  finFillOptions(finEl('wallet-credit-student'),students,'Select student',finEl('wallet-credit-student')?finEl('wallet-credit-student').value:'',formatter);
 }
 function financeInitialise(){
   var school=finSchool();
@@ -2859,6 +2880,7 @@ function financeRefreshVisible(){
     else if(id==='pg-recurring') renderRecurring();
     else if(id==='pg-expenses') renderExpenses();
     else if(id==='pg-projection') renderProjection();
+    else if(id==='pg-wallet') renderWalletActions();
     else if(id==='pg-reportcenter') renderReportCenter();
   },80);
 }
@@ -3142,6 +3164,68 @@ function setExpenseStatus(expenseId,status){
   renderExpenses();
 }
 
+/* ── Wallet actions ───────────────────────────────────── */
+function updateWalletCreditBalance(){
+  var find=finFind(), studentId=(finEl('wallet-credit-student')||{}).value||'';
+  var label=finEl('wallet-credit-balance');
+  if(label) label.textContent=finNaira(find&&studentId?find.walletBalance(studentId):0);
+}
+function creditStudentWallet(){
+  var find=finFind(), studentId=(finEl('wallet-credit-student')||{}).value||'', amount=finMoney(finVal('wallet-credit-amount'));
+  var reason=finVal('wallet-credit-reason'), method=(finEl('wallet-credit-method')||{}).value||'Cash';
+  var confirmed=(finEl('wallet-credit-confirm')||{}).checked;
+  if(!find||!studentId){ toast('Select a student wallet.','error'); return; }
+  if(amount<=0||!reason){ toast('Enter a reason and valid credit amount.','error'); return; }
+  if(!confirmed){ toast('Confirm that the amount has been received first.','error'); return; }
+  if(!window.confirm('Credit '+finNaira(amount)+' to this student wallet?')) return;
+  try{
+    var student=find.studentFor(studentId)||{};
+    var entry=find.walletCredit({
+      stuId:studentId, student:finStudentName(student), class:student.class||'--',
+      amount:amount, reason:reason, method:method, status:'Confirmed',
+      ref:'BURSAR-WAL-'+Date.now().toString(36).toUpperCase(),
+      by:(RSMS.user()||{}).name||'Bursar', date:finDate(), note:'Bursar-confirmed credit'
+    });
+    finSet('wallet-credit-amount',''); finSet('wallet-credit-reason','');
+    var check=finEl('wallet-credit-confirm'); if(check) check.checked=false;
+    updateWalletCreditBalance(); renderWalletActions();
+    toast('Wallet credited — '+entry.walId,'success');
+  }catch(error){ toast(error.message||'Could not credit wallet.','error'); }
+}
+function confirmWalletEntry(walId){
+  var find=finFind(); if(!find) return;
+  if(!window.confirm('Confirm this pending wallet credit?')) return;
+  try{
+    find.setWalletStatus(walId,'Confirmed','Confirmed by bursar');
+    renderWalletActions(); updateWalletCreditBalance();
+    toast('Wallet credit confirmed.','success');
+  }catch(error){ toast(error.message||'Could not confirm wallet credit.','error'); }
+}
+function printWalletEntry(walId){
+  var find=finFind(); if(!find) return;
+  try{ find.printWalletReceipt(walId); }catch(error){ toast(error.message||'Could not print wallet receipt.','error'); }
+}
+function renderWalletActions(){
+  var find=finFind(); if(!find) return;
+  finPopulateSelectors();
+  updateWalletCreditBalance();
+  var totals=find.walletTotals(), stats=finEl('wallet-stats');
+  if(stats) stats.innerHTML=finStat(finNaira(totals.totalBalance),'Total Wallet Balance','s-teal')+finStat(totals.activeWallets,'Active Wallets','s-green')+finStat(finNaira(totals.totalCredits),'Total Credits','s-gold')+finStat(finNaira(totals.totalDebits),'Total Debits','s-red');
+  var search=finVal('wallet-search').toLowerCase(), type=(finEl('wallet-type-filter')||{}).value||'';
+  var entries=find.wallet().filter(function(entry){
+    var text=((entry.walId||'')+' '+(entry.student||'')+' '+(entry.reason||'')+' '+(entry.ref||'')).toLowerCase();
+    return (!type||entry.type===type)&&(!search||text.indexOf(search)>-1);
+  }).slice().sort(function(a,b){ return String(b.recordedAt||b.date||'').localeCompare(String(a.recordedAt||a.date||'')); });
+  var list=finEl('wallet-actions-list'); if(!list) return;
+  list.innerHTML=entries.length?entries.map(function(entry){
+    var isCredit=entry.type==='credit';
+    var amount=(isCredit?'+':'-')+finNaira(entry.amount);
+    var color=isCredit?'var(--green)':'var(--red)';
+    var confirm=entry.status==='Pending'?'<button class="btn btn-gold btn-sm" onclick="confirmWalletEntry(&quot;'+finEsc(entry.walId)+'&quot;)">Confirm</button>':'';
+    return '<tr><td><strong>'+finEsc(entry.walId)+'</strong><br><span style="font-size:.66rem;color:var(--t3);">'+finEsc(entry.ref||'')+'</span></td><td>'+finEsc(entry.student)+'<br><span style="font-size:.66rem;color:var(--t3);">'+finEsc(entry.class||'')+'</span></td><td class="num" style="font-weight:800;color:'+color+'">'+amount+'</td><td>'+finEsc(entry.reason)+'</td><td>'+finEsc(entry.date)+'</td><td>'+finEsc(entry.by||'')+'</td><td>'+finBadge(entry.status)+'</td><td><div class="finance-actions">'+confirm+'<button class="btn btn-ghost btn-sm" onclick="printWalletEntry(&quot;'+finEsc(entry.walId)+'&quot;)">&#129534;</button></div></td></tr>';
+  }).join(''):'<tr><td colspan="8" class="fin-empty">No wallet actions match this filter.</td></tr>';
+}
+
 /* ── Projection ───────────────────────────────────────── */
 function renderProjection(){
   var find=finFind(); if(!find) return;
@@ -3218,7 +3302,7 @@ window.onPage_fees=function(){renderFinanceFees();};
 window.onPage_recurring=function(){renderRecurring();};
 window.onPage_expenses=function(){renderExpenses();};
 window.onPage_projection=function(){renderProjection();};
-window.onPage_wallet=function(){};
+window.onPage_wallet=function(){renderWalletActions();};
 window.onPage_reportcenter=function(){renderReportCenter();};
 
 if(window.FIND&&typeof window.FIND.onSync==='function') window.FIND.onSync(financeRefreshVisible);

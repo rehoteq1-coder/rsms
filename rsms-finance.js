@@ -558,6 +558,238 @@
     return copy(updated);
   }
 
+  // ── STUDENT WALLETS ───────────────────────────────────────
+  // Wallet balances are deliberately never persisted. They are derived from
+  // confirmed append-only credit and debit entries every time they are read.
+  function isWalletConfirmed(status){
+    return status === 'Confirmed';
+  }
+
+  function walletBalance(stuId){
+    return money(readCollection('wallet').filter(function(entry){
+      return String(entry.stuId || '') === String(stuId || '') && isWalletConfirmed(entry.status);
+    }).reduce(function(total, entry){
+      return total + (entry.type === 'debit' ? -money(entry.amount) : money(entry.amount));
+    }, 0));
+  }
+
+  function nextWalletSequence(year, term){
+    var highest = 0;
+    var prefix = 'WAL/'+year+'/'+term+'/';
+    readCollection('wallet').forEach(function(entry){
+      var walId = entry.walId || '';
+      if(walId.indexOf(prefix) === 0){
+        var sequence = parseInt(walId.split('/').pop(), 10);
+        if(sequence > highest) highest = sequence;
+      }
+    });
+    return highest + 1;
+  }
+
+  function walletIdFor(options){
+    var date = options.date || today();
+    var year = recordYear(date);
+    var term = termNumber(currentTerm(options.term));
+    return options.walId || 'WAL/'+year+'/'+term+'/'+String(nextWalletSequence(year, term)).padStart(5,'0');
+  }
+
+  function walletEntry(options, type, feeTxId){
+    options = options || {};
+    var student = studentFor(options.stuId) || {};
+    var term = currentTerm(options.term);
+    var session = currentSession(options.session);
+    var status = options.status || (type === 'credit' ? 'Pending' : 'Confirmed');
+    return {
+      id:options.id || id('wallet'),
+      walId:walletIdFor(options),
+      stuId:options.stuId || '',
+      student:options.student || studentName(student),
+      class:options.class || student.class || '--',
+      type:type,
+      amount:money(options.amount),
+      reason:options.reason || (type === 'credit' ? 'Wallet funding' : 'School fee payment'),
+      method:options.method || (type === 'credit' ? 'Cash' : 'Wallet'),
+      status:status,
+      ref:options.ref || '',
+      by:options.by || userName(),
+      date:options.date || today(),
+      recordedAt:options.recordedAt || now(),
+      note:options.note || '',
+      feeTxId:feeTxId || options.feeTxId || '',
+      term:term,
+      session:session
+    };
+  }
+
+  function walletCredit(options){
+    options = options || {};
+    var amount = money(options.amount);
+    if(!options.stuId) throw new Error('A student is required to credit a wallet.');
+    if(amount <= 0) throw new Error('Enter an amount greater than zero.');
+    var entry = walletEntry(options, 'credit');
+    if(entry.status !== 'Pending' && entry.status !== 'Confirmed' && entry.status !== 'Rejected'){
+      throw new Error('Wallet credits must be Pending, Confirmed, or Rejected.');
+    }
+    var wallet = readCollection('wallet');
+    var existing = wallet.some(function(row){ return row.walId === entry.walId; });
+    if(existing) throw new Error('Wallet receipt '+entry.walId+' already exists.');
+    wallet.push(entry);
+    saveCollection('wallet', wallet);
+    audit('Wallet credited', 'wallet_credit', 'Wallet '+entry.walId+': none → '+entry.status, null, entry);
+    return copy(entry);
+  }
+
+  function walletDebit(options){
+    options = options || {};
+    var amount = money(options.amount);
+    if(!options.stuId) throw new Error('A student is required to debit a wallet.');
+    if(amount <= 0) throw new Error('Enter an amount greater than zero.');
+    var available = walletBalance(options.stuId);
+    if(amount > available){
+      throw new Error('Insufficient wallet balance. Available: ₦'+available.toLocaleString());
+    }
+    // Generate the wallet receipt before the paired fee payment so both sides
+    // can reference the same WAL identifier without storing a balance.
+    var entry = walletEntry(options, 'debit');
+    entry.status = 'Confirmed';
+    var wallet = readCollection('wallet');
+    var existing = wallet.some(function(row){ return row.walId === entry.walId; });
+    if(existing) throw new Error('Wallet receipt '+entry.walId+' already exists.');
+    var payment = pay({
+      stuId:entry.stuId,
+      student:entry.student,
+      class:entry.class,
+      reg:options.reg || '',
+      amount:entry.amount,
+      type:options.feeType || options.paymentType || 'School Fees',
+      method:options.paymentMethod || 'Wallet',
+      channel:options.channel || 'wallet',
+      ref:entry.ref || entry.walId,
+      status:options.paymentStatus || 'Paid',
+      by:entry.by,
+      source:'wallet',
+      term:entry.term,
+      session:entry.session,
+      date:entry.date,
+      note:entry.note,
+      receiptNo:options.receiptNo || entry.walId
+    });
+    entry.feeTxId = payment.txId;
+    wallet.push(entry);
+    saveCollection('wallet', wallet);
+    audit('Wallet debited', 'wallet_debit', 'Wallet '+entry.walId+': none → Confirmed', null, entry);
+    var result = copy(entry);
+    result.wallet = copy(entry);
+    result.payment = copy(payment);
+    result.balance = walletBalance(entry.stuId);
+    return result;
+  }
+
+  function setWalletStatus(walId, status, note){
+    if(status !== 'Confirmed' && status !== 'Rejected'){
+      throw new Error('A pending wallet entry can only be Confirmed or Rejected.');
+    }
+    var wallet = readCollection('wallet');
+    var before = null;
+    var updated = null;
+    wallet = wallet.map(function(entry){
+      if(entry.walId !== walId) return entry;
+      if(entry.status !== 'Pending') throw new Error('Only pending wallet entries can be updated.');
+      before = copy(entry);
+      entry.status = status;
+      entry.note = note || entry.note || '';
+      entry.statusNote = note || entry.statusNote || '';
+      entry.updatedAt = now();
+      updated = entry;
+      return entry;
+    });
+    if(!updated) throw new Error('Wallet receipt '+walId+' was not found.');
+    saveCollection('wallet', wallet);
+    audit('Wallet status updated', updated.type === 'debit' ? 'wallet_debit' : 'wallet_credit', 'Wallet '+walId+': '+before.status+' → '+status, before, updated);
+    return copy(updated);
+  }
+
+  function walletTotals(){
+    var wallet = readCollection('wallet');
+    var balances = {};
+    var totalCredits = 0;
+    var totalDebits = 0;
+    wallet.forEach(function(entry){
+      if(!isWalletConfirmed(entry.status)) return;
+      var key = String(entry.stuId || '');
+      if(!balances[key]) balances[key] = {stuId:entry.stuId || '', student:entry.student || '', class:entry.class || '', balance:0};
+      if(entry.type === 'debit'){
+        totalDebits += money(entry.amount);
+        balances[key].balance -= money(entry.amount);
+      }else{
+        totalCredits += money(entry.amount);
+        balances[key].balance += money(entry.amount);
+      }
+    });
+    var wallets = Object.keys(balances).map(function(key){
+      balances[key].balance = money(balances[key].balance);
+      return balances[key];
+    });
+    return {
+      totalBalance:money(totalCredits - totalDebits),
+      activeWallets:wallets.filter(function(row){ return row.balance > 0; }).length,
+      totalCredits:money(totalCredits),
+      totalDebits:money(totalDebits),
+      balances:wallets,
+      entries:wallet
+    };
+  }
+
+  function walletBalanceAfter(walId){
+    var target = null;
+    readCollection('wallet').some(function(entry){
+      if(entry.walId === walId){ target = entry; return true; }
+      return false;
+    });
+    if(!target) return 0;
+    var rows = readCollection('wallet').map(function(entry, index){ return {entry:entry, index:index}; }).filter(function(row){
+      return String(row.entry.stuId || '') === String(target.stuId || '');
+    }).sort(function(a,b){
+      var aa = String(a.entry.recordedAt || a.entry.date || '');
+      var bb = String(b.entry.recordedAt || b.entry.date || '');
+      if(aa === bb) return a.index - b.index;
+      return aa.localeCompare(bb);
+    });
+    var balance = 0;
+    for(var i=0;i<rows.length;i++){
+      var entry = rows[i].entry;
+      if(isWalletConfirmed(entry.status)) balance += entry.type === 'debit' ? -money(entry.amount) : money(entry.amount);
+      if(entry.walId === walId) return money(balance);
+    }
+    return money(balance);
+  }
+
+  function walletEscape(value){
+    return String(value === undefined || value === null ? '' : value)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function printWalletReceipt(walId){
+    var entry = typeof walId === 'object' ? walId : null;
+    if(!entry){
+      readCollection('wallet').some(function(row){
+        if(row.walId === walId){ entry = row; return true; }
+        return false;
+      });
+    }
+    if(!entry) throw new Error('Wallet receipt was not found.');
+    var balanceAfter = walletBalanceAfter(entry.walId);
+    var result = {entry:copy(entry), balanceAfter:balanceAfter};
+    if(typeof window.open !== 'function') return result;
+    var receipt = window.open('', '_blank', 'width=460,height=650');
+    if(!receipt) return result;
+    var direction = entry.type === 'debit' ? 'Debit' : 'Credit';
+    var sign = entry.type === 'debit' ? '-' : '+';
+    receipt.document.write('<!doctype html><html><head><title>Wallet Receipt</title><style>body{font-family:Arial,sans-serif;color:#172033;padding:24px;max-width:420px;margin:auto}h1{font-size:21px;margin:0 0 4px}.muted{color:#64748b;font-size:12px}.amount{font-size:28px;font-weight:800;margin:18px 0}.row{display:flex;justify-content:space-between;border-top:1px solid #e2e8f0;padding:10px 0;font-size:13px}.balance{background:#eff6ff;border-radius:10px;padding:13px;margin-top:15px}</style></head><body><h1>Student Wallet Receipt</h1><div class="muted">'+walletEscape(entry.walId)+'</div><div class="amount">'+sign+'₦'+money(entry.amount).toLocaleString()+'</div><div class="row"><span>Student</span><strong>'+walletEscape(entry.student)+'</strong></div><div class="row"><span>Type</span><strong>'+direction+'</strong></div><div class="row"><span>Reason</span><strong>'+walletEscape(entry.reason)+'</strong></div><div class="row"><span>Date</span><strong>'+walletEscape(entry.date)+'</strong></div><div class="row"><span>Status</span><strong>'+walletEscape(entry.status)+'</strong></div><div class="balance"><div class="muted">Balance after this transaction</div><strong>₦'+balanceAfter.toLocaleString()+'</strong></div><script>setTimeout(function(){window.print();},180);<\/script></body></html>');
+    receipt.document.close();
+    return result;
+  }
+
   function migrateLegacy(force){
     // The flag records the first migration pass. A forced re-check is used
     // after an asynchronous Firebase fees sync and remains idempotent.
@@ -661,6 +893,13 @@
     recurringPlans:function(){ return readCollection('recurring'); },
     expenses:function(){ return readCollection('expenses'); },
     wallet:function(){ return readCollection('wallet'); },
+    walletBalance:walletBalance,
+    walletCredit:walletCredit,
+    walletDebit:walletDebit,
+    setWalletStatus:setWalletStatus,
+    walletTotals:walletTotals,
+    walletBalanceAfter:walletBalanceAfter,
+    printWalletReceipt:printWalletReceipt,
     students:students,
     studentFor:studentFor,
     school:school,
