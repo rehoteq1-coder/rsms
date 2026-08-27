@@ -1084,7 +1084,7 @@ select.fi option{background:var(--card);color:var(--t1);}
   <div class="card" style="margin-bottom:12px;">
     <div class="card-title">Payment Verification</div>
     <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:var(--r2);padding:10px 14px;margin-bottom:14px;font-size:.78rem;color:var(--t2);">
-      &#128274; Card payments and card wallet top-ups stay <strong>Pending</strong> until the deployed Cloud Function confirms them with the gateway. Save only public URLs here; secret keys belong in Firebase Function secrets.
+      &#128274; Your school is the <strong>direct account holder</strong>: card payments settle to your own bank via your own gateway account. Payments stay <strong>Pending</strong> until the deployed Cloud Function confirms them with the gateway using your school&rsquo;s key. Your key is saved server-side only (Google Secret Manager) and is never shown again.
     </div>
     <div class="f2">
       <div class="fg"><label>Provider</label>
@@ -1094,8 +1094,25 @@ select.fi option{background:var(--card);color:var(--t1);}
         <input class="fi" id="flw-verify-url" placeholder="https://…/verifyPayment" inputmode="url"/>
       </div>
     </div>
-    <div class="fg"><label>Webhook URL</label>
+    <div class="fg"><label>Gateway Key Endpoint URL</label>
+      <input class="fi" id="flw-key-endpoint-url" placeholder="https://…/storeGatewaySecret" inputmode="url"/>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Your School&rsquo;s Secret Key</label>
+        <input class="fi" id="flw-secret-key" type="password" placeholder="FLWSEC-… or sk_… (leave blank to keep current)"/>
+      </div>
+      <div class="fg"><label>&nbsp;</label>
+        <div id="flw-key-status" style="font-size:.75rem;color:var(--t3);padding-top:12px;line-height:1.4;">Checking…</div>
+      </div>
+    </div>
+    <div class="fg"><label>Webhook Base URL (deployed function)</label>
       <input class="fi" id="flw-webhook-url" placeholder="https://…/paymentWebhook" inputmode="url"/>
+    </div>
+    <div class="fg"><label>Your School&rsquo;s Webhook URL &mdash; paste this into your gateway dashboard</label>
+      <div style="display:flex;gap:8px;">
+        <input class="fi" id="flw-school-webhook" readonly style="flex:1;font-size:.75rem;" value=""/>
+        <button type="button" class="btn btn-ghost" style="height:46px;white-space:nowrap;" onclick="copySchoolWebhook()">&#128203; Copy</button>
+      </div>
     </div>
   </div>
   <div class="card">
@@ -2346,26 +2363,146 @@ function loadBursarSettings(){
   setVal('flw-business-name',cfg.businessName);
   setVal('flw-provider',cfg.provider||'flutterwave');
   setVal('flw-verify-url',cfg.verifyUrl||'');
+  setVal('flw-key-endpoint-url',cfg.keyEndpointUrl||'');
   setVal('flw-webhook-url',cfg.webhookUrl||'');
   setVal('flw-bank-name',cfg.bankName||'');
   setVal('flw-account-no',cfg.accountNo||'');
   setVal('flw-account-name',cfg.accountName||'');
+  renderKeyStatus(cfg);
+  renderSchoolWebhook();
+}
+
+function gatewayKeyFlag(provider){
+  return String(provider||'').toLowerCase()==='paystack' ? 'hasPsSecret' : 'hasFlwSecret';
+}
+
+function currentSchoolId(){
+  return ((JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId)||'';
+}
+
+function renderKeyStatus(cfg){
+  var el=document.getElementById('flw-key-status');
+  if(!el)return;
+  var cfg=cfg||getFlwConfig();
+  var provider=getVal('flw-provider')||cfg.provider||'flutterwave';
+  var configured=!!cfg[gatewayKeyFlag(provider)];
+  if(configured){
+    el.innerHTML='&#9989; Gateway key: <strong>configured</strong>'+(cfg.secretUpdatedAt?' &middot; updated '+String(cfg.secretUpdatedAt).slice(0,10):'')+' &mdash; card payments enabled.';
+    el.style.color='var(--green)';
+  }else{
+    el.innerHTML='&#9888;&#65039; Gateway key: <strong>not configured</strong> for '+(provider==='paystack'?'Paystack':'Flutterwave')+' &mdash; card payments are disabled for your school until your school&rsquo;s own key is saved.';
+    el.style.color='var(--t3)';
+  }
+}
+
+function renderSchoolWebhook(){
+  var el=document.getElementById('flw-school-webhook');
+  if(!el)return;
+  var base=String(getVal('flw-webhook-url')||'').replace(/^\s+|\s+$/g,'');
+  var sid=currentSchoolId();
+  el.value=(base&&sid)?base.split('?')[0]+'?school='+encodeURIComponent(sid):'';
+}
+
+function copySchoolWebhook(){
+  var el=document.getElementById('flw-school-webhook');
+  if(!el||!el.value){toast('Save the webhook base URL first.','error');return;}
+  function done(){toast('\u2705 Webhook URL copied — paste it into your gateway dashboard','success');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(el.value).then(done).catch(function(){el.select();document.execCommand('copy');done();});
+  }else{el.select();document.execCommand('copy');done();}
+}
+
+/* Store (or keep) this school's own gateway secret key via the
+   storeGatewaySecret callable. The key goes server-side only (Secret
+   Manager). Auth: Firebase email session when available, otherwise the
+   bursar's legacy PIN (asked once, never stored). */
+function storeGatewayKey(provider, key){
+  var endpoint=String(getVal('flw-key-endpoint-url')||'').replace(/^\s+|\s+$/g,'');
+  if(!endpoint)return Promise.reject(new Error('Set the Gateway Key Endpoint URL first (from the deployment).'));
+  var sid=currentSchoolId();
+  if(!sid)return Promise.reject(new Error('School context is missing.'));
+
+  var usedPin=false;
+  function attempt(pin){
+    var payload={data:{schoolId:sid,provider:provider,action:'set',secretKey:key}};
+    if(pin)payload.data.pin=pin;
+    var headers={'Content-Type':'application/json'};
+    function post(){
+      return window.fetch(endpoint,{method:'POST',headers:headers,body:JSON.stringify(payload)}).then(function(response){
+        return response.json().catch(function(){return {};}).then(function(envelope){
+          var error=envelope&&envelope.error;
+          if(!response.ok){
+            var denied=error&&String(error.status||error.message||'').indexOf('permission-denied')>=0;
+            if(denied&&!usedPin){
+              usedPin=true;
+              var p=window.prompt('Enter your bursar PIN to save the gateway key:');
+              if(p!==null)return attempt(p);
+            }
+            throw new Error((error&&(error.message||error.status))||'Saving the gateway key failed.');
+          }
+          var result=envelope.result||envelope.data||{};
+          if(result.ok!==true)throw new Error('Saving the gateway key failed.');
+        });
+      });
+    }
+    var user=(typeof RSMS_FB!=='undefined'&&typeof RSMS_FB.currentUser==='function')?RSMS_FB.currentUser():null;
+    if(user&&typeof user.getIdToken==='function'){
+      return user.getIdToken().then(function(token){
+        if(token)headers['Authorization']='Bearer '+token;
+        return post();
+      }).catch(function(){
+        return post();
+      });
+    }
+    return post();
+  }
+  return attempt(null);
 }
 
 function saveFlwSettings(){
+  var provider=getVal('flw-provider')||'flutterwave';
   var cfg={
     publicKey:getVal('flw-public-key'),
     currency:getVal('flw-currency')||'NGN',
     businessName:getVal('flw-business-name'),
-    provider:getVal('flw-provider')||'flutterwave',
+    provider:provider,
     verifyUrl:getVal('flw-verify-url'),
+    keyEndpointUrl:getVal('flw-key-endpoint-url'),
     webhookUrl:getVal('flw-webhook-url'),
     bankName:getVal('flw-bank-name'),
     accountNo:getVal('flw-account-no'),
     accountName:getVal('flw-account-name')
   };
-  saveFlwConfig(cfg);
-  toast('\u2705 Payment settings saved','success');
+  var existing=getFlwConfig();
+  [gatewayKeyFlag('flutterwave'),gatewayKeyFlag('paystack'),'secretUpdatedAt'].forEach(function(k){
+    if(existing[k]!==undefined)cfg[k]=existing[k];
+  });
+
+  var keyInput=document.getElementById('flw-secret-key');
+  var key=keyInput?keyInput.value.replace(/^\s+|\s+$/g,''):'';
+
+  if(!key){
+    saveFlwConfig(cfg);
+    renderKeyStatus(cfg);
+    renderSchoolWebhook();
+    toast('\u2705 Payment settings saved','success');
+    return;
+  }
+
+  if(keyInput)keyInput.disabled=true;
+  storeGatewayKey(provider,key).then(function(){
+    cfg[gatewayKeyFlag(provider)]=true;
+    cfg.secretUpdatedAt=new Date().toISOString();
+    if(keyInput)keyInput.value='';
+    saveFlwConfig(cfg);
+    renderKeyStatus(cfg);
+    renderSchoolWebhook();
+    toast('\u2705 Gateway key saved server-side. Payment settings saved.','success');
+  }).catch(function(error){
+    toast(error.message||'Saving the gateway key failed.','error');
+  }).then(function(){
+    if(keyInput)keyInput.disabled=false;
+  });
 }
 
 // ── INIT ────────────────────────────────────────────

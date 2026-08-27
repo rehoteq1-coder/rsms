@@ -1,5 +1,13 @@
 # RSMS production deployment runbook — Finance/Gateway Phases 1–4
 
+> **Status (2026-08-27):** the per-school gateway model is **approved and
+> implemented** (`docs/per-school-gateways.md`). **Each school is the direct
+> gateway account holder** — no shared platform account, and **no platform
+> gateway secrets to set**: every school's own key is entered by that
+> school's bursar and stored in Google Secret Manager by the deployed
+> `storeGatewaySecret` function. Deploy these four functions:
+> `verifyPayment`, `paymentWebhook`, `provisionUser`, `storeGatewaySecret`.
+
 This runbook deploys the already-merged implementation (commit `5ec1fd0`,
 PR #12) to Firebase project **`rsms-a84ff`**. It is ordered so that:
 
@@ -19,14 +27,15 @@ file, or in chat. Secret values are entered only at the interactive
 
 | Check | Result |
 | --- | --- |
-| Repo state | Clean working tree, `5ec1fd0` ("School Finance Platform — Phases 1-4") in HEAD history |
-| `functions/` dependencies | `npm install` OK (239 packages, firebase-functions v5, node 20) |
-| Syntax check | `node --check` passes for `src/index.js` and `src/gateway.js` |
-| Unit tests | `npm test` — **7/7 pass** (provider mapping, signature checks, pending→confirmed transitions, idempotency) |
+| Repo state | Clean working tree; Phases 1–4 (`5ec1fd0`) + Phase 5 per-school gateways on this branch |
+| `functions/` dependencies | `npm install` OK (firebase-functions v5, firebase-admin, @google-cloud/secret-manager, node 20) |
+| Syntax check | `node --check` passes for `src/index.js`, `src/gateway.js`, `src/secretstore.js` |
+| Unit tests | `npm test` — **15/15 pass** (provider mapping, signature checks, pending→confirmed transitions, idempotency, key-format validation, secret-name mapping, webhook school parsing, secret store set/get/rotate/revoke) |
 | JSON validity | `firebase.json`, both rules files, `functions/package.json` all parse |
-| Secret leak scan | Working tree **and** full git history contain no `FLWSEC_` / `PSKS_…` / `flwsk_` secret values. Only Flutterwave **public** keys (`FLWPUBK-…`) appear, which are client-side checkout keys and public by design. |
+| Secret leak scan | Working tree **and** full git history contain no gateway **secret** values. Only Flutterwave **public** keys (`FLWPUBK-…`) appear, which are client-side checkout keys and public by design. |
 | Project identity | Web config targets `rsms-a84ff`, RTDB `rsms-a84ff-default-rtdb` (europe-west1) |
-| Functions to deploy | `verifyPayment` (callable), `paymentWebhook` (HTTP), `provisionUser` (callable), codebase `rsms`, region default `us-central1` |
+| Functions to deploy | `verifyPayment` (callable), `paymentWebhook` (HTTP), `provisionUser` (callable), `storeGatewaySecret` (callable) — codebase `rsms`, region default `us-central1` |
+| Platform gateway secrets | **None required** — per-school keys are stored server-side by `storeGatewaySecret` in Google Secret Manager |
 
 ---
 
@@ -62,30 +71,34 @@ Also check the **live** RTDB rules: Firebase console →
 `rsms-a84ff-default-rtdb` → Rules. They are either the legacy open rules, the
 compat rules, or (must verify) the strict rules. Record which.
 
-## Stage 2 — Set Functions secrets (interactive, secure prompt only)
+## Stage 2 — One-time IAM grant (no gateway secrets to set)
 
-Exactly two secrets, with **exactly these names** (the functions bind
-`params.defineSecret` to these names and both `verifyPayment` and
-`paymentWebhook` declare both):
+With per-school gateways there are **no platform gateway secrets to set**.
+Each school's own key is entered by that school's bursar in the Bursar page
+and stored in Google Secret Manager by the `storeGatewaySecret` function.
+
+That function needs write access to Secret Manager through the Cloud
+Functions service account. Grant it once:
+
+1. Firebase console → project `rsms-a84ff` → **IAM and Admin → IAM**.
+2. Find the **Cloud Functions service account**
+   (`<numeric-project-id>-compute@developer.gserviceaccount.com`).
+3. Add member → grant **Secret Manager Manager**
+   (`roles/secretmanager.secretManager`) on the project.
+
+Or via CLI:
 
 ```bash
-firebase functions:secrets:set FLUTTERWAVE_SECRET_KEY
-firebase functions:secrets:set PAYSTACK_SECRET_KEY
+gcloud projects add-iam-policy-binding rsms-a84ff \
+  --member=serviceAccount:<numeric-project-id>-compute@developer.gserviceaccount.com \
+  --role=roles/secretmanager.secretManager
 ```
 
-Type the value only at the CLI prompt. Never use `--value`, never put it in
-`.env`, never paste it in chat, never put it in the Bursar settings page.
-Use the **test/sandbox** secret keys for the first end-to-end pass; switch to
-live keys only in Stage 8.
+> If you already ran `firebase functions:secrets:set` for the old model's
+> `FLUTTERWAVE_SECRET_KEY` / `PAYSTACK_SECRET_KEY`, those secrets are now
+> unused. Optional cleanup: `firebase functions:secrets:delete <name> --force`.
 
-Verify existence (names/metadata only — the value is never shown):
-
-```bash
-firebase functions:secrets:describe FLUTTERWAVE_SECRET_KEY
-firebase functions:secrets:describe PAYSTACK_SECRET_KEY
-```
-
-## Stage 3 — Deploy Cloud Functions (only after Stage 2)
+## Stage 3 — Deploy Cloud Functions (after Stage 2's IAM grant)
 
 ```bash
 # from the repository root
@@ -96,13 +109,14 @@ Do **not** run a bare `firebase deploy` — `firebase.json` currently points
 `database.rules` at the strict `database.rules.json`, which must NOT go live
 yet (Stage 4 explains the compat-first order).
 
-The deploy output lists the deployed HTTPS URLs. Capture all three; the two
-you need are:
+The deploy output lists the deployed HTTPS URLs. Capture all four; the three
+you configure are:
 
 - `verifyPayment` (callable) — example shape:
   `https://verifyPayment-<hash>-rsms-a84ff-<numeric-id>.us-central1.cloudfunctions.net`
 - `paymentWebhook` (HTTP) — example shape:
   `https://paymentWebhook-<hash>-rsms-a84ff-<numeric-id>.us-central1.cloudfunctions.net`
+- `storeGatewaySecret` (callable) — same shape with `storeGatewaySecret`
 
 Copy the exact URLs from the CLI output (or `firebase functions:list`).
 They can also be found in the console under Build → Functions.
@@ -110,12 +124,12 @@ They can also be found in the console under Build → Functions.
 Smoke-test (before configuring anything else):
 
 ```bash
-# must NOT return a verified result; it should error with a missing/invalid reference
+# must NOT return a verified result; the school does not exist
 curl -s -X POST "<verifyPayment URL>" -H 'Content-Type: application/json' \
-  -d '{"data":{"ref":"nonexistent-ref","provider":"flutterwave"}}'
+  -d '{"data":{"ref":"nonexistent-ref","provider":"flutterwave","schoolId":"no-such-school"}}'
 ```
 
-Expected: an HTTP error envelope (`invalid-argument`/`internal`), **not**
+Expected: an HTTP error envelope (`not-found`/`invalid-argument`), **not**
 `{"result":{"verified":true,…}}`.
 
 ## Stage 4 — Compatibility RTDB rules first
@@ -147,46 +161,53 @@ verified Auth users, claims, and school membership.
 ## Stage 5 — Configure the Bursar payment settings (in RSMS)
 
 In the deployed RSMS app, log in as **Bursar** → **Payment Settings** →
-**Payment Verification** card:
+**Payment Verification** card (repeat for each school):
 
 | Field | Value |
 | --- | --- |
-| Provider | `flutterwave` or `paystack` (default provider used by the browser's verify call) |
-| **Verify Endpoint URL** | the deployed **`verifyPayment`** URL from Stage 3 (full URL, `https://…`) |
-| **Webhook URL** | the deployed **`paymentWebhook`** URL from Stage 3 (saved as the school's operational record) |
+| Provider | `flutterwave` or `paystack` (the school's own gateway account) |
+| **Verify Endpoint URL** | the deployed **`verifyPayment`** URL from Stage 3 |
+| **Gateway Key Endpoint URL** | the deployed **`storeGatewaySecret`** URL from Stage 3 |
+| **Your School's Secret Key** | the school's **own** gateway secret key (`FLWSEC-…` or `sk_…` from the school's gateway dashboard). Saved server-side only; if you're not signed in with email, the page asks for the bursar PIN once |
+| Webhook Base URL | the deployed **`paymentWebhook`** URL from Stage 3 |
+| Your School's Webhook URL | auto-composed (`…?school=<this school>`) — **Copy** it |
 
-Then **Save Payment Settings**.
+Then **Save Payment Settings**. The status line must read
+"Gateway key: configured" — until it does, card payments stay disabled for
+that school (cash and bank transfer are unaffected).
 
 How it works: the Bursar/Parent browser POSTs the Firebase callable envelope
 `{"data":{"ref":…,"provider":…,"schoolId":…}}` directly to the Verify
 Endpoint URL and reads the `result` (or `data`) envelope — that is why the
-raw callable URL (not a shortened link) goes in this field. The public
-gateway keys stay in their existing Provider fields; **secret keys never
-belong in this page** (the card itself says so).
+raw callable URL (not a shortened link) goes in this field. The school's
+public key stays in its Provider field; the school's secret key goes to
+Google Secret Manager via `storeGatewaySecret` and is never shown again or
+stored anywhere else.
 
-## Stage 6 — Gateway dashboard webhook configuration
+## Stage 6 — Gateway dashboard webhook configuration (per school)
 
-Use **test/sandbox mode** first.
+Each school does this in **its own** gateway dashboard (test/sandbox mode
+first):
 
-**Flutterwave** (dashboard, sandbox environment first): Settings →
-Webhooks → create/enable a webhook for transaction/charge-success
-notifications → URL = the **`paymentWebhook`** URL. Flutterwave signs each
-delivery with the `x-flw-signature` header (SHA-512 of the raw body); the
-function verifies it in constant time.
+- **Flutterwave:** Settings → Webhooks → create/enable a webhook for
+  transaction/charge-success notifications → URL = **that school's** webhook
+  URL from Stage 5 (base + `?school=<schoolId>`, copied from the Bursar
+  page). Flutterwave signs each delivery with the `x-flw-signature` header
+  (SHA-512 of the raw body); the function verifies it in constant time.
+- **Paystack:** Settings → API Keys → Webhooks → Add webhook → URL =
+  **that school's** webhook URL, event `charge.success` (optional:
+  `charge.pending`, `charge.failed`). Paystack signs deliveries with the
+  `x-paystack-signature` header (HMAC-SHA512 keyed with **that school's**
+  secret key); the function verifies it the same way.
 
-**Paystack** (dashboard, Test Mode first): Settings → API Keys → Webhooks →
-Add webhook → URL = the **`paymentWebhook`** URL, event `charge.success`
-(optional: `charge.pending`, `charge.failed`). Paystack signs deliveries with
-the `x-paystack-signature` header (HMAC-SHA512 keyed with the **secret** key);
-the function verifies it the same way.
-
-Both dashboards must point at the *same* `paymentWebhook` URL stored in
-Stage 5. The function answers `200 {"status":"ok",…}` when verification
+The `?school=` suffix is what tells the shared function which school's key
+and ledger to use — every school must use the URL the Bursar page composes
+for it. The function answers `200 {"status":"ok",…}` when verification
 succeeds; transient failures answer `500` so the provider retries
 idempotently (a second delivery finds no pending row and creates no second
 audit record).
 
-## Stage 7 — Sandbox end-to-end verification
+## Stage 7 — Sandbox end-to-end verification (per school)
 
 1. In RSMS, make a **card** payment (or wallet top-up) with the test gateway
    keys. The ledger row is created `Pending`.
@@ -253,14 +274,16 @@ rules, fix provisioning, and re-run the checklist.
 
 ## Rollback
 
-- **Functions:** `firebase functions:delete verifyPayment paymentWebhook provisionUser --force`
+- **Functions:** `firebase functions:delete verifyPayment paymentWebhook provisionUser storeGatewaySecret --force`
   returns the platform to "verification endpoint not deployed": card rows
   remain `Pending`, the browser shows "verification has not been deployed",
   cash flows are unaffected. Or redeploy the previous code version.
 - **Rules:** re-paste `database.rules.compat.json` in the Rules console (or
   re-run Stage 4 Option B). Strict rules have no finer rollback than compat.
-- **Secrets:** rotate with `firebase functions:secrets:set <NAME>` then
-  `firebase deploy --only functions` — never by editing a portal file.
+- **School keys:** rotate by pasting the new key in the Bursar page (the new
+  Secret Manager version replaces the old one). Server-side revocation is
+  supported (`storeGatewaySecret` with `action:'revoke'`). There are no
+  platform-level gateway secrets to rotate.
 - **Money data:** verification only transitions `Pending` rows and appends
   audit rows; it never deletes or rewrites amounts. Rollback never touches
   confirmed/rejected rows or their audit trail.
@@ -269,10 +292,13 @@ rules, fix provisioning, and re-run the checklist.
 
 | Symptom | Likely cause / fix |
 | --- | --- |
-| `verifyPayment` → 503 "Flutterwave verification is not configured" | Secret not set, or functions deployed before the secret existed — re-run Stage 2 then Stage 3 |
-| Webhook `401 invalid-gateway-signature` | Provider not sending the header, wrong secret (Paystack HMAC uses the **secret** key), or payload mutated in transit |
+| `verifyPayment` → 503 "The payment gateway key for this school is not configured" | The school's bursar hasn't saved the school's own key yet — check the status line in Payment Settings (Stage 5) |
+| Webhook `400 missing-school` | The dashboard webhook URL is missing the `?school=<schoolId>` suffix — use the URL the Bursar page composes |
+| Webhook `400 school-key-not-configured` | The school's key isn't in Secret Manager yet (Stage 5 not completed for that school) |
+| Webhook `401 invalid-gateway-signature` | Provider not sending the header, wrong school key (Paystack HMAC is keyed with that school's secret key), or payload mutated in transit |
 | `502 provider declined verification` | Sandbox key used against live reference (or vice versa), or bad reference |
-| Row stays `Pending` after a successful sandbox charge | Check the provider dashboard's webhook delivery log, then `firebase functions:logs:read` |
+| Row stays `Pending` after a successful sandbox charge | Check the provider dashboard's webhook delivery log (right school URL?), then `firebase functions:logs:read` |
+| `permission-denied` from `storeGatewaySecret` | Not signed in as the school's bursar/admin by email, and the bursar PIN prompt was declined or wrong; or the account's claims/registry aren't provisioned yet |
 | `permission-denied` from `provisionUser` | `config/superadmin_hash` missing or password mismatch |
 
 ## Notes
