@@ -1,8 +1,36 @@
 # RSMS Offline School Server — Design
 
-> **Status: design only.** This is the proposed architecture for schools with
-> unreliable internet. It is not an implementation plan for browser-only
-> offline caching, and it does not change the current cloud deployment.
+> **Status: design; Phase A core implemented (2026-08-31)** in `offline/`
+> on branch `arena/01a03e39-rsms`. Implemented and tested: local Express
+> server, SQLite data layer (node:sqlite built-in — see note below), staff
+> auth (scrypt-hashed PINs, HttpOnly cookie sessions, role middleware),
+> durable outbox with stable idempotency intents, first-run bootstrap +
+> school binding (cloud validation pending Phase B), self-hosted CDN assets,
+> LAN data adapter (existing portal pages run unchanged), health page,
+> staff login page, 6/6 server tests. **Not yet implemented:** the cloud
+> push/pull direction (Phase B, with the `registerOfflineServer` cloud
+> function), the Bursar Conflict Review screen, and Windows installer /
+> NSSM service / backup packaging (Phase C).
+>
+> Implementation notes:
+> - `node:sqlite` (Node built-in) replaces better-sqlite3: same synchronous
+>   single-file model with **zero native dependencies**, which removes the
+>   node-gyp/prebuild risk on school PCs. Requires Node 22.5+ with
+>   `--experimental-sqlite` (Node 23.4+ needs no flag); the Phase C installer
+>   bundles the runtime.
+> - Credential hashing uses Node's built-in `crypto.scrypt` (salted,
+>   memory-hard, timing-safe compare) rather than Argon2id, for the same
+>   zero-native-dependency reason; Argon2id may replace it in Phase C.
+> - The portals load Firebase/Chart.js/QR libraries from CDNs today; the
+>   offline server rewrites those URLs to committed `offline/server/vendor/`
+>   copies at serve time (repository files unchanged, `npm run vendor`).
+> - `rsms-firebase.js` disables Firebase writes when `RSMS_LOCAL.mode ===
+>   'lan'`, so a LAN machine with flaky internet cannot dual-write.
+
+>
+> This is the proposed architecture for schools with unreliable internet.
+> It is not an implementation plan for browser-only offline caching, and it
+> does not change the current cloud deployment.
 
 ## 1. Product boundary
 

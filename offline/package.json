@@ -1,0 +1,22 @@
+{
+  "name": "rsms-offline-server",
+  "private": true,
+  "version": "0.1.0",
+  "description": "RSMS offline school server - local LAN deployment with durable outbox sync (Phase A)",
+  "main": "server/index.js",
+  "engines": { "node": ">=22.5" },
+  "scripts": {
+    "start": "node --experimental-sqlite server/index.js",
+    "vendor": "node server/vendor-assets.js",
+    "test": "node --experimental-sqlite --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "chart.js": "4.4.1",
+    "firebase": "10.12.0",
+    "jsqr": "1.4.0",
+    "qrcodejs": "1.0.0"
+  }
+}

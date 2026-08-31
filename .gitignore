@@ -11,3 +11,6 @@ node_modules/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Offline server local data (SQLite) and runtime artifacts
+offline/data/
