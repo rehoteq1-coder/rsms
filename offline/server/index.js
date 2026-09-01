@@ -21,11 +21,15 @@ var express = require('express');
 var dbModule = require('./db');
 var auth = require('./auth');
 var sync = require('./sync');
+var backup = require('./backup');
+var updater = require('./updater');
 var portals = require('./serve-portals');
+
+var WIZARD_PAGE = require('./wizard-page');
 
 var REPO_ROOT = path.join(__dirname, '..', '..');
 var VENDOR_DIR = path.join(__dirname, 'vendor');
-var SERVER_VERSION = '0.2.0-phase-b';
+var SERVER_VERSION = '0.3.0-phase-c';
 
 var CONFLICTS_PAGE = '<!doctype html><meta charset="utf-8"><title>RSMS — Bursar Conflict Review</title>' +
   '<meta name="viewport" content="width=device-width,initial-scale=1">' +
@@ -79,6 +83,28 @@ function lanAddresses(){
     });
   });
   return out;
+}
+
+/* Free disk space (MB) for the path's volume. Returns null when the
+   platform probe fails — the health page then shows "unknown". */
+function diskFreeMB(targetPath){
+  var child = require('child_process');
+  try{
+    if(process.platform === 'win32'){
+      var letter = String(targetPath || 'C:').replace(/\\/g, '/').charAt(0).toUpperCase();
+      var out = child.execSync(
+        'wmic logicaldisk where "DeviceID=\'' + letter + ':\'" get FreeSize /value',
+        {timeout: 8000}).toString();
+      var m = out.match(/FreeSize=(\d+)/);
+      return m ? Math.floor(Number(m[1]) / 1024 / 1024) : null;
+    }
+    var lines = child.execSync('df -Pk ' + JSON.stringify(String(targetPath || '/')),
+      {timeout: 8000}).toString().trim().split('\n');
+    var fields = lines[lines.length - 1].split(/\s+/);
+    return Math.floor(Number(fields[3]) / 1024);
+  } catch(e){
+    return null;
+  }
 }
 
 function createApp(options){
@@ -323,6 +349,7 @@ function createApp(options){
   });
 
   app.put('/api/school/collections/:key', auth.requireAuth(db), requireBound(), function(req, res){
+    if(!backup.guardMaintenance(db, res)) return;
     var key = req.params.key;
     if(COLLECTIONS.indexOf(key) < 0) return res.status(404).json({error:'unknown collection'});
     var value = (req.body || {}).rows !== undefined ? req.body.rows : (req.body || {});
@@ -354,6 +381,7 @@ function createApp(options){
   });
 
   app.post('/api/school/conflicts/:id/resolve', auth.requireAuth(db, ['admin','bursar','superadmin']), requireBound(), function(req, res){
+    if(!backup.guardMaintenance(db, res)) return;
     var resolution = String((req.body || {}).resolution || '').trim().toLowerCase();
     var result = sync.resolveConflict(db, req.binding.schoolId, req.params.id, resolution, req.staff.username);
     if(!result.ok) return res.status(result.error === 'not-found' ? 404 : 400).json({error: result.error});
@@ -364,6 +392,177 @@ function createApp(options){
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
     res.send(CONFLICTS_PAGE);
+  });
+
+  /* ── First-run network wizard (Phase C) ─────────────────────── */
+  app.get('/api/wizard/info', auth.requireAuth(db), function(req, res){
+    var ifaces = os.networkInterfaces();
+    var macs = {};
+    Object.keys(ifaces).forEach(function(name){
+      (ifaces[name] || []).forEach(function(i){
+        if(i.family === 'IPv4' && !i.internal) macs[i.address] = i.mac;
+      });
+    });
+    var port = Number(process.env.PORT || 8300);
+    res.json({
+      version: SERVER_VERSION,
+      schemaVersion: dbModule.SCHEMA_VERSION,
+      hostname: os.hostname(),
+      port: port,
+      lan: lanAddresses().map(function(ip){
+        return {ip: ip, mac: macs[ip] || null, portalUrl: 'http://' + ip + ':' + port + '/'};
+      }),
+      binding: sync.binding(db),
+      inMigration: dbModule.inMigration(db),
+      maintenance: backup.inMaintenance(db),
+      pendingRestart: updater.pendingRestart(db),
+      backup: {
+        dir: backup.backupDir(db),
+        retain: Number(dbModule.metaGet(db, 'backup_retain') || 7),
+        last: dbModule.metaGet(db, 'last_backup_at'),
+        count: backup.listBackups(db).length
+      },
+      diskFreeMB: diskFreeMB(backup.backupDir(db))
+    });
+  });
+
+  app.get('/wizard.html', auth.requireAuth(db), function(req, res){
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(WIZARD_PAGE);
+  });
+
+  /* ── Admin operations: backups, restore, update, restart, diag ── */
+  app.get('/api/admin/backups', auth.requireAuth(db, ['admin','superadmin']), function(req, res){
+    res.json({dir: backup.backupDir(db), backups: backup.listBackups(db)});
+  });
+
+  app.post('/api/admin/backups/config', auth.requireAuth(db, ['admin','superadmin']), function(req, res){
+    var body = req.body || {};
+    var result = {};
+    if(body.dir) result.dir = backup.setBackupDir(db, String(body.dir));
+    if(body.retain) result.retain = Number(backup.setBackupRetain(db, body.retain));
+    res.json({ok: true, dir: backup.backupDir(db),
+      retain: Number(dbModule.metaGet(db, 'backup_retain') || 7)});
+  });
+
+  app.post('/api/admin/backup', auth.requireAuth(db, ['admin','superadmin']), function(req, res){
+    try{
+      var body = req.body || {};
+      var opts = {};
+      if(body.dir) opts.dir = String(body.dir);
+      if(body.suffix) opts.suffix = String(body.suffix).slice(0, 32);
+      var record = backup.createBackup(db, opts);
+      res.json({ok: true, backup: record});
+    }catch(e){
+      res.status(500).json({error: 'backup failed: ' + e.message});
+    }
+  });
+
+  app.post('/api/admin/backups/:name/restore', auth.requireAuth(db, ['admin','superadmin']), function(req, res){
+    try{
+      var body = req.body || {};
+      var result = backup.restoreBackup(db, req.params.name, {
+        schoolCode: String(body.schoolCode || '').trim(),
+        createdAt: String(body.createdAt || '').trim()
+      });
+      res.json(result);
+    }catch(e){
+      res.status(400).json({error: e.message});
+    }
+  });
+
+  app.post('/api/admin/update', auth.requireAuth(db, ['admin','superadmin']), function(req, res){
+    if(!backup.guardMaintenance(db, res)) return;
+    try{
+      var dir = String((req.body || {}).releaseDir || '');
+      if(!dir) return res.status(400).json({error: 'releaseDir required'});
+      var result = updater.applyRelease(dir, {db: db});
+      res.json(result);
+    }catch(e){
+      res.status(400).json({error: e.message});
+    }
+  });
+
+  app.post('/api/admin/restart', auth.requireAuth(db, ['admin','superadmin']), function(req, res){
+    var child = require('child_process');
+    res.json({ok: true,
+      note: process.platform === 'win32'
+        ? 'restarting the RSMS Offline service'
+        : 'exiting; the supervisor (NSSM/foreground) will restart it'});
+    setTimeout(function(){
+      try{
+        if(process.platform === 'win32'){
+          child.spawn('nssm', ['restart', 'RSMSOffline'], {detached: true, stdio: 'ignore'}).unref();
+          setTimeout(function(){ process.exit(0); }, 500);
+        } else {
+          process.exit(0);
+        }
+      }catch(e){
+        process.exit(0);
+      }
+    }, 300);
+  });
+
+  function diagBundle(){
+    var b = sync.binding(db);
+    return {
+      generatedAt: dbModule.nowIso(),
+      server: {
+        version: SERVER_VERSION,
+        schemaVersion: dbModule.SCHEMA_VERSION,
+        schemaCurrent: !dbModule.inMigration(db),
+        hostname: os.hostname(),
+        uptimeSec: Math.round(process.uptime()),
+        bootedAt: dbModule.metaGet(db, 'booted_at'),
+        bootCount: Number(dbModule.metaGet(db, 'boot_count') || 0),
+        appliedVersion: dbModule.metaGet(db, 'applied_version'),
+        pendingRestart: updater.pendingRestart(db)
+      },
+      school: {
+        schoolCode: b ? b.schoolCode : null,
+        schoolId: b ? b.schoolId : null,
+        schoolName: b ? b.schoolName : null,
+        installationId: b ? b.installationId : null,
+        cloudValidated: b ? b.cloudValidated : false
+      },
+      sync: {
+        outbox: sync.outboxStatus(db),
+        lastCloudSyncAt: sync.outboxStatus(db).lastCloudSyncAt
+      },
+      conflicts: sync.listConflicts(db, 100).map(function(c){
+        return {id: c.id, collection: c.collection, localId: c.local_id,
+          reason: c.reason || null, status: c.status, resolution: c.resolution,
+          resolvedAt: c.resolved_at};
+      }),
+      backups: {
+        dir: backup.backupDir(db),
+        retain: Number(dbModule.metaGet(db, 'backup_retain') || 7),
+        last: dbModule.metaGet(db, 'last_backup_at'),
+        lastRestoreAt: dbModule.metaGet(db, 'last_restore_at'),
+        count: backup.listBackups(db).length
+      },
+      diskFreeMB: diskFreeMB(backup.backupDir(db)),
+      lan: lanAddresses(),
+      auditRecent: db.prepare(
+        'SELECT actor, action, entity, detail, created_at FROM audit_log ORDER BY created_at DESC LIMIT 50').all(),
+      outboxErrors: db.prepare(
+        'SELECT collection, local_id, status, attempts, last_error, created_at FROM outbox ' +
+        'WHERE last_error IS NOT NULL AND last_error <> \'\' ORDER BY created_at DESC LIMIT 20').all()
+    };
+  }
+
+  app.get('/api/admin/diag', auth.requireAuth(db, ['admin','superadmin']), function(req, res){
+    res.json(diagBundle());
+  });
+
+  app.get('/api/admin/diag.download', auth.requireAuth(db, ['admin','superadmin']), function(req, res){
+    var b = sync.binding(db);
+    var stamp = backup.stamp();
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition',
+      'attachment; filename="rsms-support-' + (b ? b.schoolCode : 'unbound') + '-' + stamp + '.json"');
+    res.json(diagBundle());
   });
 
   /* ── Health / admin page ─────────────────────────────────────── */
@@ -388,8 +587,32 @@ function createApp(options){
       (s.openConflicts ? ' — <a href="/conflicts.html" style="color:#f59e0b">review in Bursar Conflict Review</a>' : '') + '</td></tr>' +
       '<tr><td style="padding:6px 14px 6px 0;color:#8b93a7">Last cloud sync</td><td>' +
       (s.lastCloudSyncAt || 'never (Phase B)') + '</td></tr>' +
+      '<tr><td style="padding:6px 14px 6px 0;color:#8b93a7">Backups</td><td>' +
+      (dbModule.metaGet(db, 'last_backup_at')
+        ? dbModule.metaGet(db, 'last_backup_at') + ' (' + backup.listBackups(db).length + ' kept, latest ' +
+          (dbModule.metaGet(db, 'last_backup_name') || '') + ')'
+        : '<b style="color:#f59e0b">never — run the first-run wizard or POST /api/admin/backup</b>') +
+      (dbModule.metaGet(db, 'last_restore_at')
+        ? ' · last restore ' + dbModule.metaGet(db, 'last_restore_at') : '') + '</td></tr>' +
+      (function(){
+        var free = diskFreeMB(backup.backupDir(db));
+        if(free === null) return '';
+        var warn = free < 1024 ? ' style="color:#fca5a5"' : (free < 3072 ? ' style="color:#f59e0b"' : '');
+        return '<tr><td style="padding:6px 14px 6px 0;color:#8b93a7">Disk free</td><td' + warn + '>' +
+          Math.round(free / 1024 * 10) / 10 + ' GB' +
+          (free < 1024 ? ' — <b>almost full: free space or prune old backups</b>' : '') + '</td></tr>';
+      })() +
+      '<tr><td style="padding:6px 14px 6px 0;color:#8b93a7">Service</td><td>' +
+      'boot ' + (dbModule.metaGet(db, 'boot_count') || 1) +
+      ' at ' + (dbModule.metaGet(db, 'booted_at') || '?') +
+      (dbModule.metaGet(db, 'applied_version') ? ' · v' + dbModule.metaGet(db, 'applied_version') : '') +
+      (updater.pendingRestart(db) ? ' · <b style="color:#f59e0b">restart pending (update applied)</b>' : '') +
+      (backup.inMaintenance(db) ? ' · <b style="color:#fca5a5">RESTORE IN PROGRESS — writes paused</b>' : '') +
+      (dbModule.inMigration(db) ? ' · <b style="color:#fca5a5">SCHEMA MIGRATION PENDING</b>' : '') +
+      '</td></tr>' +
       '<tr><td style="padding:6px 14px 6px 0;color:#8b93a7">LAN addresses</td><td>' +
-      lanAddresses().join(', ') + ' — staff portal: http://&lt;ip&gt;:' + (process.env.PORT || 8300) + '/</td></tr>' +
+      lanAddresses().join(', ') + ' — staff portal: http://&lt;ip&gt;:' + (process.env.PORT || 8300) + '/ · ' +
+      '<a href="/wizard.html" style="color:#8b93a7">first-run wizard</a></td></tr>' +
       '</table>' +
       '<p style="color:#8b93a7;font-size:.8rem">Card payments are cloud-only: offline the portal records cash / bank transfer as <i>Sync pending</i>.</p>' +
       '</body>';
@@ -415,10 +638,49 @@ function createApp(options){
 function start(){
   var port = Number(process.env.PORT || 8300);
   var db = dbModule.openDatabase(path.join(REPO_ROOT, 'offline', 'data', 'rsms-school.sqlite'));
+
+  /* Boot tracking: the health page makes service restarts obvious. */
+  var boots = Number(dbModule.metaGet(db, 'boot_count') || 0) + 1;
+  dbModule.metaSet(db, 'boot_count', String(boots));
+  dbModule.metaSet(db, 'booted_at', dbModule.nowIso());
+
+  /* A signed update was applied while we were down: record it as a
+     clean boot, then clear the restart flag. */
+  var pending = updater.pendingRestart(db);
+  if(pending){
+    dbModule.metaSet(db, 'applied_version', pending.version);
+    updater.clearPendingRestart(db);
+  }
+
   var app = createApp({db: db});
   var server = http.createServer(app);
   var interval = Number(process.env.SYNC_INTERVAL_MS || 60000);
   if(interval > 0) sync.startSyncLoop(db, interval);
+
+  /* Nightly verified backup (Phase C): default 03:15 local time. */
+  var backupEnabled = String(process.env.BACKUP_ENABLED !== undefined
+    ? process.env.BACKUP_ENABLED : '1').toLowerCase();
+  if(backupEnabled !== '0' && backupEnabled !== 'false'){
+    var hour = Number(process.env.BACKUP_HOUR || 3);
+    var minute = Number(process.env.BACKUP_MINUTE || 15);
+    var timer = null;
+    function scheduleNext(){
+      var now = new Date();
+      var next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0);
+      if(next <= now) next.setDate(next.getDate() + 1);
+      timer = setTimeout(function(){
+        try{
+          var record = backup.createBackup(db);
+          console.log('[backup] nightly verified backup: ' + record.name);
+        }catch(e){
+          console.error('[backup] nightly backup failed: ' + e.message);
+        }
+        scheduleNext();
+      }, next - now);
+      if(timer.unref) timer.unref();
+    }
+    scheduleNext();
+  }
   server.listen(port, '0.0.0.0', function(){
     console.log('RSMS offline server v' + SERVER_VERSION + ' listening on 0.0.0.0:' + port);
     console.log('Staff portal: http://<LAN-IP>:' + port + '/   Health: http://<LAN-IP>:' + port + '/health');

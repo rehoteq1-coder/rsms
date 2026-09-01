@@ -1,8 +1,8 @@
 {
   "name": "rsms-offline-server",
   "private": true,
-  "version": "0.2.0",
-  "description": "RSMS offline school server - local LAN deployment with durable outbox + cloud sync (Phases A/B)",
+  "version": "0.3.0",
+  "description": "RSMS offline school server - local LAN deployment with durable outbox + cloud sync (Phases A/B/C)",
   "main": "server/index.js",
   "engines": { "node": ">=22.5" },
   "scripts": {

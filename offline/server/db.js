@@ -15,10 +15,12 @@ var crypto = require('crypto');
 
 var SCHEMA_VERSION = 2;
 
+var DATABASE_FILE = new WeakMap();
 function openDatabase(file){
   var DatabaseSync = require('node:sqlite').DatabaseSync;
   if(file !== ':memory:') fs.mkdirSync(path.dirname(file), {recursive:true});
   var db = new DatabaseSync(file);
+  DATABASE_FILE.set(db, file);
   db.exec('PRAGMA journal_mode = WAL');
   db.exec('PRAGMA foreign_keys = ON');
   ensureSchema(db);
@@ -124,9 +126,20 @@ function migrate(db, from){
   }
 }
 
+function databaseFile(db){
+  return DATABASE_FILE.get(db) || null;
+}
+
 function metaGet(db, key){
   var row = db.prepare('SELECT value FROM meta WHERE key = ?').get(key);
   return row ? row.value : null;
+}
+
+/* True when the database schema version does not match this server —
+   the updater must not force an update across a migration boundary. */
+function inMigration(db){
+  var v = metaGet(db, 'schema_version');
+  return !v || Number(v) !== SCHEMA_VERSION;
 }
 
 function metaSet(db, key, value){
@@ -258,6 +271,8 @@ function collectionCount(db, collection){
 
 module.exports = {
   openDatabase:openDatabase,
+  databaseFile:databaseFile,
+  inMigration:inMigration,
   metaGet:metaGet,
   metaSet:metaSet,
   withTransaction:withTransaction,
