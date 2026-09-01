@@ -18,10 +18,27 @@ portal.
 | 7 | Flutterwave absent offline; manual entries say "Sync pending" | Card config stripped in LAN mode; adapter marks pending (Phase A) |
 | 8 | 7-day backup/restore drill preserves binding, UUIDs, outbox, audit | `backup.test.js` restore drill + manual drill below |
 
-## 2. Installing at a school (operator, ~30 min)
+## 2. Building the installer (operator, Windows machine, ~10 min)
 
-1. On the school PC (Windows 10/11, x64): run `rsms-offline-setup-<ver>.exe`
-   (built from `installer/rsms-offline.iss` with Inno Setup 6). The
+Prereqs: Inno Setup 6 (free) installed; internet access.
+
+```powershell
+cd <repo>\installer
+powershell -ExecutionPolicy Bypass -File .\fetch-deps.ps1   # Node 22.22.3 + nssm 2.24 → vendor\
+iscc .\rsms-offline.iss
+# → installer\output\rsms-offline-setup-0.3.0.exe
+```
+
+Also run `npm install` in `offline/` first (the installer ships
+`offline\node_modules` — the server's only runtime dependency is
+express). The setup.exe is **unsigned**: first launch shows SmartScreen
+"More info → Run anyway". Sign the output with an operator code-signing
+certificate when one is available.
+
+## 3. Installing at a school (operator, ~30 min)
+
+1. On the school PC (Windows 10/11, x64): run
+   `rsms-offline-setup-<ver>.exe`. The
    installer copies the server, a portable Node 22 runtime, `nssm.exe`,
    creates shortcuts and **installs + starts the `RSMSOffline` service**
    (auto-start, self-restarting, logs under `C:\ProgramData\RSMS-Offline\logs`).
@@ -39,7 +56,7 @@ portal.
 4. Lock the Windows session to the least-privilege staff account; the
    service itself keeps running.
 
-## 3. Signing releases (operator, once per release)
+## 4. Signing releases (operator, once per release)
 
 The updater (`server/updater.js`) accepts **only signed releases**.
 
@@ -90,7 +107,7 @@ schema migration; a verified backup is always taken first (named
 `pre-update-<version>`); signature + per-file SHA-256 verified before any
 change; the service records `pending_restart` and the next boot clears it.
 
-## 4. Daily operations (school administrator, 1 page)
+## 5. Daily operations (school administrator, 1 page)
 
 - **Staff** open the portal from the printed QR (or `http://<IP>:8300/`).
 - **Bursar** watches:
@@ -109,9 +126,9 @@ change; the service records `pending_restart` and the next boot clears it.
   downloads a diagnostics bundle — it contains **no secrets** (no server
   token, no PINs, no gateway keys).
 
-## 5. Drills
+## 6. Drills
 
-### 5.1 Power loss / reboot
+### 6.1 Power loss / reboot
 1. Cut power (or reboot).
 2. On return: the service auto-starts (NSSM `SERVICE_AUTO_START`);
    `health` shows boot count incremented, outbox intact, "Last cloud
@@ -120,7 +137,7 @@ change; the service records `pending_restart` and the next boot clears it.
    Acceptance: no pending rows older than one sync interval, no lost
    receipts.
 
-### 5.2 Network loss / long outage
+### 6.2 Network loss / long outage
 1. Unplug the internet (LAN stays up).
 2. Keep entering data for 1–2 hours: outbox grows, health shows pending.
 3. Restore internet: the next sync cycle pushes (idempotent) and pulls;
@@ -128,13 +145,13 @@ change; the service records `pending_restart` and the next boot clears it.
 4. Acceptance: zero duplicate cloud rows, every money difference in the
    review screen, nothing silently overwritten.
 
-### 5.3 IP change
+### 6.3 IP change
 1. Ask the router to hand the PC a new IP (simulates lease expiry).
 2. Staff devices lose the portal → run the wizard, note the new IP,
    re-print the QR, and create the **DHCP reservation** to make this a
    one-time event.
 
-### 5.4 Restore drill (weekly, 5 min)
+### 6.4 Restore drill (weekly, 5 min)
 1. `GET /api/admin/backups` → pick yesterday's backup.
 2. `POST /api/admin/backups/<name>/restore` with
    `{"schoolCode":"<CODE>","createdAt":"<exact timestamp>"}` — both must
@@ -146,7 +163,7 @@ change; the service records `pending_restart` and the next boot clears it.
    Acceptance: binding, local UUIDs, outbox state and audit rows all
    match the backup point.
 
-### 5.5 Disk full
+### 6.5 Disk full
 - `health` turns the disk row amber (<3 GB) then red (<1 GB).
 - Response: point backups at a bigger destination
   (`POST /api/admin/backups/config {"dir":"D:\\rsms-backups"}`), prune old
@@ -154,13 +171,13 @@ change; the service records `pending_restart` and the next boot clears it.
   blocked by low disk — the outbox keeps the data durable; the alert must
   be acted on.
 
-### 5.6 Schema upgrade / rollback
-- Apply the signed release (section 3). If the new server reports
+### 6.6 Schema upgrade / rollback
+- Apply the signed release (section 4). If the new server reports
   "SCHEMA MIGRATION PENDING" on health, stop: restore the
-  `pre-update-<version>` backup (drill 5.4) and re-apply the previous
+  `pre-update-<version>` backup (drill 6.4) and re-apply the previous
   release. Updates are never forced mid-restore or mid-migration.
 
-## 6. Rollback & replacement flows
+## 7. Rollback & replacement flows
 
 - **Replace appliance** (new PC, same school): platform superadmin calls
   `registerOfflineServer` with `"action":"replace"` (old token dies),
@@ -171,7 +188,7 @@ change; the service records `pending_restart` and the next boot clears it.
   offline with sync paused (its token check fails, outbox keeps
   accumulating). Take a final verified backup.
 
-## 7. Known deferrals (documented)
+## 8. Known deferrals (documented)
 
 - Pull is full-snapshot per collection (simple/stateless); incremental
   cursors come with scale, if ever needed.

@@ -6,12 +6,17 @@
 ;
 ; Layout the source tree as:
 ;   <root>\offline\            (server, vendor, tests — from this repo)
+;   <root>\offline\node_modules\  (run `npm install` in offline/)
 ;   <root>\installer\          (this script)
-;   <root>\installer\bin\nssm\nssm.exe   (nssm 2.24+)
-;   <root>\installer\node\    (portable Node 22 LTS — node.exe etc.)
+;   <root>\installer\vendor\nssm\nssm.exe   (from fetch-deps.ps1)
+;   <root>\installer\vendor\node-runtime\node.exe  (from fetch-deps.ps1)
 ;
 ; The installer copies everything, creates shortcuts, and (as
 ; post-install) runs the NSSM service installer elevated.
+;
+; NOTE: the built setup.exe is unsigned — Windows SmartScreen will show
+; "More info → Run anyway" on first launch. Obtain a code-signing
+; certificate from the operator's CA and sign the output when available.
 ; ═══════════════════════════════════════════════════════════════
 #define MyAppName "RSMS Offline Server"
 #define MyAppVersion "0.3.0"
@@ -40,14 +45,16 @@ SolidCompression=yes
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-; The offline server (server code, vendored assets, tests optional)
+; The offline server (server code, vendored portal assets)
 Source: "..\offline\server\*"; DestDir: "{app}\offline\server"; Flags: recursesubdirs
+; Server runtime dependency (express) — committed-free, from npm
+Source: "..\offline\node_modules\*"; DestDir: "{app}\offline\node_modules"; Flags: recursesubdirs
 Source: "..\offline\rsms-local-adapter.js"; DestDir: "{app}\offline"
 Source: "..\offline\package.json"; DestDir: "{app}\offline"
 ; NSSM service tool
-Source: "bin\nssm\nssm.exe"; DestDir: "{app}\nssm"
-; Portable Node runtime (the appliance may have no other Node)
-Source: "node\*"; DestDir: "{app}\node-runtime"; Flags: recursesubdirs
+Source: "vendor\nssm\nssm.exe"; DestDir: "{app}\nssm"
+; Portable Node 22 runtime (the appliance may have no other Node)
+Source: "vendor\node-runtime\node.exe"; DestDir: "{app}\node-runtime"
 ; Service management scripts
 Source: "..\offline\windows\install-service.ps1"; DestDir: "{app}"
 Source: "..\offline\windows\uninstall-service.ps1"; DestDir: "{app}"
