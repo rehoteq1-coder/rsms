@@ -28,6 +28,7 @@ var crypto = require('crypto');
 var https = require('firebase-functions/v2/https');
 var gateway = require('./gateway');
 var secretstore = require('./secretstore');
+var offlineSync = require('./offlineSync');
 
 if(!admin.apps.length) admin.initializeApp();
 
@@ -421,13 +422,208 @@ exports.provisionUser = https.onCall({maxInstances:10}, function(request){
   });
 });
 
+// ── Offline school server sync (Phase B) ───────────────────────
+// The offline server authenticates with a per-school server token.
+// Only the SHA-256 hash is stored (offline_servers/<schoolId>); the raw
+// token exists once, at registration, and in the school's appliance.
+
+function verifyServerAuth(data){
+  var schoolId = cleanText(data && data.schoolId, 160);
+  var token = data && data.serverToken === undefined ? '' : String(data.serverToken);
+  if(!schoolId || !token){
+    return Promise.reject(new https.HttpsError('invalid-argument', 'schoolId and serverToken are required.'));
+  }
+  return database().ref('offline_servers/'+schoolId).once('value').then(function(snap){
+    var record = snap.val();
+    if(!record || record.status !== 'active' || record.tokenHash !== offlineSync.hashToken(token)){
+      throw new https.HttpsError('permission-denied', 'Unknown or revoked offline server installation.');
+    }
+    return record;
+  });
+}
+
+exports.registerOfflineServer = https.onCall({maxInstances:5}, function(request){
+  var data = callableData(request);
+  var password = cleanText(data.password, 1000);
+  var reg = offlineSync.isValidRegistration(data);
+  if(!reg.ok) throw new https.HttpsError('invalid-argument', reg.error);
+
+  return database().ref('config/superadmin_hash').once('value').then(function(snapshot){
+    var expectedHash = cleanText(snapshot.val(), 256).toLowerCase();
+    if(!password || !expectedHash || !timingSafeTextEqual(sha256(password), expectedHash)){
+      throw new https.HttpsError('permission-denied', 'permission-denied');
+    }
+    var regRef = database().ref('offline_servers/'+reg.schoolId);
+    return regRef.once('value').then(function(snap){
+      var existing = snap.val();
+      if(existing && existing.status === 'active' && reg.action === 'register'){
+        throw new https.HttpsError('already-exists',
+          'An active installation is already registered for this school. Use action "replace" to swap it.');
+      }
+      var now = new Date().toISOString();
+      if(reg.action === 'revoke'){
+        return regRef.set(null).then(function(){
+          return {ok:true, action:'revoke', schoolId:reg.schoolId};
+        });
+      }
+      var token = offlineSync.generateServerToken();
+      var record = {
+        schoolId:reg.schoolId,
+        schoolCode:reg.schoolCode,
+        schoolName:reg.schoolName || '',
+        status:'active',
+        installationId:offlineSync.cleanText(data.installationId, 64) ||
+          ((existing && reg.action === 'replace' && existing.installationId) ||
+           'inst-'+Date.now().toString(36)),
+        tokenHash:offlineSync.hashToken(token),
+        registeredAt:(existing && existing.registeredAt) || now,
+        updatedAt:now
+      };
+      return regRef.set(record).then(function(){
+        return {
+          ok:true, action:reg.action, schoolId:reg.schoolId,
+          installationId:record.installationId,
+          serverToken:token,
+          note:'Store the token only in the school appliance; it is shown once.'
+        };
+      });
+    });
+  }).catch(function(error){
+    if(error instanceof https.HttpsError) throw error;
+    throw new https.HttpsError('internal', 'Offline server registration could not be completed.');
+  });
+});
+
+exports.offlineVerifyServer = https.onCall({maxInstances:5}, function(request){
+  var data = callableData(request);
+  return verifyServerAuth(data).then(function(record){
+    return {
+      ok:true,
+      schoolId:record.schoolId,
+      schoolCode:record.schoolCode || '',
+      schoolName:record.schoolName || '',
+      installationId:record.installationId || ''
+    };
+  });
+});
+
+var MAX_PUSH_BATCH = 50;
+var PROCESSED_CAP = 2000;
+
+exports.offlineSyncPush = https.onCall({maxInstances:5, timeoutSeconds:60}, function(request){
+  var data = callableData(request);
+  var entries = Array.isArray(data.entries) ? data.entries.slice(0, MAX_PUSH_BATCH) : [];
+  if(!entries.length){
+    throw new https.HttpsError('invalid-argument', 'entries is required.');
+  }
+
+  var groups = {};
+  var order = [];
+  entries.forEach(function(entry){
+    var collection = cleanText(entry && entry.collection, 64);
+    if(!collection) return;
+    if(!groups[collection]){ groups[collection] = []; order.push(collection); }
+    groups[collection].push(entry);
+  });
+  if(!order.length) throw new https.HttpsError('invalid-argument', 'no valid entries.');
+
+  return verifyServerAuth(data).then(function(record){
+    var serverRef = 'offline_servers/'+record.schoolId;
+
+    function processGroup(collection){
+      return database().ref(serverRef+'/processed').once('value').then(function(pSnap){
+        var processedList = Object.keys(pSnap.val() || {});
+        return database().ref('schools/'+record.schoolId+'/'+collection).once('value').then(function(cSnap){
+          var result = offlineSync.applyPushBatch(collection, cSnap.val(), groups[collection], processedList);
+          var writes = {};
+          var prune = [];
+          if(result.changed){
+            writes['schools/'+record.schoolId+'/'+collection] = result.next;
+          }
+          Object.keys(result.markers).forEach(function(intentId){
+            writes[serverRef+'/processed/'+intentId] = result.markers[intentId];
+          });
+          /* Cap the idempotency ledger: drop the oldest entries beyond the cap. */
+          if(processedList.length + Object.keys(result.markers).length > PROCESSED_CAP){
+            var dated = processedList.map(function(id){
+              return {id:id, at:(pSnap.val() || {})[id] && (pSnap.val() || {})[id].at || ''};
+            }).sort(function(a, b){ return a.at < b.at ? -1 : (a.at > b.at ? 1 : 0); });
+            var excess = dated.length + Object.keys(result.markers).length - PROCESSED_CAP;
+            prune = dated.slice(0, Math.max(0, excess)).map(function(row){ return row.id; });
+          }
+          prune.forEach(function(id){
+            if(!result.markers[id]) writes[serverRef+'/processed/'+id] = null;
+          });
+          writes[serverRef+'/lastSyncAt'] = new Date().toISOString();
+          return database().ref().update(writes).then(function(){
+            return {
+              collection:collection,
+              applied:result.applied,
+              skipped:result.skipped,
+              rejected:result.rejected
+            };
+          });
+        });
+      });
+    }
+
+    function processNext(index, out){
+      if(index >= order.length) return Promise.resolve(out);
+      return processGroup(order[index]).then(function(result){
+        out[order[index]] = result;
+        return processNext(index + 1, out);
+      });
+    }
+
+    return processNext(0, {}).then(function(perCollection){
+      var applied = [], skipped = [], rejected = [];
+      order.forEach(function(collection){
+        (perCollection[collection].applied || []).forEach(function(r){ applied.push(r); });
+        (perCollection[collection].skipped || []).forEach(function(r){ skipped.push(r); });
+        (perCollection[collection].rejected || []).forEach(function(r){ rejected.push(r); });
+      });
+      return {ok:true, schoolId:record.schoolId, applied:applied, skipped:skipped, rejected:rejected};
+    });
+  }).catch(function(error){
+    if(error instanceof https.HttpsError) throw error;
+    throw new https.HttpsError('internal', 'Offline sync push could not be completed.');
+  });
+});
+
+var MAX_PULL_COLLECTIONS = 40;
+
+exports.offlineSyncPull = https.onCall({maxInstances:5, timeoutSeconds:60}, function(request){
+  var data = callableData(request);
+  var collections = stringList(data.collections, MAX_PULL_COLLECTIONS, 64);
+  return verifyServerAuth(data).then(function(record){
+    function readNext(index, out){
+      if(index >= collections.length) return Promise.resolve(out);
+      var key = collections[index];
+      return database().ref('schools/'+record.schoolId+'/'+key).once('value').then(function(snap){
+        var val = snap.val();
+        out[key] = (val === null || val === undefined) ? [] : offlineSync.toArray(val);
+        return readNext(index + 1, out);
+      });
+    }
+    return readNext(0, {}).then(function(collectionsOut){
+      database().ref('offline_servers/'+record.schoolId+'/lastPullAt')
+        .set(new Date().toISOString());
+      return {ok:true, schoolId:record.schoolId, collections: collectionsOut};
+    });
+  }).catch(function(error){
+    if(error instanceof https.HttpsError) throw error;
+    throw new https.HttpsError('internal', 'Offline sync pull could not be completed.');
+  });
+});
+
 // Exported only for focused emulator/integration tests; deployment exports
-// are the four functions above.
+// are the functions above.
 exports._private = {
   runVerification:runVerification,
   providerVerification:providerVerification,
   gateSchoolAccess:gateSchoolAccess,
   timingSafeTextEqual:timingSafeTextEqual,
   sha256:sha256,
-  secretstore:secretstore
+  secretstore:secretstore,
+  offlineSync:offlineSync
 };

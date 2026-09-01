@@ -13,7 +13,7 @@ var path = require('path');
 var fs = require('fs');
 var crypto = require('crypto');
 
-var SCHEMA_VERSION = 1;
+var SCHEMA_VERSION = 2;
 
 function openDatabase(file){
   var DatabaseSync = require('node:sqlite').DatabaseSync;
@@ -21,11 +21,11 @@ function openDatabase(file){
   var db = new DatabaseSync(file);
   db.exec('PRAGMA journal_mode = WAL');
   db.exec('PRAGMA foreign_keys = ON');
-  migrate(db);
+  ensureSchema(db);
   return db;
 }
 
-function migrate(db){
+function ensureSchema(db){
   db.exec(
     'CREATE TABLE IF NOT EXISTS meta (' +
       'key TEXT PRIMARY KEY, value TEXT NOT NULL' +
@@ -90,6 +90,7 @@ function migrate(db){
       'local_data TEXT,' +
       'cloud_data TEXT,' +
       'base_data TEXT,' +
+      'reason TEXT,' +
       'status TEXT NOT NULL DEFAULT \'open\',' +
       'resolved_by TEXT,' +
       'resolution TEXT,' +
@@ -110,7 +111,16 @@ function migrate(db){
   var v = metaGet(db, 'schema_version');
   if(!v) metaSet(db, 'schema_version', String(SCHEMA_VERSION));
   else if(Number(v) < SCHEMA_VERSION){
-    throw new Error('Database schema migration required from version ' + v);
+    migrate(db, Number(v));
+  }
+}
+
+function migrate(db, from){
+  if(from < 2){
+    /* Phase B: conflicts carry a human-readable reason for the
+       Bursar Conflict Review screen. */
+    db.exec('ALTER TABLE conflicts ADD COLUMN reason TEXT');
+    metaSet(db, 'schema_version', '2');
   }
 }
 

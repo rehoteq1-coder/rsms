@@ -109,8 +109,8 @@ Do **not** run a bare `firebase deploy` — `firebase.json` currently points
 `database.rules` at the strict `database.rules.json`, which must NOT go live
 yet (Stage 4 explains the compat-first order).
 
-The deploy output lists the deployed HTTPS URLs. Capture all four; the three
-you configure are:
+The deploy output lists the deployed HTTPS URLs. Capture all six; the three
+gateway functions you configure in RSMS are:
 
 - `verifyPayment` (callable) — example shape:
   `https://verifyPayment-<hash>-rsms-a84ff-<numeric-id>.us-central1.cloudfunctions.net`
@@ -118,8 +118,19 @@ you configure are:
   `https://paymentWebhook-<hash>-rsms-a84ff-<numeric-id>.us-central1.cloudfunctions.net`
 - `storeGatewaySecret` (callable) — same shape with `storeGatewaySecret`
 
+…and the three offline-sync callables (used by offline school servers;
+see Stage 7b):
+
+- `registerOfflineServer` (callable, superadmin-only)
+- `offlineVerifyServer` (callable, server-token)
+- `offlineSyncPush` / `offlineSyncPull` (callables, server-token)
+
 Copy the exact URLs from the CLI output (or `firebase functions:list`).
-They can also be found in the console under Build → Functions.
+They can also be found in the console under Build → Functions. The
+**offline server's cloud base URL is the shared host part** of any of
+these — e.g.
+`https://<hash>-rsms-a84ff-<numeric-id>.us-central1.cloudfunctions.net`
+(no function name).
 
 Smoke-test (before configuring anything else):
 
@@ -230,6 +241,59 @@ Only after steps 1–6 pass, switch the gateway dashboards to **live** mode,
 run `firebase functions:secrets:set` again with the live keys, redeploy
 (`firebase deploy --only functions`), and re-run one live sandbox-adjacent
 check with the smallest possible amount.
+
+## Stage 7b — Register an offline school server (per offline school)
+
+For each school that runs the offline LAN server (`offline/`), the
+platform superadmin registers the school's appliance once. This produces
+a **one-time server token** — hand it to the school out-of-band (it is
+shown exactly once and only its SHA-256 hash is stored in
+`offline_servers/<schoolId>`).
+
+1. Console → Build → Functions → `registerOfflineServer` → **Test** →
+   Request (JSON):
+
+   ```json
+   {
+     "password": "<superadmin password>",
+     "schoolId": "green-valley-sec",
+     "schoolCode": "GREENVAL",
+     "schoolName": "Green Valley Secondary",
+     "action": "register"
+   }
+   ```
+
+   `schoolId` is the school's existing RTDB school key (same value the
+   cloud RSMS app uses). Responses: `{ok: true, serverToken:
+   "rsms-offline-…", installationId: "…"}`.
+
+   - `register` on an already-active school → error; use
+     `"action": "replace"` to swap the appliance (new token, old token
+     stops working).
+   - `"action": "revoke"` (schoolId only) deactivates the installation
+     immediately — the local server's sync then fails its token check and
+     everything keeps working locally (outbox keeps accumulating).
+
+2. On the school PC, start the offline server (Phase C will make this an
+   installer step): from the `offline/` directory,
+   `node --experimental-sqlite server/index.js` (Node 22.5+).
+
+3. Browser on the LAN: `http://<LAN-IP>:8300/` → staff login → first run
+   → bootstrap the staff account → bind the school with:
+
+   - **School code** + the cloud base URL (the shared functions host from
+     Stage 3, e.g. `https://<hash>-rsms-a84ff-<id>.us-central1.cloudfunctions.net`)
+   - **Server token** from step 1
+
+   The server calls `offlineVerifyServer`; only a valid token marks the
+   binding *cloud validated* and enables the 60-second sync loop. A
+   wrong/revoked token leaves the binding local-only (no data loss, no
+   sync).
+
+4. Verify on `http://<LAN-IP>:8300/health`: "Bound school … (cloud
+   validated)", outbox counts draining, "Last cloud sync" updating.
+   Money-row disagreements appear under **Bursar Conflict Review**
+   (`/conflicts.html`, staff session) — never auto-merged.
 
 ## Stage 8 — Auth provisioning, then (and only then) strict rules
 

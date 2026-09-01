@@ -1,16 +1,30 @@
 # RSMS Offline School Server — Design
 
-> **Status: design; Phase A core implemented (2026-08-31)** in `offline/`
-> on branch `arena/01a03e39-rsms`. Implemented and tested: local Express
-> server, SQLite data layer (node:sqlite built-in — see note below), staff
-> auth (scrypt-hashed PINs, HttpOnly cookie sessions, role middleware),
-> durable outbox with stable idempotency intents, first-run bootstrap +
-> school binding (cloud validation pending Phase B), self-hosted CDN assets,
+> **Status: Phase A + Phase B core implemented (2026-09-01)** in `offline/`
+> and `functions/` on branch `arena/01a03e39-rsms`. Implemented and tested:
+>
+> Phase A — local Express server, SQLite data layer (node:sqlite built-in —
+> see note below), staff auth (scrypt-hashed PINs, HttpOnly cookie
+> sessions, role middleware), durable outbox with stable idempotency
+> intents, first-run bootstrap + school binding, self-hosted CDN assets,
 > LAN data adapter (existing portal pages run unchanged), health page,
-> staff login page, 6/6 server tests. **Not yet implemented:** the cloud
-> push/pull direction (Phase B, with the `registerOfflineServer` cloud
-> function), the Bursar Conflict Review screen, and Windows installer /
-> NSSM service / backup packaging (Phase C).
+> staff login page.
+>
+> Phase B — the cloud direction: superadmin `registerOfflineServer`
+> (one-time per-school `serverToken`; only its SHA-256 hash is stored in
+> `offline_servers/<schoolId>`), `offlineVerifyServer` (setup handshake),
+> `offlineSyncPush` (idempotent per-intent application; gateway-settled
+> cloud rows refuse conflicting pushes), `offlineSyncPull` (full
+> collection snapshots), local push/pull sync engine with the §9 conflict
+> rules (money rows are never auto-merged — Bursar Conflict Review at
+> `/conflicts.html` with local/cloud resolution), cloud-verified school
+> binding, 60-second background sync loop, conflict tracking in the audit
+> log. Test suites: 25/25 Cloud Function tests, 10/10 offline server
+> tests (including an in-memory fake-cloud integration suite), live
+> HTTP smoke test.
+>
+> **Not yet implemented:** Windows installer / NSSM service / backup
+> packaging and pilot drills (Phase C).
 >
 > Implementation notes:
 > - `node:sqlite` (Node built-in) replaces better-sqlite3: same synchronous
@@ -26,6 +40,16 @@
 >   copies at serve time (repository files unchanged, `npm run vendor`).
 > - `rsms-firebase.js` disables Firebase writes when `RSMS_LOCAL.mode ===
 >   'lan'`, so a LAN machine with flaky internet cannot dual-write.
+> - Phase B pull uses **full collection snapshots** (not the incremental
+>   `sync_cursor` design of §8): simple, stateless and idempotent; the
+>   schema v2 migration added `conflicts.reason` for the review screen.
+> - Deletion sync (tombstones) is a **documented deferral**: Phase B treats
+>   "absent on one side" as an upsert of the side that has the row; a row
+>   deleted on one side will be re-created from the other side's snapshot.
+> - The cloud's idempotency ledger (`offline_servers/<schoolId>/processed`)
+>   is capped at 2000 entries (oldest pruned).
+> - Binding validation accepts `https` (production) or `http` (emulator /
+>   pre-go-live testing).
 
 >
 > This is the proposed architecture for schools with unreliable internet.

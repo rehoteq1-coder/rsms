@@ -8,7 +8,8 @@
    - local staff auth (hashed PINs, HttpOnly sessions, role middleware)
    - local data API over SQLite with a durable sync outbox
    - health/admin page
-   The cloud sync direction is Phase B (sync.js stub).
+   Phase B (live): cloud-verified binding, outbox push + snapshot pull,
+   Bursar Conflict Review (/conflicts.html) — see server/sync.js.
 ═══════════════════════════════════════════════════════════════════ */
 
 var path = require('path');
@@ -24,7 +25,51 @@ var portals = require('./serve-portals');
 
 var REPO_ROOT = path.join(__dirname, '..', '..');
 var VENDOR_DIR = path.join(__dirname, 'vendor');
-var SERVER_VERSION = '0.1.0-phase-a';
+var SERVER_VERSION = '0.2.0-phase-b';
+
+var CONFLICTS_PAGE = '<!doctype html><meta charset="utf-8"><title>RSMS — Bursar Conflict Review</title>' +
+  '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+  '<style>body{font-family:system-ui,sans-serif;background:#0b0d12;color:#e8eaf2;margin:0;padding:24px}' +
+  'h1{font-size:1.15rem}a{color:#8b93a7;font-size:.85rem}' +
+  'table{border-collapse:collapse;width:100%;font-size:.85rem}' +
+  'td,th{border:1px solid #262a3a;padding:8px;vertical-align:top;text-align:left}' +
+  '.money{color:#f59e0b}.local{white-space:pre-wrap;max-width:320px}.btn{padding:8px 12px;border:none;' +
+  'border-radius:8px;cursor:pointer;font-weight:700;margin:2px}' +
+  '.l{background:#123c2b;color:#86efac}.c{background:#3b1d12;color:#fdba74}' +
+  '.done{color:#86efac}p.hint{color:#8b93a7;font-size:.8rem;max-width:720px;line-height:1.5}</style>' +
+  '<h1>⚖️ Bursar Conflict Review</h1>' +
+  '<p class="hint">Money rows are <b>never auto-merged</b>. For each conflict choose which side wins: ' +
+  '<b>Local</b> re-pushes this school appliance&rsquo;s record to the cloud; <b>Cloud</b> adopts the ' +
+  'cloud record locally. The original evidence is kept in the audit log either way.</p>' +
+  '<table id="t"><tr><th>Collection</th><th>Row</th><th>Reason</th><th>Local</th><th>Cloud</th><th>Created</th><th>Resolve</th></tr></table>' +
+  '<p><a href="/health">← health</a></p>' +
+  '<script>' +
+  'function esc(s){return String(s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}' +
+  'function load(){' +
+  ' fetch("/api/school/conflicts").then(function(r){return r.json();}).then(function(data){' +
+  '  var t=document.getElementById("t");' +
+  '  (data.conflicts||[]).forEach(function(c){' +
+  '   var tr=document.createElement("tr");' +
+  '   var l=c.local_data?JSON.parse(c.local_data):null, cl=c.cloud_data?JSON.parse(c.cloud_data):null;' +
+  '   tr.innerHTML="<td>"+esc(c.collection)+"</td><td>"+esc(c.local_id)+"</td><td class=\"money\">"+esc(c.reason||"")+"</td>"+' +
+  '    "<td class=\"local\">"+esc(l?JSON.stringify(l):"(none)")+"</td><td class=\"local\">"+esc(cl?JSON.stringify(cl):"(none)")+"</td>"+' +
+  '    "<td>"+esc(String(c.created_at).slice(0,16))+"</td><td>"+(c.status==="open"?' +
+  '    "<button class=\"btn l\" onclick=\\"res(\\""+esc(c.id)+"\\"",\\"local\\")\\">Local wins</button> "+' +
+  '    "<button class=\"btn c\" onclick=\\"res(\\""+esc(c.id)+"\\"",\\"cloud\\")\\">Cloud wins</button>"' +
+  '    : "<span class=\\\"done\\\">resolved: "+esc(c.resolution||"")+"</span>")+"</td>";' +
+  '   t.appendChild(tr);' +
+  '  });' +
+  ' }).catch(function(){ alert("Could not load conflicts."); });' +
+  '}' +
+  'function res(id, resolution){' +
+  ' if(!confirm("Confirm: "+resolution+" record wins for this row?")) return;' +
+  ' fetch("/api/school/conflicts/"+id+"/resolve",{method:"POST",headers:{"Content-Type":"application/json"},' +
+  '  body:JSON.stringify({resolution:resolution})}).then(function(r){return r.json();}).then(function(d){' +
+  '   if(d.ok) load(); else alert("Resolution failed: "+(d.error||""));' +
+  '  });' +
+  '}' +
+  'load();' +
+  '</script></body>';
 
 function lanAddresses(){
   var out = [];
@@ -194,8 +239,11 @@ function createApp(options){
 
   /* ── First-run binding ───────────────────────────────────────── */
   app.post('/api/setup/bind', auth.requireAuth(db, ['admin','superadmin']), function(req, res){
-    var schoolCode = String((req.body || {}).schoolCode || '').trim();
-    var schoolId = String((req.body || {}).schoolId || '').trim();
+    var body = req.body || {};
+    var schoolCode = String(body.schoolCode || '').trim();
+    var schoolId = String(body.schoolId || '').trim();
+    var token = String(body.serverToken || '').trim();
+    var cloudBase = String(body.cloudBaseUrl || '').trim();
     if(!schoolCode) return res.status(400).json({error:'schoolCode required'});
     if(db.prepare('SELECT COUNT(*) AS n FROM local_users').get().n === 0){
       return res.status(409).json({error:'bootstrap a staff account first'});
@@ -204,14 +252,41 @@ function createApp(options){
     if(existing && existing.schoolCode && existing.schoolCode !== schoolCode){
       return res.status(409).json({error:'bound-to-different-school'});
     }
-    sync.setBinding(db, {
-      schoolCode: schoolCode,
-      schoolId: schoolId || schoolCode,
-      cloudValidated: false, // Phase B: validated by registerOfflineServer
-      schoolName: String((req.body || {}).schoolName || '')
+    var finalSchoolId = schoolId || schoolCode;
+    var finishLocal = function(cloudValidated, verified){
+      sync.setBinding(db, {
+        schoolCode: schoolCode,
+        schoolId: finalSchoolId,
+        schoolName: String(body.schoolName || (verified && verified.schoolName) || ''),
+        installationId: (verified && verified.installationId) || '',
+        cloudValidated: cloudValidated
+      });
+      if(cloudValidated){
+        sync.setServerToken(db, token);
+        sync.setCloudBaseUrl(db, cloudBase);
+      }
+      res.json({ok: true, cloudValidated: cloudValidated,
+        note: cloudValidated
+          ? 'Cloud binding validated — sync is active.'
+          : 'Local binding only — sync stays paused until cloud validation.'});
+    };
+    /* Production cloud bases are https (Firebase). http is tolerated so
+       operators can validate against an emulator before first go-live. */
+    if(!token || !/^https?:\/\//.test(cloudBase)){
+      return finishLocal(false, null);
+    }
+    sync.setCloudBaseUrl(db, cloudBase);
+    sync.cloudVerify(db, finalSchoolId, token).then(function(verified){
+      if(verified && verified.ok && (!verified.schoolId || verified.schoolId === finalSchoolId)){
+        finishLocal(true, verified);
+      } else {
+        res.status(400).json({error:'cloud verification failed',
+          detail: verified && verified.error || 'unknown installation'});
+      }
+    }).catch(function(error){
+      res.status(400).json({error:'cloud verification failed',
+        detail: String((error && error.message) || error)});
     });
-    res.json({ok: true, cloudValidated: false,
-      note: 'Cloud validation arrives with Phase B; sync stays paused until then.'});
   });
 
   app.get('/api/setup/status', function(req, res){
@@ -266,13 +341,29 @@ function createApp(options){
     res.json({status: sync.outboxStatus(db), entries: pending});
   });
 
-  /* Phase B stub — reports that the cloud direction is not live yet. */
+  /* Run one full sync cycle (push outbox, then pull + merge). */
   app.post('/api/school/sync/run', auth.requireAuth(db, ['admin','superadmin']), requireBound(), function(req, res){
-    sync.pushOutbox(db).then(function(pushResult){
-      sync.pullFromCloud(db).then(function(pullResult){
-        res.json({ok: true, push: pushResult, pull: pullResult});
-      });
+    sync.runSyncCycle(db).then(function(result){
+      res.json({ok: true, cycle: result, outbox: sync.outboxStatus(db)});
     });
+  });
+
+  /* ── Bursar Conflict Review ──────────────────────────────────── */
+  app.get('/api/school/conflicts', auth.requireAuth(db), requireBound(), function(req, res){
+    res.json({conflicts: sync.listConflicts(db)});
+  });
+
+  app.post('/api/school/conflicts/:id/resolve', auth.requireAuth(db, ['admin','bursar','superadmin']), requireBound(), function(req, res){
+    var resolution = String((req.body || {}).resolution || '').trim().toLowerCase();
+    var result = sync.resolveConflict(db, req.binding.schoolId, req.params.id, resolution, req.staff.username);
+    if(!result.ok) return res.status(result.error === 'not-found' ? 404 : 400).json({error: result.error});
+    res.json(result);
+  });
+
+  app.get('/conflicts.html', auth.requireAuth(db), function(req, res){
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(CONFLICTS_PAGE);
   });
 
   /* ── Health / admin page ─────────────────────────────────────── */
@@ -293,7 +384,8 @@ function createApp(options){
       '<tr><td style="padding:6px 14px 6px 0;color:#8b93a7">Staff accounts</td><td>' +
       (users.map(function(u){ return u.username + ' (' + u.role + ')'; }).join(', ') || 'none') + '</td></tr>' +
       '<tr><td style="padding:6px 14px 6px 0;color:#8b93a7">Outbox</td><td>' +
-      JSON.stringify(s.byStatus) + ' · open conflicts: ' + s.openConflicts + '</td></tr>' +
+      JSON.stringify(s.byStatus) + ' · open conflicts: ' + s.openConflicts +
+      (s.openConflicts ? ' — <a href="/conflicts.html" style="color:#f59e0b">review in Bursar Conflict Review</a>' : '') + '</td></tr>' +
       '<tr><td style="padding:6px 14px 6px 0;color:#8b93a7">Last cloud sync</td><td>' +
       (s.lastCloudSyncAt || 'never (Phase B)') + '</td></tr>' +
       '<tr><td style="padding:6px 14px 6px 0;color:#8b93a7">LAN addresses</td><td>' +
@@ -322,14 +414,19 @@ function createApp(options){
 
 function start(){
   var port = Number(process.env.PORT || 8300);
-  var app = createApp({});
+  var db = dbModule.openDatabase(path.join(REPO_ROOT, 'offline', 'data', 'rsms-school.sqlite'));
+  var app = createApp({db: db});
   var server = http.createServer(app);
+  var interval = Number(process.env.SYNC_INTERVAL_MS || 60000);
+  if(interval > 0) sync.startSyncLoop(db, interval);
   server.listen(port, '0.0.0.0', function(){
     console.log('RSMS offline server v' + SERVER_VERSION + ' listening on 0.0.0.0:' + port);
     console.log('Staff portal: http://<LAN-IP>:' + port + '/   Health: http://<LAN-IP>:' + port + '/health');
+    console.log('Conflict review: http://<LAN-IP>:' + port + '/conflicts.html (staff session required)');
+    console.log('Sync loop: every ' + interval + 'ms (no-op until cloud binding is validated).');
     console.log('Note: LAN-only deployment — no internet route, no parent portal.');
   });
-  return server;
+  return {server: server, db: db};
 }
 
 if(require.main === module) start();
