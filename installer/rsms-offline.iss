@@ -51,6 +51,17 @@ Source: "..\offline\server\*"; DestDir: "{app}\offline\server"; Flags: recursesu
 Source: "..\offline\node_modules\*"; DestDir: "{app}\offline\node_modules"; Flags: recursesubdirs
 Source: "..\offline\rsms-local-adapter.js"; DestDir: "{app}\offline"
 Source: "..\offline\package.json"; DestDir: "{app}\offline"
+; Portal pages: the offline server serves the web portal from the
+; install root (REPO_ROOT in server/index.js), so every root-level
+; portal file must ship. (installer-packaging.test.js enforces this
+; list against the repo contents.)
+Source: "..\*.html"; DestDir: "{app}"
+Source: "..\*.js"; DestDir: "{app}"
+Source: "..\rsms-core.css"; DestDir: "{app}"
+Source: "..\manifest.json"; DestDir: "{app}"
+Source: "..\manifest-control.json"; DestDir: "{app}"
+Source: "..\icon-192.png"; DestDir: "{app}"
+Source: "..\icon-ctrl-192.png"; DestDir: "{app}"
 ; NSSM service tool
 Source: "vendor\nssm\nssm.exe"; DestDir: "{app}\nssm"
 ; Portable Node 22 runtime (the appliance may have no other Node)
