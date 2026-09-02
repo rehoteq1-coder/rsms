@@ -74,12 +74,12 @@ Name: "{autodesktop}\RSMS Offline (Health)"; Filename: "http://localhost:8300/he
 ; Install + start the NSSM service (elevated context is guaranteed).
 Filename: "powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\install-service.ps1"" -InstallDir ""{app}"" -NodePath ""{app}\node-runtime\node.exe"" -NssmDir ""{app}\nssm"""; \
-  Flags: runhidden waittocomplete
+  Flags: runhidden
 
 [UninstallRun]
 Filename: "powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\uninstall-service.ps1"" -NssmDir ""{app}\nssm"""; \
-  Flags: runhidden waittocomplete
+  Flags: runhidden
 
 [UninstallDelete]
 ; The service was stopped/removed above; the database is intentionally
