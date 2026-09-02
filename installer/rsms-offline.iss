@@ -79,7 +79,7 @@ Filename: "powershell.exe"; \
 [UninstallRun]
 Filename: "powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\uninstall-service.ps1"" -NssmDir ""{app}\nssm"""; \
-  Flags: runhidden
+  Flags: runhidden; RunOnceId: remove-service
 
 [UninstallDelete]
 ; The service was stopped/removed above; the database is intentionally
