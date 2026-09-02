@@ -122,7 +122,7 @@ function createApp(options){
       '<body style="font-family:sans-serif;background:#0b0d12;color:#e8eaf2;display:grid;' +
       'place-items:center;min-height:100vh;margin:0"><div style="text-align:center">' +
       '<div style="font-size:3rem">🔒</div><h1>' + payload.title + '</h1>' +
-      '<p>' + payload.body + '</p><p><a href="/login.html" style="color:#d4a843">→ Staff sign in</a></p></div>');
+      '<p>' + payload.body + '</p><p><a href="/staff-login.html" style="color:#d4a843">→ Staff sign in</a></p></div>');
   };
 
   function serverConfig(){
@@ -182,8 +182,11 @@ function createApp(options){
     }
     var token = auth.createSession(db, user.username, user.role);
     res.setHeader('Set-Cookie', auth.sessionCookie(token, req.secure));
+    var bb = sync.binding(db);
     res.json({ok: true, username: user.username, role: user.role,
-      displayName: user.display_name, bootstrapPending: dbModule.metaGet(db, 'bootstrap_pending') === '1'});
+      displayName: user.display_name,
+      bound: !!(bb && bb.schoolId),
+      bootstrapPending: dbModule.metaGet(db, 'bootstrap_pending') === '1'});
   });
 
   app.post('/api/auth/logout', function(req, res){
@@ -229,35 +232,71 @@ function createApp(options){
   });
 
   /* ── Staff login page (LAN entry point) ──────────────────────── */
+  function escHtml(s){
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
   app.get('/staff-login.html', function(req, res){
     var b = sync.binding(db);
+    var bootstrapped = db.prepare('SELECT COUNT(*) AS n FROM local_users').get().n > 0;
+    var sub = !bootstrapped
+      ? 'First run: create the first staff account below, then sign in with it.'
+      : (b
+        ? 'School: <b>' + escHtml(b.schoolId) + '</b>'
+        : 'School not bound yet — after signing in you will be taken to the first-run wizard.');
     var html = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
       '<title>RSMS Staff Sign In</title>' +
       '<style>body{font-family:system-ui,sans-serif;background:#0b0d12;color:#e8eaf2;display:grid;place-items:center;min-height:100vh;margin:0}' +
-      'div{background:#12141d;border:1px solid #262a3a;border-radius:14px;padding:28px;width:min(92vw,360px)}' +
-      'h1{font-size:1.05rem;margin:0 0 4px}p{color:#8b93a7;font-size:.8rem;margin:0 0 18px}' +
+      'div.card{background:#12141d;border:1px solid #262a3a;border-radius:14px;padding:28px;width:min(92vw,380px)}' +
+      'h1{font-size:1.05rem;margin:0 0 4px}p.sub{color:#8b93a7;font-size:.8rem;margin:0 0 18px}' +
       'input{width:100%;box-sizing:border-box;background:#0b0d12;border:1px solid #262a3a;color:#e8eaf2;' +
       'border-radius:10px;padding:12px;margin-bottom:12px;font-size:.95rem}' +
       'button{width:100%;background:linear-gradient(135deg,#4a2500,#d4a843);border:none;border-radius:10px;' +
-      'padding:13px;font-weight:700;color:#000;cursor:pointer;font-size:.95rem}' +
-      '.err{color:#f87171;font-size:.8rem;min-height:1.2em;margin-bottom:8px}</style>' +
-      '<div><h1>🏫 RSMS — Staff Sign In</h1>' +
-      '<p>' + (b ? ('School: <b>' + b.schoolId + '</b>') : 'School not bound yet — run setup first.') + '</p>' +
+      'padding:13px;font-weight:700;color:#000;cursor:pointer;font-size:.95rem;margin-bottom:4px}' +
+      '.err{color:#f87171;font-size:.8rem;min-height:1.2em;margin-bottom:8px}' +
+      '.ok{color:#86efac;font-size:.8rem;min-height:1.2em;margin-bottom:8px}' +
+      '.bshead{color:#d4a843;font-size:.8rem;margin:0 0 10px;font-weight:600}' +
+      'hr.sep{border:none;border-top:1px solid #262a3a;margin:16px 0}</style>' +
+      '<div class="card"><h1>🏫 RSMS — Staff Sign In</h1>' +
+      '<p class="sub">' + sub + '</p>' +
+      (!bootstrapped
+        ? '<p class="bshead">Create the first staff account (school admin)</p>' +
+          '<input id="bu" autocomplete="username" placeholder="Staff username (3-64 chars)"/>' +
+          '<input id="bn" placeholder="Full name (optional)"/>' +
+          '<input id="bp" type="password" autocomplete="new-password" placeholder="PIN (4-12 characters)"/>' +
+          '<input id="bp2" type="password" autocomplete="new-password" placeholder="Repeat PIN"/>' +
+          '<button id="bsgo">Create account</button><hr class="sep">'
+        : '') +
+      '<div class="ok" id="ok"></div>' +
       '<div class="err" id="err"></div>' +
       '<input id="u" autocomplete="username" placeholder="Staff username"/>' +
       '<input id="p" type="password" autocomplete="current-password" placeholder="PIN"/>' +
       '<button id="go">Sign in</button></div>' +
       '<script>' +
+      'function showErr(m){document.getElementById("err").textContent=m;document.getElementById("ok").textContent="";}' +
       'function go(){' +
       ' var err=document.getElementById("err");err.textContent="";' +
       ' fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},' +
       '  body:JSON.stringify({username:document.getElementById("u").value,pin:document.getElementById("p").value})' +
       ' }).then(function(r){return r.json().catch(function(){return{}}).then(function(d){if(!r.ok)throw d;return d;});})' +
-      '.then(function(){location.href="/";})' +
-      '.catch(function(d){err.textContent=(d&&(d.error))?"Sign-in failed — check username and PIN.":"Sign-in failed.";});' +
+      '.then(function(d){location.href=d.bound?"/":"/wizard.html";})' +
+      '.catch(function(d){showErr((d&&(d.error))?"Sign-in failed — check username and PIN.":"Sign-in failed.");});' +
       '}' +
       'document.getElementById("go").onclick=go;' +
       'document.getElementById("p").onkeydown=function(e){if(e.key==="Enter")go();};' +
+      (bootstrapped ? '' :
+      'document.getElementById("bsgo").onclick=function(){' +
+      ' var err=document.getElementById("err"),ok=document.getElementById("ok");err.textContent="";' +
+      ' if(document.getElementById("bp").value!==document.getElementById("bp2").value){showErr("PINs do not match.");return;}' +
+      ' fetch("/api/bootstrap",{method:"POST",headers:{"Content-Type":"application/json"},' +
+      '  body:JSON.stringify({username:document.getElementById("bu").value,displayName:document.getElementById("bn").value,role:"admin",pin:document.getElementById("bp").value})' +
+      ' }).then(function(r){return r.json().catch(function(){return{}}).then(function(d){if(!r.ok)throw d;return d;});})' +
+      '.then(function(){ok.textContent="Account created — sign in below with it.";' +
+      ' document.getElementById("bu").value="";document.getElementById("bn").value="";' +
+      ' document.getElementById("bp").value="";document.getElementById("bp2").value="";});' +
+      '.catch(function(d){showErr((d&&(d.error))?d.error:"Could not create account.");});' +
+      '};' +
+      'document.getElementById("bp2").onkeydown=function(e){if(e.key==="Enter")document.getElementById("bsgo").onclick();};') +
       '</script></body>';
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);

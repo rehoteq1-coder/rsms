@@ -231,3 +231,46 @@ async function loginCookie(base, username, pin){
   });
   return cookieFrom(res);
 }
+
+test('server: first-run UI — bootstrap form only before first account; 401 links to staff login', async function(){
+  var db = newDb();
+  var h = await startServer(db);
+  try{
+    /* Before the first account exists, the login page offers the
+       create-first-account form (the old build had no UI for
+       /api/bootstrap — a first-run deadlock). */
+    var page1 = await api(h.base, '/staff-login.html');
+    assert.equal(page1.status, 200);
+    assert.ok(page1.text.indexOf('Create the first staff account') >= 0,
+      'bootstrap form visible on first run');
+    assert.ok(page1.text.indexOf('/api/bootstrap') >= 0,
+      'page posts to /api/bootstrap');
+
+    /* The auth gate links to the real staff login page. */
+    var gate = await api(h.base, '/wizard.html');
+    assert.equal(gate.status, 401);
+    assert.ok(gate.text.indexOf('/staff-login.html') >= 0,
+      '401 page links to /staff-login.html');
+
+    /* Create the first account via the same call the page makes. */
+    var boot = await api(h.base, '/api/bootstrap', {method: 'POST', body: {
+      username: 'admin1', displayName: 'School Admin', role: 'admin', pin: '1234'
+    }});
+    assert.equal(boot.status, 200);
+
+    var page2 = await api(h.base, '/staff-login.html');
+    assert.ok(page2.text.indexOf('Create the first staff account') < 0,
+      'bootstrap form hidden after the first account exists');
+    assert.ok(page2.text.indexOf('first-run wizard') >= 0,
+      'unbound hint points to the first-run wizard');
+
+    /* Login reports bound:false so the client lands on the wizard. */
+    var login = await api(h.base, '/api/auth/login', {method: 'POST', body: {
+      username: 'admin1', pin: '1234'
+    }});
+    assert.equal(login.status, 200);
+    assert.equal(login.json.bound, false);
+  } finally {
+    await stopServer(h);
+  }
+});
