@@ -78,8 +78,18 @@ Run-Nssm @("set", $ServiceName, "AppRestartDelay", "5000") | Out-Null
 # PORT + nightly backup schedule. BACKUP_ENABLED=1 is the default.
 Run-Nssm @("set", $ServiceName, "AppEnvironmentExtra", "PORT=$Port`nBACKUP_HOUR=3`nBACKUP_MINUTE=15`nBACKUP_ENABLED=1") | Out-Null
 
-if ((Run-Nssm @("start", $ServiceName)) -ne 0) {
-  Write-Error "Service created but could not be started - check $logDir\service-err.log"
+# nssm start can return non-zero even when the service does come up
+# (it gives up before the start handshake completes), so verify with
+# sc query instead of trusting the exit code.
+Run-Nssm @("start", $ServiceName) | Out-Null
+$running = $false
+for ($i = 0; $i -lt 15; $i++) {
+  $q = (sc.exe query $ServiceName 2>$null | Select-String "STATE")
+  if ($q -match "RUNNING") { $running = $true; break }
+  Start-Sleep 1
+}
+if (-not $running) {
+  Write-Error "Service did not reach RUNNING within 15s - check $logDir\service-err.log"
   exit 1
 }
 
