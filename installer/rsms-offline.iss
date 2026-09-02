@@ -1,11 +1,11 @@
-; ═══════════════════════════════════════════════════════════════
-; RSMS Offline Server — Windows installer (Phase C)
+; ===============================================================
+; RSMS Offline Server - Windows installer (Phase C)
 ;
 ; Build with Inno Setup 6 (ISCC):
 ;   iscc installer\rsms-offline.iss
 ;
 ; Layout the source tree as:
-;   <root>\offline\            (server, vendor, tests — from this repo)
+;   <root>\offline\            (server, vendor, tests - from this repo)
 ;   <root>\offline\node_modules\  (run `npm install` in offline/)
 ;   <root>\installer\          (this script)
 ;   <root>\installer\vendor\nssm\nssm.exe   (from fetch-deps.ps1)
@@ -14,10 +14,10 @@
 ; The installer copies everything, creates shortcuts, and (as
 ; post-install) runs the NSSM service installer elevated.
 ;
-; NOTE: the built setup.exe is unsigned — Windows SmartScreen will show
-; "More info → Run anyway" on first launch. Obtain a code-signing
+; NOTE: the built setup.exe is unsigned - Windows SmartScreen will show
+; "More info -> Run anyway" on first launch. Obtain a code-signing
 ; certificate from the operator's CA and sign the output when available.
-; ═══════════════════════════════════════════════════════════════
+; ===============================================================
 #define MyAppName "RSMS Offline Server"
 #define MyAppVersion "0.3.0"
 #define MyAppPublisher "RSMS Platform"
@@ -47,7 +47,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
 ; The offline server (server code, vendored portal assets)
 Source: "..\offline\server\*"; DestDir: "{app}\offline\server"; Flags: recursesubdirs
-; Server runtime dependency (express) — committed-free, from npm
+; Server runtime dependency (express) - committed-free, from npm
 Source: "..\offline\node_modules\*"; DestDir: "{app}\offline\node_modules"; Flags: recursesubdirs
 Source: "..\offline\rsms-local-adapter.js"; DestDir: "{app}\offline"
 Source: "..\offline\package.json"; DestDir: "{app}\offline"
@@ -83,7 +83,7 @@ Filename: "powershell.exe"; \
 
 [UninstallDelete]
 ; The service was stopped/removed above; the database is intentionally
-; kept — the operator decides after a final backup.
+; kept - the operator decides after a final backup.
 Type: filesandordirs; Name: "{app}\logs"
 Type: filesandordirs; Name: "{app}\nssm"
 Type: filesandordirs; Name: "{app}\node-runtime"

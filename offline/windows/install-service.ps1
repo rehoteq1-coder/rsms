@@ -1,5 +1,5 @@
-# ═══════════════════════════════════════════════════════════════
-# RSMS Offline Server — NSSM Windows service installer (Phase C)
+# ===============================================================
+# RSMS Offline Server - NSSM Windows service installer (Phase C)
 #
 # Run from an ELEVATED prompt on the school PC:
 #   powershell -ExecutionPolicy Bypass -File .\install-service.ps1 -InstallDir "C:\ProgramData\RSMS-Offline"
@@ -13,7 +13,7 @@
 #   - restarts itself on any exit, after 5 seconds (AppExit)
 #   - writes stdout/stderr to %InstallDir%\logs\service-*.log
 #   - runs the server with --experimental-sqlite (Node 22)
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 param(
   [string]$InstallDir = "C:\ProgramData\RSMS-Offline",
   [string]$ServiceName = "RSMSOffline",
@@ -25,7 +25,7 @@ param(
 $ErrorActionPreference = "Stop"
 $server = Join-Path $InstallDir "offline\server\index.js"
 if (-not (Test-Path $server)) {
-  Write-Error "Server not found at $server — run the RSMS installer first."
+  Write-Error "Server not found at $server - run the RSMS installer first."
 }
 $nssm = Join-Path $NssmDir "nssm.exe"
 if (-not (Test-Path $nssm)) {

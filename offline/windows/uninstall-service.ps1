@@ -1,12 +1,12 @@
-# ═══════════════════════════════════════════════════════════════
-# RSMS Offline Server — NSSM service uninstaller (Phase C)
+# ===============================================================
+# RSMS Offline Server - NSSM service uninstaller (Phase C)
 #
 # ELEVATED prompt:
 #   powershell -ExecutionPolicy Bypass -File .\uninstall-service.ps1
 #
-# The SQLite database in offline\data\ is NOT deleted — take a
+# The SQLite database in offline\data\ is NOT deleted - take a
 # verified backup (/api/admin/backup) before removing the folder.
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 param(
   [string]$ServiceName = "RSMSOffline",
   [string]$NssmDir = $env:ProgramFiles + "\RSMSOffline\nssm"
