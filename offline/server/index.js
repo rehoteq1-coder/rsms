@@ -293,8 +293,8 @@ function createApp(options){
       ' }).then(function(r){return r.json().catch(function(){return{}}).then(function(d){if(!r.ok)throw d;return d;});})' +
       '.then(function(){ok.textContent="Account created — sign in below with it.";' +
       ' document.getElementById("bu").value="";document.getElementById("bn").value="";' +
-      ' document.getElementById("bp").value="";document.getElementById("bp2").value="";});' +
-      '.catch(function(d){showErr((d&&(d.error))?d.error:"Could not create account.");});' +
+      ' document.getElementById("bp").value="";document.getElementById("bp2").value="";}).' +
+      'catch(function(d){showErr((d&&(d.error))?d.error:"Could not create account.");});' +
       '};' +
       'document.getElementById("bp2").onkeydown=function(e){if(e.key==="Enter")document.getElementById("bsgo").onclick();};') +
       '</script></body>';
