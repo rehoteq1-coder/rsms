@@ -24,16 +24,12 @@ module.exports =
   '<li id="s3">3 · Backups</li>' +
   '<li id="s4">4 · Done</li></ol>' +
   '<div id="step"></div>' +
+  '<input type="hidden" id="cur">' +
   '<p class="dim"><a href="/health" style="color:#8b93a7">health</a> · <a href="/staff-login.html" style="color:#8b93a7">staff login</a></p>' +
   '<script src="/vendor/qrcode.min.js"></script>' +
   '<script>' +
   'var info = null;' +
   'function esc(s){return String(s===null||s===undefined?"":s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}' +
-  'function step(n){' +
-  '  for(var i=1;i<=4;i++){var el=document.getElementById("s"+i);el.className=i<n?"done":(i===n?"active":"");}' +
-  '  var c=document.getElementById("cur"); if(c) c.value="";' +
-  '  load();' +
-  '}' +
   'function load(){' +
   '  fetch("/api/wizard/info").then(function(r){return r.json();}).then(function(d){' +
   '    info=d; render();' +
@@ -44,11 +40,15 @@ module.exports =
   '  var c=document.getElementById("cur");' +
   '  var cur=c?c.value:"";' +
   '  if(!info.binding||!info.binding.schoolCode) return renderBind();' +
-  '  if(cur==="lan") return renderLan();' +
   '  if(cur==="backup") return renderBackup();' +
-  '  return renderDone();' +
+  '  if(cur==="done") return renderDone();' +
+  '  return renderLan();' +
   '}' +
-  'function goto(stepName){var c=document.getElementById("cur");if(c)c.value=stepName;render();}' +
+  'function goto(stepName, refresh){var c=document.getElementById("cur");if(c)c.value=stepName;' +
+  '  var n=stepName==="backup"?3:(stepName==="done"?4:2);' +
+  '  for(var i=1;i<=4;i++){var el=document.getElementById("s"+i);el.className=i<n?"done":(i===n?"active":"");}' +
+  '  if(refresh){ load(); } else { render(); }' +
+  '}' +
   'function renderBind(){' +
   '  var c=document.getElementById("cur");if(c)c.value="bind";' +
   '  document.getElementById("step").innerHTML=' +
@@ -72,7 +72,7 @@ module.exports =
   '  .then(function(x){' +
   '    if(x.s===200){' +
   '      document.getElementById("bmsg").innerHTML="<span class=ok>Bound."+(x.j.cloudValidated?" Cloud sync active.":" Local-only (cloud validation pending).")+"</span>";' +
-  '      step(2);' +
+  '      goto("lan", true);' +
   '    } else document.getElementById("bmsg").innerHTML="<span class=err>"+esc(x.j.error||x.j.detail||"bind failed")+"</span>";' +
   '  }).catch(function(e){document.getElementById("bmsg").innerHTML="<span class=err>"+esc(e)+"</span>";});' +
   '}' +
@@ -99,7 +99,8 @@ module.exports =
   '    "<label>Keep last N days</label><input id=\\"bretain\\" type=\\"number\\" min=\\"2\\" max=\\"30\\" value=\\""+esc(b.retain||7)+"\\">"+' +
   '    "<p id=\\"bsg\\"></p>"+' +
   '    "<button onclick=\\"cfgBackup()\\">Save</button> "+' +
-  '    "<button style=\\"background:#059669\\" onclick=\\"firstBackup()\\">Run first backup now</button>";' +
+  '    "<button style=\\\"background:#059669\\\" onclick=\\\"firstBackup()\\\">Run first backup now</button> " +' +
+  '    "<button onclick=\\\"goto(\'done\')\\\">Next: done</button>";' +
   '}' +
   'function cfgBackup(){' +
   '  fetch("/api/admin/backups/config",{method:"POST",headers:{"Content-Type":"application/json"},' +
@@ -123,5 +124,5 @@ module.exports =
   '    "<p class=ok>The server is ready for staff.</p>"+' +
   '    "<p class=dim>Daily operation: staff open the portal from the QR. The bursar watches <a href=\\"/health\\" style=\\"color:#8b93a7\\">/health</a> for sync state and <a href=\\"/conflicts.html\\" style=\\"color:#8b93a7\\">/conflicts.html</a> for money conflicts. For support, download the diagnostic bundle from <code>/api/admin/diag.download</code> (contains no secrets).</p>";' +
   '}' +
-  'render();' +
+  'load();' +
   '</script></body>';
