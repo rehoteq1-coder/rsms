@@ -1,8 +1,75 @@
 # RSMS Offline School Server — Design
 
-> **Status: design only.** This is the proposed architecture for schools with
-> unreliable internet. It is not an implementation plan for browser-only
-> offline caching, and it does not change the current cloud deployment.
+> **Status: Phase A + B + C core implemented (2026-09-01)** in `offline/`,
+> `functions/` and `installer/` on branch `arena/01a03e39-rsms`.
+> Implemented and tested:
+>
+> Phase A — local Express server, SQLite data layer (node:sqlite built-in —
+> see note below), staff auth (scrypt-hashed PINs, HttpOnly cookie
+> sessions, role middleware), durable outbox with stable idempotency
+> intents, first-run bootstrap + school binding, self-hosted CDN assets,
+> LAN data adapter (existing portal pages run unchanged), health page,
+> staff login page.
+>
+> Phase B — the cloud direction: superadmin `registerOfflineServer`
+> (one-time per-school `serverToken`; only its SHA-256 hash is stored in
+> `offline_servers/<schoolId>`), `offlineVerifyServer` (setup handshake),
+> `offlineSyncPush` (idempotent per-intent application; gateway-settled
+> cloud rows refuse conflicting pushes), `offlineSyncPull` (full
+> collection snapshots), local push/pull sync engine with the §9 conflict
+> rules (money rows are never auto-merged — Bursar Conflict Review at
+> `/conflicts.html` with local/cloud resolution), cloud-verified school
+> binding, 60-second background sync loop, conflict tracking in the audit
+> log.
+>
+> Phase C — verified backup & restore (VACUUM INTO snapshot + SHA-256
+> sidecar + integrity check + 7-day retention + confirmation-gated
+> transactional restore with pre-restore emergency copy), first-run
+> network wizard (`/wizard.html`: bind → LAN/QR → DHCP guidance →
+> backups), signed-release updater (ed25519 manifest signature,
+> per-file hashes, pre-update backup, pending-restart flag, paused
+> during restore/migration), NSSM service installer/uninstaller
+> (`offline/windows/`), Inno Setup script (`installer/`), diagnostics
+> export (`/api/admin/diag.download`, secrets-free), boot tracking,
+> nightly backup scheduler, disk-space warnings on health, support
+> playbook (`docs/pilot-playbook.md`). Test suites: 25/25 Cloud
+> Function tests, 21/21 offline server tests (including an in-memory
+> fake-cloud integration suite), live HTTP smoke test.
+>
+> **Remaining (operator-side, needs Windows + Inno Setup):** compile the
+> installer, generate + embed the real release signing key
+> (placeholder until then — the updater refuses all releases by design),
+> and run the on-machine pilot drills from `docs/pilot-playbook.md` §5.
+>
+> Implementation notes:
+> - `node:sqlite` (Node built-in) replaces better-sqlite3: same synchronous
+>   single-file model with **zero native dependencies**, which removes the
+>   node-gyp/prebuild risk on school PCs. Requires Node 22.5+ with
+>   `--experimental-sqlite` (Node 23.4+ needs no flag); the Phase C installer
+>   bundles the runtime.
+> - Credential hashing uses Node's built-in `crypto.scrypt` (salted,
+>   memory-hard, timing-safe compare) rather than Argon2id, for the same
+>   zero-native-dependency reason; Argon2id may replace it in Phase C.
+> - The portals load Firebase/Chart.js/QR libraries from CDNs today; the
+>   offline server rewrites those URLs to committed `offline/server/vendor/`
+>   copies at serve time (repository files unchanged, `npm run vendor`).
+> - `rsms-firebase.js` disables Firebase writes when `RSMS_LOCAL.mode ===
+>   'lan'`, so a LAN machine with flaky internet cannot dual-write.
+> - Phase B pull uses **full collection snapshots** (not the incremental
+>   `sync_cursor` design of §8): simple, stateless and idempotent; the
+>   schema v2 migration added `conflicts.reason` for the review screen.
+> - Deletion sync (tombstones) is a **documented deferral**: Phase B treats
+>   "absent on one side" as an upsert of the side that has the row; a row
+>   deleted on one side will be re-created from the other side's snapshot.
+> - The cloud's idempotency ledger (`offline_servers/<schoolId>/processed`)
+>   is capped at 2000 entries (oldest pruned).
+> - Binding validation accepts `https` (production) or `http` (emulator /
+>   pre-go-live testing).
+
+>
+> This is the proposed architecture for schools with unreliable internet.
+> It is not an implementation plan for browser-only offline caching, and it
+> does not change the current cloud deployment.
 
 ## 1. Product boundary
 

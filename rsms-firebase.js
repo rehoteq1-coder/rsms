@@ -412,6 +412,9 @@ var RSMS_FB = (function(){
 
   // ── WRITE ───────────────────────────────────────────────────
   function _write(path, data){
+    // LAN mode: the offline server is the writer; Firebase writes are
+    // disabled so the same logical write cannot land in both stores.
+    if(typeof window!=='undefined' && window.RSMS_LOCAL && window.RSMS_LOCAL.mode==='lan') return;
     if(!_ready||!_db){ _queue.push({path:path,data:data}); return; }
     try{
       _db.ref(path).set(data).catch(function(e){
