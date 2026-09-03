@@ -668,6 +668,28 @@ function createApp(options){
       outbox: sync.outboxStatus(db), lanAddresses: lanAddresses()});
   });
 
+  /* ── LAN entry: send everyone to the staff entry point.
+     The public landing page (school search) and the cloud email
+     login (rsms-login.html) are cloud-only flows — on a LAN
+     appliance they confuse staff. Signed-in staff go straight to
+     their role page; everyone else goes to the PIN sign-in. */
+  var ROLE_PAGES = {
+    admin: '/rsms-admin.html', bursar: '/rsms-bursar.html',
+    teacher: '/rsms-teacher.html', classteacher: '/rsms-classteacher.html',
+    hod: '/rsms-hod.html', vp: '/rsms-vp.html',
+    principal: '/rsms-principal.html', superadmin: '/rsms-superadmin.html'
+  };
+  function staffEntry(req, res){
+    var session = auth.readSession(db, req.headers.cookie);
+    var b = sync.binding(db);
+    if(session && b && b.schoolId && ROLE_PAGES[session.role]){
+      return res.redirect(ROLE_PAGES[session.role]);
+    }
+    return res.redirect('/staff-login.html');
+  }
+  app.get('/', staffEntry);
+  app.get('/rsms-login.html', staffEntry);
+
   /* ── Portals (rewritten + adapter-injected) ──────────────────── */
   app.use(portals.portalMiddleware(REPO_ROOT, serverConfig()));
 

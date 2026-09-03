@@ -276,3 +276,39 @@ test('server: first-run UI — bootstrap form only before first account; 401 lin
     await stopServer(h);
   }
 });
+
+test('server: LAN entry redirects — / and /rsms-login.html go to the staff entry', async function(){
+  var db = newDb();
+  var h = await startServer(db);
+  try{
+    /* Not signed in: both the public landing page and the cloud email
+       login redirect to the PIN sign-in (cloud-only flows on a LAN
+       appliance confuse staff). */
+    var anon1 = await fetch(h.base + '/', {redirect: 'manual'});
+    assert.equal(anon1.status, 302);
+    assert.equal(anon1.headers.get('location'), '/staff-login.html');
+    var anon2 = await fetch(h.base + '/rsms-login.html', {redirect: 'manual'});
+    assert.equal(anon2.status, 302);
+    assert.equal(anon2.headers.get('location'), '/staff-login.html');
+
+    /* Signed-in admin on a bound school: / goes straight to the
+       role page. */
+    await api(h.base, '/api/bootstrap', {method: 'POST', body: {
+      username: 'admin1', displayName: 'Admin', role: 'admin', pin: '1234'
+    }});
+    var login = await api(h.base, '/api/auth/login', {method: 'POST', body: {
+      username: 'admin1', pin: '1234'
+    }});
+    var cookie = cookieFrom(login.res);
+    assert.ok(cookie);
+    var bind = await api(h.base, '/api/setup/bind', {method: 'POST', cookie: cookie, body: {
+      schoolCode: 'TESTSCHOOL', schoolName: 'Test School'
+    }});
+    assert.equal(bind.status, 200);
+    var root = await fetch(h.base + '/', {redirect: 'manual', headers: {Cookie: cookie}});
+    assert.equal(root.status, 302);
+    assert.equal(root.headers.get('location'), '/rsms-admin.html');
+  } finally {
+    await stopServer(h);
+  }
+});

@@ -44,7 +44,12 @@ test('portals: served body of every root page == repo file + documented transfor
   await new Promise(function(r){ server.on('listening', r); });
   var base = 'http://127.0.0.1:' + server.address().port;
   try{
-    var files = fs.readdirSync(REPO_ROOT).filter(function(f){ return /\.html$/.test(f); });
+    /* rsms-login.html is intentionally NOT served as a page on the
+       appliance: the offline server redirects it to the staff entry
+       (it is a cloud-only email login). */
+    var files = fs.readdirSync(REPO_ROOT).filter(function(f){
+      return /\.html$/.test(f) && f !== 'rsms-login.html';
+    });
     assert.ok(files.length > 30, 'expected the portal pages at the repo root');
     var problems = [];
     for(var i = 0; i < files.length; i++){
