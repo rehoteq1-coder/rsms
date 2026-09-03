@@ -1134,6 +1134,11 @@ window.RSMS_DB = {
         </button>
       </div>
     </div>
+    <!-- Report card photo preference (per school) -->
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.25);border-radius:var(--r2);font-size:.82rem;color:var(--t2);margin-top:10px;">
+      <input type="checkbox" id="cfg-showphoto" style="width:17px;height:17px;accent-color:#d4a843;flex-shrink:0;"/>
+      <span>Show student photo on report cards &amp; progress reports <span style="color:var(--t4);font-size:.72rem;">(off = cards are printed without the photo block)</span></span>
+    </label>
     <button class="btn btn-gold btn-full" onclick="saveSettings()" style="margin-top:4px;">&#9989; Save Settings</button>
   </div>
 
@@ -2639,6 +2644,7 @@ function loadSettings(){
   setVal('cfg-name',s.name);setVal('cfg-addr',s.address);setVal('cfg-phone',s.phone);
   setVal('cfg-email',s.email);setVal('cfg-session',s.session);setVal('cfg-principal',s.principal);
   setVal('cfg-regprefix',s.regPrefix);setVal('cfg-logo',localStorage.getItem('rsms_school_logo')||'');
+  var spc=document.getElementById('cfg-showphoto');if(spc)spc.checked=s.showStudentPhoto!==false;
   var ts=document.getElementById('cfg-term');if(ts)ts.value=s.term||'First Term';
   var ps=document.getElementById('cfg-plan');if(ps)ps.value=s.plan||'Standard';
 
@@ -2671,6 +2677,7 @@ function saveSettings(){
   school.regPrefix=val('cfg-regprefix')||'REG';
   school.term=document.getElementById('cfg-term').value;
   school.plan=document.getElementById('cfg-plan').value;
+  var spEl=document.getElementById('cfg-showphoto');if(spEl)school.showStudentPhoto=spEl.checked;
   school.lastModified=Date.now();
   var logo=val('cfg-logo')||val('cfg-logo-url');
   if(logo){localStorage.setItem('rsms_school_logo',logo);school.logo=logo;try{updateLogoPreview(logo);}catch(e){}}
