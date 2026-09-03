@@ -69,7 +69,7 @@ function makeStore(seed){
 
 /* Execute the bursar page's main inline script in a stub and return
    the exposed functions. */
-async function runBursarScript(h, cookie){
+async function runBursarScript(h, cookie, extraSeed){
   var page = await api(h.base, '/rsms-bursar.html', {cookie: cookie});
   assert.equal(page.status, 200, 'bursar page served');
   var blocks = page.text.match(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g) || [];
@@ -81,13 +81,13 @@ async function runBursarScript(h, cookie){
     return b.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '');
   }).join('\n;\n');
 
-  var printed = null;
-  var store = makeStore({
+  var printedChunks = [];
+  var store = makeStore(Object.assign({
     rsms_school: JSON.stringify({name: 'Test School', term: 'First Term', session: '2025/2026'}),
     rsms_school_logo: 'data:image/png;base64,TESTLOGO',
     rsms_role: 'admin',
     rsms_user: JSON.stringify({id: 'admin1', name: 'School Admin', role: 'admin'})
-  });
+  }, extraSeed || {}));
   var els = {};
   var created = [];
   var blobParts = null;
@@ -95,6 +95,7 @@ async function runBursarScript(h, cookie){
   function makeEl(id){
     return {id: id, value: '', className: '', innerHTML: '', textContent: '',
       style: {}, dataset: {}, options: [],
+      classList: {add: function(){}, remove: function(){}},
       addEventListener: function(){}, appendChild: function(){},
       removeChild: function(){}, click: function(){}, setAttribute: function(){}};
   }
@@ -107,7 +108,7 @@ async function runBursarScript(h, cookie){
   var windowStub = {
     addEventListener: function(){},
     open: function(){
-      var w = {document: {write: function(html){ printed = html; }, close: function(){}}, print: function(){}};
+      var w = {document: {write: function(html){ printedChunks.push(String(html)); }, close: function(){}}, print: function(){}};
       return w;
     },
     location: {href: '', pathname: '/rsms-bursar.html'},
@@ -134,14 +135,15 @@ async function runBursarScript(h, cookie){
 
   new Function('document', 'window', 'localStorage', 'sessionStorage', 'location',
     'navigator', 'fetch', 'setTimeout', 'Blob',
-    main + '\n;globalThis.__bursar={printReceipt:printReceipt,downloadFinanceExcel:downloadFinanceExcel};'
+    main + '\n;globalThis.__bursar={printReceipt:printReceipt,downloadFinanceExcel:downloadFinanceExcel,'
+      + 'openStudentDetail:openStudentDetail,printStudentStatement:printStudentStatement};'
   )(documentStub, windowStub, store, makeStore({}), windowStub.location,
     {clipboard: null}, fetchStub, safeTimeout, CapturedBlob);
 
   assert.ok(globalThis.__bursar, 'bursar functions exposed');
   return {
     window: windowStub, els: els, created: created,
-    getPrinted: function(){ return printed; },
+    getPrinted: function(){ return printedChunks.join(''); },
     getBlob: function(){ return {parts: blobParts, type: blobType}; }
   };
 }
@@ -226,6 +228,63 @@ test('bursar: downloadFinanceExcel produces a branded .xls document', async func
     assert.ok(anchor, 'download anchor created');
     assert.ok(anchor.download.indexOf('Test School_') === 0, 'name starts with the school: ' + anchor.download);
     assert.ok(anchor.download.indexOf('.xls') === anchor.download.length - 4, 'ends in .xls: ' + anchor.download);
+  } finally {
+    await stopServer(env.h);
+  }
+});
+
+test('bursar: student account groups repeated fees — popup history + printed statement', async function(){
+  var env = await seededHandle();
+  try{
+    var cookie = await env.setup();
+    var run = await runBursarScript(env.h, cookie, {
+      rsms_students: JSON.stringify([
+        {id: 's1', surname: 'Ada', firstname: 'Obi', class: 'JSS 1', reg: 'REG/001'}
+      ]),
+      rsms_fees: JSON.stringify([
+        {stuId: 's1', student: 'Ada Obi', class: 'JSS 1', type: 'Tuition', method: 'Cash',
+         amount: 30000, date: '2026-09-01', receiptNo: 'RCPT-101', channel: 'bursar'},
+        {stuId: 's1', student: 'Ada Obi', class: 'JSS 1', type: 'Tuition', method: 'Bank Transfer',
+         amount: 20000, date: '2026-09-02', receiptNo: 'RCPT-102', channel: 'bursar'},
+        {stuId: 's1', student: 'Ada Obi', class: 'JSS 1', type: 'Bus Fee', method: 'Cash',
+         amount: 5000, date: '2026-09-02', receiptNo: 'RCPT-103', channel: 'parent_selfpay'}
+      ])
+    });
+
+    /* Popup: the Payment History is grouped by fee type — the twice-paid
+       tuition is ONE line with the summed total; each receipt stays
+       visible under its group. */
+    globalThis.__bursar.openStudentDetail('s1');
+    var detail = run.els['stu-detail-content'].innerHTML;
+    assert.ok(detail, 'student detail rendered');
+    assert.ok(detail.indexOf('RCPT-101') >= 0, 'first tuition receipt visible');
+    assert.ok(detail.indexOf('RCPT-102') >= 0, 'second tuition receipt visible');
+    assert.ok(detail.indexOf('RCPT-103') >= 0, 'other fee receipt visible');
+
+    var groupRows = detail.match(/<tr[^>]*>(?:(?!<\/tr>)[\s\S])*?colspan="6"[\s\S]*?<\/tr>/g) || [];
+    assert.ok(groupRows.length >= 2, 'group summary rows present');
+    var tuitionRow = groupRows.find(function(r){ return r.indexOf('Tuition') >= 0; });
+    assert.ok(tuitionRow, 'tuition group summary row');
+    assert.ok(tuitionRow.indexOf('50,000') >= 0, 'tuition total adds up: ' + tuitionRow);
+    assert.ok(tuitionRow.indexOf('2 payments') >= 0, 'tuition group labelled with count');
+    var busRow = groupRows.find(function(r){ return r.indexOf('Bus Fee') >= 0; });
+    assert.ok(busRow, 'bus fee group row');
+    assert.ok(busRow.indexOf('5,000') >= 0, 'single payment shows its amount');
+    assert.ok(busRow.indexOf('payments') < 0, 'single payment not labelled as multiple');
+
+    /* Printed statement: grouped Fee Breakdown appears above the
+       line-by-line Payment History, with each fee type listed once. */
+    globalThis.__bursar.printStudentStatement();
+    var stmt = run.getPrinted();
+    assert.ok(stmt.indexOf('Fee Breakdown') >= 0, 'statement has grouped breakdown');
+    var bdIdx = stmt.indexOf('Fee Breakdown');
+    var histIdx = stmt.indexOf('Payment History');
+    assert.ok(histIdx > bdIdx, 'breakdown appears before line-by-line history');
+    var bdSection = stmt.slice(bdIdx, histIdx);
+    assert.ok(bdSection.indexOf('Tuition') >= 0, 'tuition in breakdown');
+    assert.ok(bdSection.indexOf('50,000') >= 0, 'breakdown total adds up');
+    assert.ok(bdSection.indexOf('Bus Fee') >= 0, 'bus fee in breakdown');
+    assert.equal(bdSection.split('Tuition').length - 1, 1, 'tuition listed once in breakdown');
   } finally {
     await stopServer(env.h);
   }

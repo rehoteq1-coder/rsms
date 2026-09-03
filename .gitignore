@@ -11,9 +11,3 @@ node_modules/
 # OS files
 .DS_Store
 Thumbs.db
-
-# Offline server local data (SQLite) and runtime artifacts
-offline/data/
-
-# Installer build dependencies (Windows binaries, fetched by installer/fetch-deps.ps1)
-installer/vendor/

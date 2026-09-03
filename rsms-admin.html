@@ -1190,6 +1190,32 @@ window.RSMS_DB = {
     </div>
   </div>
 
+  <!-- Staff Logins (LAN sign-in accounts) -->
+  <div class="card" style="margin-bottom:12px;" id="sl-card">
+    <div class="card-title">&#128275; Staff Logins (LAN sign-in)</div>
+    <div style="font-size:.78rem;color:var(--t3);margin-bottom:14px;line-height:1.6;">
+      Accounts for the staff sign-in page on this school&rsquo;s LAN server. Each staff member signs in with their own username and PIN, and lands in their role&rsquo;s portal.
+    </div>
+    <div id="sl-list" style="margin-bottom:12px;"></div>
+    <div style="font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Add a login</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+      <input class="fi" id="sl-username" placeholder="Username (3-64 chars)" style="height:42px;"/>
+      <input class="fi" id="sl-name" placeholder="Full name" style="height:42px;"/>
+      <select class="fi" id="sl-role" style="height:42px;">
+        <option value="bursar">Bursar</option>
+        <option value="teacher">Subject Teacher</option>
+        <option value="classteacher">Class Teacher</option>
+        <option value="hod">HOD</option>
+        <option value="vp">Vice Principal</option>
+        <option value="principal">Principal</option>
+        <option value="admin">Admin</option>
+        <option value="superadmin">Super Admin</option>
+      </select>
+      <input class="fi" id="sl-pin" type="password" placeholder="PIN (4-12 characters)" style="height:42px;"/>
+    </div>
+    <button class="btn btn-gold btn-full" onclick="slAddUser()" style="margin-top:12px;">+ Add Staff Login</button>
+  </div>
+
   <div class="card" style="display:none;">
   </div>
   <!-- Fee Schedule -->
@@ -2664,6 +2690,7 @@ function loadSettings(){
   try{ renderStreamConfig(); }catch(e){}
   try{ loadFlwConfig(); }catch(e){}
   try{ loadPortalPins(); }catch(e){}
+  try{ slLoadUsers(); }catch(e){}
   // Show existing logo in preview
   var existingLogo=localStorage.getItem('rsms_school_logo')||s.logo||'';
   if(existingLogo){setVal('cfg-logo',existingLogo);try{updateLogoPreview(existingLogo);}catch(e){}}
@@ -3880,6 +3907,79 @@ function savePortalPins(){
 
 function loadPortalPins(){
   renderPinConfig();
+}
+
+/* ── Staff Logins (LAN sign-in account management) ─────────
+   Talks to the offline LAN server (/api/admin/users). On the
+   cloud-hosted portal this endpoint doesn't exist, so the card
+   hides itself; when the LAN server is present but the visitor
+   isn't signed in at the staff-login page, a sign-in hint shows. */
+function slEsc(s){
+  return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function slRoleLabel(r){
+  return {admin:'Admin',bursar:'Bursar',teacher:'Subject Teacher',classteacher:'Class Teacher',
+    hod:'HOD',vp:'Vice Principal',principal:'Principal',superadmin:'Super Admin'}[r]||r;
+}
+function slLoadUsers(){
+  var card=document.getElementById('sl-card'); if(!card) return;
+  fetch('/api/admin/users').then(function(r){
+    if(r.status===404) throw new Error('cloud');
+    if(!r.ok) throw new Error('sign-in-required');
+    return r.json();
+  }).then(function(data){
+    slRenderList((data&&data.users)||[]);
+  }).catch(function(err){
+    if(err.message==='cloud'){ card.style.display='none'; return; }
+    document.getElementById('sl-list').innerHTML=
+      '<div style="font-size:.78rem;color:var(--t3);padding:10px 12px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.25);border-radius:10px;">'+
+      'Sign in at the <a href="/staff-login.html" style="color:var(--teal);">staff sign-in page</a> with an admin account to manage logins.</div>';
+  });
+}
+function slRenderList(users){
+  var el=document.getElementById('sl-list'); if(!el) return;
+  if(!users.length){
+    el.innerHTML='<div style="font-size:.78rem;color:var(--t3);padding:6px 0;">No staff logins yet — add the first one below.</div>';
+    return;
+  }
+  el.innerHTML=users.map(function(u){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--line);border-radius:10px;margin-bottom:7px;">'+
+      '<div style="flex:1;min-width:0;">'+
+        '<div style="font-weight:700;font-size:.84rem;color:var(--t1);">'+slEsc(u.displayName||u.username)+'</div>'+
+        '<div style="font-size:.72rem;color:var(--t3);">'+slEsc(u.username)+' &middot; '+slRoleLabel(u.role)+'</div>'+
+      '</div>'+
+      '<button class="btn btn-ghost" style="height:32px;padding:0 12px;font-size:.72rem;flex-shrink:0;" onclick="slResetPin(\''+slEsc(u.username)+'\')">Reset PIN</button>'+
+    '</div>';
+  }).join('');
+}
+function slAddUser(){
+  var username=document.getElementById('sl-username').value.trim();
+  var displayName=document.getElementById('sl-name').value.trim();
+  var role=document.getElementById('sl-role').value;
+  var pin=document.getElementById('sl-pin').value;
+  fetch('/api/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({username:username,displayName:displayName,role:role,pin:pin})
+  }).then(function(r){
+    return r.json().catch(function(){return {};}).then(function(d){ if(!r.ok) throw new Error((d&&d.error)||'failed'); return d; });
+  }).then(function(){
+    toast('Staff login added: '+username,'success');
+    document.getElementById('sl-username').value='';
+    document.getElementById('sl-name').value='';
+    document.getElementById('sl-pin').value='';
+    slLoadUsers();
+  }).catch(function(e){ toast('Could not add login: '+e.message,'error'); });
+}
+function slResetPin(username){
+  var pin=window.prompt('New PIN for '+username+' (4-12 characters):');
+  if(pin===null) return;
+  fetch('/api/admin/users/'+encodeURIComponent(username),{method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({pin:pin})
+  }).then(function(r){
+    return r.json().catch(function(){return {};}).then(function(d){ if(!r.ok) throw new Error((d&&d.error)||'failed'); return d; });
+  }).then(function(){
+    toast('PIN updated for '+username,'success');
+  }).catch(function(e){ toast('Could not update PIN: '+e.message,'error'); });
 }
 
 </script>

@@ -312,3 +312,87 @@ test('server: LAN entry redirects — / and /rsms-login.html go to the staff ent
     await stopServer(h);
   }
 });
+
+test('server: staff login account management — list, add, reset PIN, re-login', async function(){
+  var db = newDb();
+  var h = await startServer(db);
+  try{
+    await api(h.base, '/api/bootstrap', {method: 'POST', body: {
+      username: 'admin1', displayName: 'Admin', role: 'admin', pin: '1234'
+    }});
+    var login = await api(h.base, '/api/auth/login', {method: 'POST', body: {
+      username: 'admin1', pin: '1234'
+    }});
+    var cookie = cookieFrom(login.res);
+    assert.ok(cookie, 'admin session cookie');
+
+    /* List starts with just the bootstrap account, no secrets exposed. */
+    var list0 = await api(h.base, '/api/admin/users', {cookie: cookie});
+    assert.equal(list0.status, 200);
+    assert.equal(list0.json.users.length, 1);
+    assert.equal(list0.json.users[0].username, 'admin1');
+    assert.equal(list0.json.users[0].role, 'admin');
+    assert.equal(list0.json.users[0].credentialHash, undefined, 'no credential leak');
+    assert.equal(list0.json.users[0].salt, undefined, 'no salt leak');
+
+    /* Add a bursar login. */
+    var add = await api(h.base, '/api/admin/users', {method: 'POST', cookie: cookie, body: {
+      username: 'bursar1', displayName: 'Bola Bursar', role: 'bursar', pin: '9988'
+    }});
+    assert.equal(add.status, 200);
+
+    var list1 = await api(h.base, '/api/admin/users', {cookie: cookie});
+    assert.equal(list1.json.users.length, 2);
+    var bursar = list1.json.users.find(function(u){ return u.username === 'bursar1'; });
+    assert.ok(bursar, 'new user listed');
+    assert.equal(bursar.displayName, 'Bola Bursar');
+    assert.equal(bursar.role, 'bursar');
+
+    /* The new login actually works. */
+    var blogin = await api(h.base, '/api/auth/login', {method: 'POST', body: {
+      username: 'bursar1', pin: '9988'
+    }});
+    assert.equal(blogin.status, 200);
+    assert.equal(blogin.json.role, 'bursar');
+    var bcookie = cookieFrom(blogin.res);
+
+    /* Duplicate username is rejected. */
+    var dup = await api(h.base, '/api/admin/users', {method: 'POST', cookie: cookie, body: {
+      username: 'bursar1', displayName: 'x', role: 'teacher', pin: '1111'
+    }});
+    assert.equal(dup.status, 409);
+
+    /* Bad role / short PIN are rejected. */
+    var badRole = await api(h.base, '/api/admin/users', {method: 'POST', cookie: cookie, body: {
+      username: 'someone', role: 'janitor', pin: '1234'
+    }});
+    assert.equal(badRole.status, 400);
+    var shortPin = await api(h.base, '/api/admin/users', {method: 'POST', cookie: cookie, body: {
+      username: 'someone', role: 'teacher', pin: '12'
+    }});
+    assert.equal(shortPin.status, 400);
+
+    /* Reset the PIN — old PIN stops working, new one works. */
+    var reset = await api(h.base, '/api/admin/users/bursar1', {method: 'PUT', cookie: cookie, body: {
+      pin: '7766'
+    }});
+    assert.equal(reset.status, 200);
+    var oldTry = await api(h.base, '/api/auth/login', {method: 'POST', body: {
+      username: 'bursar1', pin: '9988'
+    }});
+    assert.equal(oldTry.status, 401, 'old PIN rejected after reset');
+    var newTry = await api(h.base, '/api/auth/login', {method: 'POST', body: {
+      username: 'bursar1', pin: '7766'
+    }});
+    assert.equal(newTry.status, 200, 'new PIN accepted');
+
+    /* A non-admin cannot manage logins. */
+    var bcookie2 = cookieFrom(newTry.res);
+    var denied = await api(h.base, '/api/admin/users', {cookie: bcookie2});
+    assert.equal(denied.status, 403, 'bursar denied user management');
+    var anon = await api(h.base, '/api/admin/users', {});
+    assert.equal(anon.status, 401, 'anonymous denied');
+  } finally {
+    await stopServer(h);
+  }
+});

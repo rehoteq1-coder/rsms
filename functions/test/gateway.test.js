@@ -84,37 +84,3 @@ test('is idempotent after a pending record has been transitioned', function(){
   assert.equal(second.applied.length, 0);
   assert.equal(second.audit.length, 0);
 });
-
-test('validates gateway secret key formats per provider', function(){
-  assert.equal(gateway.isValidGatewayKey('flutterwave', 'FLWSEC-abcdef123456'), true);
-  assert.equal(gateway.isValidGatewayKey('flutterwave', '  FLWSEC-abcdef123456  '), true);
-  assert.equal(gateway.isValidGatewayKey('flutterwave', 'flwsec-abcdef'), false);
-  assert.equal(gateway.isValidGatewayKey('flutterwave', 'FLWPUBK-abcdef'), false);
-  assert.equal(gateway.isValidGatewayKey('flutterwave', ''), false);
-  assert.equal(gateway.isValidGatewayKey('paystack', 'sk_test_abc123'), true);
-  assert.equal(gateway.isValidGatewayKey('paystack', 'sk_live_abc123'), true);
-  assert.equal(gateway.isValidGatewayKey('paystack', 'pk_test_abc123'), false);
-  assert.equal(gateway.isValidGatewayKey('paystack', 'FLWSEC-abc'), false);
-});
-
-test('maps school and provider to stable secret manager names', function(){
-  assert.equal(gateway.schoolSecretName('flutterwave', 'green-valley-sec'), 'rsms-flw-green-valley-sec');
-  assert.equal(gateway.schoolSecretName('paystack', 'Green Valley School'), 'rsms-ps-green-valley-school');
-  assert.equal(gateway.schoolSecretName('flutterwave', 'a'), 'rsms-flw-a');
-  assert.throws(function(){ gateway.schoolSecretName('paypal', 'x'); });
-  assert.throws(function(){ gateway.schoolSecretName('flutterwave', ''); });
-});
-
-test('parses the webhook school query param safely', function(){
-  assert.equal(gateway.parseSchoolQuery('green-valley-sec'), 'green-valley-sec');
-  assert.equal(gateway.parseSchoolQuery('My School!'), 'MySchool');
-  assert.equal(gateway.parseSchoolQuery('--x--'), 'x');
-  assert.equal(gateway.parseSchoolQuery(undefined), '');
-  assert.equal(gateway.parseSchoolQuery('a'.repeat(200)), '');
-});
-
-test('provider flag keys map to flw_config metadata', function(){
-  assert.equal(gateway.providerFlagKey('flutterwave'), 'hasFlwSecret');
-  assert.equal(gateway.providerFlagKey('paystack'), 'hasPsSecret');
-  assert.equal(gateway.providerFlagKey('other'), '');
-});

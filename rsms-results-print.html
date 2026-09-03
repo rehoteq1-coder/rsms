@@ -695,14 +695,11 @@ function generateCards(){
     var logoHtml='';
     if(LOGO) logoHtml='<img src="'+LOGO+'" style="width:70px;height:70px;object-fit:contain;"/>';
 
-    // Passport photo HTML (per-school opt-out: Admin → Settings → "Show student photo")
-    var showPhoto = SCHOOL.showStudentPhoto !== false;
+    // Passport photo HTML
     var ph=getStudentPhoto(stu.id);
-    var phHtml=showPhoto
-      ? (ph
-        ? '<img src="'+ph+'" style="width:75px;height:90px;object-fit:cover;border:1px solid #aaa;display:block;"/>'
-        : '<div style="width:75px;height:90px;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;font-size:6.5pt;color:#aaa;text-align:center;background:#fafafa;">Passport Photo</div>')
-      : '';
+    var phHtml=ph
+      ? '<img src="'+ph+'" style="width:75px;height:90px;object-fit:cover;border:1px solid #aaa;display:block;"/>'
+      : '<div style="width:75px;height:90px;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;font-size:6.5pt;color:#aaa;text-align:center;background:#fafafa;">Passport Photo</div>';
 
     var termOrder3=['First Term','Second Term','Third Term'];
     var showCum=termOrder3.indexOf(term)>0;
@@ -723,7 +720,7 @@ function generateCards(){
           (SCHOOL.phone?'<div style="font-size:8.5pt;color:#555;">Tel: '+SCHOOL.phone+'</div>':'')+
           (SCHOOL.motto?'<div style="font-size:8pt;color:#1a0a3e;font-style:italic;margin-top:2px;">'+SCHOOL.motto+'</div>':'')+
         '</div>'+
-        (showPhoto?'<div style="width:80px;text-align:center;">'+phHtml+'</div>':'')+
+        '<div style="width:80px;text-align:center;">'+phHtml+'</div>'+
       '</div>'+
 
       // ── REPORT TITLE ──

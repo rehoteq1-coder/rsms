@@ -216,6 +216,51 @@ function createApp(options){
     res.json({ok: true, credentialChanged: true});
   });
 
+  /* ── Staff login accounts (LAN sign-in management) ─────────── */
+  app.get('/api/admin/users', auth.requireAuth(db, ['admin','superadmin']), function(req, res){
+    var rows = db.prepare('SELECT username, display_name, role, created_at FROM local_users ORDER BY created_at, username').all();
+    res.json({users: rows.map(function(u){
+      return {username: u.username, displayName: u.display_name, role: u.role, createdAt: u.created_at};
+    })});
+  });
+
+  app.post('/api/admin/users', auth.requireAuth(db, ['admin','superadmin']), function(req, res){
+    var b = req.body || {};
+    var username = String(b.username || '').trim();
+    var displayName = String(b.displayName || '').trim();
+    var role = String(b.role || '').trim().toLowerCase();
+    var pin = String(b.pin || '');
+    if(username.length < 3 || username.length > 64) return res.status(400).json({error:'username must be 3-64 chars'});
+    if(!/^[a-zA-Z0-9._-]+$/.test(username)) return res.status(400).json({error:'username may contain letters, numbers, dots, dashes'});
+    if(auth.ALLOWED_ROLES.indexOf(role) < 0) return res.status(400).json({error:'invalid role'});
+    if(pin.length < 4 || pin.length > 12) return res.status(400).json({error:'PIN must be 4-12 characters'});
+    var existing = db.prepare('SELECT username FROM local_users WHERE username = ?').get(username);
+    if(existing) return res.status(409).json({error:'username already exists'});
+    var h = auth.hashCredential(pin);
+    var stamp = dbModule.nowIso();
+    db.prepare(
+      'INSERT INTO local_users (username, display_name, role, credential_hash, salt, created_at, updated_at) ' +
+      'VALUES (?,?,?,?,?,?,?)'
+    ).run(username, displayName || username, role, h.hash, h.salt, stamp, stamp);
+    res.json({ok: true, username: username, role: role});
+  });
+
+  app.put('/api/admin/users/:username', auth.requireAuth(db, ['admin','superadmin']), function(req, res){
+    var user = db.prepare('SELECT * FROM local_users WHERE username = ?').get(req.params.username);
+    if(!user) return res.status(404).json({error:'user not found'});
+    var b = req.body || {};
+    if(b.pin === undefined){
+      return res.status(400).json({error:'pin required'});
+    }
+    var pin = String(b.pin || '');
+    if(pin.length < 4 || pin.length > 12) return res.status(400).json({error:'PIN must be 4-12 characters'});
+    var h = auth.hashCredential(pin);
+    db.prepare('UPDATE local_users SET credential_hash = ?, salt = ?, updated_at = ? WHERE username = ?')
+      .run(h.hash, h.salt, dbModule.nowIso(), user.username);
+    auth.revokeAllForUser(db, user.username);
+    res.json({ok: true, username: user.username});
+  });
+
   function requireBound(){
     return function(req, res, next){
       var b = sync.binding(db);

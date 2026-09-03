@@ -2136,10 +2136,32 @@ function openStudentDetail(stuId){
     return '<div class="payslip-row"><span>'+t+'</span><span style="font-weight:600;color:var(--green);">'+naira(feeTypes[t])+'</span></div>';
   }).join('');
 
-  // Payment history table
-  var histRows=stuFees.map(function(f){
-    var ch=f.channel==='parent_selfpay'?'Self-Pay':'Bursar';
-    return '<tr><td>'+f.date+'</td><td>'+f.type+'</td><td>'+f.method+'</td><td style="font-weight:600;color:var(--green);">'+naira(f.amount)+'</td><td style="font-size:.68rem;">'+ch+'</td><td style="font-size:.68rem;color:var(--t3);">'+(f.receiptNo||'--')+'</td></tr>';
+  // Payment history table — grouped by fee type: each fee appears once
+  // with its total (repeated payments add up); the individual receipts
+  // stay visible under their group for the audit trail.
+  var escS=function(s){return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');};
+  var groups={},groupOrder=[];
+  stuFees.forEach(function(f){
+    var t=f.type||'General';
+    if(!groups[t]){ groups[t]={total:0,count:0,items:[]}; groupOrder.push(t); }
+    groups[t].total+=parseFloat(f.amount||0);
+    groups[t].count++;
+    groups[t].items.push(f);
+  });
+  var histRows=groupOrder.map(function(t){
+    var g=groups[t];
+    var summary='<tr style="background:rgba(212,168,67,.07);"><td colspan="6" style="padding:9px 8px;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">'+
+      '<span style="font-weight:800;color:var(--t1);">'+escS(t)+(g.count>1?' <span style="font-size:.66rem;font-weight:600;color:var(--t3);">'+g.count+' payments</span>':'')+'</span>'+
+      '<span style="font-weight:800;color:var(--green);white-space:nowrap;">'+naira(g.total)+'</span>'+
+      '</div></td></tr>';
+    var items=g.items.map(function(f){
+      var ch=f.channel==='parent_selfpay'?'Self-Pay':'Bursar';
+      return '<tr><td style="padding-left:18px;color:var(--t3);">'+escS(f.date)+'</td><td></td><td style="color:var(--t3);">'+escS(f.method)+'</td>'+
+        '<td style="font-weight:600;color:var(--t2);">'+naira(f.amount)+'</td><td style="font-size:.68rem;">'+ch+'</td>'+
+        '<td style="font-size:.68rem;color:var(--t3);">'+escS(f.receiptNo||'--')+'</td></tr>';
+    }).join('');
+    return summary+items;
   }).join('');
 
   var html='<div class="stu-detail-hd">'+
@@ -2201,6 +2223,20 @@ function printStudentStatement(){
     '<div><div class="val">\u20a6'+expected.toLocaleString()+'</div><div class="lbl">Expected</div></div>'+
     '<div><div class="val" style="color:#22c55e;">\u20a6'+paid.toLocaleString()+'</div><div class="lbl">Paid</div></div>'+
     '<div><div class="val" style="color:'+(expected-paid>0?'#f43f5e':'#22c55e')+';">\u20a6'+Math.abs(expected-paid).toLocaleString()+'</div><div class="lbl">'+(expected-paid>0?'Balance':'Overpaid')+'</div></div></div>');
+
+  // Grouped fee breakdown (a fee paid twice is shown once, with the total)
+  var feeTotals={};
+  stuFees.forEach(function(f){ var t=f.type||'General'; feeTotals[t]=(feeTotals[t]||0)+parseFloat(f.amount||0); });
+  var feeKeys=Object.keys(feeTotals);
+  if(feeKeys.length){
+    w.document.write('<h3 style="margin:0 0 6px;font-size:.95rem;">Fee Breakdown</h3>');
+    w.document.write('<table><thead><tr><th>Fee Type</th><th style="text-align:right;">Total Paid</th></tr></thead><tbody>');
+    feeKeys.forEach(function(t){
+      w.document.write('<tr><td>'+t+'</td><td style="text-align:right;font-weight:700;color:#22c55e;">\u20a6'+feeTotals[t].toLocaleString()+'</td></tr>');
+    });
+    w.document.write('</tbody></table>');
+    w.document.write('<h3 style="margin:18px 0 6px;font-size:.95rem;">Payment History</h3>');
+  }
 
   if(stuFees.length){
     w.document.write('<table><thead><tr><th>#</th><th>Date</th><th>Fee Type</th><th>Method</th><th>Amount</th><th>Receipt</th></tr></thead><tbody>');
