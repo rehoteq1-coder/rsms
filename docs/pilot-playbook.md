@@ -109,7 +109,7 @@ change; the service records `pending_restart` and the next boot clears it.
 
 ## 5. Daily operations (school administrator, 1 page)
 
-- **Staff** open the portal from the printed QR (or `http://<IP>:8300/`).
+- **Staff** open the portal from the printed QR (or `http://<IP>:8300/staff-login.html`).
 - **Bursar** watches:
   - `http://<IP>:8300/health` — outbox pending count, last cloud sync,
     backups, disk space.

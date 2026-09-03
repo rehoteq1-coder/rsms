@@ -263,6 +263,8 @@ test('server: first-run UI — bootstrap form only before first account; 401 lin
       'bootstrap form hidden after the first account exists');
     assert.ok(page2.text.indexOf('first-run wizard') >= 0,
       'unbound hint points to the first-run wizard');
+    assert.ok(page2.text.indexOf('rsms-bursar.html') >= 0,
+      'login page carries the role-page redirect map (staff land on their role page, not the public landing page)');
 
     /* Login reports bound:false so the client lands on the wizard. */
     var login = await api(h.base, '/api/auth/login', {method: 'POST', body: {

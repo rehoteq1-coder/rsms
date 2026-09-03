@@ -279,7 +279,11 @@ function createApp(options){
       ' fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},' +
       '  body:JSON.stringify({username:document.getElementById("u").value,pin:document.getElementById("p").value})' +
       ' }).then(function(r){return r.json().catch(function(){return{}}).then(function(d){if(!r.ok)throw d;return d;});})' +
-      '.then(function(d){location.href=d.bound?"/":"/wizard.html";})' +
+      '.then(function(d){' +
+      ' var pages={admin:"/rsms-admin.html",bursar:"/rsms-bursar.html",teacher:"/rsms-teacher.html",' +
+      ' classteacher:"/rsms-classteacher.html",hod:"/rsms-hod.html",vp:"/rsms-vp.html",' +
+      ' principal:"/rsms-principal.html",superadmin:"/rsms-superadmin.html"};' +
+      ' location.href=d.bound?(pages[d.role]||"/"):"/wizard.html";})' +
       '.catch(function(d){showErr((d&&(d.error))?"Sign-in failed — check username and PIN.":"Sign-in failed.");});' +
       '}' +
       'document.getElementById("go").onclick=go;' +
@@ -449,7 +453,7 @@ function createApp(options){
       hostname: os.hostname(),
       port: port,
       lan: lanAddresses().map(function(ip){
-        return {ip: ip, mac: macs[ip] || null, portalUrl: 'http://' + ip + ':' + port + '/'};
+        return {ip: ip, mac: macs[ip] || null, portalUrl: 'http://' + ip + ':' + port + '/staff-login.html'};
       }),
       binding: sync.binding(db),
       inMigration: dbModule.inMigration(db),
@@ -650,7 +654,7 @@ function createApp(options){
       (dbModule.inMigration(db) ? ' · <b style="color:#fca5a5">SCHEMA MIGRATION PENDING</b>' : '') +
       '</td></tr>' +
       '<tr><td style="padding:6px 14px 6px 0;color:#8b93a7">LAN addresses</td><td>' +
-      lanAddresses().join(', ') + ' — staff portal: http://&lt;ip&gt;:' + (process.env.PORT || 8300) + '/ · ' +
+      lanAddresses().join(', ') + ' — staff portal: http://&lt;ip&gt;:' + (process.env.PORT || 8300) + '/staff-login.html · ' +
       '<a href="/wizard.html" style="color:#8b93a7">first-run wizard</a></td></tr>' +
       '</table>' +
       '<p style="color:#8b93a7;font-size:.8rem">Card payments are cloud-only: offline the portal records cash / bank transfer as <i>Sync pending</i>.</p>' +
@@ -722,7 +726,7 @@ function start(){
   }
   server.listen(port, '0.0.0.0', function(){
     console.log('RSMS offline server v' + SERVER_VERSION + ' listening on 0.0.0.0:' + port);
-    console.log('Staff portal: http://<LAN-IP>:' + port + '/   Health: http://<LAN-IP>:' + port + '/health');
+    console.log('Staff portal: http://<LAN-IP>:' + port + '/staff-login.html   Health: http://<LAN-IP>:' + port + '/health');
     console.log('Conflict review: http://<LAN-IP>:' + port + '/conflicts.html (staff session required)');
     console.log('Sync loop: every ' + interval + 'ms (no-op until cloud binding is validated).');
     console.log('Note: LAN-only deployment — no internet route, no parent portal.');
