@@ -72,12 +72,15 @@ function makeStore(seed){
 async function runBursarScript(h, cookie, extraSeed){
   var page = await api(h.base, '/rsms-bursar.html', {cookie: cookie});
   assert.equal(page.status, 200, 'bursar page served');
+  var finance = await api(h.base, '/rsms-finance.js', {cookie: cookie});
+  assert.equal(finance.status, 200, 'finance engine served');
   var blocks = page.text.match(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g) || [];
   assert.ok(blocks.length >= 1, 'inline scripts present');
   /* The page splits its code across several inline <script> blocks
      that share the global scope in a browser — execute them all, in
-     order, like a browser would. */
-  var main = blocks.map(function(b){
+     order, like a browser would. The FIND finance engine (an external
+     script tag on the page) runs first, as in the browser. */
+  var main = finance.text + '\n;\n' + blocks.map(function(b){
     return b.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '');
   }).join('\n;\n');
 
@@ -107,6 +110,7 @@ async function runBursarScript(h, cookie, extraSeed){
   };
   var windowStub = {
     addEventListener: function(){},
+    confirm: function(){ return true; },
     open: function(){
       var w = {document: {write: function(html){ printedChunks.push(String(html)); }, close: function(){}}, print: function(){}};
       return w;
@@ -136,13 +140,14 @@ async function runBursarScript(h, cookie, extraSeed){
   new Function('document', 'window', 'localStorage', 'sessionStorage', 'location',
     'navigator', 'fetch', 'setTimeout', 'Blob',
     main + '\n;globalThis.__bursar={printReceipt:printReceipt,downloadFinanceExcel:downloadFinanceExcel,'
-      + 'openStudentDetail:openStudentDetail,printStudentStatement:printStudentStatement};'
+      + 'openStudentDetail:openStudentDetail,printStudentStatement:printStudentStatement,'
+      + 'recordPayment:recordPayment,creditStudentWallet:creditStudentWallet};'
   )(documentStub, windowStub, store, makeStore({}), windowStub.location,
     {clipboard: null}, fetchStub, safeTimeout, CapturedBlob);
 
   assert.ok(globalThis.__bursar, 'bursar functions exposed');
   return {
-    window: windowStub, els: els, created: created,
+    window: windowStub, els: els, created: created, doc: documentStub,
     getPrinted: function(){ return printedChunks.join(''); },
     getBlob: function(){ return {parts: blobParts, type: blobType}; }
   };
@@ -285,6 +290,67 @@ test('bursar: student account groups repeated fees — popup history + printed s
     assert.ok(bdSection.indexOf('50,000') >= 0, 'breakdown total adds up');
     assert.ok(bdSection.indexOf('Bus Fee') >= 0, 'bus fee in breakdown');
     assert.equal(bdSection.split('Tuition').length - 1, 1, 'tuition listed once in breakdown');
+  } finally {
+    await stopServer(env.h);
+  }
+});
+
+test('bursar: wallet payment at the counter — credit, pay from wallet, insufficient balance', async function(){
+  var env = await seededHandle();
+  try{
+    var cookie = await env.setup();
+    var run = await runBursarScript(env.h, cookie, {
+      rsms_students: JSON.stringify([
+        {id: 's1', surname: 'Ada', firstname: 'Obi', class: 'JSS 1', reg: 'REG/001'}
+      ])
+    });
+    var find = run.window.FIND;
+    assert.ok(find, 'FIND engine loaded in the page scope');
+    function el(id){ return run.doc.getElementById(id); }
+
+    /* 1. Bursar credits the wallet (cash received, attested). */
+    el('wallet-credit-student').value = 's1';
+    el('wallet-credit-amount').value = '15000';
+    el('wallet-credit-reason').value = 'Parent top-up';
+    el('wallet-credit-confirm').checked = true;
+    globalThis.__bursar.creditStudentWallet();
+    assert.equal(find.walletBalance('s1'), 15000, 'wallet credited 15,000');
+
+    /* 2. Bursar pays a fee from the wallet at the counter. */
+    el('pay-stu-sel').value = 's1';
+    el('pay-type').value = 'Tuition';
+    el('pay-amount').value = '6000';
+    el('pay-method').value = 'Wallet';
+    globalThis.__bursar.recordPayment();
+    var payments = find.collection('payments');
+    assert.equal(payments.length, 1, 'one fee payment created');
+    assert.equal(payments[0].method, 'Wallet');
+    assert.equal(payments[0].status, 'Paid');
+    assert.equal(payments[0].channel, 'bursar_wallet');
+    assert.equal(payments[0].type, 'Tuition');
+    assert.equal(find.walletBalance('s1'), 9000, 'balance reduced by the fee');
+
+    /* 3. The wallet debit is paired with the fee payment in the ledger. */
+    var debit = find.collection('wallet').find(function(e){ return e.type === 'debit'; });
+    assert.ok(debit, 'wallet debit entry exists');
+    assert.ok(debit.feeTxId && payments[0].txId && debit.feeTxId === payments[0].txId,
+      'debit paired to the fee transaction');
+
+    /* 4. The payment mirrors into the bursar fee list (Receipts page). */
+    var legacy = JSON.parse(run.window.localStorage.getItem('rsms_fees') || '[]');
+    assert.equal(legacy.length, 1, 'legacy fee mirror present');
+    assert.equal(legacy[0].method, 'Wallet');
+
+    /* 5. Paying more than the balance is refused — nothing is booked. */
+    el('pay-stu-sel').value = 's1';
+    el('pay-type').value = 'Tuition';
+    el('pay-amount').value = '999999';
+    el('pay-method').value = 'Wallet';
+    globalThis.__bursar.recordPayment();
+    assert.equal(find.collection('payments').length, 1, 'no payment for insufficient balance');
+    assert.equal(find.walletBalance('s1'), 9000, 'balance unchanged');
+    assert.ok(run.els['rsms-toast'].textContent.indexOf('Insufficient') >= 0,
+      'insufficient balance toasted: ' + run.els['rsms-toast'].textContent);
   } finally {
     await stopServer(env.h);
   }

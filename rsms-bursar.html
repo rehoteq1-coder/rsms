@@ -736,6 +736,7 @@ select.fi option{background:var(--card);color:var(--t1);}
       <div class="sis-name" id="psi-name">--</div>
       <div class="sis-meta" id="psi-class">--</div>
       <div class="sis-paid" id="psi-paid"></div>
+      <div class="sis-paid" id="psi-wallet" style="display:none;color:var(--gold);"></div>
     </div>
     <div class="f2">
       <div class="fg"><label>Fee Type *</label>
@@ -752,9 +753,9 @@ select.fi option{background:var(--card);color:var(--t1);}
     </div>
     <div class="f2">
       <div class="fg"><label>Payment Method</label>
-        <select class="fi" id="pay-method" style="height:46px;">
+        <select class="fi" id="pay-method" onchange="onPayMethodChange()" style="height:46px;">
           <option>Cash</option><option>Bank Transfer</option><option>Moniepoint</option>
-          <option>POS</option><option>Cheque</option>
+          <option>POS</option><option>Cheque</option><option>Wallet</option>
         </select>
       </div>
       <div class="fg"><label>Date</label>
@@ -1776,6 +1777,7 @@ function onStudentSelect(){
   elTxt('psi-paid','Paid so far: '+naira(paid));
   if(info)info.style.display='block';
   autoFillAmount();
+  try{ if(typeof updateWalletBalanceHint==='function') updateWalletBalanceHint(); }catch(e){}
 }
 
 function autoFillAmount(){
@@ -3181,15 +3183,45 @@ function recordPayment(){
   if(!type){ toast('Select fee type','error'); return; }
   if(amount<=0){ toast('Enter a valid amount','error'); return; }
   try{
-    var payment=find.pay({
-      stuId:stuId, amount:amount, type:type, method:method, channel:'bursar',
-      ref:finVal('pay-ref'), status:'Paid', by:(RSMS.user()||{}).name||'Bursar',
-      source:'bursar', date:finVal('pay-date')||finDate()
-    });
-    toast('✓ Payment recorded — '+payment.receiptNo,'success');
+    var result;
+    if(method==='Wallet'){
+      /* Pay from the student's wallet: the engine checks the balance,
+         books the wallet debit and creates the paired fee payment
+         (method "Wallet") in one audited step. */
+      var wStu=find.studentFor(stuId)||{};
+      result=find.walletDebit({
+        stuId:stuId, student:finStudentName(wStu), class:wStu.class||'--', reg:wStu.reg||wStu.registrationNo||'',
+        amount:amount, reason:type, method:'Wallet', paymentMethod:'Wallet', channel:'bursar_wallet',
+        paymentType:type, ref:finVal('pay-ref')||('BURSAR-WAL-'+Date.now().toString(36).toUpperCase()),
+        by:(RSMS.user()||{}).name||'Bursar', date:finVal('pay-date')||finDate()
+      });
+      toast('✓ Paid from wallet — '+result.payment.receiptNo+' · Balance '+finNaira(result.balance),'success');
+    }else{
+      result=find.pay({
+        stuId:stuId, amount:amount, type:type, method:method, channel:'bursar',
+        ref:finVal('pay-ref'), status:'Paid', by:(RSMS.user()||{}).name||'Bursar',
+        source:'bursar', date:finVal('pay-date')||finDate()
+      });
+      toast('✓ Payment recorded — '+result.receiptNo,'success');
+    }
     resetPayForm();
     renderDash();
   }catch(error){ toast(error.message||'Could not record payment.','error'); }
+}
+
+/* Show the student's wallet balance when the method is "Wallet". */
+function onPayMethodChange(){
+  updateWalletBalanceHint();
+}
+function updateWalletBalanceHint(){
+  var hint=finEl('psi-wallet'); if(!hint) return;
+  var method=(finEl('pay-method')||{}).value||'';
+  var stuId=(finEl('pay-stu-sel')||{}).value||'';
+  if(method!=='Wallet'||!stuId||!finFind()){ hint.style.display='none'; return; }
+  var balance=finFind().walletBalance(stuId);
+  hint.textContent='Wallet balance: '+finNaira(balance);
+  hint.style.color=balance>0?'var(--gold)':'var(--red)';
+  hint.style.display='block';
 }
 
 function recordSelfPayment(stuId,name,stu,type,amount,method,ref,options){
