@@ -48,13 +48,18 @@ function rewriteAssets(html){
   return out;
 }
 
-/* Inject the LAN runtime flag + adapter before </body>. */
+/* Inject the LAN runtime flag + adapter before </body>.
+   NOTE: must use the LAST occurrence — pages like rsms-bursar.html
+   contain the literal text "</body>" inside JS strings (report
+   print-windows), and String.replace would splice the injected
+   <script> tags into that string, truncating the page's main script. */
 function injectAdapter(html, serverConfig){
   var injected =
     '\n<script>window.RSMS_LOCAL=' + JSON.stringify(serverConfig) + ';</script>' +
     '<script src="/adapter.js"></script>\n';
-  if(html.indexOf('</body>') !== -1){
-    return html.replace('</body>', injected + '</body>');
+  var idx = html.lastIndexOf('</body>');
+  if(idx !== -1){
+    return html.slice(0, idx) + injected + html.slice(idx);
   }
   return html + injected;
 }
