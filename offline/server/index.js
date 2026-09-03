@@ -735,6 +735,17 @@ function createApp(options){
   app.get('/', staffEntry);
   app.get('/rsms-login.html', staffEntry);
 
+  /* Portal pages require a valid LAN session. Without this gate the
+     pages open for anyone on the LAN and "logout" is cosmetic — the
+     session cookie survives and every portal stays reachable. */
+  app.use(function portalSessionGate(req, res, next){
+    if(req.method !== 'GET' && req.method !== 'HEAD') return next();
+    var p = (req.url || '/').split('?')[0];
+    if(!/^\/rsms-[a-z0-9_-]+\.html$/i.test(p)) return next();
+    if(auth.readSession(db, req.headers.cookie)) return next();
+    res.redirect('/staff-login.html');
+  });
+
   /* ── Portals (rewritten + adapter-injected) ──────────────────── */
   app.use(portals.portalMiddleware(REPO_ROOT, serverConfig()));
 

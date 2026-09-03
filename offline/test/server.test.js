@@ -188,7 +188,12 @@ test('server: portal pages are served with self-hosted assets and the LAN adapte
   var db = newDb();
   var h = await startServer(db);
   try{
-    var res = await fetch(h.base + '/rsms-bursar.html');
+    await api(h.base, '/api/bootstrap', {method: 'POST', body: {
+      username: 'admin1', displayName: 'Admin', role: 'admin', pin: '1234'
+    }});
+    var cookie = await loginCookie(h.base, 'admin1', '1234');
+    assert.ok(cookie, 'session cookie issued for the portal fetch');
+    var res = await fetch(h.base + '/rsms-bursar.html', {headers: {Cookie: cookie}});
     assert.equal(res.status, 200);
     var html = await res.text();
     assert.equal(html.indexOf('gstatic.com'), -1, 'no CDN URLs remain');
@@ -272,6 +277,38 @@ test('server: first-run UI — bootstrap form only before first account; 401 lin
     }});
     assert.equal(login.status, 200);
     assert.equal(login.json.bound, false);
+  } finally {
+    await stopServer(h);
+  }
+});
+
+test('server: portals are session-gated — anonymous bounces to staff login, logout kills access', async function(){
+  var db = newDb();
+  var h = await startServer(db);
+  try{
+    /* Anonymous: portal pages redirect to the staff sign-in. */
+    var anon = await fetch(h.base + '/rsms-bursar.html', {redirect: 'manual'});
+    assert.equal(anon.status, 302);
+    assert.equal(anon.headers.get('location'), '/staff-login.html');
+
+    /* The staff sign-in page and the PWA shell stay open. */
+    assert.equal((await fetch(h.base + '/staff-login.html', {redirect: 'manual'})).status, 200);
+    assert.equal((await fetch(h.base + '/index.html', {redirect: 'manual'})).status, 200);
+
+    /* Signed in: the portal serves. */
+    await api(h.base, '/api/bootstrap', {method: 'POST', body: {
+      username: 'admin1', displayName: 'Admin', role: 'admin', pin: '1234'
+    }});
+    var cookie = await loginCookie(h.base, 'admin1', '1234');
+    assert.ok(cookie, 'session cookie issued');
+    assert.equal((await fetch(h.base + '/rsms-bursar.html', {redirect: 'manual', headers: {Cookie: cookie}})).status, 200);
+
+    /* Logout revokes the session — the same cookie no longer opens the portal. */
+    var out = await api(h.base, '/api/auth/logout', {method: 'POST', cookie: cookie});
+    assert.equal(out.status, 200);
+    var after = await fetch(h.base + '/rsms-bursar.html', {redirect: 'manual', headers: {Cookie: cookie}});
+    assert.equal(after.status, 302, 'logged-out session must not reopen the portal');
+    assert.equal(after.headers.get('location'), '/staff-login.html');
   } finally {
     await stopServer(h);
   }

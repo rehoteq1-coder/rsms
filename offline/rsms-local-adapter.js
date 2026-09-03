@@ -229,6 +229,21 @@
     });
   }
 
+  /* Logout: kill the LAN session server-side, then go to the staff
+     sign-in page. The portals' own logout only clears cached data,
+     so without this the session cookie would survive and every
+     portal would stay open after "logging out". */
+  if(typeof window.RSMS !== 'undefined' && window.RSMS && typeof window.RSMS.logout === 'function'){
+    window.RSMS.logout = function(){
+      function done(){
+        try{ sessionStorage.clear(); }catch(e){}
+        location.href = '/staff-login.html';
+      }
+      try{ fetch('/api/auth/logout', {method: 'POST'}).then(done, done); }
+      catch(e){ done(); }
+    };
+  }
+
   /* The server's own /staff-login.html is served directly (no injection),
      so the adapter only ever runs on portal pages. */
   start();
