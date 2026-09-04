@@ -736,6 +736,7 @@ select.fi option{background:var(--card);color:var(--t1);}
       <div class="sis-name" id="psi-name">--</div>
       <div class="sis-meta" id="psi-class">--</div>
       <div class="sis-paid" id="psi-paid"></div>
+      <div class="sis-paid" id="psi-wallet" style="display:none;color:var(--gold);"></div>
     </div>
     <div class="f2">
       <div class="fg"><label>Fee Type *</label>
@@ -752,9 +753,9 @@ select.fi option{background:var(--card);color:var(--t1);}
     </div>
     <div class="f2">
       <div class="fg"><label>Payment Method</label>
-        <select class="fi" id="pay-method" style="height:46px;">
+        <select class="fi" id="pay-method" onchange="onPayMethodChange()" style="height:46px;">
           <option>Cash</option><option>Bank Transfer</option><option>Moniepoint</option>
-          <option>POS</option><option>Cheque</option>
+          <option>POS</option><option>Cheque</option><option>Wallet</option>
         </select>
       </div>
       <div class="fg"><label>Date</label>
@@ -1054,6 +1055,7 @@ select.fi option{background:var(--card);color:var(--t1);}
     <div class="finance-toolbar" style="margin-bottom:0;">
       <div class="fg" style="flex:2;"><label>Report</label><select class="fi" id="report-kind" onchange="renderReportCenter()" style="height:42px;"><option value="student">Student Fee</option><option value="outstanding">Outstanding Fee</option><option value="payment">Payment</option><option value="wallet">Wallet</option><option value="expense">Expense</option><option value="term">Term Financial</option><option value="class">Class Financial</option></select></div>
       <button class="btn btn-ghost" onclick="downloadFinanceCSV()">&#8615; Download CSV</button>
+      <button class="btn btn-ghost" onclick="downloadFinanceExcel()">&#128202; Download Excel (branded)</button>
       <button class="btn btn-gold" onclick="printFinanceReport()">&#128424; Print / Save as PDF</button>
     </div>
   </div>
@@ -1084,7 +1086,7 @@ select.fi option{background:var(--card);color:var(--t1);}
   <div class="card" style="margin-bottom:12px;">
     <div class="card-title">Payment Verification</div>
     <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:var(--r2);padding:10px 14px;margin-bottom:14px;font-size:.78rem;color:var(--t2);">
-      &#128274; Card payments and card wallet top-ups stay <strong>Pending</strong> until the deployed Cloud Function confirms them with the gateway. Save only public URLs here; secret keys belong in Firebase Function secrets.
+      &#128274; Your school is the <strong>direct account holder</strong>: card payments settle to your own bank via your own gateway account. Payments stay <strong>Pending</strong> until the deployed Cloud Function confirms them with the gateway using your school&rsquo;s key. Your key is saved server-side only (Google Secret Manager) and is never shown again.
     </div>
     <div class="f2">
       <div class="fg"><label>Provider</label>
@@ -1094,8 +1096,25 @@ select.fi option{background:var(--card);color:var(--t1);}
         <input class="fi" id="flw-verify-url" placeholder="https://…/verifyPayment" inputmode="url"/>
       </div>
     </div>
-    <div class="fg"><label>Webhook URL</label>
+    <div class="fg"><label>Gateway Key Endpoint URL</label>
+      <input class="fi" id="flw-key-endpoint-url" placeholder="https://…/storeGatewaySecret" inputmode="url"/>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Your School&rsquo;s Secret Key</label>
+        <input class="fi" id="flw-secret-key" type="password" placeholder="FLWSEC-… or sk_… (leave blank to keep current)"/>
+      </div>
+      <div class="fg"><label>&nbsp;</label>
+        <div id="flw-key-status" style="font-size:.75rem;color:var(--t3);padding-top:12px;line-height:1.4;">Checking…</div>
+      </div>
+    </div>
+    <div class="fg"><label>Webhook Base URL (deployed function)</label>
       <input class="fi" id="flw-webhook-url" placeholder="https://…/paymentWebhook" inputmode="url"/>
+    </div>
+    <div class="fg"><label>Your School&rsquo;s Webhook URL &mdash; paste this into your gateway dashboard</label>
+      <div style="display:flex;gap:8px;">
+        <input class="fi" id="flw-school-webhook" readonly style="flex:1;font-size:.75rem;" value=""/>
+        <button type="button" class="btn btn-ghost" style="height:46px;white-space:nowrap;" onclick="copySchoolWebhook()">&#128203; Copy</button>
+      </div>
     </div>
   </div>
   <div class="card">
@@ -1758,6 +1777,7 @@ function onStudentSelect(){
   elTxt('psi-paid','Paid so far: '+naira(paid));
   if(info)info.style.display='block';
   autoFillAmount();
+  try{ if(typeof updateWalletBalanceHint==='function') updateWalletBalanceHint(); }catch(e){}
 }
 
 function autoFillAmount(){
@@ -1976,7 +1996,8 @@ function renderReceipts(){
   }).slice().reverse();
   if(!fees.length){el.innerHTML='<div class="empty-state">No receipts found</div>';return;}
   el.innerHTML='';
-  fees.forEach(function(f){
+  window._receiptFees=fees;
+  fees.forEach(function(f,i){
     var d=document.createElement('div');d.className='card';d.style.marginBottom='9px';
     var channelBadge=f.channel==='parent_selfpay'?'<span class="badge bg-teal" style="font-size:.6rem;">Self-Pay</span>':'<span class="badge bg-gray" style="font-size:.6rem;">Bursar</span>';
     d.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px;">'+
@@ -1986,7 +2007,8 @@ function renderReceipts(){
       '<div style="font-size:.68rem;color:var(--t4);">'+f.date+'</div></div></div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap;">'+channelBadge+
       '<span class="badge bg-gray" style="font-size:.6rem;">'+f.type+'</span>'+
-      '<span class="badge bg-gray" style="font-size:.6rem;">'+f.method+'</span></div>';
+      '<span class="badge bg-gray" style="font-size:.6rem;">'+f.method+'</span></div>'+
+      '<div style="margin-top:9px;text-align:right;"><button class="btn btn-ghost" style="padding:6px 12px;font-size:.72rem;" onclick="printReceipt('+i+')">&#128424; Print receipt</button></div>';
     el.appendChild(d);
   });
 }
@@ -2116,10 +2138,32 @@ function openStudentDetail(stuId){
     return '<div class="payslip-row"><span>'+t+'</span><span style="font-weight:600;color:var(--green);">'+naira(feeTypes[t])+'</span></div>';
   }).join('');
 
-  // Payment history table
-  var histRows=stuFees.map(function(f){
-    var ch=f.channel==='parent_selfpay'?'Self-Pay':'Bursar';
-    return '<tr><td>'+f.date+'</td><td>'+f.type+'</td><td>'+f.method+'</td><td style="font-weight:600;color:var(--green);">'+naira(f.amount)+'</td><td style="font-size:.68rem;">'+ch+'</td><td style="font-size:.68rem;color:var(--t3);">'+(f.receiptNo||'--')+'</td></tr>';
+  // Payment history table — grouped by fee type: each fee appears once
+  // with its total (repeated payments add up); the individual receipts
+  // stay visible under their group for the audit trail.
+  var escS=function(s){return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');};
+  var groups={},groupOrder=[];
+  stuFees.forEach(function(f){
+    var t=f.type||'General';
+    if(!groups[t]){ groups[t]={total:0,count:0,items:[]}; groupOrder.push(t); }
+    groups[t].total+=parseFloat(f.amount||0);
+    groups[t].count++;
+    groups[t].items.push(f);
+  });
+  var histRows=groupOrder.map(function(t){
+    var g=groups[t];
+    var summary='<tr style="background:rgba(212,168,67,.07);"><td colspan="6" style="padding:9px 8px;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">'+
+      '<span style="font-weight:800;color:var(--t1);">'+escS(t)+(g.count>1?' <span style="font-size:.66rem;font-weight:600;color:var(--t3);">'+g.count+' payments</span>':'')+'</span>'+
+      '<span style="font-weight:800;color:var(--green);white-space:nowrap;">'+naira(g.total)+'</span>'+
+      '</div></td></tr>';
+    var items=g.items.map(function(f){
+      var ch=f.channel==='parent_selfpay'?'Self-Pay':'Bursar';
+      return '<tr><td style="padding-left:18px;color:var(--t3);">'+escS(f.date)+'</td><td></td><td style="color:var(--t3);">'+escS(f.method)+'</td>'+
+        '<td style="font-weight:600;color:var(--t2);">'+naira(f.amount)+'</td><td style="font-size:.68rem;">'+ch+'</td>'+
+        '<td style="font-size:.68rem;color:var(--t3);">'+escS(f.receiptNo||'--')+'</td></tr>';
+    }).join('');
+    return summary+items;
   }).join('');
 
   var html='<div class="stu-detail-hd">'+
@@ -2181,6 +2225,20 @@ function printStudentStatement(){
     '<div><div class="val">\u20a6'+expected.toLocaleString()+'</div><div class="lbl">Expected</div></div>'+
     '<div><div class="val" style="color:#22c55e;">\u20a6'+paid.toLocaleString()+'</div><div class="lbl">Paid</div></div>'+
     '<div><div class="val" style="color:'+(expected-paid>0?'#f43f5e':'#22c55e')+';">\u20a6'+Math.abs(expected-paid).toLocaleString()+'</div><div class="lbl">'+(expected-paid>0?'Balance':'Overpaid')+'</div></div></div>');
+
+  // Grouped fee breakdown (a fee paid twice is shown once, with the total)
+  var feeTotals={};
+  stuFees.forEach(function(f){ var t=f.type||'General'; feeTotals[t]=(feeTotals[t]||0)+parseFloat(f.amount||0); });
+  var feeKeys=Object.keys(feeTotals);
+  if(feeKeys.length){
+    w.document.write('<h3 style="margin:0 0 6px;font-size:.95rem;">Fee Breakdown</h3>');
+    w.document.write('<table><thead><tr><th>Fee Type</th><th style="text-align:right;">Total Paid</th></tr></thead><tbody>');
+    feeKeys.forEach(function(t){
+      w.document.write('<tr><td>'+t+'</td><td style="text-align:right;font-weight:700;color:#22c55e;">\u20a6'+feeTotals[t].toLocaleString()+'</td></tr>');
+    });
+    w.document.write('</tbody></table>');
+    w.document.write('<h3 style="margin:18px 0 6px;font-size:.95rem;">Payment History</h3>');
+  }
 
   if(stuFees.length){
     w.document.write('<table><thead><tr><th>#</th><th>Date</th><th>Fee Type</th><th>Method</th><th>Amount</th><th>Receipt</th></tr></thead><tbody>');
@@ -2346,26 +2404,146 @@ function loadBursarSettings(){
   setVal('flw-business-name',cfg.businessName);
   setVal('flw-provider',cfg.provider||'flutterwave');
   setVal('flw-verify-url',cfg.verifyUrl||'');
+  setVal('flw-key-endpoint-url',cfg.keyEndpointUrl||'');
   setVal('flw-webhook-url',cfg.webhookUrl||'');
   setVal('flw-bank-name',cfg.bankName||'');
   setVal('flw-account-no',cfg.accountNo||'');
   setVal('flw-account-name',cfg.accountName||'');
+  renderKeyStatus(cfg);
+  renderSchoolWebhook();
+}
+
+function gatewayKeyFlag(provider){
+  return String(provider||'').toLowerCase()==='paystack' ? 'hasPsSecret' : 'hasFlwSecret';
+}
+
+function currentSchoolId(){
+  return ((JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId)||'';
+}
+
+function renderKeyStatus(cfg){
+  var el=document.getElementById('flw-key-status');
+  if(!el)return;
+  var cfg=cfg||getFlwConfig();
+  var provider=getVal('flw-provider')||cfg.provider||'flutterwave';
+  var configured=!!cfg[gatewayKeyFlag(provider)];
+  if(configured){
+    el.innerHTML='&#9989; Gateway key: <strong>configured</strong>'+(cfg.secretUpdatedAt?' &middot; updated '+String(cfg.secretUpdatedAt).slice(0,10):'')+' &mdash; card payments enabled.';
+    el.style.color='var(--green)';
+  }else{
+    el.innerHTML='&#9888;&#65039; Gateway key: <strong>not configured</strong> for '+(provider==='paystack'?'Paystack':'Flutterwave')+' &mdash; card payments are disabled for your school until your school&rsquo;s own key is saved.';
+    el.style.color='var(--t3)';
+  }
+}
+
+function renderSchoolWebhook(){
+  var el=document.getElementById('flw-school-webhook');
+  if(!el)return;
+  var base=String(getVal('flw-webhook-url')||'').replace(/^\s+|\s+$/g,'');
+  var sid=currentSchoolId();
+  el.value=(base&&sid)?base.split('?')[0]+'?school='+encodeURIComponent(sid):'';
+}
+
+function copySchoolWebhook(){
+  var el=document.getElementById('flw-school-webhook');
+  if(!el||!el.value){toast('Save the webhook base URL first.','error');return;}
+  function done(){toast('\u2705 Webhook URL copied — paste it into your gateway dashboard','success');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(el.value).then(done).catch(function(){el.select();document.execCommand('copy');done();});
+  }else{el.select();document.execCommand('copy');done();}
+}
+
+/* Store (or keep) this school's own gateway secret key via the
+   storeGatewaySecret callable. The key goes server-side only (Secret
+   Manager). Auth: Firebase email session when available, otherwise the
+   bursar's legacy PIN (asked once, never stored). */
+function storeGatewayKey(provider, key){
+  var endpoint=String(getVal('flw-key-endpoint-url')||'').replace(/^\s+|\s+$/g,'');
+  if(!endpoint)return Promise.reject(new Error('Set the Gateway Key Endpoint URL first (from the deployment).'));
+  var sid=currentSchoolId();
+  if(!sid)return Promise.reject(new Error('School context is missing.'));
+
+  var usedPin=false;
+  function attempt(pin){
+    var payload={data:{schoolId:sid,provider:provider,action:'set',secretKey:key}};
+    if(pin)payload.data.pin=pin;
+    var headers={'Content-Type':'application/json'};
+    function post(){
+      return window.fetch(endpoint,{method:'POST',headers:headers,body:JSON.stringify(payload)}).then(function(response){
+        return response.json().catch(function(){return {};}).then(function(envelope){
+          var error=envelope&&envelope.error;
+          if(!response.ok){
+            var denied=error&&String(error.status||error.message||'').indexOf('permission-denied')>=0;
+            if(denied&&!usedPin){
+              usedPin=true;
+              var p=window.prompt('Enter your bursar PIN to save the gateway key:');
+              if(p!==null)return attempt(p);
+            }
+            throw new Error((error&&(error.message||error.status))||'Saving the gateway key failed.');
+          }
+          var result=envelope.result||envelope.data||{};
+          if(result.ok!==true)throw new Error('Saving the gateway key failed.');
+        });
+      });
+    }
+    var user=(typeof RSMS_FB!=='undefined'&&typeof RSMS_FB.currentUser==='function')?RSMS_FB.currentUser():null;
+    if(user&&typeof user.getIdToken==='function'){
+      return user.getIdToken().then(function(token){
+        if(token)headers['Authorization']='Bearer '+token;
+        return post();
+      }).catch(function(){
+        return post();
+      });
+    }
+    return post();
+  }
+  return attempt(null);
 }
 
 function saveFlwSettings(){
+  var provider=getVal('flw-provider')||'flutterwave';
   var cfg={
     publicKey:getVal('flw-public-key'),
     currency:getVal('flw-currency')||'NGN',
     businessName:getVal('flw-business-name'),
-    provider:getVal('flw-provider')||'flutterwave',
+    provider:provider,
     verifyUrl:getVal('flw-verify-url'),
+    keyEndpointUrl:getVal('flw-key-endpoint-url'),
     webhookUrl:getVal('flw-webhook-url'),
     bankName:getVal('flw-bank-name'),
     accountNo:getVal('flw-account-no'),
     accountName:getVal('flw-account-name')
   };
-  saveFlwConfig(cfg);
-  toast('\u2705 Payment settings saved','success');
+  var existing=getFlwConfig();
+  [gatewayKeyFlag('flutterwave'),gatewayKeyFlag('paystack'),'secretUpdatedAt'].forEach(function(k){
+    if(existing[k]!==undefined)cfg[k]=existing[k];
+  });
+
+  var keyInput=document.getElementById('flw-secret-key');
+  var key=keyInput?keyInput.value.replace(/^\s+|\s+$/g,''):'';
+
+  if(!key){
+    saveFlwConfig(cfg);
+    renderKeyStatus(cfg);
+    renderSchoolWebhook();
+    toast('\u2705 Payment settings saved','success');
+    return;
+  }
+
+  if(keyInput)keyInput.disabled=true;
+  storeGatewayKey(provider,key).then(function(){
+    cfg[gatewayKeyFlag(provider)]=true;
+    cfg.secretUpdatedAt=new Date().toISOString();
+    if(keyInput)keyInput.value='';
+    saveFlwConfig(cfg);
+    renderKeyStatus(cfg);
+    renderSchoolWebhook();
+    toast('\u2705 Gateway key saved server-side. Payment settings saved.','success');
+  }).catch(function(error){
+    toast(error.message||'Saving the gateway key failed.','error');
+  }).then(function(){
+    if(keyInput)keyInput.disabled=false;
+  });
 }
 
 // ── INIT ────────────────────────────────────────────
@@ -3005,15 +3183,45 @@ function recordPayment(){
   if(!type){ toast('Select fee type','error'); return; }
   if(amount<=0){ toast('Enter a valid amount','error'); return; }
   try{
-    var payment=find.pay({
-      stuId:stuId, amount:amount, type:type, method:method, channel:'bursar',
-      ref:finVal('pay-ref'), status:'Paid', by:(RSMS.user()||{}).name||'Bursar',
-      source:'bursar', date:finVal('pay-date')||finDate()
-    });
-    toast('✓ Payment recorded — '+payment.receiptNo,'success');
+    var result;
+    if(method==='Wallet'){
+      /* Pay from the student's wallet: the engine checks the balance,
+         books the wallet debit and creates the paired fee payment
+         (method "Wallet") in one audited step. */
+      var wStu=find.studentFor(stuId)||{};
+      result=find.walletDebit({
+        stuId:stuId, student:finStudentName(wStu), class:wStu.class||'--', reg:wStu.reg||wStu.registrationNo||'',
+        amount:amount, reason:type, method:'Wallet', paymentMethod:'Wallet', channel:'bursar_wallet',
+        paymentType:type, ref:finVal('pay-ref')||('BURSAR-WAL-'+Date.now().toString(36).toUpperCase()),
+        by:(RSMS.user()||{}).name||'Bursar', date:finVal('pay-date')||finDate()
+      });
+      toast('✓ Paid from wallet — '+result.payment.receiptNo+' · Balance '+finNaira(result.balance),'success');
+    }else{
+      result=find.pay({
+        stuId:stuId, amount:amount, type:type, method:method, channel:'bursar',
+        ref:finVal('pay-ref'), status:'Paid', by:(RSMS.user()||{}).name||'Bursar',
+        source:'bursar', date:finVal('pay-date')||finDate()
+      });
+      toast('✓ Payment recorded — '+result.receiptNo,'success');
+    }
     resetPayForm();
     renderDash();
   }catch(error){ toast(error.message||'Could not record payment.','error'); }
+}
+
+/* Show the student's wallet balance when the method is "Wallet". */
+function onPayMethodChange(){
+  updateWalletBalanceHint();
+}
+function updateWalletBalanceHint(){
+  var hint=finEl('psi-wallet'); if(!hint) return;
+  var method=(finEl('pay-method')||{}).value||'';
+  var stuId=(finEl('pay-stu-sel')||{}).value||'';
+  if(method!=='Wallet'||!stuId||!finFind()){ hint.style.display='none'; return; }
+  var balance=finFind().walletBalance(stuId);
+  hint.textContent='Wallet balance: '+finNaira(balance);
+  hint.style.color=balance>0?'var(--gold)':'var(--red)';
+  hint.style.display='block';
 }
 
 function recordSelfPayment(stuId,name,stu,type,amount,method,ref,options){
@@ -3367,6 +3575,88 @@ function printFinanceReport(){
   if(!page){toast('Please allow pop-ups to print this report.','error');return;}
   page.document.write('<!doctype html><html><head><title>'+finEsc(model.title)+'</title><style>body{font-family:Arial,sans-serif;color:#172033;padding:28px}h1{margin:0 0 4px;font-size:22px}p{margin:0 0 20px;color:#586174;font-size:12px}table{border-collapse:collapse;width:100%;font-size:11px}th{background:#0f1535;color:#fff;text-align:left;padding:8px}td{border:1px solid #dce1eb;padding:7px;vertical-align:top}@media print{body{padding:12px}}</style></head><body><h1>'+finEsc(school.name||'School')+' — '+finEsc(model.title)+'</h1><p>'+finEsc(context.term)+' · '+finEsc(context.session)+' · Generated '+finEsc(new Date().toLocaleString())+'</p>'+table+'<script>setTimeout(function(){window.print();},180);<\/script></body></html>');
   page.document.close();
+}
+
+/* ── Printable receipt for a single payment (Receipts page) ── */
+function printReceipt(idx){
+  var f=(window._receiptFees||[])[idx];
+  if(!f){toast('Receipt not found.','error');return;}
+  var school=finSchool();
+  var logo=localStorage.getItem('rsms_school_logo')||'';
+  var rows=[
+    ['Receipt No.',f.receiptNo||'--'],
+    ['Date',f.date||'--'],
+    ['Student',f.student||'--'],
+    ['Class',f.class||'--'],
+    ['Fee Type',f.type||'--'],
+    ['Method',f.method||'--']
+  ].map(function(kv){
+    return '<tr><td style="width:180px;color:#586174;">'+finEsc(kv[0])+'</td><td style="font-weight:700;">'+finEsc(String(kv[1]))+'</td></tr>';
+  }).join('');
+  var page=window.open('','_blank','width=820,height=900');
+  if(!page){toast('Please allow pop-ups to print this receipt.','error');return;}
+  page.document.write('<!doctype html><html><head><title>Receipt '+(f.receiptNo||'')+'</title><style>' +
+    'body{font-family:Arial,sans-serif;color:#172033;margin:0;padding:36px}' +
+    '.head{display:flex;align-items:center;border-bottom:3px solid #0f1535;padding-bottom:16px;margin-bottom:8px}' +
+    '.head .name{font-size:20px;font-weight:800;}' +
+    'h1{text-align:center;font-size:15px;letter-spacing:3px;margin:26px 0 18px}' +
+    'table{border-collapse:collapse;width:100%;font-size:13px}td{padding:9px 6px;border-bottom:1px solid #e7eaf2}' +
+    '.amt{margin:22px 0;text-align:center;background:#0f1535;color:#fff;border-radius:10px;padding:16px;font-size:24px;font-weight:800}' +
+    '.sig{display:flex;justify-content:space-between;margin-top:56px;font-size:12px;color:#586174}' +
+    '.sig div{border-top:1px solid #98a2b8;padding-top:6px;width:180px;text-align:center}' +
+    '@media print{body{padding:18px}}' +
+    '</style></head><body>' +
+    '<div class="head">' +
+    (logo?'<img src="'+logo+'" style="width:72px;height:72px;object-fit:contain;margin-right:14px;border-radius:8px;" onerror="this.style.display=\'none\'">':'') +
+    '<span class="name">'+finEsc(school.name||'School')+'</span>' +
+    '<span style="margin-left:auto;font-size:11px;color:#586174;align-self:flex-start;">OFFICIAL RECEIPT</span>' +
+    '</div>' +
+    '<h1>OFFICIAL FEE RECEIPT</h1>' +
+    '<table>'+rows+'</table>' +
+    '<div class="amt">\u20a6 '+(parseFloat(f.amount||0)).toLocaleString()+'</div>' +
+    '<p style="text-align:center;font-size:11px;color:#586174;">Received by '+finEsc(school.name||'School')+' for '+finEsc(f.type||'fees')+' ('+finEsc(f.method||'')+') \u00b7 '+(f.receiptNo||'')+'</p>' +
+    '<div class="sig"><div>Student / Parent</div><div>Authorized Signatory</div></div>' +
+    '<script>setTimeout(function(){window.print();},180);<\\/script></body></html>');
+  page.document.close();
+}
+
+/* ── Designed Excel export (school logo + title header) ──
+   Produces an Excel-compatible .xls (single-sheet HTML with MSO
+   metadata): the school's logo, name, report title and term context
+   above a styled table. No new dependencies - Excel opens HTML
+   workbooks natively. */
+function downloadFinanceExcel(){
+  var model=window._financeReportModel||financeReportModel(), school=finSchool(), context=finContext();
+  var logo=localStorage.getItem('rsms_school_logo')||'';
+  var schoolName=school.name||'School';
+  var title=model.title;
+  var cell=function(c){return finEsc(String(c===undefined||c===null?'':c));};
+  var bodyRows=model.rows.length?model.rows.map(function(row){
+    return '<tr>'+row.map(function(c){return '<td style="border:1px solid #dce1eb;padding:6px 8px;font-size:11px;">'+cell(c)+'</td>';}).join('')+'</tr>';
+  }).join(''):
+    '<tr><td colspan="'+model.headers.length+'" style="border:1px solid #dce1eb;padding:8px;font-size:11px;color:#586174;">No records found for this report.</td></tr>';
+  var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"/>' +
+    '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>'+cell(title).slice(0,28)+'</x:Name>' +
+    '<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->' +
+    '<style>table{border-collapse:collapse}th{background:#0f1535;color:#fff;text-align:left;padding:8px;font-size:11px;border:1px solid #0f1535}</style></head><body>' +
+    '<table>' +
+    '<tr>' +
+    (logo?'<td style="width:64px;height:64px;"><img src="'+logo+'" width="56" height="56" onerror="this.onerror=null;this.width=0;"/></td>':'') +
+    '<td style="vertical-align:middle;padding:6px 10px 6px 0;"><span style="font-size:20px;font-weight:800;color:#0f1535;">'+cell(schoolName)+'</span><br/><span style="font-size:11px;color:#586174;">School Management System</span></td>' +
+    '</tr>' +
+    '<tr><td colspan="2" style="padding:10px 0 2px;font-size:14px;font-weight:700;color:#0f1535;">'+cell(title)+'</td></tr>' +
+    '<tr><td colspan="2" style="padding:0 0 8px;font-size:11px;color:#586174;">'+cell(context.term)+' \u00b7 '+cell(context.session)+' \u00b7 Generated '+cell(new Date().toLocaleString())+'</td></tr>' +
+    '</table>' +
+    '<table style="margin-top:14px;"><thead><tr>'+model.headers.map(function(h){return '<th>'+cell(h)+'</th>';}).join('')+'</tr></thead><tbody>'+bodyRows+'</tbody></table>' +
+    '<p style="font-size:10px;color:#98a2b8;margin-top:14px;">Generated by RSMS \u2014 '+cell(schoolName)+'</p>' +
+    '</body></html>';
+  var blob=new Blob(['\ufeff'+html],{type:'application/vnd.ms-excel;charset=utf-8;'});
+  var link=document.createElement('a');
+  link.href=URL.createObjectURL(blob);
+  link.download=(schoolName+'_'+title.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,''))+'.xls';
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  setTimeout(function(){URL.revokeObjectURL(link.href);},1000);
+  toast('Excel report downloaded','success');
 }
 
 /* ── Page hooks and live updates ──────────────────────── */

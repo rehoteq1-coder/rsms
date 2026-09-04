@@ -237,11 +237,58 @@ function applyVerification(db, verdict, txRef, provider){
   return result;
 }
 
+function providerFlagKey(provider){
+  if(provider === 'flutterwave') return 'hasFlwSecret';
+  if(provider === 'paystack') return 'hasPsSecret';
+  return '';
+}
+
+/* Sanitise a school id into a valid Secret Manager secret id suffix
+   (lowercase, alphanumeric + single hyphens, trimmed). */
+function sanitiseSchoolId(schoolId){
+  return String(schoolId || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+/* Deterministic Secret Manager name for a school's gateway secret:
+   rsms-flw-<school> or rsms-ps-<school>. */
+function schoolSecretName(provider, schoolId){
+  var id = sanitiseSchoolId(schoolId);
+  if(!id) throw new Error('Invalid school id.');
+  var prefix = provider === 'flutterwave' ? 'rsms-flw-' : (provider === 'paystack' ? 'rsms-ps-' : null);
+  if(!prefix) throw new Error('Unsupported provider.');
+  var name = prefix + id;
+  if(name.length > 255) name = name.slice(0, 255).replace(/-+$/, '');
+  return name;
+}
+
+/* Gateway key formats: Flutterwave secret keys start with FLWSEC-,
+   Paystack secret keys with sk_test_ or sk_live_. */
+function isValidGatewayKey(provider, key){
+  var text = String(key === undefined || key === null ? '' : key).replace(/^\s+|\s+$/g, '');
+  if(!text || text.length > 120) return false;
+  if(provider === 'flutterwave') return /^FLWSEC-[A-Za-z0-9]+$/.test(text);
+  if(provider === 'paystack') return /^sk_(test|live)_[A-Za-z0-9]+$/.test(text);
+  return false;
+}
+
+/* Extract a safe school id from the webhook's ?school= query param.
+   Only alphanumerics and hyphens survive; anything else is dropped. */
+function parseSchoolQuery(raw){
+  var id = String(raw === undefined || raw === null ? '' : raw).replace(/[^A-Za-z0-9-]/g, '').replace(/^-+|-+$/g, '');
+  if(!id || id.length > 160) return '';
+  return id;
+}
+
 module.exports = {
   mapFlutterwaveResponse:mapFlutterwaveResponse,
   mapPaystackResponse:mapPaystackResponse,
   checkFlutterwaveSignature:checkFlutterwaveSignature,
   checkPaystackSignature:checkPaystackSignature,
   findPendingRecords:findPendingRecords,
-  applyVerification:applyVerification
+  applyVerification:applyVerification,
+  providerFlagKey:providerFlagKey,
+  sanitiseSchoolId:sanitiseSchoolId,
+  schoolSecretName:schoolSecretName,
+  isValidGatewayKey:isValidGatewayKey,
+  parseSchoolQuery:parseSchoolQuery
 };

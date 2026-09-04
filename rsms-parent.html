@@ -1261,6 +1261,11 @@ function payFeeOnline(amount){
   // confirm it. A gateway callback alone never makes this payment paid. ──
   document.getElementById('pay-card-btn').onclick=function(){
     var provider=String(cfg.provider||'flutterwave').toLowerCase();
+    if(!cfg[provider==='paystack'?'hasPsSecret':'hasFlwSecret']){
+      modal.remove();
+      toast('Card payments are not set up for your school yet. Please pay via bank transfer instead.','error');
+      return;
+    }
     var pending;
     modal.remove();
     pending=recordParentPayment(amount,'Card ('+(provider==='paystack'?'Paystack':'Flutterwave')+')',txRef,{
@@ -1760,6 +1765,10 @@ function fundParentWallet(){
   var cfg=parentFlwConfig();
   var provider=String(cfg.provider||'flutterwave').toLowerCase();
   if(!cfg.publicKey){toast('Online wallet funding is not configured by the school.','error');return;}
+  if(!cfg[provider==='paystack'?'hasPsSecret':'hasFlwSecret']){
+    toast('Card wallet top-ups are not set up for your school yet. Please fund by bank transfer instead.','error');
+    return;
+  }
   base.gatewayProvider=provider; base.gatewayVerification='required';
   var pending;
   try{
