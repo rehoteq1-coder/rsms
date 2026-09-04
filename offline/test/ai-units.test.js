@@ -144,9 +144,11 @@ function runStudio(opts){
   var checkoutOpts = null;
   var FlutterwaveCheckout = function(opts){
     checkoutOpts = opts;
-    setTimeout(function(){
+    /* Deterministic: settle on the next microtask (real Flutterwave is
+       async; the page's success path is what we're testing). */
+    Promise.resolve().then(function(){
       if(opts.callback) opts.callback({status: 'successful', txRef: opts.tx_ref});
-    }, 0);
+    });
     return {close: function(){}};
   };
 
