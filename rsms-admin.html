@@ -620,7 +620,12 @@ select.fi option{background:var(--card);color:var(--t1);}
 @media(max-width:400px){.qr-grid{grid-template-columns:repeat(2,1fr);}}
 
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="rsms-firebase.js"></script>
+<script src="rsms-ai-units.js"></script>
+<script src="https://checkout.flutterwave.com/v3.js"></script>
 <script>
 /* ── RSMS_DB → RSMS_FB BRIDGE + warmCache ──────────────── */
 window.RSMS_DB = {
@@ -998,26 +1003,36 @@ window.RSMS_DB = {
 <!-- ════ LESSON AI ════ -->
 <div class="page" id="pg-lessonai">
   <div class="pg-hd">
-    <div><div class="pg-title">&#129302; Lesson AI Units</div><div class="pg-sub">Gift 10 units per term to teachers. Enterprise plan only.</div></div>
+    <div><div class="pg-title">&#129302; Lesson AI Units</div><div class="pg-sub">30 free units per term. Allocate them to your staff — teachers buy their own units when theirs run out, and the school can buy any number when the pool is exhausted. Enterprise plan only.</div></div>
   </div>
   <div class="card" style="background:linear-gradient(135deg,var(--navy),var(--navy2));border:none;margin-bottom:12px;">
     <div style="color:rgba(255,255,255,.5);font-size:.72rem;margin-bottom:4px;">Current Plan</div>
     <div style="font-family:var(--serif);font-size:1.5rem;font-weight:900;color:#fff;" id="ai-plan-label">Standard</div>
     <div style="font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:14px;" id="ai-term-label">First Term</div>
+    <div id="ai-pool-wrap" style="margin-bottom:14px;display:none;">
+      <div style="color:rgba(255,255,255,.5);font-size:.72rem;">Free units left to allocate this term</div>
+      <div style="font-family:var(--serif);font-size:1.9rem;font-weight:900;color:#d4a843;">
+        <span id="ai-pool">&ndash;</span> <span style="font-size:.8rem;font-weight:400;color:rgba(255,255,255,.45);">/ <span id="ai-pool-base">30</span> free per term</span>
+      </div>
+    </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-gold btn-sm" id="ai-gift-btn" onclick="giftAllTeachers()">&#127873; Gift All Teachers This Term</button>
+      <button class="btn btn-ghost btn-sm" id="ai-buy-btn" onclick="buyAiUnits()" style="color:#fff;border-color:rgba(255,255,255,.25);">&#128179; Buy Units (any amount)</button>
+      <button class="btn btn-ghost btn-sm" id="ai-term-btn" onclick="newAiTerm()" style="color:#fff;border-color:rgba(255,255,255,.25);">&#128260; New Term</button>
       <a class="btn btn-ghost btn-sm" href="https://rehoteq.com/lesson-ai.html" target="_blank" style="color:#fff;border-color:rgba(255,255,255,.25);">Open Studio</a>
     </div>
   </div>
   <div class="card" style="margin-bottom:12px;">
-    <div class="card-title">Send Individual Gift</div>
+    <div class="card-title">Allocate to a Teacher</div>
     <div class="fg" style="margin-bottom:10px;"><label>Select Teacher</label>
       <select class="fi" id="ai-teacher-sel" style="height:46px;font-size:.85rem;"><option value="">-- Select --</option></select></div>
-    <button class="btn btn-teal btn-sm" onclick="sendAIGiftLink()">&#128241; Send Gift via WhatsApp</button>
+    <div class="fg" style="margin-bottom:10px;"><label>Units to allocate</label>
+      <input class="fi" id="ai-alloc-amt" type="number" min="1" max="500" value="10" style="height:46px;font-size:.85rem;"></div>
+    <button class="btn btn-teal btn-sm" onclick="allocateIndividual()">&#128190; Allocate &amp; Notify via WhatsApp</button>
   </div>
   <div class="card">
-    <div class="card-title">Gift Log This Term</div>
-    <div id="ai-gift-log"><div class="text-muted" style="padding:8px 0;">No gifts sent yet this term.</div></div>
+    <div class="card-title">Staff Balances (live)</div>
+    <div id="ai-gift-log"><div class="text-muted" style="padding:8px 0;">Loading&hellip;</div></div>
   </div>
 </div>
 
@@ -1699,29 +1714,98 @@ var WF={
 };
 
 // ── LESSON AI ──────────────────────────────────────────
+/* LESSON AI UNITS — real, server-side metering.
+   Free termly pool (30) per enterprise school; the school allocates
+   units to staff from the pool; teachers buy their own units when
+   theirs run out; the school buys any number when the pool runs out.
+   Data: schools/<schoolId>/ai_units  (see rsms-ai-units.js) */
 var LESSON_AI={
   URL:'https://rehoteq.com/lesson-ai.html',
-  UNITS_PER_TERM:10,
-  giftLink:function(teacher){
-    var token=btoa((teacher.id||teacher.name)+'|'+(teacher.email||'')+'|'+Date.now()).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
-    var email=encodeURIComponent(teacher.email||(teacher.name.replace(/\s+/g,''))+'@rsms.school');
-    return LESSON_AI.URL+'?rsms_gift='+token+'&units='+LESSON_AI.UNITS_PER_TERM+'&teacher='+email;
+  UNITS_PER_TERM:(typeof AI_UNITS!=='undefined')?AI_UNITS.UNITS_PER_TEACHER_TERM:10,
+  /* Platform Flutterwave account (same one the studio uses for
+     staff personal purchases). Publishable key — safe in the page. */
+  FLW_KEY:'FLWPUBK-f33c828c210fbdcb4aea8ae3d9183861-X',
+  ref:function(){ return firebase.database().ref('schools/'+_sid()+'/ai_units'); },
+  termLabel:function(){
+    var s=getSchool();
+    return ((s.term||'First Term')+' '+(s.session||'')).trim();
   },
-  giftAll:function(){
-    var school=RSMS.school();
-    var term=school.term||'First Term';
-    var session=school.session||'2025/2026';
-    var key='gift_'+term.replace(/\s+/g,'_')+'_'+session.replace('/','_');
-    var done=localStorage.getItem(key)==='done';
-    var staff=JSON.parse(localStorage.getItem('rsms_staff')||'[]');
-    var teachers=staff.filter(function(s){
+  teachers:function(){
+    return getStaff().filter(function(s){
       var r=(s.role||'').toLowerCase();
       return r.includes('teacher')||r.includes('hod')||r.includes('principal');
     });
-    if(!done)localStorage.setItem(key,'done');
-    return {alreadyDone:done,teachers:teachers,count:teachers.length};
+  },
+  emailFor:function(t){
+    return (typeof AI_UNITS!=='undefined')
+      ? (AI_UNITS.normEmail(t.email) || (AI_UNITS.normEmail((t.name||'').replace(/\s+/g,''))||'unknown')+'@rsms.school')
+      : ((t.email||((t.name||'').replace(/\s+/g,''))+'@rsms.school').toLowerCase());
   }
 };
+var _aiData=null; // in-memory copy of schools/<sid>/ai_units
+
+function aiEnsure(cb){
+  /* Load ai_units; for enterprise schools, create the free termly pool
+     on first use. cb(data|null) — null = not enterprise or load error. */
+  var isEnterprise=(getSchool().plan||'').toLowerCase().includes('enterprise');
+  LESSON_AI.ref().once('value').then(function(snap){
+    var data=snap.val();
+    if(!data){
+      if(!isEnterprise){ cb(null); return; }
+      data={base:(typeof AI_UNITS!=='undefined')?AI_UNITS.BASE:30,
+            pool:(typeof AI_UNITS!=='undefined')?AI_UNITS.BASE:30,
+            term:LESSON_AI.termLabel(),staff:{}};
+      LESSON_AI.ref().set(data).then(function(){ cb(data); },function(){ cb(null); });
+      return;
+    }
+    _aiData=data;
+    cb(data);
+  }).catch(function(){ cb(null); });
+}
+
+function aiRender(){
+  var d=_aiData;
+  var poolWrap=document.getElementById('ai-pool-wrap');
+  if(d&&poolWrap){ poolWrap.style.display=''; el('ai-pool',d.pool); el('ai-pool-base',d.base||30); }
+  var log=document.getElementById('ai-gift-log'); if(!log)return;
+  if(!d||!d.staff||!Object.keys(d.staff).length){
+    log.innerHTML='<div class="text-muted" style="padding:12px 0;">No allocations this term yet. Gift all teachers or allocate individually.</div>';
+    return;
+  }
+  var rows=Object.keys(d.staff).map(function(email){
+    var s=d.staff[email];
+    var b=(typeof AI_UNITS!=='undefined')?AI_UNITS.balance(s):((s.allocated||0)+(s.purchased||0)-(s.used||0));
+    var col=b>0?'#22c55e':'#f43f5e';
+    return '<div class="gift-row" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">'
+      +'<div class="gift-info"><div class="gift-name" style="font-size:.8rem;">'+email+'</div>'
+      +'<div class="gift-role">allocated '+(s.allocated||0)+' &middot; bought '+(s.purchased||0)+' &middot; used '+(s.used||0)+'</div></div>'
+      +'<div style="font-weight:800;color:'+col+';">'+b+' left</div></div>';
+  }).join('');
+  log.innerHTML=rows;
+}
+
+function aiAllocate(email,n,done){
+  /* Atomically draw n units from the pool and credit the teacher. */
+  var rejected=false;
+  LESSON_AI.ref().transaction(function(d){
+    d=d||{base:30,pool:0,term:LESSON_AI.termLabel(),staff:{}};
+    d.pool=d.pool||0; d.staff=d.staff||{};
+    if(d.pool<n){ rejected=true; return null; }
+    d.pool-=n;
+    var s=d.staff[email]||{allocated:0,purchased:0,used:0};
+    s.allocated=(s.allocated||0)+n;
+    d.staff[email]=s;
+    _aiData=d;
+    return d;
+  },function(err,snapshot){
+    if(err){ toast('Could not allocate: '+(err.message||err),'error'); done(false); }
+    else if(rejected){
+      var sv=(snapshot&&snapshot.val())||{};
+      toast('Not enough free units in the pool (left: '+(sv.pool||0)+'). Buy units or start a new term.','error'); done(false);
+    }
+    else { done(true); }
+  });
+}
 
 // ── LINK GENERATOR ─────────────────────────────────────
 var LINKS={
@@ -2615,10 +2699,11 @@ function renderLessonAI(){
   var school=getSchool();
   var plan=school.plan||'Standard';
   var term=school.term||'First Term';
-  el('ai-plan-label',plan+' Plan');el('ai-term-label',term);
+  el('ai-plan-label',plan+' Plan');el('ai-term-label',(school.session?term+' '+school.session:term));
   var isEnterprise=plan.toLowerCase().includes('enterprise');
-  var giftBtn=document.getElementById('ai-gift-btn');
-  if(giftBtn)giftBtn.disabled=!isEnterprise;
+  ['ai-gift-btn','ai-buy-btn','ai-term-btn'].forEach(function(id){
+    var b=document.getElementById(id); if(b)b.disabled=!isEnterprise;
+  });
   var sel=document.getElementById('ai-teacher-sel');
   if(sel){
     sel.innerHTML='<option value="">-- Select Teacher --</option>';
@@ -2626,42 +2711,125 @@ function renderLessonAI(){
       var r=(s.role||'').toLowerCase();return r.includes('teacher')||r.includes('hod')||r.includes('principal');
     }).forEach(function(t){var o=document.createElement('option');o.value=t.id;o.textContent=t.name+' ('+t.role+')';sel.appendChild(o);});
   }
-  renderGiftLog();
+  var log=document.getElementById('ai-gift-log');
+  if(!isEnterprise){
+    if(log)log.innerHTML='<div class="text-muted" style="padding:12px 0;">Enterprise plan only. Upgrade to allocate AI units to your staff.</div>';
+    return;
+  }
+  aiEnsure(function(d){
+    if(!d){
+      _aiData=null;
+      if(log)log.innerHTML='<div class="text-muted" style="padding:12px 0;">Could not load AI units — check your connection and refresh.</div>';
+      return;
+    }
+    aiRender();
+    /* Live refresh: pool + balances update when anything changes. */
+    try{ LESSON_AI.ref().on('value',function(snap){ _aiData=snap.val()||null; aiRender(); }); }catch(e){}
+  });
 }
 
 function giftAllTeachers(){
   if(!(getSchool().plan||'').toLowerCase().includes('enterprise')){toast('Enterprise plan only','error');return;}
-  var result=LESSON_AI.giftAll();
-  if(result.alreadyDone){toast('Units already gifted this term','info');return;}
-  if(!result.teachers.length){toast('No teachers found in staff list','error');return;}
-  var log=document.getElementById('ai-gift-log');if(!log)return;
-  log.innerHTML='';
-  result.teachers.forEach(function(t){
-    var link=LESSON_AI.giftLink(t);
-    var row=document.createElement('div');row.className='gift-row';
-    row.innerHTML='<div class="gift-info"><div class="gift-name">'+t.name+'</div><div class="gift-role">'+t.role+'</div></div>';
-    var btn=document.createElement('button');btn.className='btn btn-teal btn-xs';btn.textContent='&#128241; Send Gift';
-    btn.onclick=(function(nm,l){return function(){
-      window.open('https://wa.me/?text='+encodeURIComponent('Hello '+nm+'! \ud83c\udf81 Your school has gifted you '+LESSON_AI.UNITS_PER_TERM+' AI Lesson Studio units for this term. Tap to activate: '+l),'_blank');
-    };})(t.name,link);
-    row.appendChild(btn);log.appendChild(row);
+  aiEnsure(function(d){
+    if(!d){ toast('Could not load AI units. Check your connection.','error'); return; }
+    var teachers=LESSON_AI.teachers();
+    if(!teachers.length){ toast('No teachers found in staff list','error'); return; }
+    var n=LESSON_AI.UNITS_PER_TERM;
+    var eligible=teachers.filter(function(t){ return (d.pool||0)>=n; });
+    if(!eligible.length){
+      toast('Pool has '+(d.pool||0)+' free units — not enough to gift everyone '+n+' each. Buy units or start a new term.','error');
+      return;
+    }
+    if(eligible.length<teachers.length){
+      toast('Pool covers '+eligible.length+' of '+teachers.length+' teachers this round — the rest wait for more units.','info');
+    }
+    var i=0, okCount=0;
+    function next(){
+      if(i>=eligible.length){
+        toast('🎁 '+okCount+' teachers allocated '+n+' units each — active immediately in AI Studio (no activation link needed).','success');
+        aiEnsure(aiRender);
+        return;
+      }
+      var t=eligible[i++];
+      aiAllocate(LESSON_AI.emailFor(t),n,function(ok){
+        if(ok) okCount++;
+        setTimeout(next,300);
+      });
+    }
+    next();
   });
-  toast('\ud83c\udf81 Gift links ready for '+result.count+' teachers','success');
 }
 
-function sendAIGiftLink(){
+function allocateIndividual(){
   var id=document.getElementById('ai-teacher-sel').value;if(!id){toast('Select a teacher','error');return;}
   var t=getStaff().find(function(s){return s.id===id;});if(!t){toast('Not found','error');return;}
-  var link=LESSON_AI.giftLink(t);
-  window.open('https://wa.me/?text='+encodeURIComponent('Hello '+t.name+'! \ud83c\udf81 Your school gifted you '+LESSON_AI.UNITS_PER_TERM+' AI Lesson Studio units. Tap to activate: '+link),'_blank');
+  var amt=document.getElementById('ai-alloc-amt');
+  var n=parseInt(amt?amt.value:'10',10);if(!n||n<1){toast('Enter the number of units to allocate','error');return;}
+  aiEnsure(function(d){
+    if(!d){ toast('Could not load AI units. Check your connection.','error'); return; }
+    aiAllocate(LESSON_AI.emailFor(t),n,function(ok){
+      if(!ok) return;
+      toast('✅ '+n+' units allocated to '+t.name+' — active immediately in AI Studio.','success');
+      window.open('https://wa.me/?text='+encodeURIComponent('Hello '+t.name+'! 🎁 Your school has allocated you '+n+' AI Lesson Studio units. Open AI Studio from your portal to start using them — no activation needed.'),'_blank');
+    });
+  });
 }
 
-function renderGiftLog(){
-  var log=document.getElementById('ai-gift-log');if(!log)return;
-  var school=getSchool();
-  var key='gift_'+(school.term||'First Term').replace(/\s+/g,'_')+'_'+(school.session||'2025/2026').replace('/','_');
-  var done=localStorage.getItem(key)==='done';
-  if(!done&&!log.children.length)log.innerHTML='<div class="text-muted" style="padding:12px 0;">No gifts sent this term yet.</div>';
+function buyAiUnits(){
+  if(!(getSchool().plan||'').toLowerCase().includes('enterprise')){toast('Enterprise plan only','error');return;}
+  var q=prompt('How many units to buy? (₦'+AI_UNITS.UNIT_PRICE+' per unit — any amount)');
+  if(q===null) return;
+  var n=parseInt(q,10);
+  if(!n||n<1){ toast('Enter a valid number of units','error'); return; }
+  if(typeof FlutterwaveCheckout==='undefined'){ toast('Payment system not loaded. Check internet.','error'); return; }
+  var s=getSchool();
+  FlutterwaveCheckout({
+    public_key: LESSON_AI.FLW_KEY,
+    tx_ref: 'REHOTEQ-AI-SCHOOL-'+Date.now(),
+    amount: AI_UNITS.priceFor(n),
+    currency: 'NGN',
+    customer: { email: s.email||'school@rsms.rehoteq.com', name: s.name||'School' },
+    customizations: {
+      title: 'Rehoteq AI Lesson Studio',
+      description: n+' AI Units (School Pool)',
+      logo: 'https://rehoteq.com/favicon.ico'
+    },
+    callback: function(res){
+      if(res.status==='successful'||res.status==='completed'){
+        LESSON_AI.ref().transaction(function(d){
+          d=d||{base:AI_UNITS.BASE,pool:0,term:LESSON_AI.termLabel(),staff:{}};
+          d.pool=(d.pool||0)+n;
+          _aiData=d;
+          return d;
+        },function(err){ if(!err) toast('✅ '+n+' units added to the school pool — allocate them below.','success'); });
+        setTimeout(aiRender,500);
+      } else { toast('Payment not completed. Please try again.','error'); }
+    },
+    onclose: function(){ toast('Payment cancelled.','info'); }
+  });
+}
+
+function newAiTerm(){
+  if(!(getSchool().plan||'').toLowerCase().includes('enterprise')){toast('Enterprise plan only','error');return;}
+  aiEnsure(function(d){
+    if(!d){ toast('Could not load AI units. Check your connection.','error'); return; }
+    var def=(getSchool().term||'Next Term')+' '+(getSchool().session||'');
+    var nt=prompt('New term label:',def.trim());
+    if(!nt) return;
+    var keep={};
+    Object.keys(d.staff||{}).forEach(function(e){
+      var s=d.staff[e];
+      /* Purchased (personal) units never expire; term allocations reset. */
+      keep[e]={allocated:0,purchased:s.purchased||0,used:0};
+    });
+    var base=d.base||AI_UNITS.BASE;
+    LESSON_AI.ref().set({base:base,pool:base,term:nt,staff:keep}).then(function(){
+      _aiData={base:base,pool:base,term:nt,staff:keep};
+      aiRender();
+      el('ai-term-label',nt);
+      toast('✅ New term started — pool reset to '+base+' free units. Staff-purchased units were kept.','success');
+    },function(){ toast('Could not start new term. Try again.','error'); });
+  });
 }
 
 // ── SETTINGS ───────────────────────────────────────────

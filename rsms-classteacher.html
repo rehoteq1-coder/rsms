@@ -874,7 +874,7 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
   <div class="sb-item" onclick="showPage('examsubmit',this)">&#128196; Exam Questions</div>
   <div class="sb-item" onclick="showPage('myworkflow',this)">&#10004; My Submissions</div>
   <div class="sb-section">TOOLS</div>
-  <div class="sb-item" onclick="window.open('https://rehoteq.com/lesson-ai.html','_blank')">&#129302; AI Lesson Studio</div>
+  <div class="sb-item" onclick="window.open(aiStudioLink(),'_blank')">&#129302; AI Lesson Studio</div>
   <div class="sb-item" onclick="window.open('rsms-cbt-questions.html','_blank')">&#128218; CBT Bank</div>
   <div class="sb-item" onclick="(function(){ sessionStorage.setItem('rsms_result_from','rsms-classteacher.html'); window.open('rsms-results-print.html','_blank'); })()">&#128196; Result Sheets</div>
   <div class="sb-section">SYSTEM</div>
@@ -902,7 +902,7 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
     <div class="hc-val" id="t-hero-term">First Term</div>
     <div class="hc-row" style="margin-top:10px;">
       <div class="hc-badge" id="sb-school-t">School</div>
-      <a href="https://rehoteq.com/lesson-ai.html" target="_blank" class="btn btn-gold btn-xs" style="height:28px;font-size:.7rem;">AI Studio</a>
+      <a href="#" onclick="window.open(aiStudioLink(),'_blank');return false;" target="_blank" class="btn btn-gold btn-xs" style="height:28px;font-size:.7rem;">AI Studio</a>
     </div>
   </div>
   <div id="t-alert" style="display:none;margin:12px 16px 0;background:rgba(244,63,94,.1);border:1px solid var(--red);border-radius:var(--r2);padding:10px 14px;font-size:.82rem;color:var(--red);"></div>
@@ -918,7 +918,7 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
       <div class="qa-item" onclick="showPage('examsubmit')"><span class="qa-ico">&#128196;</span><div class="qa-lbl">Exam Q.</div></div>
       <div class="qa-item" onclick="showPage('assignments')"><span class="qa-ico">&#128203;</span><div class="qa-lbl">Assignments</div></div>
       <div class="qa-item" onclick="showPage('myworkflow')"><span class="qa-ico">&#10004;</span><div class="qa-lbl">My Docs</div></div>
-      <div class="qa-item" onclick="window.open('https://rehoteq.com/lesson-ai.html','_blank')"><span class="qa-ico">&#129302;</span><div class="qa-lbl">AI Studio</div></div>
+      <div class="qa-item" onclick="window.open(aiStudioLink(),'_blank')"><span class="qa-ico">&#129302;</span><div class="qa-lbl">AI Studio</div></div>
       <div class="qa-item" onclick="window.open('rsms-cbt-questions.html','_blank')"><span class="qa-ico">&#128218;</span><div class="qa-lbl">CBT Bank</div></div>
     </div>
   </div>
@@ -1244,6 +1244,17 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
 <div class="toast" id="rsms-toast"></div>
 <script>
 function toggleForm(id){var el=document.getElementById(id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+/* AI Studio link with school + teacher context — the studio meters
+   units from the school's real ledger when opened this way. */
+function aiStudioLink(){
+  var s=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{});
+  var u='https://rehoteq.com/lesson-ai.html';
+  var q=[];
+  if(s.schoolId)q.push('school='+encodeURIComponent(s.schoolId));
+  var user=(JSON.parse(sessionStorage.getItem('rsms_user')||'{}')||{});
+  if(user.email)q.push('teacher='+encodeURIComponent(user.email));
+  return q.length?u+'?'+q.join('&'):u;
+}
 window.addEventListener('load',function(){
   // Warm cache from Firebase immediately
   setTimeout(function(){
@@ -1352,7 +1363,7 @@ function initPortal(){
   initCarousel([
     {bg:'linear-gradient(135deg,#0f1535,#1a2347)',tag:'My Class',title:MY_CLASS||'My Class',sub:'Students and attendance',btn:'My Students',ico:'\ud83d\udc68\u200d\ud83c\udfeb',link:'#'},
     {bg:'linear-gradient(135deg,#14532d,#22c55e)',tag:'Workflow',title:'Submit Lesson Plans',sub:'Plans, notes and exams',btn:'Submit Now',ico:'\ud83d\udccb',link:'#'},
-    {bg:'linear-gradient(135deg,#4c1d95,#8b5cf6)',tag:'AI Studio',title:'Rehoteq AI Lesson Studio',sub:'Generate lessons with AI',btn:'Open Studio',ico:'\ud83e\udd16',link:'https://rehoteq.com/lesson-ai.html'}
+    {bg:'linear-gradient(135deg,#4c1d95,#8b5cf6)',tag:'AI Studio',title:'Rehoteq AI Lesson Studio',sub:'Generate lessons with AI',btn:'Open Studio',ico:'\ud83e\udd16',link:(typeof aiStudioLink==='function')?aiStudioLink():'https://rehoteq.com/lesson-ai.html'}
   ],'t-carousel','t-dots');
 }
 

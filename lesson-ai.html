@@ -170,7 +170,7 @@ footer a{color:var(--gold);text-decoration:none;}
   <div class="hero-tag">🤖 AI-Powered · WAEC/NECO Aligned</div>
   <h1>The AI Teaching Assistant<br/>Built for <em>Nigerian Teachers</em></h1>
   <p>Generate lesson plans, lesson notes, test questions and full mock exam papers in seconds — aligned to the WAEC/NECO curriculum. Download straight to your phone.</p>
-  <div class="free-badge">🎁 2 Free Units Included — No Sign-up Needed</div>
+  <div class="free-badge" id="free-badge">🎁 2 Free Units Included — No Sign-up Needed</div>
 </div>
 
 <main>
@@ -180,6 +180,7 @@ footer a{color:var(--gold);text-decoration:none;}
     <div>
       <div class="unit-info">Your available units</div>
       <div class="unit-count" id="unit-display">— units</div>
+      <div id="unit-sub" style="font-size:.68rem;color:var(--muted);margin-top:2px;"></div>
     </div>
     <button class="buy-more" onclick="showGate()">+ Buy More Units</button>
   </div>
@@ -372,6 +373,10 @@ footer a{color:var(--gold);text-decoration:none;}
 
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="rsms-config.js"></script>
+<script src="rsms-ai-units.js"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────
 // AI requests routed through Cloudflare Worker proxy (rehoteqai-lesson.rehoteq.workers.dev)
@@ -381,51 +386,110 @@ var currentTool  = 'plan';
 var selectedBundle = { units:5, amount:1500 };
 var outputText   = '';
 
-// ── UNITS MANAGEMENT ─────────────────────────────────────────────
-function getUnits() {
-  // Check for RSMS gift token in URL
-  var params = new URLSearchParams(window.location.search);
-  var giftToken = params.get('rsms_gift');
-  var giftUnits = parseInt(params.get('units')||'0');
-  var teacherEmail = params.get('teacher')||'';
-  if(giftToken && giftUnits > 0){
-    var usedGifts = JSON.parse(localStorage.getItem('rsms_used_gifts')||'[]');
-    if(usedGifts.indexOf(giftToken) === -1){
-      var current = parseInt(localStorage.getItem('rms_ai_units')||'0');
-      if(current < 0) current = 0;
-      localStorage.setItem('rms_ai_units', current + giftUnits);
-      if(teacherEmail) localStorage.setItem('rms_ai_email', teacherEmail);
-      usedGifts.push(giftToken);
-      localStorage.setItem('rsms_used_gifts', JSON.stringify(usedGifts));
-      // Clean URL without reload
-      window.history.replaceState({}, document.title, window.location.pathname);
-      setTimeout(function(){ alert('🎁 ' + giftUnits + ' AI units gifted by your school have been added to your account!'); }, 500);
-    }
+// ── UNITS — real, school-scoped metering ───────────────────
+// Opened from a school portal with ?school=<id>&teacher=<email>:
+// units live in Firebase (schools/<id>/ai_units) — the school's
+// allocation + the teacher's personal purchases, shared across
+// all their devices. Without that context the page runs in
+// public demo mode: 2 free units kept in this browser.
+if (window.RSMS_CONFIG && window.RSMS_CONFIG.firebase && typeof firebase !== 'undefined') {
+  firebase.initializeApp(window.RSMS_CONFIG.firebase);
+}
+var AI_CTX = (function(){
+  var p = new URLSearchParams(window.location.search);
+  var school = (p.get('school')||'').trim();
+  var teacher = (p.get('teacher')||'').trim().toLowerCase();
+  if (teacher) sessionStorage.setItem('ai_teacher_email', teacher);
+  else teacher = (sessionStorage.getItem('ai_teacher_email')||'').trim().toLowerCase();
+  return {
+    school: school,
+    teacher: teacher,
+    schoolMode: !!(school && teacher && typeof firebase !== 'undefined' &&
+                   window.RSMS_CONFIG && window.RSMS_CONFIG.firebase)
+  };
+})();
+var _aiBalance = { remaining: 0, school: 0, own: 0, loaded: false, error: false };
+
+function aiStaffRef(){
+  return firebase.database().ref('schools/' + AI_CTX.school + '/ai_units/staff/' + AI_CTX.teacher);
+}
+
+function aiLoad(cb){
+  if (!AI_CTX.schoolMode) {
+    _aiBalance = { remaining: demoUnits(), school: 0, own: 0, loaded: true, error: false };
+    updateUnitDisplay();
+    if (cb) cb();
+    return;
   }
+  var r = aiStaffRef();
+  r.once('value').then(function(snap){
+    _aiBalance = AI_UNITS.detail(snap.val());
+    _aiBalance.loaded = true;
+    updateUnitDisplay();
+    if (cb) cb();
+  }).catch(function(){
+    _aiBalance = { remaining: 0, school: 0, own: 0, loaded: true, error: true };
+    updateUnitDisplay();
+    if (cb) cb();
+  });
+  try{ r.on('value', function(snap){
+    _aiBalance = AI_UNITS.detail(snap.val());
+    _aiBalance.loaded = true;
+    updateUnitDisplay();
+  }); }catch(e){}
+}
+
+function aiSpendOne(){
+  if (!AI_CTX.schoolMode) { demoSetUnits(Math.max(0, demoUnits() - 1)); return; }
+  aiStaffRef().transaction(function(s){
+    s = s || { allocated: 0, purchased: 0, used: 0 };
+    s.used = (s.used || 0) + 1;
+    return s;
+  });
+}
+
+function aiCredit(n){
+  if (!AI_CTX.schoolMode) { demoSetUnits(demoUnits() + n); return; }
+  aiStaffRef().transaction(function(s){
+    s = s || { allocated: 0, purchased: 0, used: 0 };
+    s.purchased = (s.purchased || 0) + n;
+    return s;
+  });
+}
+
+/* Demo-mode (public page) counters — legacy behaviour. */
+function demoUnits(){
   var u = parseInt(localStorage.getItem('rms_ai_units') || '-1');
   if (u === -1) {
-    // First visit — give free units
     localStorage.setItem('rms_ai_units', FREE_UNITS);
     localStorage.setItem('rms_ai_free_given', '1');
     return FREE_UNITS;
   }
-  return u;
+  return u < 0 ? 0 : u;
 }
-function setUnits(n) {
+function demoSetUnits(n){
   localStorage.setItem('rms_ai_units', n);
   updateUnitDisplay();
 }
-function deductUnit() {
-  var u = getUnits();
-  setUnits(Math.max(0, u - 1));
-}
-function addUnits(n) {
-  var u = getUnits();
-  setUnits(u + n);
-}
-function updateUnitDisplay() {
-  var u = getUnits();
-  document.getElementById('unit-display').textContent = u + (u === 1 ? ' unit' : ' units') + ' remaining';
+function getUnits(){ return AI_CTX.schoolMode ? _aiBalance.remaining : demoUnits(); }
+function deductUnit(){ aiSpendOne(); }
+function addUnits(n){ aiCredit(n); }
+
+function updateUnitDisplay(){
+  var sub = document.getElementById('unit-sub');
+  var u;
+  if (AI_CTX.schoolMode) {
+    u = _aiBalance.remaining;
+    document.getElementById('unit-display').textContent =
+      (_aiBalance.error ? '—' : u) + ' units left';
+    if (sub) sub.textContent = _aiBalance.error
+      ? 'Could not reach the server — refresh the page'
+      : ('School allocation: ' + _aiBalance.school + '  ·  Bought by you: ' + _aiBalance.own);
+  } else {
+    u = demoUnits();
+    document.getElementById('unit-display').textContent = u + (u === 1 ? ' unit' : ' units') + ' remaining';
+    if (sub) sub.textContent = '';
+  }
   document.getElementById('nav-units').textContent = u;
 }
 
@@ -601,6 +665,12 @@ function copyOutput() {
 
 // ── PAYMENT ───────────────────────────────────────────────────────
 function showGate() {
+  if (AI_CTX.schoolMode) {
+    document.getElementById('gate-title').textContent = 'Buy your own AI units';
+    document.getElementById('gate-sub').textContent =
+      'Your units for this term are used up. These are your personal units — ' +
+      'they never expire. Or ask the school to allocate more from its pool.';
+  }
   document.getElementById('gate-overlay').style.display = 'flex';
 }
 function closeGate() {
@@ -630,10 +700,11 @@ function payForUnits() {
     },
     callback: function(res) {
       if (res.status === 'successful' || res.status === 'completed') {
-        addUnits(selectedBundle.units);
-        localStorage.setItem('rms_ai_email', email);
+        aiCredit(selectedBundle.units);
+        if (!AI_CTX.schoolMode) localStorage.setItem('rms_ai_email', email);
         closeGate();
         showToast('✅ ' + selectedBundle.units + ' units added! Thank you.');
+        setTimeout(aiLoad, 400);
       } else {
         showToast('Payment not completed. Please try again.');
       }
@@ -652,11 +723,16 @@ function showToast(msg) {
 
 // ── INIT ──────────────────────────────────────────────────────────
 updateUnitDisplay();
+aiLoad();
 // Pre-fill email if returning user
-var savedEmail = localStorage.getItem('rms_ai_email');
+var savedEmail = AI_CTX.teacher || localStorage.getItem('rms_ai_email');
 if (savedEmail) {
   var emailInput = document.getElementById('gate-email');
   if (emailInput) emailInput.value = savedEmail;
+}
+if (AI_CTX.schoolMode) {
+  var fb = document.getElementById('free-badge');
+  if (fb) fb.style.display = 'none';
 }
 </script>
 </body>
