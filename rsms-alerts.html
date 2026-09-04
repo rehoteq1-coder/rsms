@@ -326,13 +326,32 @@ textarea.fi{resize:vertical;min-height:90px;line-height:1.5;}
 
 <div class="toast-wrap"><div class="toast" id="toast"></div></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="rsms-config.js"></script>
+<script src="rsms-firebase.js"></script>
 <script>
 // ── HELPERS ──────────────────────────────────────────────
 function _sid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
 function _key(k){ var id=_sid(); return id?'rsms_'+id+'_'+k:'rsms_'+k; }
 function _get(k,fb){ try{ var v=JSON.parse(localStorage.getItem(_key(k))||localStorage.getItem('rsms_'+k)||fb||'[]'); return v||JSON.parse(fb||'[]'); }catch(e){ return JSON.parse(fb||'[]'); } }
 function _set(k,d){ localStorage.setItem(_key(k),JSON.stringify(d)); }
-function getStudents(){ return _get('students','[]'); }
+var _studentsCache = null;
+var _studentsLoaded = _get('students','[]').length > 0;
+function getStudents(){ return _studentsCache || _get('students','[]'); }
+/* Live refresh from the school's data layer (Firebase is the source of
+   truth; the localStorage cache above is only the first paint). */
+function refreshStudents(){
+  if(typeof RSMS_FB==='undefined'||!RSMS_FB||typeof RSMS_FB.getStudents!=='function') return;
+  RSMS_FB.getStudents(function(list){
+    _studentsCache = (list&&list.length)? list : null;
+    _studentsLoaded = true;
+    populateClassFilter();
+    loadRecipients();
+    updateStats();
+  });
+}
 function getSchool(){ return JSON.parse(localStorage.getItem('rsms_school')||'{}'); }
 function toast(msg,type){
   var t=document.getElementById('toast');
@@ -410,7 +429,7 @@ function loadRecipients(){
   });
   var html='';
   if(!unique.length){
-    html='<div class="empty"><div class="empty-ico">👥</div><div class="empty-txt">No parents with phone numbers found</div></div>';
+    html='<div class="empty"><div class="empty-ico">👥</div><div class="empty-txt">'+(_studentsLoaded?'No parents with phone numbers found':'Loading students…')+'</div></div>';
   } else {
     unique.forEach(function(s){
       var name=(s.surname||'')+' '+(s.firstname||'');
@@ -645,11 +664,15 @@ function switchTab(t){
 
 // ── INIT ──────────────────────────────────────────────────
 window.addEventListener('load',function(){
+  if(typeof RSMS_FB!=='undefined'&&RSMS_FB&&typeof RSMS_FB.setSchoolId==='function'){
+    var s=_sid(); if(s) RSMS_FB.setSchoolId(s);
+  }
   loadConfig();
   populateClassFilter();
   loadRecipients();
   updateStats();
   renderAutoAlerts();
+  refreshStudents();
 });
 </script>
 </body>
