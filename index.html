@@ -648,12 +648,112 @@ body{background:var(--bg);min-height:100vh;font-family:var(--sans);}
   .landing-enter,.landing-logo-stage{opacity:1;transform:none;}.landing-meter-track span{transform:scaleX(1);}
   #landing-tagline-text{transition:none;}.feat-item,.landing-cta{transition:none;}
 }
+  /* ── AI ASSISTANT WIDGET ─────────────────────────────── */
+  .rsms-assist{position:fixed;right:18px;bottom:calc(18px + var(--safe-bot));z-index:9000;
+    display:flex;flex-direction:column;align-items:flex-end;gap:10px;font-family:var(--sans);}
+  .rsms-assist[hidden]{display:none;}
+  .rsms-assist-nudge{position:relative;max-width:252px;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:12px 26px 12px 13px;color:var(--t2);font-size:.78rem;line-height:1.55;
+    box-shadow:0 14px 34px rgba(0,0,0,.45);animation:rsms-assist-pop .3s ease both;}
+  .rsms-assist-nudge[hidden]{display:none;}
+  .rsms-assist-nudge b{color:var(--t1);font-weight:700;}
+  .rsms-assist-nudge-x{position:absolute;top:3px;right:6px;background:none;border:none;color:var(--t3);
+    cursor:pointer;font-size:1rem;line-height:1;padding:4px 6px;font-family:var(--sans);}
+  .rsms-assist-nudge-x:hover{color:var(--t1);}
+  .rsms-assist-fab{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#f4cd76,var(--gold) 55%,#b0812a);color:#231703;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 12px 30px rgba(212,168,67,.32),0 3px 10px rgba(0,0,0,.45);
+    transition:transform .2s ease,box-shadow .2s ease;}
+  .rsms-assist-fab:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(212,168,67,.42),0 3px 10px rgba(0,0,0,.45);}
+  .rsms-assist-fab:active{transform:scale(.94);}
+  .rsms-assist-fab:focus-visible{outline:2px solid #fff;outline-offset:3px;}
+  .rsms-assist-fab svg{width:27px;height:27px;display:block;}
+  .rsms-assist-fab{position:relative;}
+  .rsms-assist-fab-face{width:100%;height:100%;border-radius:50%;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;background:transparent;}
+  .rsms-assist-fab-face img{width:100%;height:100%;object-fit:cover;display:block;}
+  .rsms-assist-fab-dot{position:absolute;right:0;bottom:0;width:14px;height:14px;border-radius:50%;
+    background:#22c55e;border:2.5px solid #141b35;box-sizing:content-box;}
+  .rsms-assist-row{display:flex;align-items:center;gap:10px;}
+  .rsms-assist-hello{background:var(--card);border:1px solid rgba(212,168,67,.35);color:var(--t2);
+    border-radius:20px;padding:8px 14px;font-size:.76rem;white-space:nowrap;
+    box-shadow:0 10px 26px rgba(0,0,0,.4);animation:rsms-assist-pop .3s ease both;
+    max-width:min(58vw,240px);overflow:hidden;text-overflow:ellipsis;}
+  .rsms-assist-hello[hidden]{display:none;}
+  .rsms-assist-hello b{color:var(--gold);font-weight:800;}
+  .rsms-assist-panel{width:360px;max-width:calc(100vw - 28px);height:min(560px,72vh);
+    background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:0 26px 64px rgba(0,0,0,.55);
+    animation:rsms-assist-rise .26s cubic-bezier(.2,.9,.3,1) both;}
+  .rsms-assist-panel[hidden]{display:none;}
+  .rsms-assist-head{display:flex;align-items:center;gap:10px;padding:13px 13px 13px 14px;flex-shrink:0;
+    background:linear-gradient(135deg,#151d3a,#0f1535);border-bottom:1px solid var(--line);}
+  .rsms-assist-avatar{width:38px;height:38px;border-radius:50%;flex-shrink:0;overflow:hidden;
+    background:linear-gradient(135deg,var(--gold),#8a6a1f);color:#1c1305;font-family:var(--serif);
+    font-weight:900;font-size:1.05rem;display:flex;align-items:center;justify-content:center;}
+  .rsms-assist-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+  .rsms-assist-title{font-size:.92rem;font-weight:700;color:#fff;line-height:1.2;}
+  .rsms-assist-sub{font-size:.66rem;color:var(--t3);display:flex;align-items:center;gap:5px;margin-top:2px;}
+  .rsms-assist-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;}
+  .rsms-assist-close{margin-left:auto;background:rgba(255,255,255,.06);border:1px solid var(--line);
+    color:var(--t2);cursor:pointer;width:30px;height:30px;border-radius:9px;font-size:.78rem;
+    display:flex;align-items:center;justify-content:center;font-family:var(--sans);}
+  .rsms-assist-close:hover{background:rgba(255,255,255,.12);color:#fff;}
+  .rsms-assist-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;
+    scrollbar-width:thin;overscroll-behavior:contain;}
+  .rsms-assist-msg{max-width:87%;font-size:.82rem;line-height:1.62;padding:10px 12px;border-radius:14px;
+    word-break:break-word;}
+  .rsms-assist-msg.bot{align-self:flex-start;background:var(--card2);color:var(--t2);border-bottom-left-radius:5px;}
+  .rsms-assist-msg.user{align-self:flex-end;background:rgba(212,168,67,.15);color:var(--t1);
+    border-bottom-right-radius:5px;white-space:pre-wrap;}
+  .rsms-assist-msg strong{color:var(--t1);font-weight:700;}
+  .rsms-assist-msg a{color:var(--gold);text-decoration:underline;}
+  .rsms-assist-typing{display:flex;align-items:center;gap:4px;padding:14px 12px;}
+  .rsms-assist-typing i{width:6px;height:6px;border-radius:50%;background:var(--t4);
+    animation:rsms-assist-blink 1.1s infinite both;}
+  .rsms-assist-typing i:nth-child(2){animation-delay:.15s;}
+  .rsms-assist-typing i:nth-child(3){animation-delay:.3s;}
+  .rsms-assist-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 11px;flex-shrink:0;}
+  .rsms-assist-chip{background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--t2);
+    border-radius:20px;padding:6px 11px;font-size:.72rem;cursor:pointer;font-family:var(--sans);}
+  .rsms-assist-chip:hover{border-color:rgba(212,168,67,.5);color:var(--gold);}
+  .rsms-assist-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+  .rsms-assist-act{background:rgba(212,168,67,.14);border:1px solid rgba(212,168,67,.38);
+    color:var(--gold);border-radius:9px;padding:7px 11px;font-size:.72rem;font-weight:700;
+    cursor:pointer;font-family:var(--sans);}
+  .rsms-assist-act:hover{background:rgba(212,168,67,.24);}
+  .rsms-assist-form{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);
+    background:rgba(0,0,0,.18);flex-shrink:0;}
+  .rsms-assist-input{flex:1;min-width:0;height:40px;border-radius:20px;border:1px solid var(--line2);
+    background:var(--card2);padding:0 14px;color:var(--t1);font-size:.82rem;font-family:var(--sans);outline:none;}
+  .rsms-assist-input:focus{border-color:var(--gold);}
+  .rsms-assist-input::placeholder{color:var(--t4);}
+  .rsms-assist-send{width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;flex-shrink:0;
+    background:linear-gradient(135deg,#f4cd76,var(--gold));color:#231703;
+    display:flex;align-items:center;justify-content:center;}
+  .rsms-assist-send[disabled]{opacity:.4;cursor:not-allowed;}
+  .rsms-assist-send svg{width:18px;height:18px;display:block;}
+  @keyframes rsms-assist-rise{from{opacity:0;transform:translateY(14px) scale(.97);}to{opacity:1;transform:none;}}
+  @keyframes rsms-assist-pop{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  @keyframes rsms-assist-blink{0%,80%,100%{opacity:.25;transform:translateY(0);}40%{opacity:1;transform:translateY(-3px);}}
+  @media(max-width:520px){
+    .rsms-assist{right:14px;bottom:calc(14px + var(--safe-bot));}
+    .rsms-assist-panel{height:min(70vh,520px);}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .rsms-assist-panel,.rsms-assist-nudge{animation:none;}
+    .rsms-assist-typing i{animation:none;opacity:.45;}
+    .rsms-assist-fab{transition:none;}
+  }
 
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="rsms-firebase.js"></script>
 <script src="rsms-config.js"></script>
+<script src="rsms-brand.js"></script>
+<script src="rsms-assistant.js"></script>
 </head>
 <body>
 <div class="app">
@@ -1850,5 +1950,413 @@ function initLandingPolish(){
 window.addEventListener('load',initLandingPolish);
 
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     RSMS AVATAR URL — shared helper (AI assistant head only)
+     Reads rsms-brand.js (window.RSMS_BRAND) with a runtime override
+     via window.RSMS_OWNER_AVATAR. The landing "R" logo tile and every
+     other RSMS mark are deliberately left alone.
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+function rsmsOwnerAvatarUrl(){
+  if(window.RSMS_OWNER_AVATAR) return window.RSMS_OWNER_AVATAR;
+  var b = window.RSMS_BRAND;
+  return (b && b.ownerAvatar) ? b.ownerAvatar : '';
+}
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     RSMS AI ASSISTANT WIDGET (landing page)
+     • Brain: rsms-assistant.js (pure logic, unit-tested)
+     • Starts hidden and only appears if the brain loads, so a
+       missing/blocked script never breaks the login flow.
+     • Optional Firebase: merges admin-authored answers from
+       config/assistant_kb and logs unanswered questions to
+       assistant_questions (see database.rules.json).
+     ═══════════════════════════════════════════════════════════ -->
+<div class="rsms-assist" id="rsms-assist" hidden>
+  <div class="rsms-assist-nudge" id="rsms-assist-nudge" hidden>
+    <button class="rsms-assist-nudge-x" id="rsms-assist-nudge-x" type="button" aria-label="Dismiss hint">&times;</button>
+    <span id="rsms-assist-nudge-text">Hi, I'm Toye &#128075; Need help signing in, checking a result or choosing a plan?</span>
+  </div>
+
+  <section class="rsms-assist-panel" id="rsms-assist-panel" role="dialog" aria-labelledby="rsms-assist-title" hidden>
+    <header class="rsms-assist-head">
+      <div class="rsms-assist-avatar" id="rsms-assist-avatar" aria-hidden="true">R</div>
+      <div>
+        <div class="rsms-assist-title" id="rsms-assist-title">Toye</div>
+        <div class="rsms-assist-sub"><span class="rsms-assist-dot"></span><span id="rsms-assist-sub-text">RSMS Assistant &middot; replies instantly</span></div>
+      </div>
+      <button class="rsms-assist-close" id="rsms-assist-close" type="button" aria-label="Close assistant">&#10005;</button>
+    </header>
+
+    <div class="rsms-assist-log" id="rsms-assist-log" role="log" aria-live="polite" aria-label="Assistant conversation"></div>
+    <div class="rsms-assist-chips" id="rsms-assist-chips"></div>
+
+    <form class="rsms-assist-form" id="rsms-assist-form" autocomplete="off">
+      <input class="rsms-assist-input" id="rsms-assist-input" type="text" maxlength="300"
+             placeholder="Ask about login, fees, results&hellip;" aria-label="Type your question"/>
+      <button class="rsms-assist-send" id="rsms-assist-send" type="submit" disabled aria-label="Send question">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="4" y1="12" x2="20" y2="12"/><polyline points="14,6 20,12 14,18"/>
+        </svg>
+      </button>
+    </form>
+  </section>
+
+  <div class="rsms-assist-row">
+    <div class="rsms-assist-hello" id="rsms-assist-hello" hidden>Ask me anything</div>
+    <button class="rsms-assist-fab" id="rsms-assist-fab" type="button"
+            aria-expanded="false" aria-controls="rsms-assist-panel"
+            aria-label="Chat with Toye, the RSMS assistant">
+      <span class="rsms-assist-fab-face" id="rsms-assist-fab-face">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="4" y="8" width="16" height="11" rx="4"/>
+          <path d="M12 8V5"/>
+          <circle cx="12" cy="4" r="1.3" fill="currentColor" stroke="none"/>
+          <circle cx="9" cy="13" r="1.35" fill="currentColor" stroke="none"/>
+          <circle cx="15" cy="13" r="1.35" fill="currentColor" stroke="none"/>
+          <path d="M9 16.4h6"/>
+        </svg>
+      </span>
+      <span class="rsms-assist-fab-dot" aria-hidden="true"></span>
+    </button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   RSMS ASSISTANT WIDGET — page layer
+   Renders rsms-assistant.js answers and turns entry
+   actions into real UI behaviour. No external deps.
+   ═══════════════════════════════════════════════════════ */
+(function(){
+  var A = window.RSMS_ASSISTANT;
+  var root = document.getElementById('rsms-assist');
+  if(!A || !root) return; // brain unavailable — stay out of the way
+
+  var panel = document.getElementById('rsms-assist-panel');
+  var fab   = document.getElementById('rsms-assist-fab');
+  var log   = document.getElementById('rsms-assist-log');
+  var chips = document.getElementById('rsms-assist-chips');
+  var form  = document.getElementById('rsms-assist-form');
+  var input = document.getElementById('rsms-assist-input');
+  var send  = document.getElementById('rsms-assist-send');
+  var nudge = document.getElementById('rsms-assist-nudge');
+  if(!panel || !fab || !log || !form || !input) return;
+
+  var kb = A.KB.slice();
+  var logged = {};
+  var greeted = false;
+  var typingTimer = null;
+
+  root.hidden = false;
+
+  /* ── bot identity ────────────────────────────────────
+     Name comes from rsms-brand.js (assistantName), defaulting to
+     the brain's own NAME. The photo is used in exactly two places,
+     both of them the bot: the floating button and the panel head.
+     With no photo configured nothing is requested — the robot icon
+     and the gold RSMS "R" simply stay, so there are no 404s. */
+  var BOT = (window.RSMS_BRAND && window.RSMS_BRAND.assistantName) || A.NAME || 'Toye';
+
+  (function applyName(){
+    var title = document.getElementById('rsms-assist-title');
+    var hello = document.getElementById('rsms-assist-hello');
+    var nudgeText = document.getElementById('rsms-assist-nudge-text');
+    if(title) title.textContent = BOT;
+    if(fab){
+      fab.setAttribute('aria-label', 'Chat with ' + BOT + ', the RSMS assistant');
+      fab.title = 'Chat with ' + BOT;
+    }
+    if(hello){
+      hello.textContent = '';
+      hello.appendChild(document.createTextNode("Hi, I'm "));
+      var strong = document.createElement('b');
+      strong.textContent = BOT;
+      hello.appendChild(strong);
+      hello.appendChild(document.createTextNode(' — ask me anything'));
+    }
+    if(nudgeText){
+      nudgeText.textContent = "Hi, I'm " + BOT + " \u{1F44B} Need help signing in, checking a result or choosing a plan?";
+    }
+  })();
+
+  (function paintFaces(){
+    var head = document.getElementById('rsms-assist-avatar');
+    if(head) head.textContent = 'R';
+    var url = (typeof rsmsOwnerAvatarUrl === 'function') ? rsmsOwnerAvatarUrl() : (window.RSMS_OWNER_AVATAR || '');
+    if(!url) return;
+    var boxes = [document.getElementById('rsms-assist-fab-face'), head];
+    boxes.forEach(function(box){
+      if(!box) return;
+      var img = new Image();
+      img.alt = (window.RSMS_BRAND && window.RSMS_BRAND.ownerName) || BOT;
+      img.onload = function(){
+        box.textContent = '';
+        box.appendChild(img);
+        box.setAttribute('data-has-photo', '1');
+      };
+      img.onerror = function(){ img.onload = null; img.onerror = null; };
+      img.src = url;
+    });
+  })();
+
+  /* ── rendering ─────────────────────────────────────── */
+
+  function scrollLog(){ log.scrollTop = log.scrollHeight; }
+
+  function addBot(html){
+    var d = document.createElement('div');
+    d.className = 'rsms-assist-msg bot';
+    d.innerHTML = html; // html is already sanitised by A.safeRich
+    log.appendChild(d); scrollLog();
+    return d;
+  }
+
+  function addUser(text){
+    var d = document.createElement('div');
+    d.className = 'rsms-assist-msg user';
+    d.textContent = text;
+    log.appendChild(d); scrollLog();
+    return d;
+  }
+
+  function note(text){
+    var d = document.createElement('div');
+    d.className = 'rsms-assist-msg bot';
+    d.textContent = text;
+    log.appendChild(d); scrollLog();
+  }
+
+  function showTyping(){
+    var d = document.createElement('div');
+    d.className = 'rsms-assist-msg bot rsms-assist-typing';
+    d.innerHTML = '<i></i><i></i><i></i>';
+    log.appendChild(d); scrollLog();
+    return d;
+  }
+
+  function addActions(node, actions){
+    var wrap = document.createElement('div');
+    wrap.className = 'rsms-assist-acts';
+    actions.forEach(function(action){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rsms-assist-act';
+      b.textContent = action.label;
+      b.addEventListener('click', function(){ runAction(action.act, action.value); });
+      wrap.appendChild(b);
+    });
+    node.appendChild(wrap);
+  }
+
+  function defaultChips(){
+    var ids = ['login','pin','pricing','offline','support'];
+    var out = [];
+    ids.forEach(function(id){ var e = A.byId(id, kb); if(e) out.push(e); });
+    return out.slice(0, 4);
+  }
+
+  function renderChips(list){
+    chips.innerHTML = '';
+    (list || []).forEach(function(entry){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rsms-assist-chip';
+      b.textContent = entry.title;
+      b.addEventListener('click', function(){ ask(entry.keywords[0] || entry.title); });
+      chips.appendChild(b);
+    });
+  }
+
+  /* ── actions ───────────────────────────────────────── */
+
+  function runAction(act, value){
+    if(act === 'school'){
+      if(typeof window.goToStep === 'function'){ try{ window.goToStep(1); }catch(e){} }
+      var field = document.getElementById('school-search-input');
+      if(field){
+        try{ field.focus({preventScroll:false}); }catch(e){ field.focus(); }
+        if(field.scrollIntoView){ try{ field.scrollIntoView({block:'center'}); }catch(e){} }
+      }
+      note('Search box is ready — type your school name to begin.');
+      close();
+      return;
+    }
+    if(act === 'pin'){ window.location.href = 'rsms-reset.html'; return; }
+    if(act === 'apply'){ window.location.href = 'rsms-apply.html'; return; }
+    if(act === 'result'){ window.location.href = 'rsms-results-print.html'; return; }
+    if(act === 'email'){ window.location.href = 'mailto:rehoteq@gmail.com?subject=' + encodeURIComponent('RSMS help'); return; }
+    if(act === 'whatsapp'){
+      var url = 'https://wa.me/2347036302585?text=' +
+        encodeURIComponent('Hello Rehoteq, I need help with RSMS.');
+      // Opened synchronously inside the click so popup blockers allow it.
+      var win = null;
+      try{ win = window.open('', '_blank'); }catch(e){ win = null; }
+      if(win){ win.location.href = url; } else { window.location.href = url; }
+      return;
+    }
+    if(act === 'install'){ installHint(); return; }
+    if(act === 'ask'){ ask(value || ''); return; }
+  }
+
+  function installHint(){
+    var pwa = window.RSMS_PWA;
+    if(pwa && typeof pwa.canInstall === 'function' && pwa.canInstall() && typeof pwa.install === 'function'){
+      try{ pwa.install(); note('Check your browser\'s install prompt.'); return; }catch(e){}
+    }
+    note('Open your browser menu and choose “Install app” (or “Add to Home screen”) to keep RSMS on your phone.');
+  }
+
+  /* ── conversation ──────────────────────────────────── */
+
+  function greet(){
+    var reply = A.answer('', {kb:kb});
+    addBot(reply.html);
+    renderChips(defaultChips());
+  }
+
+  function ask(text){
+    text = String(text == null ? '' : text).trim();
+    if(!text) return;
+    addUser(text);
+    input.value = '';
+    send.disabled = true;
+    chips.innerHTML = '';
+    var dots = showTyping();
+
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(function(){
+      if(dots.parentNode) dots.parentNode.removeChild(dots);
+      var reply = A.answer(text, {kb:kb});
+      var node = addBot(reply.html);
+      if(reply.actions && reply.actions.length) addActions(node, reply.actions);
+      if(reply.unanswered) logQuestion(text);
+      renderChips(reply.suggestions.length ? reply.suggestions : defaultChips());
+      scrollLog();
+    }, 340);
+  }
+
+  /* ── optional Firebase hooks (never block the UI) ──── */
+
+  function dbRef(path){
+    try{
+      if(!window.firebase || !window.firebase.database) return null;
+      if(!window.firebase.apps || !window.firebase.apps.length){
+        var cfg = window.RSMS_CONFIG && window.RSMS_CONFIG.firebase;
+        if(!cfg || !cfg.databaseURL) return null;
+        window.firebase.initializeApp(cfg);
+      }
+      return window.firebase.database().ref(path);
+    }catch(e){ return null; }
+  }
+
+  function loadRemoteKb(){
+    var ref = dbRef('config/assistant_kb');
+    if(!ref) return;
+    ref.once('value').then(function(snap){
+      var val = snap && snap.val ? snap.val() : null;
+      if(!val) return;
+      kb = A.mergeKb(val);
+    }).catch(function(){ /* public read not enabled — built-in KB is fine */ });
+  }
+
+  function logQuestion(text){
+    if(logged[text]) return;
+    logged[text] = 1;
+    var ref = dbRef('assistant_questions');
+    if(!ref) return;
+    try{
+      ref.push({
+        text: text.slice(0, 300),
+        createdAt: new Date().toISOString(),
+        page: (window.location.pathname.split('/').pop() || 'index.html').slice(0, 80)
+      }).catch(function(){});
+    }catch(e){}
+  }
+
+  /* ── open / close ──────────────────────────────────── */
+
+  function open(){
+    panel.hidden = false;
+    fab.setAttribute('aria-expanded', 'true');
+    hideHello();
+    dismissNudge(true);
+    if(!greeted){ greeted = true; greet(); }
+    setTimeout(function(){ try{ input.focus(); }catch(e){} }, 60);
+  }
+
+  function close(){
+    if(panel.hidden) return;
+    panel.hidden = true;
+    fab.setAttribute('aria-expanded', 'false');
+    try{ fab.focus(); }catch(e){}
+  }
+
+  /* ── nudge bubble ──────────────────────────────────── */
+
+  function nudgeSeen(){
+    try{ return window.localStorage.getItem('rsms_assist_seen') === '1'; }catch(e){ return true; }
+  }
+  function dismissNudge(persist){
+    if(nudge && !nudge.hidden) nudge.hidden = true;
+    if(persist){ try{ window.localStorage.setItem('rsms_assist_seen', '1'); }catch(e){} }
+  }
+
+  function hideHello(){
+    var hello = document.getElementById('rsms-assist-hello');
+    if(hello) hello.hidden = true;
+  }
+
+  /* ── events ────────────────────────────────────────── */
+
+  fab.addEventListener('click', function(){ panel.hidden ? open() : close(); });
+
+  var closeBtn = document.getElementById('rsms-assist-close');
+  if(closeBtn) closeBtn.addEventListener('click', close);
+
+  var nudgeX = document.getElementById('rsms-assist-nudge-x');
+  if(nudgeX) nudgeX.addEventListener('click', function(){ dismissNudge(true); });
+
+  form.addEventListener('submit', function(e){ e.preventDefault(); ask(input.value); });
+
+  input.addEventListener('input', function(){ send.disabled = !input.value.trim(); });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !panel.hidden){ close(); }
+  });
+
+  document.addEventListener('click', function(e){
+    if(panel.hidden) return;
+    if(root && root.contains(e.target)) return;
+    close();
+  });
+
+  /* ── start ─────────────────────────────────────────── */
+
+  loadRemoteKb();
+
+  if(nudge && !nudgeSeen()){
+    setTimeout(function(){
+      if(!nudgeSeen() && panel.hidden){
+        var hello = document.getElementById('rsms-assist-hello');
+        if(hello) hello.hidden = false;
+      }
+    }, 1200);
+    setTimeout(function(){
+      if(!nudgeSeen() && panel.hidden){
+        nudge.hidden = false;
+        hideHello(); // one prompt at a time
+      }
+    }, 5200);
+  }
+
+  window.RSMS_ASSISTANT_WIDGET = { open: open, close: close, ask: ask };
+})();
+</script>
+
 </body>
 </html>
