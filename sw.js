@@ -54,6 +54,7 @@ var STATIC_ASSETS = [
   '/rsms-plan-guard.js',
   '/rsms-subjects.js',
   '/rsms-school-detect.js',
+  '/rsms-assistant.js',
   '/rsms-pwa.js',
   '/rsms-sync.js',
   '/rsms-sync-config.example.js',
