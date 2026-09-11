@@ -739,6 +739,7 @@ body{background:var(--bg);min-height:100vh;font-family:var(--sans);}
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="rsms-firebase.js"></script>
 <script src="rsms-config.js"></script>
+<script src="rsms-brand.js"></script>
 <script src="rsms-assistant.js"></script>
 </head>
 <body>
@@ -1481,6 +1482,7 @@ function clearSchoolDisplay(){
   if(idEl) idEl.textContent='';
   if(locEl) locEl.textContent='';
   if(logoWrap) logoWrap.innerHTML='<div id="school-initials" style="font-size:1.5rem;font-weight:900;color:#d4a843;">R</div>';
+  if(window.rsmsPaintOwnerLogo) rsmsPaintOwnerLogo();
   document.documentElement.style.setProperty('--gold','#d4a843');
   STATE.school=null;
 }
@@ -1938,6 +1940,49 @@ window.addEventListener('load',initLandingPolish);
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════
+     RSMS OWNER AVATAR — shared helper
+     Reads rsms-brand.js (window.RSMS_BRAND) with a runtime override
+     via window.RSMS_OWNER_AVATAR. Nothing is requested when no photo
+     is configured, so an unconfigured site makes zero extra requests.
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+function rsmsOwnerAvatarUrl(){
+  if(window.RSMS_OWNER_AVATAR) return window.RSMS_OWNER_AVATAR;
+  var b = window.RSMS_BRAND;
+  return (b && b.ownerAvatar) ? b.ownerAvatar : '';
+}
+function rsmsOwnerInitials(){
+  var b = window.RSMS_BRAND;
+  return (b && b.ownerInitials) ? b.ownerInitials : 'R';
+}
+function rsmsPaintOwnerLogo(){
+  var url = rsmsOwnerAvatarUrl();
+  if(!url) return;
+  var wrap = document.getElementById('school-logo-wrap');
+  if(!wrap) return;
+  if(wrap.querySelector('img[data-owner-logo]')) return;
+  var img = new Image();
+  img.setAttribute('data-owner-logo', '1');
+  img.alt = (window.RSMS_BRAND && window.RSMS_BRAND.ownerName) || '';
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+  img.onload = function(){
+    if(window.STATE && window.STATE.school) return; // a school logo already won
+    wrap.innerHTML = '';
+    wrap.appendChild(img);
+  };
+  img.src = url;
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', rsmsPaintOwnerLogo);
+else rsmsPaintOwnerLogo();
+
+// Keep the landing initial in sync with the brand config.
+(function(){
+  var init = document.getElementById('school-initials');
+  if(init) init.textContent = rsmsOwnerInitials();
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
      RSMS AI ASSISTANT WIDGET (landing page)
      • Brain: rsms-assistant.js (pure logic, unit-tested)
      • Starts hidden and only appears if the brain loads, so a
@@ -2026,10 +2071,11 @@ window.addEventListener('load',initLandingPolish);
   (function paintAvatar(){
     var box = document.getElementById('rsms-assist-avatar');
     if(!box) return;
-    var url = window.RSMS_OWNER_AVATAR;
+    if(typeof rsmsOwnerInitials === 'function') box.textContent = rsmsOwnerInitials();
+    var url = (typeof rsmsOwnerAvatarUrl === 'function') ? rsmsOwnerAvatarUrl() : (window.RSMS_OWNER_AVATAR || '');
     if(!url) return;
     var img = new Image();
-    img.alt = '';
+    img.alt = (window.RSMS_BRAND && window.RSMS_BRAND.ownerName) || '';
     img.onload = function(){ box.textContent = ''; box.appendChild(img); };
     img.onerror = function(){ img.onload = null; img.onerror = null; };
     img.src = url;

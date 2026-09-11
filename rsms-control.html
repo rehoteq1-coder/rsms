@@ -56,6 +56,8 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--t
 .sb-sub{font-size:.6rem;color:var(--t4);text-transform:uppercase;letter-spacing:.1em;}
 .status-right{display:flex;align-items:center;gap:10px;}
 .online-pill{display:flex;align-items:center;gap:6px;font-size:var(--fs-xs);font-weight:700;color:var(--success);background:var(--successl);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:5px 12px;}
+.sb-owner{width:34px;height:34px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,var(--gold),#8a6a1f);color:#1a1206;font-family:var(--serif);font-weight:900;font-size:.78rem;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,200,50,.35);}
+.sb-owner img{width:100%;height:100%;object-fit:cover;display:block;}
 .online-dot{width:7px;height:7px;border-radius:50%;background:var(--success);animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 
@@ -229,6 +231,7 @@ textarea.fi{height:auto;min-height:90px;padding:13px 15px;resize:vertical;}
       <div><div class="sb-title">Control Center</div><div class="sb-sub">Rehoteq Technologies</div></div>
     </div>
     <div class="status-right">
+      <div class="sb-owner" id="ctrl-owner-avatar" title="Rehoteq Technologies">BT</div>
       <div class="online-pill"><div class="online-dot"></div>Live</div>
       <button style="background:none;border:none;color:var(--t3);font-size:1.1rem;cursor:pointer;" onclick="switchTab('alerts',document.querySelectorAll('.nav-item')[2])">🔔</button>
     </div>
@@ -1055,5 +1058,24 @@ function buildRegBtn(label, action, arg1, arg2, isDanger) {
   </div>
 </div>
 
+<script src="rsms-brand.js"></script>
+<script>
+/* Owner avatar in the control status bar (rsms-brand.js). */
+(function(){
+  var box = document.getElementById('ctrl-owner-avatar');
+  if(!box) return;
+  var b = window.RSMS_BRAND || {};
+  if(b.ownerInitials) box.textContent = b.ownerInitials;
+  if(b.ownerName) box.title = b.ownerName;
+  if(box.getAttribute('title') === 'Rehoteq Technologies' && b.ownerName) box.setAttribute('title', b.ownerName);
+  var url = window.RSMS_OWNER_AVATAR || b.ownerAvatar || '';
+  if(!url) return;
+  var img = new Image();
+  img.alt = b.ownerName || '';
+  img.onload = function(){ box.textContent = ''; box.appendChild(img); };
+  img.onerror = function(){ img.onerror = null; };
+  img.src = url;
+})();
+</script>
 </body>
 </html>
