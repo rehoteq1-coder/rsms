@@ -2766,12 +2766,27 @@ function allocateIndividual(){
   var t=getStaff().find(function(s){return s.id===id;});if(!t){toast('Not found','error');return;}
   var amt=document.getElementById('ai-alloc-amt');
   var n=parseInt(amt?amt.value:'10',10);if(!n||n<1){toast('Enter the number of units to allocate','error');return;}
+  /* Popup-safe WhatsApp notify: window.open only counts as user-initiated
+     when it runs synchronously inside the click handler. The old flow opened
+     the wa.me tab from the aiEnsure→aiAllocate callbacks (async round-trips),
+     so Chrome/Safari blocked it as a popup — the alert silently never fired.
+     Fix: open a blank tab NOW (inside the gesture), navigate it to wa.me on
+     success, close it on failure. If the sync open was itself blocked, fall
+     back to opening from the callback (best effort). */
+  var waText='Hello '+t.name+'! 🎁 Your school has allocated you '+n+' AI Lesson Studio units. Open AI Studio from your portal to start using them — no activation needed.';
+  var waTab=window.open('about:blank','_blank');
+  function waGo(){
+    var url='https://wa.me/?text='+encodeURIComponent(waText);
+    if(waTab){ try{ waTab.location.href=url; return; }catch(e){} }
+    window.open(url,'_blank');
+  }
+  function waAbort(){ if(waTab){ try{ waTab.close(); }catch(e){} waTab=null; } }
   aiEnsure(function(d){
-    if(!d){ toast('Could not load AI units. Check your connection.','error'); return; }
+    if(!d){ waAbort(); toast('Could not load AI units. Check your connection.','error'); return; }
     aiAllocate(LESSON_AI.emailFor(t),n,function(ok){
-      if(!ok) return;
+      if(!ok){ waAbort(); return; }
       toast('✅ '+n+' units allocated to '+t.name+' — active immediately in AI Studio.','success');
-      window.open('https://wa.me/?text='+encodeURIComponent('Hello '+t.name+'! 🎁 Your school has allocated you '+n+' AI Lesson Studio units. Open AI Studio from your portal to start using them — no activation needed.'),'_blank');
+      waGo();
     });
   });
 }
