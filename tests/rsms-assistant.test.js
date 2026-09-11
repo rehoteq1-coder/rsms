@@ -46,6 +46,20 @@ test('answer() falls back with suggestions instead of guessing', () => {
   assert.equal(reply.suggestions.length <= 3, true);
 });
 
+test('the assistant has a name and introduces itself', () => {
+  assert.equal(assistant.NAME, 'Toye');
+  assert.match(assistant.answer('hello there').text, /I am Toye/i);
+  assert.match(assistant.answer('').text, /I am Toye/i);
+});
+
+test('visitors can ask who the assistant is', () => {
+  const reply = assistant.answer('what is your name?');
+  assert.equal(reply.entry.id, 'identity');
+  assert.match(reply.text, /Toye/);
+  const alt = assistant.answer('are you a robot?');
+  assert.equal(alt.entry.id, 'identity');
+});
+
 test('a greeting answers instead of falling back', () => {
   const reply = assistant.answer('hello there');
   assert.equal(reply.entry.id, 'hello');

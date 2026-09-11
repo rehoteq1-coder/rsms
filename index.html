@@ -669,6 +669,19 @@ body{background:var(--bg);min-height:100vh;font-family:var(--sans);}
   .rsms-assist-fab:active{transform:scale(.94);}
   .rsms-assist-fab:focus-visible{outline:2px solid #fff;outline-offset:3px;}
   .rsms-assist-fab svg{width:27px;height:27px;display:block;}
+  .rsms-assist-fab{position:relative;}
+  .rsms-assist-fab-face{width:100%;height:100%;border-radius:50%;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;background:transparent;}
+  .rsms-assist-fab-face img{width:100%;height:100%;object-fit:cover;display:block;}
+  .rsms-assist-fab-dot{position:absolute;right:0;bottom:0;width:14px;height:14px;border-radius:50%;
+    background:#22c55e;border:2.5px solid #141b35;box-sizing:content-box;}
+  .rsms-assist-row{display:flex;align-items:center;gap:10px;}
+  .rsms-assist-hello{background:var(--card);border:1px solid rgba(212,168,67,.35);color:var(--t2);
+    border-radius:20px;padding:8px 14px;font-size:.76rem;white-space:nowrap;
+    box-shadow:0 10px 26px rgba(0,0,0,.4);animation:rsms-assist-pop .3s ease both;
+    max-width:min(58vw,240px);overflow:hidden;text-overflow:ellipsis;}
+  .rsms-assist-hello[hidden]{display:none;}
+  .rsms-assist-hello b{color:var(--gold);font-weight:800;}
   .rsms-assist-panel{width:360px;max-width:calc(100vw - 28px);height:min(560px,72vh);
     background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;
     display:flex;flex-direction:column;box-shadow:0 26px 64px rgba(0,0,0,.55);
@@ -1964,15 +1977,15 @@ function rsmsOwnerAvatarUrl(){
 <div class="rsms-assist" id="rsms-assist" hidden>
   <div class="rsms-assist-nudge" id="rsms-assist-nudge" hidden>
     <button class="rsms-assist-nudge-x" id="rsms-assist-nudge-x" type="button" aria-label="Dismiss hint">&times;</button>
-    <span>Hi there &#128075; Need help signing in, checking a result or choosing a plan? Ask me anything.</span>
+    <span id="rsms-assist-nudge-text">Hi, I'm Toye &#128075; Need help signing in, checking a result or choosing a plan?</span>
   </div>
 
   <section class="rsms-assist-panel" id="rsms-assist-panel" role="dialog" aria-labelledby="rsms-assist-title" hidden>
     <header class="rsms-assist-head">
       <div class="rsms-assist-avatar" id="rsms-assist-avatar" aria-hidden="true">R</div>
       <div>
-        <div class="rsms-assist-title" id="rsms-assist-title">RSMS Assistant</div>
-        <div class="rsms-assist-sub"><span class="rsms-assist-dot"></span><span>Online &middot; instant answers</span></div>
+        <div class="rsms-assist-title" id="rsms-assist-title">Toye</div>
+        <div class="rsms-assist-sub"><span class="rsms-assist-dot"></span><span id="rsms-assist-sub-text">RSMS Assistant &middot; replies instantly</span></div>
       </div>
       <button class="rsms-assist-close" id="rsms-assist-close" type="button" aria-label="Close assistant">&#10005;</button>
     </header>
@@ -1992,18 +2005,25 @@ function rsmsOwnerAvatarUrl(){
     </form>
   </section>
 
-  <button class="rsms-assist-fab" id="rsms-assist-fab" type="button"
-          aria-expanded="false" aria-controls="rsms-assist-panel" aria-label="Open RSMS assistant">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
-         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <rect x="4" y="8" width="16" height="11" rx="4"/>
-      <path d="M12 8V5"/>
-      <circle cx="12" cy="4" r="1.3" fill="currentColor" stroke="none"/>
-      <circle cx="9" cy="13" r="1.35" fill="currentColor" stroke="none"/>
-      <circle cx="15" cy="13" r="1.35" fill="currentColor" stroke="none"/>
-      <path d="M9 16.4h6"/>
-    </svg>
-  </button>
+  <div class="rsms-assist-row">
+    <div class="rsms-assist-hello" id="rsms-assist-hello" hidden>Ask me anything</div>
+    <button class="rsms-assist-fab" id="rsms-assist-fab" type="button"
+            aria-expanded="false" aria-controls="rsms-assist-panel"
+            aria-label="Chat with Toye, the RSMS assistant">
+      <span class="rsms-assist-fab-face" id="rsms-assist-fab-face">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="4" y="8" width="16" height="11" rx="4"/>
+          <path d="M12 8V5"/>
+          <circle cx="12" cy="4" r="1.3" fill="currentColor" stroke="none"/>
+          <circle cx="9" cy="13" r="1.35" fill="currentColor" stroke="none"/>
+          <circle cx="15" cy="13" r="1.35" fill="currentColor" stroke="none"/>
+          <path d="M9 16.4h6"/>
+        </svg>
+      </span>
+      <span class="rsms-assist-fab-dot" aria-hidden="true"></span>
+    </button>
+  </div>
 </div>
 
 <script>
@@ -2034,22 +2054,54 @@ function rsmsOwnerAvatarUrl(){
 
   root.hidden = false;
 
-  /* ── bot face ─────────────────────────────────────────
-     The assistant head is the only place the owner photo is
-     used. Point rsms-brand.js at assets/owner-avatar.jpg (or set
-     window.RSMS_OWNER_AVATAR) to swap it in; until then the gold
-     RSMS "R" stays and nothing extra is requested — no 404s. */
-  (function paintAvatar(){
-    var box = document.getElementById('rsms-assist-avatar');
-    if(!box) return;
-    box.textContent = 'R';
+  /* ── bot identity ────────────────────────────────────
+     Name comes from rsms-brand.js (assistantName), defaulting to
+     the brain's own NAME. The photo is used in exactly two places,
+     both of them the bot: the floating button and the panel head.
+     With no photo configured nothing is requested — the robot icon
+     and the gold RSMS "R" simply stay, so there are no 404s. */
+  var BOT = (window.RSMS_BRAND && window.RSMS_BRAND.assistantName) || A.NAME || 'Toye';
+
+  (function applyName(){
+    var title = document.getElementById('rsms-assist-title');
+    var hello = document.getElementById('rsms-assist-hello');
+    var nudgeText = document.getElementById('rsms-assist-nudge-text');
+    if(title) title.textContent = BOT;
+    if(fab){
+      fab.setAttribute('aria-label', 'Chat with ' + BOT + ', the RSMS assistant');
+      fab.title = 'Chat with ' + BOT;
+    }
+    if(hello){
+      hello.textContent = '';
+      hello.appendChild(document.createTextNode("Hi, I'm "));
+      var strong = document.createElement('b');
+      strong.textContent = BOT;
+      hello.appendChild(strong);
+      hello.appendChild(document.createTextNode(' — ask me anything'));
+    }
+    if(nudgeText){
+      nudgeText.textContent = "Hi, I'm " + BOT + " \u{1F44B} Need help signing in, checking a result or choosing a plan?";
+    }
+  })();
+
+  (function paintFaces(){
+    var head = document.getElementById('rsms-assist-avatar');
+    if(head) head.textContent = 'R';
     var url = (typeof rsmsOwnerAvatarUrl === 'function') ? rsmsOwnerAvatarUrl() : (window.RSMS_OWNER_AVATAR || '');
     if(!url) return;
-    var img = new Image();
-    img.alt = (window.RSMS_BRAND && window.RSMS_BRAND.ownerName) || '';
-    img.onload = function(){ box.textContent = ''; box.appendChild(img); };
-    img.onerror = function(){ img.onload = null; img.onerror = null; };
-    img.src = url;
+    var boxes = [document.getElementById('rsms-assist-fab-face'), head];
+    boxes.forEach(function(box){
+      if(!box) return;
+      var img = new Image();
+      img.alt = (window.RSMS_BRAND && window.RSMS_BRAND.ownerName) || BOT;
+      img.onload = function(){
+        box.textContent = '';
+        box.appendChild(img);
+        box.setAttribute('data-has-photo', '1');
+      };
+      img.onerror = function(){ img.onload = null; img.onerror = null; };
+      img.src = url;
+    });
   })();
 
   /* ── rendering ─────────────────────────────────────── */
@@ -2231,6 +2283,7 @@ function rsmsOwnerAvatarUrl(){
   function open(){
     panel.hidden = false;
     fab.setAttribute('aria-expanded', 'true');
+    hideHello();
     dismissNudge(true);
     if(!greeted){ greeted = true; greet(); }
     setTimeout(function(){ try{ input.focus(); }catch(e){} }, 60);
@@ -2251,6 +2304,11 @@ function rsmsOwnerAvatarUrl(){
   function dismissNudge(persist){
     if(nudge && !nudge.hidden) nudge.hidden = true;
     if(persist){ try{ window.localStorage.setItem('rsms_assist_seen', '1'); }catch(e){} }
+  }
+
+  function hideHello(){
+    var hello = document.getElementById('rsms-assist-hello');
+    if(hello) hello.hidden = true;
   }
 
   /* ── events ────────────────────────────────────────── */
@@ -2282,7 +2340,18 @@ function rsmsOwnerAvatarUrl(){
   loadRemoteKb();
 
   if(nudge && !nudgeSeen()){
-    setTimeout(function(){ if(!nudgeSeen() && panel.hidden) nudge.hidden = false; }, 5200);
+    setTimeout(function(){
+      if(!nudgeSeen() && panel.hidden){
+        var hello = document.getElementById('rsms-assist-hello');
+        if(hello) hello.hidden = false;
+      }
+    }, 1200);
+    setTimeout(function(){
+      if(!nudgeSeen() && panel.hidden){
+        nudge.hidden = false;
+        hideHello(); // one prompt at a time
+      }
+    }, 5200);
   }
 
   window.RSMS_ASSISTANT_WIDGET = { open: open, close: close, ask: ask };

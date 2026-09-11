@@ -26,6 +26,8 @@
 
   /* ── Text helpers ─────────────────────────────────────── */
 
+  var NAME = 'Toye';   // the assistant's name, used in greetings
+
   var STOPWORDS = ('a an and are as at be by can do does for from how i in is it me my of on or ' +
     'our so that the they this to we what when where which who why will with you your').split(' ');
 
@@ -61,7 +63,7 @@
       id: 'hello',
       title: 'Say hello',
       keywords: ['hi', 'hey', 'hello', 'good morning', 'good afternoon', 'good evening', 'hiya'],
-      answer: 'Hello! 👋 I am the RSMS assistant.\n\n' +
+      answer: 'Hello! 👋 I am Toye, the RSMS assistant.\n\n' +
         'I can help you **sign in**, explain **results, fees and attendance**, tell you about ' +
         '**plans and pricing**, or point you to a **human** at Rehoteq.\n\n' +
         'What would you like to know?',
@@ -69,6 +71,19 @@
         { label: 'How do I sign in?', act: 'ask', value: 'how do I sign in' },
         { label: 'Talk to support', act: 'whatsapp' }
       ]
+    },
+    {
+      id: 'identity',
+      title: 'Who is Toye?',
+      keywords: ['who are you', 'what is your name', 'your name', 'are you human', 'are you a robot',
+                 'are you real', 'is this a bot', 'toye', 'adetoye', 'tope'],
+      answer: 'I am **Toye**, the RSMS assistant for every school running Rehoteq School ' +
+        'Management System.\n\n' +
+        'I am not a person — think of me as a guide that knows the portal inside out: signing in, ' +
+        'results, fees, attendance, plans and pricing. Anything I cannot answer, I will happily ' +
+        'hand to a human at Rehoteq.\n\n' +
+        'So, what can I help you with?',
+      actions: [{ label: 'Message a human', act: 'whatsapp' }]
     },
     {
       id: 'login',
@@ -334,7 +349,7 @@
 
     var fallbackText = text
       ? 'I do not have a solid answer for that yet. Here is what I can help with:'
-      : 'Hi! I am the RSMS assistant. Ask me about signing in, results, fees, attendance, ' +
+      : 'Hi! I am Toye, the RSMS assistant. Ask me about signing in, results, fees, attendance, ' +
         'plans or anything else about the portal.';
 
     return {
@@ -413,6 +428,7 @@
   }
 
   return {
+    NAME: NAME,
     KB: KB,
     THRESHOLD: THRESHOLD,
     normalize: normalize,
