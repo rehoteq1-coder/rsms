@@ -1482,7 +1482,6 @@ function clearSchoolDisplay(){
   if(idEl) idEl.textContent='';
   if(locEl) locEl.textContent='';
   if(logoWrap) logoWrap.innerHTML='<div id="school-initials" style="font-size:1.5rem;font-weight:900;color:#d4a843;">R</div>';
-  if(window.rsmsPaintOwnerLogo) rsmsPaintOwnerLogo();
   document.documentElement.style.setProperty('--gold','#d4a843');
   STATE.school=null;
 }
@@ -1940,10 +1939,10 @@ window.addEventListener('load',initLandingPolish);
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════
-     RSMS OWNER AVATAR — shared helper
+     RSMS AVATAR URL — shared helper (AI assistant head only)
      Reads rsms-brand.js (window.RSMS_BRAND) with a runtime override
-     via window.RSMS_OWNER_AVATAR. Nothing is requested when no photo
-     is configured, so an unconfigured site makes zero extra requests.
+     via window.RSMS_OWNER_AVATAR. The landing "R" logo tile and every
+     other RSMS mark are deliberately left alone.
      ═══════════════════════════════════════════════════════════ -->
 <script>
 function rsmsOwnerAvatarUrl(){
@@ -1951,35 +1950,6 @@ function rsmsOwnerAvatarUrl(){
   var b = window.RSMS_BRAND;
   return (b && b.ownerAvatar) ? b.ownerAvatar : '';
 }
-function rsmsOwnerInitials(){
-  var b = window.RSMS_BRAND;
-  return (b && b.ownerInitials) ? b.ownerInitials : 'R';
-}
-function rsmsPaintOwnerLogo(){
-  var url = rsmsOwnerAvatarUrl();
-  if(!url) return;
-  var wrap = document.getElementById('school-logo-wrap');
-  if(!wrap) return;
-  if(wrap.querySelector('img[data-owner-logo]')) return;
-  var img = new Image();
-  img.setAttribute('data-owner-logo', '1');
-  img.alt = (window.RSMS_BRAND && window.RSMS_BRAND.ownerName) || '';
-  img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
-  img.onload = function(){
-    if(window.STATE && window.STATE.school) return; // a school logo already won
-    wrap.innerHTML = '';
-    wrap.appendChild(img);
-  };
-  img.src = url;
-}
-if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', rsmsPaintOwnerLogo);
-else rsmsPaintOwnerLogo();
-
-// Keep the landing initial in sync with the brand config.
-(function(){
-  var init = document.getElementById('school-initials');
-  if(init) init.textContent = rsmsOwnerInitials();
-})();
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -2064,14 +2034,15 @@ else rsmsPaintOwnerLogo();
 
   root.hidden = false;
 
-  /* ── owner avatar hook ────────────────────────────────
-     Drop the owner photo at assets/owner-avatar.jpg (or set
-     window.RSMS_OWNER_AVATAR to any URL) to brand the head.
-     With nothing configured the gold initial stays — no 404s. */
+  /* ── bot face ─────────────────────────────────────────
+     The assistant head is the only place the owner photo is
+     used. Point rsms-brand.js at assets/owner-avatar.jpg (or set
+     window.RSMS_OWNER_AVATAR) to swap it in; until then the gold
+     RSMS "R" stays and nothing extra is requested — no 404s. */
   (function paintAvatar(){
     var box = document.getElementById('rsms-assist-avatar');
     if(!box) return;
-    if(typeof rsmsOwnerInitials === 'function') box.textContent = rsmsOwnerInitials();
+    box.textContent = 'R';
     var url = (typeof rsmsOwnerAvatarUrl === 'function') ? rsmsOwnerAvatarUrl() : (window.RSMS_OWNER_AVATAR || '');
     if(!url) return;
     var img = new Image();
