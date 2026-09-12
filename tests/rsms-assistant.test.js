@@ -3,8 +3,10 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const path = require('node:path');
+const fs = require('node:fs');
 
 const assistant = require(path.join(__dirname, '..', 'rsms-assistant.js'));
+const repoRoot = path.join(__dirname, '..');
 
 test('answer() matches an entry from a natural question', () => {
   const reply = assistant.answer('I forgot my PIN, what do I do?');
@@ -110,4 +112,154 @@ test('merged remote entries are answerable and still sanitised', () => {
   const reply = assistant.answer('when is the bus route?', { kb: merged });
   assert.equal(reply.entry.id, 'bus');
   assert.ok(reply.html.includes('<strong>14:00</strong>'));
+});
+
+/* ── deeper knowledge base ───────────────────────────────── */
+
+test('the new onboarding, admission, migration, access and troubleshooting entries answer', () => {
+  const cases = [
+    ['how do i register my school on rsms', 'onboarding'],
+    ['how does a parent apply for admission', 'admission'],
+    ['can i import my students from a csv', 'migration'],
+    ['how do i send a parent their access link', 'access'],
+    ['the page is blank and nothing works', 'troubleshooting']
+  ];
+  for (const [question, id] of cases) {
+    const reply = assistant.answer(question);
+    assert.equal(reply.entry && reply.entry.id, id, `question: ${question}`);
+    assert.ok(reply.text.length > 120, `${id} should answer in real detail`);
+  }
+});
+
+test('every entry has a unique id, keywords and a more block', () => {
+  const seen = new Set();
+  for (const entry of assistant.KB) {
+    assert.ok(entry.id, 'entry needs an id');
+    assert.equal(seen.has(entry.id), false, `duplicate id: ${entry.id}`);
+    seen.add(entry.id);
+    assert.ok(entry.keywords && entry.keywords.length, `${entry.id} needs keywords`);
+    assert.ok(entry.answer && entry.answer.length > 80, `${entry.id} needs a real answer`);
+    assert.ok(entry.more && entry.more.length > 80, `${entry.id} needs a "tell me more" block`);
+  }
+});
+
+test('"tell me more" expands the topic the visitor was last on', () => {
+  const first = assistant.answer('how do I sign in?');
+  assert.equal(first.entry.id, 'login');
+  assert.equal(first.more, false);
+
+  const deeper = assistant.answer('tell me more', { lastTopic: first.entry.id });
+  assert.equal(deeper.entry.id, 'login');
+  assert.equal(deeper.more, true);
+  assert.equal(deeper.text, first.entry.more);
+  assert.notEqual(deeper.text, first.text);
+
+  for (const phrase of ['more', 'tell me more', 'go on', 'explain further', 'continue please']) {
+    assert.equal(assistant.isMoreRequest(phrase), true, phrase);
+  }
+  for (const phrase of ['how much is rsms', 'my child is in jss 2', 'the portal is slow', '']) {
+    assert.equal(assistant.isMoreRequest(phrase), false, phrase);
+  }
+});
+
+test('a follow-up with no remembered topic asks which topic instead of guessing', () => {
+  const reply = assistant.answer('more');
+  assert.equal(reply.entry, null);
+  assert.equal(reply.unanswered, false);
+  assert.equal(reply.more, true);
+  assert.match(reply.text, /which topic/i);
+  assert.ok(reply.suggestions.length > 0);
+});
+
+test('entries expose portal actions that resolve to PORTALS pages', () => {
+  const portalValues = Object.values(assistant.PORTALS);
+  let goActions = 0;
+  for (const entry of assistant.KB) {
+    for (const action of entry.actions || []) {
+      assert.ok(action.label && action.act, `${entry.id} action needs a label and act`);
+      if (action.act !== 'go') continue;
+      goActions++;
+      assert.ok(portalValues.includes(action.value), `${entry.id}: ${action.value} is not a known portal`);
+      assert.equal(assistant.safePortalTarget(action.value), action.value);
+    }
+  }
+  assert.ok(goActions >= 12, `expected the KB to open several portals, got ${goActions}`);
+});
+
+test('every portal in the index is a page that exists in the repo', () => {
+  const keys = Object.keys(assistant.PORTALS);
+  assert.ok(keys.length >= 18, 'the portal index should cover the RSMS pages');
+  for (const key of keys) {
+    const file = assistant.PORTALS[key];
+    assert.match(file, assistant.PORTAL_TARGET_RE, `${key}: ${file} is not a safe target`);
+    assert.ok(fs.existsSync(path.join(repoRoot, file)), `${key}: ${file} is missing from the repo`);
+  }
+});
+
+test('safePortalTarget() blocks javascript:, protocol-relative and parent paths', () => {
+  const bad = [
+    'javascript:alert(1)',
+    'JavaScript:alert(1)',
+    '//evil.example/steal.html',
+    'https://evil.example/rsms-apply.html',
+    '../rsms-apply.html',
+    'admin/rsms-apply.html',
+    'RSMS-APPLY.HTML',
+    'rsms-apply.html?next=javascript:alert(1)',
+    '',
+    null,
+    undefined
+  ];
+  for (const value of bad) {
+    assert.equal(assistant.safePortalTarget(value), '', `should be rejected: ${String(value)}`);
+  }
+  assert.equal(assistant.safePortalTarget('rsms-apply.html'), 'rsms-apply.html');
+  assert.equal(assistant.safePortalTarget('  rsms-cbt.html  '), 'rsms-cbt.html');
+});
+
+test('synonyms route the words visitors actually type', () => {
+  assert.equal(assistant.answer('i want to signup').entry.id, 'onboarding');
+  assert.equal(assistant.answer('csv upload of students').entry.id, 'migration');
+  assert.equal(assistant.answer('how much is it').entry.id, 'pricing');
+  // the synonym table itself stays normalised
+  for (const key of Object.keys(assistant.SYNONYMS)) {
+    assert.equal(key, assistant.normalize(key), `synonym key not normalised: ${key}`);
+  }
+});
+
+test('light stemming matches inflected words', () => {
+  assert.equal(assistant.stem('printing'), 'print');
+  assert.equal(assistant.stem('payments'), 'payment');
+  assert.equal(assistant.stem('less'), 'less', 'short words must survive stemming');
+  assert.equal(assistant.answer('printing a result card').entry.id, 'results');
+  assert.equal(assistant.answer('paying school fees').entry.id, 'fees');
+});
+
+test('a remote override can replace an answer and its more block, but not actions', () => {
+  const merged = assistant.mergeKb([{
+    id: 'fees',
+    title: 'Fees',
+    answer: 'Fees are paid at the bursary, **room 4**.',
+    more: 'Opening hours are 8am to 2pm.',
+    keywords: ['fee', 'fees'],
+    actions: [{ label: 'Evil', act: 'go', value: 'javascript:alert(1)' }]
+  }]);
+  const reply = assistant.answer('school fees', { kb: merged });
+  assert.equal(reply.entry.id, 'fees');
+  assert.match(reply.text, /room 4/);
+  assert.deepEqual(reply.actions, [], 'remote entries must not bring their own actions');
+  const deeper = assistant.answer('tell me more', { kb: merged, lastTopic: 'fees' });
+  assert.match(deeper.text, /8am to 2pm/);
+});
+
+test('unanswered questions never invent a portal link', () => {
+  const reply = assistant.answer('who won the world cup in 1994');
+  assert.equal(reply.entry, null);
+  assert.equal(reply.unanswered, true);
+  assert.deepEqual(reply.actions, []);
+  for (const suggestion of reply.suggestions) {
+    for (const action of suggestion.actions || []) {
+      if (action.act === 'go') assert.ok(assistant.safePortalTarget(action.value));
+    }
+  }
 });

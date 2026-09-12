@@ -2052,6 +2052,29 @@ function rsmsOwnerAvatarUrl(){
   var greeted = false;
   var typingTimer = null;
 
+  /* ── last topic ────────────────────────────────────────
+     "tell me more" only makes sense with context, so the topic
+     of the last answered entry is kept — in memory for this
+     visit and in localStorage so a reload keeps the thread. */
+  var TOPIC_KEY = 'rsms_assist_topic';
+  var lastTopic = '';
+
+  function rememberTopic(id){
+    lastTopic = id || '';
+    try{
+      if(lastTopic) window.localStorage.setItem(TOPIC_KEY, lastTopic);
+      else window.localStorage.removeItem(TOPIC_KEY);
+    }catch(e){ /* private mode — the thread just does not survive a reload */ }
+  }
+
+  function restoreTopic(){
+    var saved = '';
+    try{ saved = window.localStorage.getItem(TOPIC_KEY) || ''; }catch(e){ return ''; }
+    return (saved && A.byId(saved, kb)) ? saved : '';
+  }
+
+  lastTopic = restoreTopic();
+
   root.hidden = false;
 
   /* ── bot identity ────────────────────────────────────
@@ -2139,10 +2162,14 @@ function rsmsOwnerAvatarUrl(){
     return d;
   }
 
-  function addActions(node, actions){
+  function addActions(node, actions, entry){
+    var list = (actions || []).slice();
+    // Entries with a "tell me more" block get a follow-up button.
+    if(entry && entry.more) list.push({ label: 'Tell me more', act: 'ask', value: 'tell me more' });
+    if(!list.length) return;
     var wrap = document.createElement('div');
     wrap.className = 'rsms-assist-acts';
-    actions.forEach(function(action){
+    list.forEach(function(action){
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'rsms-assist-act';
@@ -2174,7 +2201,25 @@ function rsmsOwnerAvatarUrl(){
 
   /* ── actions ───────────────────────────────────────── */
 
+  /* Portal navigation. The knowledge base can be overridden from
+     Firebase (config/assistant_kb) without a deploy, so a target is
+     only ever followed if it is a plain local page: ^[a-z0-9-]+\.html$.
+     Anything else — javascript:, //host, ../path, a query string —
+     is refused. This check mirrors the one in rsms-assistant.js. */
+  function goToPortal(value){
+    var file = (typeof A.safePortalTarget === 'function')
+      ? A.safePortalTarget(value)
+      : (/^[a-z0-9-]+\.html$/.test(String(value || '')) ? String(value) : '');
+    if(!file){
+      note('That page is not one I can open. Ask me what you need and I will point you to it.');
+      return '';
+    }
+    window.location.href = file;
+    return file;
+  }
+
   function runAction(act, value){
+    if(act === 'go'){ goToPortal(value); return; }
     if(act === 'school'){
       if(typeof window.goToStep === 'function'){ try{ window.goToStep(1); }catch(e){} }
       var field = document.getElementById('school-search-input');
@@ -2231,9 +2276,11 @@ function rsmsOwnerAvatarUrl(){
     clearTimeout(typingTimer);
     typingTimer = setTimeout(function(){
       if(dots.parentNode) dots.parentNode.removeChild(dots);
-      var reply = A.answer(text, {kb:kb});
+      // lastTopic lets "tell me more" deepen the answer just given.
+      var reply = A.answer(text, {kb:kb, lastTopic:lastTopic});
       var node = addBot(reply.html);
-      if(reply.actions && reply.actions.length) addActions(node, reply.actions);
+      addActions(node, reply.actions, reply.entry);
+      if(reply.entry) rememberTopic(reply.entry.id);
       if(reply.unanswered) logQuestion(text);
       renderChips(reply.suggestions.length ? reply.suggestions : defaultChips());
       scrollLog();
