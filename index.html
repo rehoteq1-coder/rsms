@@ -2203,9 +2203,13 @@ function rsmsOwnerAvatarUrl(){
 
   /* Portal navigation. The knowledge base can be overridden from
      Firebase (config/assistant_kb) without a deploy, so a target is
-     only ever followed if it is a plain local page: ^[a-z0-9-]+\.html$.
-     Anything else — javascript:, //host, ../path, a query string —
-     is refused. This check mirrors the one in rsms-assistant.js. */
+     only ever followed if it is a plain local page — optionally
+     pinned to the demo school: ^[a-z0-9-]+\.html$ plus at most one
+     ?school=REH-2j8kq2xf parameter. Anything else — javascript:,
+     //host, ../path, another school id, any other query string —
+     is refused. This check mirrors the one in rsms-assistant.js;
+     the fallback below (an ancient cached brain without
+     safePortalTarget) stays stricter and accepts bare pages only. */
   function goToPortal(value){
     var file = (typeof A.safePortalTarget === 'function')
       ? A.safePortalTarget(value)

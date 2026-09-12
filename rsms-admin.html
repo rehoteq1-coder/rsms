@@ -1719,7 +1719,17 @@ var WF={
    Free termly pool (30) per enterprise school; the school allocates
    units to staff from the pool; teachers buy their own units when
    theirs run out; the school buys any number when the pool runs out.
-   Data: schools/<schoolId>/ai_units  (see rsms-ai-units.js) */
+   Data: schools/<schoolId>/ai_units  (see rsms-ai-units.js)
+
+   Gifting survives a flaky connection: every successful read is
+   mirrored to the device ledger (localStorage ai_units_local); an
+   allocation the server cannot accept right now is applied to the
+   ledger and queued (ai_units_queue) instead of being lost; the next
+   successful aiEnsure replays the queue, oldest first, and stops —
+   leaving the rest queued — if the pool turns out to be short.
+   Callers hear WHY the panel is not live: aiEnsure answers
+   cb(data, reason), and aiNotice(reason) says it honestly. */
+// >>> AI-GIFTING-BEGIN — tests/ai-gifting.check.js extracts this region and runs it against stubs
 var LESSON_AI={
   URL:'https://rehoteq.com/lesson-ai.html',
   UNITS_PER_TERM:(typeof AI_UNITS!=='undefined')?AI_UNITS.UNITS_PER_TEACHER_TERM:10,
@@ -1744,24 +1754,80 @@ var LESSON_AI={
   }
 };
 var _aiData=null; // in-memory copy of schools/<sid>/ai_units
+var AI_LEDGER_KEY='ai_units_local';  // last known ai_units as saved on this device
+var AI_QUEUE_KEY='ai_units_queue';   // allocations made offline, replayed on the next good load
+
+function aiLedgerSave(d){ try{ localStorage.setItem(AI_LEDGER_KEY,JSON.stringify(d)); }catch(e){} }
+function aiLedgerLoad(){
+  try{
+    var d=JSON.parse(localStorage.getItem(AI_LEDGER_KEY)||'null');
+    return (d&&typeof d==='object'&&!Array.isArray(d))?d:null;
+  }catch(e){ return null; }
+}
+function aiQueueLoad(){
+  try{
+    var q=JSON.parse(localStorage.getItem(AI_QUEUE_KEY)||'[]');
+    return Array.isArray(q)?q.filter(function(e){ return e&&typeof e==='object'&&e.email&&e.n>0; }):[];
+  }catch(e){ return []; }
+}
+function aiQueueSave(q){ try{ localStorage.setItem(AI_QUEUE_KEY,JSON.stringify(q)); }catch(e){} }
+function aiQueuePush(item){ var q=aiQueueLoad(); q.push(item); aiQueueSave(q); return q.length; }
+function aiQueueClear(){ try{ localStorage.removeItem(AI_QUEUE_KEY); }catch(e){} }
+
+function aiNotice(reason){
+  /* One source of truth for "why the panel is not live". Each case says
+     what actually happened — this device knows whether the server
+     answered — so the admin gets the truth instead of a vague shrug
+     at their own network. */
+  if(reason==='free')return 'The AI unit pool is an Enterprise feature. This school is not on Enterprise, so there is nothing to allocate yet.';
+  if(reason==='offline')return 'This device could not reach the school\'s AI records, and it has no saved copy of them yet. The numbers are unknown — not zero. Open this panel once while online and it will fill in; from then on, anything you allocate offline is kept on the device and sent automatically.';
+  if(reason==='offline-ledger')return 'Offline — showing the school\'s AI units as last saved on this device. Gifts you make now are recorded here and queued; they sync automatically the next time the server can be reached.';
+  return 'The school\'s AI records could not be read right now.';
+}
+
+function aiDefaultPool(){
+  return {base:(typeof AI_UNITS!=='undefined')?AI_UNITS.BASE:30,
+          pool:(typeof AI_UNITS!=='undefined')?AI_UNITS.BASE:30,
+          term:LESSON_AI.termLabel(),staff:{}};
+}
 
 function aiEnsure(cb){
   /* Load ai_units; for enterprise schools, create the free termly pool
-     on first use. cb(data|null) — null = not enterprise or load error. */
+     on first use, mirror every read to the device ledger, and replay any
+     queued offline allocations first. cb(data, reason):
+       data   — the ai_units to render (server copy, or the device ledger
+                when the server is unreachable); null when nothing is known.
+       reason — '' from the server; 'offline-ledger' served from the
+                device copy; 'offline' unreachable with no copy at all;
+                'free' not an enterprise school.
+     Non-null data with reason 'offline-ledger' still means gifting works:
+     against the ledger, queued for sync. */
   var isEnterprise=(getSchool().plan||'').toLowerCase().includes('enterprise');
+  function fromDevice(){
+    var ledger=aiLedgerLoad();
+    if(ledger){ _aiData=ledger; cb(ledger,'offline-ledger'); return; }
+    cb(null,isEnterprise?'offline':'free');
+  }
   LESSON_AI.ref().once('value').then(function(snap){
     var data=snap.val();
     if(!data){
-      if(!isEnterprise){ cb(null); return; }
-      data={base:(typeof AI_UNITS!=='undefined')?AI_UNITS.BASE:30,
-            pool:(typeof AI_UNITS!=='undefined')?AI_UNITS.BASE:30,
-            term:LESSON_AI.termLabel(),staff:{}};
-      LESSON_AI.ref().set(data).then(function(){ cb(data); },function(){ cb(null); });
+      if(!isEnterprise){ cb(null,'free'); return; }
+      data=aiDefaultPool();
+      LESSON_AI.ref().set(data).then(function(){ _aiData=data; aiLedgerSave(data); cb(data,''); },fromDevice);
       return;
     }
     _aiData=data;
-    cb(data);
-  }).catch(function(){ cb(null); });
+    aiLedgerSave(data);
+    if(!aiQueueLoad().length){ cb(data,''); return; }
+    aiReplayQueued(function(applied,kept){
+      var after=aiLedgerLoad()||data;
+      _aiData=after;
+      if(applied&&kept)toast('🔄 '+applied+' offline allocation'+(applied===1?'':'s')+' synced — '+kept+' still waiting because the pool is short.','info');
+      else if(applied)toast('✅ '+applied+' offline allocation'+(applied===1?'':'s')+' synced to the school record.','success');
+      else if(kept)toast(kept+' queued allocation'+(kept===1?'':'s')+' could not be applied — the pool is short. Buy units or start a new term; they stay queued.','error');
+      cb(after,'');
+    });
+  }).catch(fromDevice);
 }
 
 function aiRender(){
@@ -1785,11 +1851,14 @@ function aiRender(){
   log.innerHTML=rows;
 }
 
-function aiAllocate(email,n,done){
-  /* Atomically draw n units from the pool and credit the teacher. */
+function aiDraw(email,n,done){
+  /* One atomic transaction: take n units from the pool and credit the
+     teacher. done(ok, outcome, poolLeft) — outcome is 'server' when the
+     school record accepted the change, 'rejected' when the pool was
+     short, or 'error' when the server could not be reached. */
   var rejected=false;
   LESSON_AI.ref().transaction(function(d){
-    d=d||{base:30,pool:0,term:LESSON_AI.termLabel(),staff:{}};
+    d=d||{base:(typeof AI_UNITS!=='undefined')?AI_UNITS.BASE:30,pool:0,term:LESSON_AI.termLabel(),staff:{}};
     d.pool=d.pool||0; d.staff=d.staff||{};
     if(d.pool<n){ rejected=true; return null; }
     d.pool-=n;
@@ -1799,14 +1868,66 @@ function aiAllocate(email,n,done){
     _aiData=d;
     return d;
   },function(err,snapshot){
-    if(err){ toast('Could not allocate: '+(err.message||err),'error'); done(false); }
-    else if(rejected){
-      var sv=(snapshot&&snapshot.val())||{};
-      toast('Not enough free units in the pool (left: '+(sv.pool||0)+'). Buy units or start a new term.','error'); done(false);
-    }
-    else { done(true); }
+    if(err){ done(false,'error',0); }
+    else if(rejected){ done(false,'rejected',((snapshot&&snapshot.val())||{}).pool||0); }
+    else { var sv=(snapshot&&snapshot.val())||_aiData; if(sv)aiLedgerSave(sv); done(true,'server',0); }
   });
 }
+
+function aiRecordOffline(email,n){
+  /* The server could not be reached: apply the gift to the device
+     ledger so the numbers on this screen stay true, and queue it for
+     the next successful load. Returns how many entries await sync. */
+  var d=aiLedgerLoad()||{base:(typeof AI_UNITS!=='undefined')?AI_UNITS.BASE:30,pool:0,term:LESSON_AI.termLabel(),staff:{}};
+  d.pool=d.pool||0; d.staff=d.staff||{};
+  d.pool=Math.max(0,d.pool-n);
+  var s=d.staff[email]||{allocated:0,purchased:0,used:0};
+  s.allocated=(s.allocated||0)+n;
+  d.staff[email]=s;
+  aiLedgerSave(d); _aiData=d;
+  return aiQueuePush({email:email,n:n,at:new Date().toISOString()});
+}
+
+function aiReplayQueued(done){
+  /* Push queued offline allocations to the school record, oldest
+     first, through the same transaction a live allocation uses — so a
+     double tap offline can never overdraw the real pool. Stops at the
+     first entry that cannot be applied (pool short, or still offline)
+     and leaves that entry and the rest queued for the next load. */
+  var q=aiQueueLoad();
+  if(!q.length){ done(0,0); return; }
+  var i=0,applied=0;
+  (function step(){
+    if(i>=q.length){ aiQueueClear(); done(applied,0); return; }
+    var item=q[i];
+    aiDraw(item.email,item.n,function(ok){
+      if(ok){ i++; applied++; step(); return; }
+      aiQueueSave(q.slice(i));
+      done(applied,q.length-i);
+    });
+  })();
+}
+
+function aiAllocate(email,n,done){
+  /* Give the teacher n units from the pool. The admin's click is never
+     silently swallowed: if the server cannot be reached, the gift is
+     recorded on this device and queued — the next successful aiEnsure
+     replays it. done(ok, queued) — queued=true means "saved on this
+     device, not yet on the school record". */
+  aiDraw(email,n,function(ok,outcome,poolLeft){
+    if(ok){ done(true,false); return; }
+    if(outcome==='rejected'){
+      toast('Not enough free units in the pool (left: '+poolLeft+'). Buy units or start a new term.','error');
+      done(false,false);
+      return;
+    }
+    var waiting=aiRecordOffline(email,n);
+    toast('📴 Saved on this device — it will sync to the school record when the connection returns. ('+waiting+' waiting to sync)','info');
+    aiRender();
+    done(true,true);
+  });
+}
+// <<< AI-GIFTING-END
 
 // ── LINK GENERATOR ─────────────────────────────────────
 var LINKS={
@@ -2717,22 +2838,31 @@ function renderLessonAI(){
     if(log)log.innerHTML='<div class="text-muted" style="padding:12px 0;">Enterprise plan only. Upgrade to allocate AI units to your staff.</div>';
     return;
   }
-  aiEnsure(function(d){
+  aiEnsure(function(d,reason){
     if(!d){
       _aiData=null;
-      if(log)log.innerHTML='<div class="text-muted" style="padding:12px 0;">Could not load AI units — check your connection and refresh.</div>';
+      if(log)log.innerHTML='<div class="text-muted" style="padding:12px 0;">'+aiNotice(reason)+'</div>';
       return;
     }
     aiRender();
-    /* Live refresh: pool + balances update when anything changes. */
-    try{ LESSON_AI.ref().on('value',function(snap){ _aiData=snap.val()||null; aiRender(); }); }catch(e){}
+    if(reason==='offline-ledger'&&log){
+      /* Live numbers would be a lie right now — say so, then show the
+         device copy so gifting can carry on. */
+      var note=document.createElement('div');
+      note.className='text-muted';note.style.padding='10px 0';
+      note.textContent=aiNotice('offline-ledger');
+      log.insertBefore(note,log.firstChild);
+    }
+    /* Live refresh: pool + balances update when anything changes — and
+       every server copy that arrives refreshes the device ledger. */
+    try{ LESSON_AI.ref().on('value',function(snap){ var v=snap.val()||null; if(v)aiLedgerSave(v); _aiData=v; aiRender(); }); }catch(e){}
   });
 }
 
 function giftAllTeachers(){
   if(!(getSchool().plan||'').toLowerCase().includes('enterprise')){toast('Enterprise plan only','error');return;}
-  aiEnsure(function(d){
-    if(!d){ toast('Could not load AI units. Check your connection.','error'); return; }
+  aiEnsure(function(d,reason){
+    if(!d){ toast(aiNotice(reason),'error'); return; }
     var teachers=LESSON_AI.teachers();
     if(!teachers.length){ toast('No teachers found in staff list','error'); return; }
     var n=LESSON_AI.UNITS_PER_TERM;
@@ -2744,16 +2874,21 @@ function giftAllTeachers(){
     if(eligible.length<teachers.length){
       toast('Pool covers '+eligible.length+' of '+teachers.length+' teachers this round — the rest wait for more units.','info');
     }
-    var i=0, okCount=0;
+    var i=0, okCount=0, queuedCount=0;
     function next(){
       if(i>=eligible.length){
-        toast('🎁 '+okCount+' teachers allocated '+n+' units each — active immediately in AI Studio (no activation link needed).','success');
-        aiEnsure(aiRender);
+        /* Say honestly where the gifts landed: on the school record, or
+           on this device waiting to sync. Never pretend either way. */
+        var summary=queuedCount
+          ? '🎁 '+okCount+' teachers allocated '+n+' units each — '+queuedCount+' of them saved on this device, they sync automatically when the connection returns.'
+          : '🎁 '+okCount+' teachers allocated '+n+' units each — active immediately in AI Studio (no activation link needed).';
+        toast(summary,queuedCount?'info':'success');
+        aiEnsure(function(){ aiRender(); });
         return;
       }
       var t=eligible[i++];
-      aiAllocate(LESSON_AI.emailFor(t),n,function(ok){
-        if(ok) okCount++;
+      aiAllocate(LESSON_AI.emailFor(t),n,function(ok,queued){
+        if(ok){ okCount++; if(queued) queuedCount++; }
         setTimeout(next,300);
       });
     }
@@ -2781,11 +2916,13 @@ function allocateIndividual(){
     window.open(url,'_blank');
   }
   function waAbort(){ if(waTab){ try{ waTab.close(); }catch(e){} waTab=null; } }
-  aiEnsure(function(d){
-    if(!d){ waAbort(); toast('Could not load AI units. Check your connection.','error'); return; }
-    aiAllocate(LESSON_AI.emailFor(t),n,function(ok){
+  aiEnsure(function(d,reason){
+    if(!d){ waAbort(); toast(aiNotice(reason),'error'); return; }
+    aiAllocate(LESSON_AI.emailFor(t),n,function(ok,queued){
       if(!ok){ waAbort(); return; }
-      toast('✅ '+n+' units allocated to '+t.name+' — active immediately in AI Studio.','success');
+      toast('✅ '+n+' units allocated to '+t.name+
+        (queued?' — saved on this device, it will sync when the connection returns.':' — active immediately in AI Studio.'),
+        queued?'info':'success');
       waGo();
     });
   });
@@ -2827,8 +2964,8 @@ function buyAiUnits(){
 
 function newAiTerm(){
   if(!(getSchool().plan||'').toLowerCase().includes('enterprise')){toast('Enterprise plan only','error');return;}
-  aiEnsure(function(d){
-    if(!d){ toast('Could not load AI units. Check your connection.','error'); return; }
+  aiEnsure(function(d,reason){
+    if(!d){ toast(aiNotice(reason),'error'); return; }
     var def=(getSchool().term||'Next Term')+' '+(getSchool().session||'');
     var nt=prompt('New term label:',def.trim());
     if(!nt) return;
@@ -2841,10 +2978,13 @@ function newAiTerm(){
     var base=d.base||AI_UNITS.BASE;
     LESSON_AI.ref().set({base:base,pool:base,term:nt,staff:keep}).then(function(){
       _aiData={base:base,pool:base,term:nt,staff:keep};
+      aiLedgerSave(_aiData);
+      /* The replay queue deliberately survives a new term: a gift promised
+         offline is still promised, and aiDraw will not overdraw the new pool. */
       aiRender();
       el('ai-term-label',nt);
       toast('✅ New term started — pool reset to '+base+' free units. Staff-purchased units were kept.','success');
-    },function(){ toast('Could not start new term. Try again.','error'); });
+    },function(){ toast('Could not start the new term — the school record could not be reached, so nothing was changed.','error'); });
   });
 }
 

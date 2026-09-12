@@ -21,10 +21,14 @@ synonym table, and scored against every entry:
 
 | Signal | Weight |
 |---|---|
-| A whole keyword phrase appears in the question | `4 + phrase length` (capped at 3) |
+| A whole keyword phrase appears in the question, as whole words | `4 + phrase length` (capped at 3) |
 | A question word appears in the title or keywords | `2` |
 | A *stemmed* word matches (`printing` → `print`) | `1.5` |
 | A distinctive word (5+ chars) appears in the body text | `0.5` |
+
+Phrase hits are padded with spaces on both sides, so `hi` answers a greeting but
+never fires inside `child` — a keyword phrase only counts when it matches whole
+words of the question.
 
 The best-scoring entry wins if it clears `THRESHOLD` (3). Ties keep the earlier
 entry, so answers are deterministic. Below the threshold Toye says it does not
@@ -71,19 +75,34 @@ Rules of thumb:
 var PORTALS = { admission: 'rsms-apply.html', links: 'rsms-links.html', … };
 ```
 
-An entry opens one with `go('Label', 'key')`, which produces
-`{label, act:'go', value:'rsms-apply.html'}`.
+An entry opens one with `go('Label', 'key')`. Because Toye sits on the public
+landing page, **every target is pinned to the demo school** so a click lands
+inside Adetola Group of School (`DEMO_SCHOOL`, `REH-2j8kq2xf`) with sample
+data, not on a cold, unconfigured portal. Pages that need a signed-in session
+(`PRIVILEGED_PAGES` — dashboard, bursar, links, alerts, reset) route through
+the demo login first:
+
+```js
+go('Open the admission form', 'admission');
+// → {label, act:'go', value:'rsms-apply.html?school=REH-2j8kq2xf'}
+go('Open the dashboard', 'dashboard');
+// → {label, act:'go', value:'rsms-login.html?school=REH-2j8kq2xf'}
+```
 
 Navigation is treated as untrusted input twice over, because the KB can be
 replaced from Firebase without a deploy:
 
-1. `safePortalTarget()` in the brain accepts only `^[a-z0-9-]+\.html$`.
-2. `goToPortal()` in the page layer re-checks the same pattern before assigning
-   `window.location.href`.
+1. `safePortalTarget()` in the brain accepts a plain local page
+   (`^[a-z0-9-]+\.html$`) or that same page pinned to the demo school
+   (`file.html?school=REH-2j8kq2xf`) — and **refuses a pin to any other
+   school id**, extra parameters, or anything else.
+2. `goToPortal()` in the page layer calls `safePortalTarget()` again before
+   assigning `window.location.href`.
 
-So a tampered entry aiming at `javascript:…`, `//evil.example`, `../x.html` or
-`rsms-apply.html?next=…` is refused, and the visitor is told the page cannot be
-opened. Check 7 of `tests/assistant-dom.check.js` exercises exactly that.
+So a tampered entry aiming at `javascript:…`, `//evil.example`, `../x.html`,
+`rsms-apply.html?next=…` or `rsms-apply.html?school=SOME-OTHER-SCHOOL` is
+refused, and the visitor is told the page cannot be opened. Check 7 of
+`tests/assistant-dom.check.js` exercises exactly that.
 
 ## Overriding answers without a deploy
 
@@ -132,17 +151,25 @@ content backlog: whatever people keep asking for is the next entry to write.
 
 ```bash
 npm install                 # root test deps
-npm test                    # 27/27 — assistant (23) + offline sync (4)
+npm test                    # 32/32 — assistant (28) + offline sync (4)
 cd functions && npm test    # 25/25 — payment/offline cloud functions
 
 npm install --no-save jsdom # dev-only, not persisted
 node tests/assistant-dom.check.js   # 10/10 — real widget in jsdom
+node tests/ai-gifting.check.js      #  6/6 — offline gifting ledger + replay queue
 ```
 
 The DOM check loads the actual widget markup and page-layer script out of
 `index.html`, then drives it: greeting, form submit, action buttons, a real
 portal-button click, a `javascript:` navigation attempt, "tell me more", the
 remembered topic surviving a reload, and chips on an unknown question.
+
+`tests/ai-gifting.check.js` runs the real AI-gifting region of
+`rsms-admin.html` (between the `AI-GIFTING` markers) in a vm against a stub
+Firebase: pool creation, the `cb(data, reason)` contract, the `ai_units_local`
+device ledger, the `ai_units_queue` replay (oldest first, short pool keeps the
+rest queued), and the rule that no AI panel message may go vague about why the
+numbers are not live.
 
 ## Naming and the photo
 
