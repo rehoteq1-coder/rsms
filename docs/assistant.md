@@ -8,7 +8,7 @@ Two files own it:
 | File | Role |
 |---|---|
 | `rsms-assistant.js` | The brain. Pure logic — no DOM, no network. Unit-tested in `tests/rsms-assistant.test.js`. |
-| `index.html` (inline "RSMS ASSISTANT WIDGET" script) | The page layer. Renders answers, turns `actions[].act` into real UI, owns Firebase hooks. |
+| `index.html` (inline "RSMS ASSISTANT WIDGET" script) | The page layer. Renders answers, turns `actions[].act` into real UI, speaks them if asked, owns Firebase hooks. |
 | `rsms-brand.js` | The bot's name and face (`assistantName`, `ownerAvatar`). |
 
 The split is deliberate: everything answerable is testable in Node, and nothing
@@ -104,6 +104,30 @@ So a tampered entry aiming at `javascript:…`, `//evil.example`, `../x.html`,
 refused, and the visitor is told the page cannot be opened. Check 7 of
 `tests/assistant-dom.check.js` exercises exactly that.
 
+## Speaking aloud (voice)
+
+Toye can read its answers with the browser's own `speechSynthesis` — Web
+Speech only, no dependency, no network, nothing sent anywhere. It lives
+entirely in the page layer; the brain stays pure.
+
+- **Per answer:** every bot message carries a small **🔊 Read it** button.
+  Clicking it again stops; another Read-it, a new question, or closing the
+  panel cancels the current speech first (one voice at a time).
+- **Always speak:** a 🔊/🔇 toggle in the panel head, remembered in
+  `localStorage` under `rsms_assist_voice` (same pattern as the
+  `rsms_assist_topic` thread memory). Turning it on confirms itself out loud,
+  inside the click gesture, so mobile audio-unlock rules are satisfied.
+- **What is spoken:** `voiceText()` — the plain `reply.text` with markdown
+  markers and `https://` stripped and whitespace collapsed, capped at 1200
+  characters. Markup never reaches the speaker.
+- **Which voice:** preference order `en-NG` → `en-GB` → any English, mirroring
+  the staff Voice AI page (`rsms-voice-ai.html`). Voice quality is a property
+  of the device, not the page — a phone with a Nigerian English voice sounds
+  natural; a bare desktop will sound like a satnav.
+- **Feature gate:** without `speechSynthesis` the toggle stays `hidden` and
+  no Read-it buttons are created at all. Browsers without it (and the jsdom
+  test harness by default) never see a dead button.
+
 ## Overriding answers without a deploy
 
 The page reads `config/assistant_kb` from Firebase Realtime Database on load
@@ -155,14 +179,17 @@ npm test                    # 32/32 — assistant (28) + offline sync (4)
 cd functions && npm test    # 25/25 — payment/offline cloud functions
 
 npm install --no-save jsdom # dev-only, not persisted
-node tests/assistant-dom.check.js   # 10/10 — real widget in jsdom
+node tests/assistant-dom.check.js   # 12/12 — real widget in jsdom
 node tests/ai-gifting.check.js      #  6/6 — offline gifting ledger + replay queue
 ```
 
 The DOM check loads the actual widget markup and page-layer script out of
 `index.html`, then drives it: greeting, form submit, action buttons, a real
 portal-button click, a `javascript:` navigation attempt, "tell me more", the
-remembered topic surviving a reload, and chips on an unknown question.
+remembered topic surviving a reload, chips on an unknown question, and the
+voice layer against a stubbed `speechSynthesis` (Read-it speaks clean text,
+the en-NG voice wins, the always-speak toggle persists and a reload honours
+it, closing the panel goes silent).
 
 `tests/ai-gifting.check.js` runs the real AI-gifting region of
 `rsms-admin.html` (between the `AI-GIFTING` markers) in a vm against a stub

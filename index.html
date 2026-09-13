@@ -700,6 +700,19 @@ body{background:var(--bg);min-height:100vh;font-family:var(--sans);}
     color:var(--t2);cursor:pointer;width:30px;height:30px;border-radius:9px;font-size:.78rem;
     display:flex;align-items:center;justify-content:center;font-family:var(--sans);}
   .rsms-assist-close:hover{background:rgba(255,255,255,.12);color:#fff;}
+  /* voice: a head-bar toggle, shown only when speechSynthesis exists */
+  .rsms-assist-voice{background:rgba(255,255,255,.06);border:1px solid var(--line);margin-left:auto;
+    color:var(--t2);cursor:pointer;width:30px;height:30px;border-radius:9px;font-size:.86rem;
+    display:flex;align-items:center;justify-content:center;font-family:var(--sans);padding:0;}
+  .rsms-assist-voice[hidden]{display:none;}
+  .rsms-assist-voice:hover{background:rgba(255,255,255,.12);color:#fff;}
+  .rsms-assist-voice[aria-pressed="true"]{background:rgba(212,168,67,.18);border-color:rgba(212,168,67,.5);color:var(--gold);}
+  .rsms-assist-voice:not([hidden]) + .rsms-assist-close{margin-left:0;}
+  /* per-answer "read it" — quiet, sits under the message text */
+  .rsms-assist-say{display:inline-flex;align-items:center;gap:5px;margin-top:8px;background:none;
+    border:1px solid var(--line);color:var(--t3);font-family:var(--sans);font-size:.66rem;
+    padding:3px 9px;border-radius:999px;cursor:pointer;transition:.15s;}
+  .rsms-assist-say:hover{color:var(--gold);border-color:rgba(212,168,67,.5);}
   .rsms-assist-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;
     scrollbar-width:thin;overscroll-behavior:contain;}
   .rsms-assist-msg{max-width:87%;font-size:.82rem;line-height:1.62;padding:10px 12px;border-radius:14px;
@@ -1987,6 +2000,8 @@ function rsmsOwnerAvatarUrl(){
         <div class="rsms-assist-title" id="rsms-assist-title">Toye</div>
         <div class="rsms-assist-sub"><span class="rsms-assist-dot"></span><span id="rsms-assist-sub-text">RSMS Assistant &middot; replies instantly</span></div>
       </div>
+      <button class="rsms-assist-voice" id="rsms-assist-voice" type="button" aria-pressed="false"
+              aria-label="Speak answers aloud" hidden>&#128266;</button>
       <button class="rsms-assist-close" id="rsms-assist-close" type="button" aria-label="Close assistant">&#10005;</button>
     </header>
 
@@ -2031,6 +2046,8 @@ function rsmsOwnerAvatarUrl(){
    RSMS ASSISTANT WIDGET — page layer
    Renders rsms-assistant.js answers and turns entry
    actions into real UI behaviour. No external deps.
+   Toye's voice is Web Speech only (speechSynthesis), fully
+   feature-gated: browsers without it see no controls at all.
    ═══════════════════════════════════════════════════════ */
 (function(){
   var A = window.RSMS_ASSISTANT;
@@ -2199,6 +2216,102 @@ function rsmsOwnerAvatarUrl(){
     });
   }
 
+  /* ── voice ───────────────────────────────────────────
+     Toye can speak, using only the browser's Web Speech API —
+     no dependency, no network. The head-bar toggle turns toye
+     on for every answer (remembered between visits); each answer
+     also carries its own "Read it" so a visitor who prefers silence
+     can still hear one thing. On browsers without speechSynthesis
+     none of this exists: the toggle stays hidden and no Read-it
+     buttons are created. Voice quality belongs to the device —
+     we prefer a Nigerian English voice, then any English one,
+     exactly like the staff Voice AI page does. */
+  var VOICE_KEY = 'rsms_assist_voice';   // '1' = speak every answer
+  var synth = window.speechSynthesis || null;
+  var VOICE_OK = !!(synth && typeof window.SpeechSynthesisUtterance === 'function');
+  var speakAll = false;
+  try{ speakAll = window.localStorage.getItem(VOICE_KEY) === '1'; }catch(e){}
+  var sayActive = null;                  // the Read-it button currently reading, if any
+
+  function voiceText(value){
+    /* What the speaker should say, not what the eye reads: markdown
+       markers and bare schemes out, single spaces in, a firm cap —
+       an answer is a few sentences, not a podcast. */
+    return String(value == null ? '' : value)
+      .replace(/https?:\/\//g, '')
+      .replace(/[*_`#\[\]()]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 1200);
+  }
+
+  function pickVoice(){
+    var voices = [];
+    try{ voices = synth.getVoices() || []; }catch(e){ return null; }
+    var rank = function(lang){
+      lang = String(lang || '').toLowerCase();
+      if(lang === 'en-ng') return 3;        // Nigerian English first
+      if(lang === 'en-gb') return 2;
+      if(lang.indexOf('en') === 0) return 1; // any English beats silence
+      return 0;
+    };
+    var best = null, bestRank = 0;
+    for(var i = 0; i < voices.length; i++){
+      var r = rank(voices[i].lang);
+      if(r > bestRank){ best = voices[i]; bestRank = r; }
+    }
+    return best;
+  }
+
+  function speak(text, onend){
+    if(!VOICE_OK || !text) return false;
+    try{ synth.cancel(); }catch(e){}        // one voice at a time
+    var utt = new window.SpeechSynthesisUtterance(text);
+    var voice = pickVoice();
+    if(voice) utt.voice = voice;
+    utt.lang = 'en-NG';
+    utt.rate = 0.95;
+    utt.pitch = 1;
+    if(onend){ utt.onend = onend; utt.onerror = onend; }
+    synth.speak(utt);
+    return true;
+  }
+
+  function sayStop(){
+    if(VOICE_OK){ try{ synth.cancel(); }catch(e){} }
+    if(sayActive && sayActive.__rsmsReset) sayActive.__rsmsReset();
+    sayActive = null;
+  }
+
+  function attachSay(node, text){
+    var spoken = voiceText(text);
+    if(!VOICE_OK || !spoken || !node) return;
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'rsms-assist-say';
+    var label = document.createElement('span');
+    b.appendChild(label);
+    function showRead(){
+      label.textContent = '\u{1F50A} Read it';
+      b.removeAttribute('data-reading');
+      if(sayActive === b) sayActive = null;
+    }
+    function showStop(){
+      label.textContent = '\u{1F532} Stop';
+      b.setAttribute('data-reading', '1');
+      sayActive = b;
+    }
+    b.__rsmsReset = showRead;
+    showRead();
+    b.addEventListener('click', function(){
+      var wasReading = (sayActive === b);
+      sayStop();
+      if(wasReading) return;              // second click stops, never restarts
+      if(speak(spoken, showRead)) showStop();
+    });
+    node.appendChild(b);
+  }
+
   /* ── actions ───────────────────────────────────────── */
 
   /* Portal navigation. The knowledge base can be overridden from
@@ -2264,13 +2377,16 @@ function rsmsOwnerAvatarUrl(){
 
   function greet(){
     var reply = A.answer('', {kb:kb});
-    addBot(reply.html);
+    var node = addBot(reply.html);
+    attachSay(node, reply.text);
+    if(speakAll) speak(voiceText(reply.text));
     renderChips(defaultChips());
   }
 
   function ask(text){
     text = String(text == null ? '' : text).trim();
     if(!text) return;
+    sayStop();               // a new question silences the last answer's voice
     addUser(text);
     input.value = '';
     send.disabled = true;
@@ -2284,6 +2400,8 @@ function rsmsOwnerAvatarUrl(){
       var reply = A.answer(text, {kb:kb, lastTopic:lastTopic});
       var node = addBot(reply.html);
       addActions(node, reply.actions, reply.entry);
+      attachSay(node, reply.text);
+      if(speakAll) speak(voiceText(reply.text));
       if(reply.entry) rememberTopic(reply.entry.id);
       if(reply.unanswered) logQuestion(text);
       renderChips(reply.suggestions.length ? reply.suggestions : defaultChips());
@@ -2342,6 +2460,7 @@ function rsmsOwnerAvatarUrl(){
 
   function close(){
     if(panel.hidden) return;
+    sayStop();               // Toye does not talk to an empty room
     panel.hidden = true;
     fab.setAttribute('aria-expanded', 'false');
     try{ fab.focus(); }catch(e){}
@@ -2368,6 +2487,32 @@ function rsmsOwnerAvatarUrl(){
 
   var closeBtn = document.getElementById('rsms-assist-close');
   if(closeBtn) closeBtn.addEventListener('click', close);
+
+  /* The voice toggle exists only on browsers that can speak; the
+     markup starts hidden so no one taps a dead button. */
+  var voiceBtn = document.getElementById('rsms-assist-voice');
+  if(voiceBtn && VOICE_OK){
+    var paintVoice = function(){
+      voiceBtn.textContent = speakAll ? '\u{1F50A}' : '\u{1F507}';  // 🔊 speaking / 🔇 silent
+      voiceBtn.setAttribute('aria-pressed', speakAll ? 'true' : 'false');
+      var what = speakAll ? 'Stop speaking answers aloud' : 'Speak answers aloud';
+      voiceBtn.setAttribute('aria-label', what);
+      voiceBtn.title = what;
+      voiceBtn.hidden = false;
+    };
+    paintVoice();
+    voiceBtn.addEventListener('click', function(){
+      speakAll = !speakAll;
+      try{
+        if(speakAll) window.localStorage.setItem(VOICE_KEY, '1');
+        else window.localStorage.removeItem(VOICE_KEY);
+      }catch(e){ /* private mode — the wish just does not persist */ }
+      paintVoice();
+      sayStop();
+      // say the change out loud: the voice confirms itself, on the gesture that turned it on
+      if(speakAll) speak('Voice on. Ask me anything and I will read my answers to you.');
+    });
+  }
 
   var nudgeX = document.getElementById('rsms-assist-nudge-x');
   if(nudgeX) nudgeX.addEventListener('click', function(){ dismissNudge(true); });
