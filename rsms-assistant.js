@@ -20,8 +20,10 @@
    Navigation is data-driven: actions of {act:'go', value:'x.html'}
    are validated by safePortalTarget() here AND again in the page
    layer, because the knowledge base can be overridden from
-   Firebase (config/assistant_kb) without a deploy. Only
-   ^[a-z0-9-]+\.html$ is ever allowed through.
+   Firebase (config/assistant_kb) without a deploy. Only a plain
+   local page is ever allowed through — optionally pinned to the
+   demo school as x.html?school=<DEMO_SCHOOL.id>; a pin to any
+   other school is refused.
    ═══════════════════════════════════════════════════════════ */
 
 (function (root, factory) {
@@ -134,6 +136,31 @@
      ───────────────────────────────────────────────────────── */
   var PORTAL_TARGET_RE = /^[a-z0-9-]+\.html$/;
 
+  /* Toye lives on the public landing page, so every portal it opens
+     is pinned to the demo school — a click lands inside Adetola
+     Group of School with sample data, not on a cold, unconfigured
+     portal. The pin is only ever the demo id: safePortalTarget()
+     rejects a target pinned to any other school. */
+  var DEMO_SCHOOL = { id: 'REH-2j8kq2xf', name: 'Adetola Group of School' };
+
+  /* Pages that need a signed-in session. Sending a visitor there
+     straight from the landing page lands them on a wall, so these
+     route through the demo school's login instead. */
+  var PRIVILEGED_PAGES = [
+    'rsms-dashboard.html',
+    'rsms-bursar.html',
+    'rsms-links.html',
+    'rsms-alerts.html',
+    'rsms-reset.html'
+  ];
+  var LOGIN_GATE = 'rsms-login.html';
+
+  var PRIVILEGED = (function () {
+    var m = {};
+    for (var i = 0; i < PRIVILEGED_PAGES.length; i++) m[PRIVILEGED_PAGES[i]] = true;
+    return m;
+  })();
+
   var PORTALS = {
     admission:  'rsms-apply.html',            // student application form
     onboarding: 'rsms-onboarding.html',       // school onboarding (6 steps)
@@ -155,13 +182,30 @@
     dashboard:  'rsms-dashboard.html'
   };
 
+  /* A plain page, or the same page pinned to the demo school — and
+     nothing else. Extra parameters, a foreign school id, or any
+     punctuation in either part all fail the match. */
+  var PINNED_PORTAL_RE = /^([a-z0-9-]+\.html)(?:\?school=([A-Za-z0-9-]+))?$/;
+
   function safePortalTarget(value) {
     var target = String(value == null ? '' : value).trim();
-    return PORTAL_TARGET_RE.test(target) ? target : '';
+    var pinned = PINNED_PORTAL_RE.exec(target);
+    if (!pinned) return '';
+    if (pinned[2] && pinned[2] !== DEMO_SCHOOL.id) return '';
+    return target;
+  }
+
+  /* The navigation rule, in one place: privileged pages go through
+     the login gate, everything else opens directly — always pinned
+     to the demo school so the visitor sees a configured school. */
+  function pinTarget(file) {
+    var target = String(file == null ? '' : file);
+    if (!target) return target;
+    return (PRIVILEGED[target] ? LOGIN_GATE : target) + '?school=' + DEMO_SCHOOL.id;
   }
 
   function go(label, portalKey) {
-    return { label: label, act: 'go', value: PORTALS[portalKey] };
+    return { label: label, act: 'go', value: pinTarget(PORTALS[portalKey]) };
   }
 
   /* ── Knowledge base ─────────────────────────────────────
@@ -395,8 +439,12 @@
     {
       id: 'admission',
       title: 'Student admission',
-      keywords: ['admission', 'admit', 'enrol', 'enroll', 'application form', 'admission form',
-                 'new student', 'register a student', 'apply for admission'],
+      // Keywords carry the parents' vocabulary too — people ask about
+      // "my child", not about "admission processes".
+      keywords: ['admission', 'admit', 'admitted', 'enrol', 'enroll', 'application form',
+                 'admission form', 'new student', 'register a student', 'apply for admission',
+                 'put my child', 'my son', 'my daughter', 'transfer my child',
+                 'get my child into', 'join the school', 'start school'],
       answer: 'Parents apply from the **application form** in five steps:\n\n' +
         '1. School and class applying for\n' +
         '2. Student details and passport photograph\n' +
@@ -541,11 +589,15 @@
     var score = 0;
     var i;
 
+    // Phrases are padded with spaces and matched with spaces around
+    // them, so "hi" answers a greeting but never fires inside
+    // c-hi-ld: a keyword phrase must match whole words in the question.
+    var padded = ' ' + question + ' ';
     var phrases = entry.keywords || [];
     for (i = 0; i < phrases.length; i++) {
       var phrase = normalize(phrases[i]);
       if (!phrase) continue;
-      if (question.indexOf(phrase) !== -1) {
+      if (padded.indexOf(' ' + phrase + ' ') !== -1) {
         // Longer phrases are more specific — reward them.
         score += 4 + Math.min(phrase.split(' ').length, 3);
       }
@@ -783,6 +835,9 @@
     KB: KB,
     PORTALS: PORTALS,
     PORTAL_TARGET_RE: PORTAL_TARGET_RE,
+    DEMO_SCHOOL: DEMO_SCHOOL,
+    PRIVILEGED_PAGES: PRIVILEGED_PAGES,
+    LOGIN_GATE: LOGIN_GATE,
     THRESHOLD: THRESHOLD,
     SYNONYMS: SYNONYMS,
     normalize: normalize,
@@ -797,6 +852,7 @@
     safeRich: safeRich,
     safeUrl: safeUrl,
     safePortalTarget: safePortalTarget,
+    pinTarget: pinTarget,
     mergeKb: mergeKb
   };
 });

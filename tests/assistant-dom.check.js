@@ -6,11 +6,13 @@
    visitor's browser would, and checks the behaviour unit tests
    cannot see: rendering, chips, action buttons, follow-ups and —
    importantly — that a knowledge base tampered from Firebase
-   cannot navigate the visitor anywhere but a local page.
+   cannot navigate the visitor anywhere but a local page. The
+   voice layer runs against a stubbed speechSynthesis, so Toye
+   speaking is checked without any browser audio at all.
 
    Usage:
      npm install --no-save jsdom          # dev-only, not persisted
-     node tests/assistant-dom.check.js   # → "10/10 jsdom DOM checks passed"
+     node tests/assistant-dom.check.js   # → "12/12 jsdom DOM checks passed"
    ═══════════════════════════════════════════════════════════ */
 'use strict';
 
@@ -31,7 +33,7 @@ const { VirtualConsole } = require('jsdom');
 
 /* ── harness ─────────────────────────────────────────────── */
 
-const total = 10;
+const total = 12;
 let passed = 0;
 const failures = [];
 
@@ -49,7 +51,10 @@ async function check(name, fn) {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /* Pull the widget out of the real page: its markup plus the inline
-   page-layer script, with no server and no network involved. */
+   page-layer script, with no server and no network involved.
+   opts.voice injects a stub speechSynthesis BEFORE the page layer
+   runs, and collects every utterance the widget submits for the
+   voice checks. */
 function extractWidget() {
   const html = fs.readFileSync(path.join(repoRoot, 'index.html'), 'utf8');
   const markupStart = html.indexOf('<div class="rsms-assist" id="rsms-assist" hidden>');
@@ -64,7 +69,8 @@ function extractWidget() {
   };
 }
 
-function boot(storageSeed) {
+function boot(storageSeed, opts) {
+  const options = opts || {};
   const { markup, script } = extractWidget();
   const navigationErrors = [];
   const virtualConsole = new VirtualConsole();
@@ -83,11 +89,23 @@ function boot(storageSeed) {
   if (storageSeed) {
     for (const key of Object.keys(storageSeed)) win.localStorage.setItem(key, storageSeed[key]);
   }
+  const voice = { spoken: [], cancels: 0 };
+  if (options.voice) {
+    win.SpeechSynthesisUtterance = function (text) { this.text = text; };
+    win.speechSynthesis = {
+      getVoices: () => [
+        { name: 'Microsoft Nigerian English', lang: 'en-NG' },
+        { name: 'Google UK English Female', lang: 'en-GB' }
+      ],
+      speak(utt) { voice.spoken.push(utt); },
+      cancel() { voice.cancels++; }
+    };
+  }
   // Order matters: brand → brain → page layer.
   win.eval(fs.readFileSync(path.join(repoRoot, 'rsms-brand.js'), 'utf8'));
   win.eval(fs.readFileSync(path.join(repoRoot, 'rsms-assistant.js'), 'utf8'));
   win.eval(script);
-  return { win, navigationErrors };
+  return { win, navigationErrors, voice };
 }
 
 const logMessages = (win) =>
@@ -209,6 +227,67 @@ const actionButtons = (win) => {
     assert.match(lastMessage(win).textContent, /do not have a solid answer/i);
     assert(doc.querySelectorAll('.rsms-assist-chip').length > 0, 'expected suggestion chips');
     assert(actionButtons(win).length === 0, 'an unanswered question must not offer actions');
+  });
+
+  await check('11. every answer carries "Read it", and speech is clean text, not markup', async () => {
+    // Without a browser voice the controls simply do not exist.
+    const plain = boot();
+    assert.equal(plain.win.document.getElementById('rsms-assist-voice').hidden, true,
+      'the voice toggle must stay hidden without speechSynthesis');
+    plain.win.document.getElementById('rsms-assist-fab').click();
+    plain.win.RSMS_ASSISTANT_WIDGET.ask('i want to talk to a human');
+    await sleep(500);
+    assert.equal(plain.win.document.querySelectorAll('.rsms-assist-say').length, 0,
+      'no Read-it buttons without a voice');
+
+    // With one, every answer gets its own.
+    const v = boot(null, { voice: true });
+    v.win.document.getElementById('rsms-assist-fab').click();
+    assert.equal(v.win.document.getElementById('rsms-assist-voice').hidden, false,
+      'the toggle appears once the browser can speak');
+    v.win.RSMS_ASSISTANT_WIDGET.ask('i want to talk to a human');
+    await sleep(500);
+    const say = lastMessage(v.win).querySelector('.rsms-assist-say');
+    assert(say, 'expected a Read-it button on the answer');
+    say.click();
+    assert.equal(v.voice.spoken.length, 1, 'clicking Read it speaks once');
+    const said = v.voice.spoken[0].text;
+    assert.match(said, /rehoteq\.com/i);
+    assert.ok(!said.includes('*'), 'markdown must not reach the speaker: ' + said);
+    assert.ok(!said.includes('https://'), 'link schemes must be flattened away');
+    assert.ok(!said.includes('[') && !said.includes(']'), 'link brackets must not be spoken');
+    assert.equal(v.voice.spoken[0].voice.lang, 'en-NG', 'the Nigerian voice wins where one exists');
+    assert.match(say.textContent, /Stop/i, 'the button turns into a stop control while reading');
+    const cancelsBefore = v.voice.cancels;
+    say.click();
+    assert.ok(v.voice.cancels > cancelsBefore, 'the second click cancels the reading');
+    assert.match(say.textContent, /Read it/, 'and the button resets');
+  });
+
+  await check('12. the always-speak toggle persists and speaks without a second click', async () => {
+    const v = boot(null, { voice: true });
+    const toggle = v.win.document.getElementById('rsms-assist-voice');
+    v.win.document.getElementById('rsms-assist-fab').click();
+    await sleep(500);
+    assert.equal(v.voice.spoken.length, 0, 'nothing is spoken until it is asked for');
+    toggle.click();
+    assert.equal(toggle.getAttribute('aria-pressed'), 'true');
+    assert.equal(v.win.localStorage.getItem('rsms_assist_voice'), '1', 'remembered between visits');
+    assert.match(v.voice.spoken[0].text, /voice on/i, 'the change confirms itself out loud');
+    v.win.RSMS_ASSISTANT_WIDGET.ask('how do I sign in?');
+    await sleep(500);
+    assert.equal(v.voice.spoken.length, 2, 'the answer speaks by itself');
+    assert.match(v.voice.spoken[1].text, /Find your school/i);
+
+    // a fresh visit: remembered state starts on, and the greeting is read aloud
+    const again = boot({ rsms_assist_voice: '1' }, { voice: true });
+    const toggle2 = again.win.document.getElementById('rsms-assist-voice');
+    assert.equal(toggle2.getAttribute('aria-pressed'), 'true', 'a reload restores the toggle');
+    again.win.document.getElementById('rsms-assist-fab').click();
+    await sleep(500);
+    assert.match(again.voice.spoken[0].text, /I am Toye/i, 'greeting is read aloud too');
+    again.win.document.getElementById('rsms-assist-close').click();
+    assert.ok(again.voice.cancels > 0, 'closing the panel silences Toye');
   });
 
   console.log('');

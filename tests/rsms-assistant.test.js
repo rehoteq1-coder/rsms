@@ -171,15 +171,16 @@ test('a follow-up with no remembered topic asks which topic instead of guessing'
   assert.ok(reply.suggestions.length > 0);
 });
 
-test('entries expose portal actions that resolve to PORTALS pages', () => {
-  const portalValues = Object.values(assistant.PORTALS);
+test('entries expose portal actions that resolve to PORTALS pages (or the login gate)', () => {
+  const portalValues = Object.values(assistant.PORTALS).concat([assistant.LOGIN_GATE]);
   let goActions = 0;
   for (const entry of assistant.KB) {
     for (const action of entry.actions || []) {
       assert.ok(action.label && action.act, `${entry.id} action needs a label and act`);
       if (action.act !== 'go') continue;
       goActions++;
-      assert.ok(portalValues.includes(action.value), `${entry.id}: ${action.value} is not a known portal`);
+      const file = String(action.value).split('?')[0];
+      assert.ok(portalValues.includes(file), `${entry.id}: ${action.value} is not a known portal`);
       assert.equal(assistant.safePortalTarget(action.value), action.value);
     }
   }
@@ -262,4 +263,87 @@ test('unanswered questions never invent a portal link', () => {
       if (action.act === 'go') assert.ok(assistant.safePortalTarget(action.value));
     }
   }
+});
+
+/* ── toye follow-ups: word-boundary phrases, parents' vocabulary,
+      demo-school pinning and the login gate ─────────────────── */
+
+test('a keyword phrase only fires on whole words — "hi" is not inside "child"', () => {
+  assert.equal(assistant.answer('hi').entry.id, 'hello');
+  assert.equal(assistant.answer('hi!').entry.id, 'hello');
+  // the old bug: "child" contained "hi", so parent questions got a greeting
+  const reply = assistant.answer('how do I admit my child');
+  assert.ok(reply.entry, 'a parent question should still match something');
+  assert.equal(reply.entry.id, 'admission');
+  assert.equal(assistant.answer('is my child too young for the school').entry.id, 'admission');
+});
+
+test('the admission entry speaks like a parent, not just like a registrar', () => {
+  const cases = [
+    ['i want to put my child in a good school', 'admission'],
+    ['how do I transfer my child from another school', 'admission'],
+    ['I want to apply for my daughter', 'admission'],
+    ['how does a parent enrol a new student', 'admission']
+  ];
+  for (const [question, id] of cases) {
+    const reply = assistant.answer(question);
+    assert.equal(reply.entry && reply.entry.id, id, `question: ${question}`);
+  }
+});
+
+test('every page Toye opens is pinned to the demo school', () => {
+  assert.deepEqual(assistant.DEMO_SCHOOL, { id: 'REH-2j8kq2xf', name: 'Adetola Group of School' });
+  const pin = '?school=' + assistant.DEMO_SCHOOL.id;
+  let goActions = 0;
+  for (const entry of assistant.KB) {
+    for (const action of entry.actions || []) {
+      if (action.act !== 'go') continue;
+      goActions++;
+      assert.match(
+        action.value,
+        /^[a-z0-9-]+\.html\?school=REH-2j8kq2xf$/,
+        `${entry.id}: ${action.value} should be a local page carrying the demo pin and nothing else`
+      );
+      assert.ok(action.value.endsWith(pin), `${entry.id}: ${action.value} is not pinned`);
+    }
+  }
+  assert.ok(goActions >= 12, `expected pinned go actions, got ${goActions}`);
+  // a bare, unpinned local page still passes the validator untouched
+  assert.equal(assistant.safePortalTarget('rsms-apply.html'), 'rsms-apply.html');
+  assert.equal(assistant.safePortalTarget('rsms-apply.html' + pin), 'rsms-apply.html' + pin);
+});
+
+test('safePortalTarget() refuses a pin to any other school', () => {
+  const bad = [
+    'rsms-apply.html?school=OND-ENT-0001',          // someone else's school
+    'rsms-apply.html?school=FC-COM-0001',           // not the demo either
+    'rsms-apply.html?school=REH-2j8kq2xf&admin=1',  // a second parameter smuggled in
+    'rsms-apply.html?school=REH-2j8kq2xf#frag',      // fragments are not the demo pin
+    'rsms-apply.html?school=REH-2j8kq2xf;extra',     // punctuation is not an id
+    'rsms-apply.html?school=',                        // empty pin
+    'rsms-apply.html?next=REH-2j8kq2xf',             // the demo id under another key
+    'rsms-login.html?school=OND-ENT-0001'
+  ];
+  for (const value of bad) {
+    assert.equal(assistant.safePortalTarget(value), '', `should be rejected: ${value}`);
+  }
+});
+
+test('privileged pages route through the demo login instead of opening cold', () => {
+  const gate = 'rsms-login.html?school=' + assistant.DEMO_SCHOOL.id;
+  assert.deepEqual(
+    assistant.PRIVILEGED_PAGES,
+    ['rsms-dashboard.html', 'rsms-bursar.html', 'rsms-links.html', 'rsms-alerts.html', 'rsms-reset.html']
+  );
+  for (const file of assistant.PRIVILEGED_PAGES) {
+    assert.match(file, assistant.PORTAL_TARGET_RE, `${file} must be a plain local page`);
+    assert.equal(assistant.pinTarget(file), gate, `${file} should route through the login gate`);
+  }
+  // public pages keep their own target — pinned, but not gated
+  assert.equal(assistant.pinTarget('rsms-apply.html'), 'rsms-apply.html?school=REH-2j8kq2xf');
+  // and the KB really uses it: "Open the dashboard" lands on the gate
+  const login = assistant.byId('login');
+  const dashboard = (login.actions || []).find((a) => a.label === 'Open the dashboard');
+  assert.ok(dashboard, 'the login entry still offers the dashboard');
+  assert.equal(dashboard.value, gate);
 });
