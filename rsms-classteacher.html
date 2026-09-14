@@ -524,6 +524,7 @@ select.fi option { background: var(--card); color: var(--t1); }
 .sig-preview img{max-width:200px;max-height:60px;display:block;}
 
 </style>
+<script src="rsms-ai-units.js"></script>
 <script src="rsms-firebase.js"></script>
 <script src="rsms-plan-guard.js"></script>
 <script>
@@ -1247,14 +1248,71 @@ function toggleForm(id){var el=document.getElementById(id);if(el)el.style.displa
 /* AI Studio link with school + teacher context — the studio meters
    units from the school's real ledger when opened this way. */
 function aiStudioLink(){
-  var s=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{});
-  var u='https://rehoteq.com/lesson-ai.html';
-  var q=[];
-  if(s.schoolId)q.push('school='+encodeURIComponent(s.schoolId));
-  var user=(JSON.parse(sessionStorage.getItem('rsms_user')||'{}')||{});
-  if(user.email)q.push('teacher='+encodeURIComponent(user.email));
-  return q.length?u+'?'+q.join('&'):u;
+  try{
+    var s=JSON.parse(localStorage.getItem('rsms_school')||'{}')||{};
+    var schoolId=s.schoolId||'';
+    var user=(function(){try{return JSON.parse(sessionStorage.getItem('rsms_user')||'{}')||{};}catch(e){return {};}})();
+    var email='';
+    if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.normEmail==='function'){
+      email=AI_UNITS.normEmail(user.email||'') || (AI_UNITS.normEmail((user.name||'').replace(/\s+/g,''))||'unknown')+'@rsms.school';
+    } else {
+      email=(user.email||((user.name||'').replace(/\s+/g,''))+'@rsms.school').toLowerCase();
+    }
+    var u='https://rehoteq.com/lesson-ai.html';
+    var q=[];
+    if(schoolId) q.push('school='+encodeURIComponent(schoolId));
+    if(email) q.push('teacher='+encodeURIComponent(email));
+    return q.length?u+'?'+q.join('&'):u;
+  }catch(e){ return 'https://rehoteq.com/lesson-ai.html'; }
 }
+function aiLoadTeacherBalance(){
+  try{
+    var school=JSON.parse(localStorage.getItem('rsms_school')||'{}')||{};
+    var schoolId=school.schoolId||'';
+    var user=(function(){try{return JSON.parse(sessionStorage.getItem('rsms_user')||'{}')||{};}catch(e){return {};}})();
+    var email='';
+    if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.normEmail==='function'){
+      email=AI_UNITS.normEmail(user.email||'') || (AI_UNITS.normEmail((user.name||'').replace(/\s+/g,''))||'unknown')+'@rsms.school';
+    } else {
+      email=(user.email||((user.name||'').replace(/\s+/g,''))+'@rsms.school').toLowerCase();
+    }
+    if(!schoolId||!email) return;
+    var key=(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.emailKey==='function')?AI_UNITS.emailKey(email):email.replace(/\./g,',');
+    var ensureEl=function(){
+      var el=document.getElementById('ai-teacher-balance');
+      if(el) return el;
+      var hero=document.querySelector('.hero-card')||document.querySelector('.kpi-grid')||document.querySelector('.page.active');
+      if(!hero) return null;
+      el=document.createElement('div');
+      el.id='ai-teacher-balance';
+      el.style.cssText='margin:10px 16px 8px;padding:10px 14px;background:linear-gradient(135deg,#4c1d95,#8b5cf6);border-radius:12px;color:#fff;font-size:.82rem;display:flex;justify-content:space-between;align-items:center;';
+      el.innerHTML='<span>🤖 AI Studio units: <b id="ai-bal-val">—</b></span><a href="#" onclick="window.open(aiStudioLink(),\'_blank\');return false;" style="color:#fff;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:20px;font-size:.7rem;text-decoration:none;">Open Studio →</a>';
+      hero.parentNode.insertBefore(el, hero.nextSibling);
+      return document.getElementById('ai-bal-val')||el;
+    };
+    var update=function(node){
+      var rem=(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.balance)?AI_UNITS.balance(node):((node.allocated||0)+(node.purchased||0)-(node.used||0));
+      var valEl=document.getElementById('ai-bal-val')||ensureEl();
+      if(valEl) valEl.textContent=rem+' units';
+      var full=document.getElementById('ai-teacher-balance');
+      if(full && node){
+        var det=(typeof AI_UNITS!=='undefined'&&AI_UNITS.detail)?AI_UNITS.detail(node):{school:node.allocated||0,own:node.purchased||0};
+        full.title='School allocation: '+det.school+' · Your purchases: '+det.own;
+      }
+    };
+    if(typeof firebase!=='undefined' && firebase.database){
+      var ref=firebase.database().ref('schools/'+schoolId+'/ai_units/staff/'+key);
+      ref.once('value').then(function(s){ update(s.val()||{allocated:0,purchased:0,used:0}); }).catch(function(){});
+      try{ ref.on('value',function(s){ update(s.val()||{allocated:0,purchased:0,used:0}); }); }catch(e){}
+    } else {
+      setTimeout(function(){
+        if(typeof firebase!=='undefined' && firebase.database) aiLoadTeacherBalance();
+      },1200);
+    }
+  }catch(e){}
+}
+setTimeout(aiLoadTeacherBalance, 900);
+
 window.addEventListener('load',function(){
   // Warm cache from Firebase immediately
   setTimeout(function(){

@@ -517,6 +517,7 @@ select.fi option { background: var(--card); color: var(--t1); }
 
 </style>
 <script src="rsms-firebase.js"></script>
+<script src="rsms-ai-units.js"></script>
 <script src="rsms-plan-guard.js"></script>
 <script>
 /* rsms-core.js standalone */
@@ -741,6 +742,71 @@ var LESSON_AI={
     return {alreadyDone:done,teachers:teachers,count:teachers.length};
   }
 };
+function aiStudioLink(){
+  try{
+    var s=JSON.parse(localStorage.getItem('rsms_school')||'{}')||{};
+    var schoolId=s.schoolId||'';
+    var user=(function(){try{return JSON.parse(sessionStorage.getItem('rsms_user')||'{}')||{};}catch(e){return {};}})();
+    var email='';
+    if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.normEmail==='function'){
+      email=AI_UNITS.normEmail(user.email||'') || (AI_UNITS.normEmail((user.name||'').replace(/\s+/g,''))||'unknown')+'@rsms.school';
+    } else {
+      email=(user.email||((user.name||'').replace(/\s+/g,''))+'@rsms.school').toLowerCase();
+    }
+    if(schoolId && email) return 'https://rehoteq.com/lesson-ai.html?school='+encodeURIComponent(schoolId)+'&teacher='+encodeURIComponent(email);
+    if(email) return 'https://rehoteq.com/lesson-ai.html?teacher='+encodeURIComponent(email);
+    return 'https://rehoteq.com/lesson-ai.html';
+  }catch(e){ return 'https://rehoteq.com/lesson-ai.html'; }
+}
+function aiLoadTeacherBalance(){
+  try{
+    var school=JSON.parse(localStorage.getItem('rsms_school')||'{}')||{};
+    var schoolId=school.schoolId||'';
+    var user=(function(){try{return JSON.parse(sessionStorage.getItem('rsms_user')||'{}')||{};}catch(e){return {};}})();
+    var email='';
+    if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.normEmail==='function'){
+      email=AI_UNITS.normEmail(user.email||'') || (AI_UNITS.normEmail((user.name||'').replace(/\s+/g,''))||'unknown')+'@rsms.school';
+    } else {
+      email=(user.email||((user.name||'').replace(/\s+/g,''))+'@rsms.school').toLowerCase();
+    }
+    if(!schoolId||!email) return;
+    var key=(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.emailKey==='function')?AI_UNITS.emailKey(email):email.replace(/\./g,',');
+    var ensureEl=function(){
+      var el=document.getElementById('ai-teacher-balance');
+      if(el) return el;
+      var hero=document.querySelector('.hero-card')||document.querySelector('.kpi-grid')||document.querySelector('.page.active');
+      if(!hero) return null;
+      el=document.createElement('div');
+      el.id='ai-teacher-balance';
+      el.style.cssText='margin:10px 16px 8px;padding:10px 14px;background:linear-gradient(135deg,#4c1d95,#8b5cf6);border-radius:12px;color:#fff;font-size:.82rem;display:flex;justify-content:space-between;align-items:center;';
+      el.innerHTML='<span>🤖 AI Studio units: <b id="ai-bal-val">—</b></span><a href="#" onclick="window.open(aiStudioLink(),\'_blank\');return false;" style="color:#fff;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:20px;font-size:.7rem;text-decoration:none;">Open Studio →</a>';
+      hero.parentNode.insertBefore(el, hero.nextSibling);
+      return document.getElementById('ai-bal-val')||el;
+    };
+    var update=function(node){
+      var rem=(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.balance)?AI_UNITS.balance(node):((node.allocated||0)+(node.purchased||0)-(node.used||0));
+      var valEl=document.getElementById('ai-bal-val')||ensureEl();
+      if(valEl) valEl.textContent=rem+' units';
+      var full=document.getElementById('ai-teacher-balance');
+      if(full && node){
+        var det=(typeof AI_UNITS!=='undefined'&&AI_UNITS.detail)?AI_UNITS.detail(node):{school:node.allocated||0,own:node.purchased||0};
+        full.title='School allocation: '+det.school+' · Your purchases: '+det.own;
+      }
+    };
+    if(typeof firebase!=='undefined' && firebase.database){
+      var ref=firebase.database().ref('schools/'+schoolId+'/ai_units/staff/'+key);
+      ref.once('value').then(function(s){ update(s.val()||{allocated:0,purchased:0,used:0}); }).catch(function(){});
+      try{ ref.on('value',function(s){ update(s.val()||{allocated:0,purchased:0,used:0}); }); }catch(e){}
+    } else {
+      setTimeout(function(){
+        if(typeof firebase!=='undefined' && firebase.database) aiLoadTeacherBalance();
+      },1200);
+    }
+  }catch(e){}
+}
+setTimeout(aiLoadTeacherBalance, 900);
+
+
 
 // ── LINK GENERATOR ─────────────────────────────────────
 var LINKS={
@@ -851,7 +917,7 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
   <div class="sb-item" onclick="showPage('examsubmit',this)">&#128196; Exam Questions</div>
   <div class="sb-item" onclick="showPage('myworkflow',this)">&#10004; My Submissions</div>
   <div class="sb-section">TOOLS</div>
-  <div class="sb-item" onclick="window.open('https://rehoteq.com/lesson-ai.html','_blank')">&#129302; AI Lesson Studio</div>
+  <div class="sb-item" onclick="window.open(aiStudioLink(),'_blank')">&#129302; AI Lesson Studio</div>
   <div class="sb-item" onclick="window.open('rsms-cbt-questions.html','_blank')">&#128218; CBT Bank</div>
   <div class="sb-item" onclick="(function(){ sessionStorage.setItem('rsms_result_from','rsms-teacher.html'); window.open('rsms-results-print.html','_blank'); })()">&#128196; Result Sheets</div>
   <div class="sb-section">ASSESSMENTS</div>
@@ -877,7 +943,7 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
     <div class="hc-val" id="t-hero-term">First Term</div>
     <div class="hc-row" style="margin-top:10px;">
       <div class="hc-badge" id="sb-school-t">School</div>
-      <a href="https://rehoteq.com/lesson-ai.html" target="_blank" class="btn btn-gold btn-xs" style="height:28px;font-size:.7rem;">AI Studio</a>
+      <a href="#" onclick="window.open(aiStudioLink(),'_blank');return false;" target="_blank" class="btn btn-gold btn-xs" style="height:28px;font-size:.7rem;">AI Studio</a>
     </div>
   </div>
   <div id="t-alert" style="display:none;margin:12px 16px 0;background:rgba(244,63,94,.1);border:1px solid var(--red);border-radius:var(--r2);padding:10px 14px;font-size:.82rem;color:var(--red);"></div>
@@ -893,7 +959,7 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
       <div class="qa-item" onclick="showPage('examsubmit')"><span class="qa-ico">&#128196;</span><div class="qa-lbl">Exam Q.</div></div>
       <div class="qa-item" onclick="showPage('assignments')"><span class="qa-ico">&#128203;</span><div class="qa-lbl">Assignments</div></div>
       <div class="qa-item" onclick="showPage('myworkflow')"><span class="qa-ico">&#10004;</span><div class="qa-lbl">My Docs</div></div>
-      <div class="qa-item" onclick="window.open('https://rehoteq.com/lesson-ai.html','_blank')"><span class="qa-ico">&#129302;</span><div class="qa-lbl">AI Studio</div></div>
+      <div class="qa-item" onclick="window.open(aiStudioLink(),'_blank')"><span class="qa-ico">&#129302;</span><div class="qa-lbl">AI Studio</div></div>
       <div class="qa-item" onclick="window.open('rsms-cbt-questions.html','_blank')"><span class="qa-ico">&#128218;</span><div class="qa-lbl">CBT Bank</div></div>
     </div>
   </div>
@@ -1152,7 +1218,7 @@ function initPortal(){
   initCarousel([
     {bg:'linear-gradient(135deg,#0f1535,#1a2347)',tag:'My Class',title:MY_CLASS||'My Class',sub:'Students and attendance',btn:'My Students',ico:'\ud83d\udc68\u200d\ud83c\udfeb',link:'#'},
     {bg:'linear-gradient(135deg,#14532d,#22c55e)',tag:'Workflow',title:'Submit Lesson Plans',sub:'Plans, notes and exams',btn:'Submit Now',ico:'\ud83d\udccb',link:'#'},
-    {bg:'linear-gradient(135deg,#4c1d95,#8b5cf6)',tag:'AI Studio',title:'Rehoteq AI Lesson Studio',sub:'Generate lessons with AI',btn:'Open Studio',ico:'\ud83e\udd16',link:'https://rehoteq.com/lesson-ai.html'}
+    {bg:'linear-gradient(135deg,#4c1d95,#8b5cf6)',tag:'AI Studio',title:'Rehoteq AI Lesson Studio',sub:'Generate lessons with AI',btn:'Open Studio',ico:'\ud83e\udd16',link:(typeof aiStudioLink==='function'?aiStudioLink():'https://rehoteq.com/lesson-ai.html')}
   ],'t-carousel','t-dots');
 }
 

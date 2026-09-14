@@ -44,6 +44,27 @@ function makeStore(seed){
    Fires on('value') listeners after writes, like the real database. */
 function makeFirebase(initialTree){
   var tree = JSON.parse(JSON.stringify(initialTree || {}));
+  // Normalise staff keys: Firebase cannot store '.' — production uses ','.
+  // Accept both forms in tests so old fixtures still pass.
+  try{
+    var w0={}; new Function('window', fs.readFileSync(path.join(REPO_ROOT, 'rsms-ai-units.js'), 'utf8'))(w0);
+    var Ek = w0.AI_UNITS.emailKey;
+    if(typeof Ek==='function'){
+      (function walk(node){
+        if(!node||typeof node!=='object') return;
+        if(node.staff && typeof node.staff==='object' && !Array.isArray(node.staff)){
+          var staff=node.staff; var norm={}; var changed=false;
+          Object.keys(staff).forEach(function(k){
+            var nk=Ek(k);
+            if(nk!==k) changed=true;
+            if(!norm[nk]) norm[nk]=staff[k];
+          });
+          if(changed) node.staff=norm;
+        }
+        Object.keys(node).forEach(function(k){ walk(node[k]); });
+      })(tree);
+    }
+  }catch(e){}
   var listeners = {};
   function getAt(p){
     var parts = p.split('/');
@@ -215,11 +236,14 @@ test('studio: school-mode metering is real (Firebase), exhausts to the gate', as
   h.doc.getElementById('f-topic').value = 'Photosynthesis';
   await h.api.generate();
   assert.equal(h.workerCalls(), 1, 'first generation reached the worker');
-  assert.equal(h.fb._tree.schools.REH1.ai_units.staff['t@x.com'].used, 4, 'used incremented in the shared ledger');
+  var k='t@x,com';
+  var used1=(h.fb._tree.schools.REH1.ai_units.staff[k]||h.fb._tree.schools.REH1.ai_units.staff['t@x.com']||{}).used;
+  assert.equal(used1, 4, 'used incremented in the shared ledger');
   assert.equal(h.api.getUnits(), 1);
 
   await h.api.generate();
-  assert.equal(h.fb._tree.schools.REH1.ai_units.staff['t@x.com'].used, 5);
+  var used2=(h.fb._tree.schools.REH1.ai_units.staff[k]||h.fb._tree.schools.REH1.ai_units.staff['t@x.com']||{}).used;
+  assert.equal(used2, 5);
   assert.equal(h.api.getUnits(), 0, 'allocation exhausted');
 
   await h.api.generate();
@@ -244,7 +268,8 @@ test('studio: exhausted teacher buys personal units via the working Flutterwave 
   assert.equal(co.amount, 1500, 'default 5-unit bundle');
   assert.ok(String(co.tx_ref).indexOf('REHOTEQ-AI-') === 0);
 
-  var staff = h.fb._tree.schools.REH1.ai_units.staff['t@x.com'];
+  var k='t@x,com';
+  var staff = h.fb._tree.schools.REH1.ai_units.staff[k]||h.fb._tree.schools.REH1.ai_units.staff['t@x.com'];
   assert.equal(staff.purchased, 5, 'personal units credited to the shared ledger (not the browser)');
   assert.equal(staff.allocated, 5, 'allocation untouched');
   assert.equal(h.api.getUnits(), 5);

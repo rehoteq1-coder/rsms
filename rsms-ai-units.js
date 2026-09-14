@@ -26,6 +26,10 @@ window.AI_UNITS = (function(){
 
   function normEmail(e){ return (e||'').toString().trim().toLowerCase(); }
 
+  /* Firebase RTDB keys cannot contain '.' — emails are stored with ','. */
+  function emailKey(e){ return normEmail(e).replace(/\./g, ','); }
+  function emailFromKey(k){ return String(k||'').replace(/,/g, '.'); }
+
   function staffNode(staff){ return staff && typeof staff === 'object' ? staff : {}; }
 
   /* Remaining units for one teacher from their staff node. */
@@ -53,6 +57,8 @@ window.AI_UNITS = (function(){
     UNIT_PRICE: UNIT_PRICE,
     UNITS_PER_TEACHER_TERM: UNITS_PER_TEACHER_TERM,
     normEmail: normEmail,
+    emailKey: emailKey,
+    emailFromKey: emailFromKey,
     balance: balance,
     detail: detail,
     priceFor: priceFor

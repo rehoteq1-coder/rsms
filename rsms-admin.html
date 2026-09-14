@@ -1751,17 +1751,48 @@ var LESSON_AI={
     return (typeof AI_UNITS!=='undefined')
       ? (AI_UNITS.normEmail(t.email) || (AI_UNITS.normEmail((t.name||'').replace(/\s+/g,''))||'unknown')+'@rsms.school')
       : ((t.email||((t.name||'').replace(/\s+/g,''))+'@rsms.school').toLowerCase());
+  },
+  emailKeyFor:function(t){
+    var em=LESSON_AI.emailFor(t);
+    if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.emailKey==='function') return AI_UNITS.emailKey(em);
+    if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.normEmail==='function') return AI_UNITS.normEmail(em);
+    return String(em||'').trim().toLowerCase();
   }
 };
+function aiKey(email){
+  if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.emailKey==='function') return AI_UNITS.emailKey(email);
+  if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.normEmail==='function') return AI_UNITS.normEmail(email);
+  return String(email||'').trim().toLowerCase();
+}
+function aiDisplay(emailKey){
+  if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.emailFromKey==='function') return AI_UNITS.emailFromKey(emailKey);
+  return emailKey;
+}
+function aiNormalizeData(d){
+  if(!d||!d.staff||typeof d.staff!=='object') return d;
+  var norm={}; var changed=false;
+  Object.keys(d.staff).forEach(function(k){
+    var nk=aiKey(k);
+    if(nk!==k) changed=true;
+    if(!norm[nk]) norm[nk]=d.staff[k];
+    else {
+      var a=norm[nk], b=d.staff[k];
+      norm[nk]={allocated:(a.allocated||0)+(b.allocated||0), purchased:(a.purchased||0)+(b.purchased||0), used:(a.used||0)+(b.used||0)};
+    }
+  });
+  if(changed){ d.staff=norm; }
+  return d;
+}
 var _aiData=null; // in-memory copy of schools/<sid>/ai_units
 var AI_LEDGER_KEY='ai_units_local';  // last known ai_units as saved on this device
 var AI_QUEUE_KEY='ai_units_queue';   // allocations made offline, replayed on the next good load
 
-function aiLedgerSave(d){ try{ localStorage.setItem(AI_LEDGER_KEY,JSON.stringify(d)); }catch(e){} }
+function aiLedgerSave(d){ try{ if(d) aiNormalizeData(d); localStorage.setItem(AI_LEDGER_KEY,JSON.stringify(d)); }catch(e){} }
 function aiLedgerLoad(){
   try{
     var d=JSON.parse(localStorage.getItem(AI_LEDGER_KEY)||'null');
-    return (d&&typeof d==='object'&&!Array.isArray(d))?d:null;
+    if(!d||typeof d!=='object'||Array.isArray(d)) return null;
+    return aiNormalizeData(d);
   }catch(e){ return null; }
 }
 function aiQueueLoad(){
@@ -1810,6 +1841,7 @@ function aiEnsure(cb){
   }
   LESSON_AI.ref().once('value').then(function(snap){
     var data=snap.val();
+    if(data) aiNormalizeData(data);
     if(!data){
       if(!isEnterprise){ cb(null,'free'); return; }
       data=aiDefaultPool();
@@ -1839,12 +1871,13 @@ function aiRender(){
     log.innerHTML='<div class="text-muted" style="padding:12px 0;">No allocations this term yet. Gift all teachers or allocate individually.</div>';
     return;
   }
-  var rows=Object.keys(d.staff).map(function(email){
-    var s=d.staff[email];
+  var rows=Object.keys(d.staff).map(function(emailKey){
+    var s=d.staff[emailKey];
     var b=(typeof AI_UNITS!=='undefined')?AI_UNITS.balance(s):((s.allocated||0)+(s.purchased||0)-(s.used||0));
     var col=b>0?'#22c55e':'#f43f5e';
+    var emailVisible=aiDisplay(emailKey);
     return '<div class="gift-row" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">'
-      +'<div class="gift-info"><div class="gift-name" style="font-size:.8rem;">'+email+'</div>'
+      +'<div class="gift-info"><div class="gift-name" style="font-size:.8rem;">'+emailVisible+'</div>'
       +'<div class="gift-role">allocated '+(s.allocated||0)+' &middot; bought '+(s.purchased||0)+' &middot; used '+(s.used||0)+'</div></div>'
       +'<div style="font-weight:800;color:'+col+';">'+b+' left</div></div>';
   }).join('');
@@ -1856,21 +1889,23 @@ function aiDraw(email,n,done){
      teacher. done(ok, outcome, poolLeft) — outcome is 'server' when the
      school record accepted the change, 'rejected' when the pool was
      short, or 'error' when the server could not be reached. */
+  var emailKey=aiKey(email);
   var rejected=false;
   LESSON_AI.ref().transaction(function(d){
     d=d||{base:(typeof AI_UNITS!=='undefined')?AI_UNITS.BASE:30,pool:0,term:LESSON_AI.termLabel(),staff:{}};
+    aiNormalizeData(d);
     d.pool=d.pool||0; d.staff=d.staff||{};
     if(d.pool<n){ rejected=true; return null; }
     d.pool-=n;
-    var s=d.staff[email]||{allocated:0,purchased:0,used:0};
+    var s=d.staff[emailKey]||{allocated:0,purchased:0,used:0};
     s.allocated=(s.allocated||0)+n;
-    d.staff[email]=s;
+    d.staff[emailKey]=s;
     _aiData=d;
     return d;
   },function(err,snapshot){
     if(err){ done(false,'error',0); }
     else if(rejected){ done(false,'rejected',((snapshot&&snapshot.val())||{}).pool||0); }
-    else { var sv=(snapshot&&snapshot.val())||_aiData; if(sv)aiLedgerSave(sv); done(true,'server',0); }
+    else { var sv=(snapshot&&snapshot.val())||_aiData; if(sv) aiNormalizeData(sv); if(sv)aiLedgerSave(sv); done(true,'server',0); }
   });
 }
 
@@ -1878,14 +1913,16 @@ function aiRecordOffline(email,n){
   /* The server could not be reached: apply the gift to the device
      ledger so the numbers on this screen stay true, and queue it for
      the next successful load. Returns how many entries await sync. */
+  var emailKey=aiKey(email);
   var d=aiLedgerLoad()||{base:(typeof AI_UNITS!=='undefined')?AI_UNITS.BASE:30,pool:0,term:LESSON_AI.termLabel(),staff:{}};
+  aiNormalizeData(d);
   d.pool=d.pool||0; d.staff=d.staff||{};
   d.pool=Math.max(0,d.pool-n);
-  var s=d.staff[email]||{allocated:0,purchased:0,used:0};
+  var s=d.staff[emailKey]||{allocated:0,purchased:0,used:0};
   s.allocated=(s.allocated||0)+n;
-  d.staff[email]=s;
+  d.staff[emailKey]=s;
   aiLedgerSave(d); _aiData=d;
-  return aiQueuePush({email:email,n:n,at:new Date().toISOString()});
+  return aiQueuePush({email:emailKey,n:n,at:new Date().toISOString()});
 }
 
 function aiReplayQueued(done){
@@ -2855,7 +2892,7 @@ function renderLessonAI(){
     }
     /* Live refresh: pool + balances update when anything changes — and
        every server copy that arrives refreshes the device ledger. */
-    try{ LESSON_AI.ref().on('value',function(snap){ var v=snap.val()||null; if(v)aiLedgerSave(v); _aiData=v; aiRender(); }); }catch(e){}
+    try{ LESSON_AI.ref().on('value',function(snap){ var v=snap.val()||null; if(v) aiNormalizeData(v); if(v)aiLedgerSave(v); _aiData=v; aiRender(); }); }catch(e){}
   });
 }
 
@@ -2866,7 +2903,9 @@ function giftAllTeachers(){
     var teachers=LESSON_AI.teachers();
     if(!teachers.length){ toast('No teachers found in staff list','error'); return; }
     var n=LESSON_AI.UNITS_PER_TERM;
-    var eligible=teachers.filter(function(t){ return (d.pool||0)>=n; });
+    // Build the maximal prefix that the current pool can actually cover
+    var eligible=[]; var remaining=d.pool||0;
+    for(var ei=0; ei<teachers.length; ei++){ if(remaining>=n){ eligible.push(teachers[ei]); remaining-=n; } }
     if(!eligible.length){
       toast('Pool has '+(d.pool||0)+' free units — not enough to gift everyone '+n+' each. Buy units or start a new term.','error');
       return;

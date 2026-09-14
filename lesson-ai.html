@@ -410,8 +410,13 @@ var AI_CTX = (function(){
 })();
 var _aiBalance = { remaining: 0, school: 0, own: 0, loaded: false, error: false };
 
+function aiTeacherKey(){
+  var e=(AI_CTX.teacher||'').trim().toLowerCase();
+  if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.emailKey==='function') return AI_UNITS.emailKey(e);
+  return e.replace(/\./g,',');
+}
 function aiStaffRef(){
-  return firebase.database().ref('schools/' + AI_CTX.school + '/ai_units/staff/' + AI_CTX.teacher);
+  return firebase.database().ref('schools/' + AI_CTX.school + '/ai_units/staff/' + aiTeacherKey());
 }
 
 function aiLoad(cb){
