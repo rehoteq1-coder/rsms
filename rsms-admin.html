@@ -840,6 +840,7 @@ window.RSMS_DB = {
     <div class="pg-btns">
       <button class="btn btn-ghost btn-sm" onclick="exportStudentsCSV()" title="Export as CSV">&#8615; Export</button>
       <button class="btn btn-teal btn-sm stu-add-btn" onclick="openBulkImport()" title="Bulk import from CSV">&#128196; Bulk</button>
+      <button class="btn btn-ghost btn-sm" onclick="emailClassResults()" title="Email results to parents of filtered class" style="border-color:rgba(212,168,67,.35);">&#9993; Email Results</button>
       <button class="btn btn-gold btn-sm stu-add-btn" onclick="editStuId=null;document.getElementById('m-student-title').textContent='Add Student';openModal('m-add-student')">+ Add</button>
     </div>
   </div>
@@ -1190,6 +1191,43 @@ window.RSMS_DB = {
     <button class="btn btn-teal btn-full" onclick="saveFlwConfig()">&#9989; Save Payment Config</button>
   </div>
 
+  <!-- Result Email Delivery (Resend / SendGrid) -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">✉️ Result Email Delivery <span style="font-size:.72rem;color:var(--t3);font-weight:400;">— server-sent via provider</span></div>
+    <div style="font-size:.78rem;color:var(--t3);margin-bottom:12px;line-height:1.6;">
+      Emails queued when you hit <strong style="color:var(--t1);">Email Results</strong> are sent automatically from the server (no mail app needed). Set your provider key once — it is stored in Secret Manager, never in the database.<br>
+      <span style="color:var(--gold);">Recommended: Resend</span> — get a key at <a href="https://resend.com/api-keys" target="_blank" style="color:var(--teal);">resend.com/api-keys</a> (verify your domain first) or use SendGrid.
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Provider</label>
+        <select class="fi" id="email-provider" style="height:46px;">
+          <option value="resend">Resend (recommended)</option>
+          <option value="sendgrid">SendGrid</option>
+        </select>
+      </div>
+      <div class="fg"><label>From address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4);">— must be from a verified domain</span></label>
+        <input class="fi" id="email-from" placeholder="e.g. Results &lt;noreply@myschool.com&gt; or noreply@myschool.com" />
+      </div>
+    </div>
+    <div class="fg"><label>Reply-To (optional)</label>
+      <input class="fi" id="email-replyto" type="email" placeholder="e.g. info@myschool.com" />
+    </div>
+    <div class="fg"><label>Provider API Key <span id="email-key-status" style="font-weight:700;margin-left:8px;"></span></label>
+      <input class="fi" id="email-apikey" type="password" placeholder="re_xxx… (Resend) or SG.xxx… (SendGrid) — leave blank to keep existing" />
+      <div style="font-size:.72rem;color:var(--t3);margin-top:6px;">Stored securely in Google Secret Manager as <code style="font-family:var(--mono);background:var(--card2);padding:1px 5px;border-radius:4px;">rsms-email-&lt;schoolId&gt;</code>. Never shown again after saving.</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+      <button class="btn btn-gold" onclick="saveEmailConfig()">💾 Save Email Settings</button>
+      <button class="btn btn-teal btn-sm" onclick="saveEmailApiKey()">🔑 Save API Key</button>
+      <button class="btn btn-ghost btn-sm" onclick="sendTestEmail()">✉️ Send Test to Me</button>
+    </div>
+    <div style="font-size:.72rem;color:var(--t3);margin-top:10px;">Status: <span id="email-config-status" style="color:var(--t2);">—</span></div>
+    <div style="margin-top:14px;">
+      <div style="font-weight:700;color:var(--t1);font-size:.82rem;margin-bottom:6px;">Recent sends (email_log)</div>
+      <div id="email-log-list" style="font-size:.78rem;color:var(--t3);">Loading…</div>
+    </div>
+  </div>
+
   <!-- Portal PIN / Password Management -->
   <div class="card" style="margin-bottom:12px;">
     <div class="card-title">&#128274; Portal PINs &amp; Passwords</div>
@@ -1378,9 +1416,10 @@ window.RSMS_DB = {
       <div class="fg"><label>Date of Birth</label><input class="fi" id="stu-dob" type="date"/></div>
       <div class="fg"><label>Reg Number (auto if blank)</label><input class="fi" id="stu-reg" placeholder="Auto-generated"/></div>
     </div>
+    <div class="fg"><label>Parent/Guardian Name</label><input class="fi" id="stu-pname" placeholder="Parent full name"/></div>
     <div class="f2">
-      <div class="fg"><label>Parent/Guardian Name</label><input class="fi" id="stu-pname" placeholder="Parent full name"/></div>
       <div class="fg"><label>Parent Phone *</label><input class="fi" id="stu-pphone" placeholder="08012345678" type="tel"/></div>
+      <div class="fg"><label>Parent Email <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4);">— for result delivery</span></label><input class="fi" id="stu-pemail" type="email" placeholder="parent@email.com" /></div>
     </div>
     <!-- Photo upload -->
     <div class="fg">
@@ -1466,7 +1505,7 @@ window.RSMS_DB = {
         <span>Or paste CSV data manually</span>
         <button class="btn btn-ghost btn-xs" onclick="document.getElementById('bulk-csv-input').value='';document.getElementById('bulk-preview').innerHTML='';document.getElementById('bulk-import-btn').style.display='none';">Clear</button>
       </label>
-      <textarea class="fi" id="bulk-csv-input" rows="5" placeholder="Surname,Firstname,Class,Gender,DOB,Parent Phone,Parent Name&#10;Adeyemi,Tolu,JSS 1,Male,2012-05-10,08012345678,Mr Adeyemi&#10;Okonkwo,Chidi,JSS 2,Male,2011-03-22,09087654321" oninput="previewBulkCSV()"></textarea>
+      <textarea class="fi" id="bulk-csv-input" rows="5" placeholder="Surname,Firstname,Class,Gender,DOB,Parent Phone,Parent Name,Parent Email&#10;Adeyemi,Tolu,JSS 1,Male,2012-05-10,08012345678,Mr Adeyemi,parent@email.com&#10;Okonkwo,Chidi,JSS 2,Male,2011-03-22,09087654321,,mum@ex.com" oninput="previewBulkCSV()"></textarea>
     </div>
     <div id="bulk-preview" style="margin-bottom:12px;"><div class="text-muted">Paste CSV data above to preview</div></div>
     <!-- Step 3: Batch photo upload -->
@@ -1751,17 +1790,48 @@ var LESSON_AI={
     return (typeof AI_UNITS!=='undefined')
       ? (AI_UNITS.normEmail(t.email) || (AI_UNITS.normEmail((t.name||'').replace(/\s+/g,''))||'unknown')+'@rsms.school')
       : ((t.email||((t.name||'').replace(/\s+/g,''))+'@rsms.school').toLowerCase());
+  },
+  emailKeyFor:function(t){
+    var em=LESSON_AI.emailFor(t);
+    if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.emailKey==='function') return AI_UNITS.emailKey(em);
+    if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.normEmail==='function') return AI_UNITS.normEmail(em);
+    return String(em||'').trim().toLowerCase();
   }
 };
+function aiKey(email){
+  if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.emailKey==='function') return AI_UNITS.emailKey(email);
+  if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.normEmail==='function') return AI_UNITS.normEmail(email);
+  return String(email||'').trim().toLowerCase();
+}
+function aiDisplay(emailKey){
+  if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.emailFromKey==='function') return AI_UNITS.emailFromKey(emailKey);
+  return emailKey;
+}
+function aiNormalizeData(d){
+  if(!d||!d.staff||typeof d.staff!=='object') return d;
+  var norm={}; var changed=false;
+  Object.keys(d.staff).forEach(function(k){
+    var nk=aiKey(k);
+    if(nk!==k) changed=true;
+    if(!norm[nk]) norm[nk]=d.staff[k];
+    else {
+      var a=norm[nk], b=d.staff[k];
+      norm[nk]={allocated:(a.allocated||0)+(b.allocated||0), purchased:(a.purchased||0)+(b.purchased||0), used:(a.used||0)+(b.used||0)};
+    }
+  });
+  if(changed){ d.staff=norm; }
+  return d;
+}
 var _aiData=null; // in-memory copy of schools/<sid>/ai_units
 var AI_LEDGER_KEY='ai_units_local';  // last known ai_units as saved on this device
 var AI_QUEUE_KEY='ai_units_queue';   // allocations made offline, replayed on the next good load
 
-function aiLedgerSave(d){ try{ localStorage.setItem(AI_LEDGER_KEY,JSON.stringify(d)); }catch(e){} }
+function aiLedgerSave(d){ try{ if(d) aiNormalizeData(d); localStorage.setItem(AI_LEDGER_KEY,JSON.stringify(d)); }catch(e){} }
 function aiLedgerLoad(){
   try{
     var d=JSON.parse(localStorage.getItem(AI_LEDGER_KEY)||'null');
-    return (d&&typeof d==='object'&&!Array.isArray(d))?d:null;
+    if(!d||typeof d!=='object'||Array.isArray(d)) return null;
+    return aiNormalizeData(d);
   }catch(e){ return null; }
 }
 function aiQueueLoad(){
@@ -1810,6 +1880,7 @@ function aiEnsure(cb){
   }
   LESSON_AI.ref().once('value').then(function(snap){
     var data=snap.val();
+    if(data) aiNormalizeData(data);
     if(!data){
       if(!isEnterprise){ cb(null,'free'); return; }
       data=aiDefaultPool();
@@ -1839,12 +1910,13 @@ function aiRender(){
     log.innerHTML='<div class="text-muted" style="padding:12px 0;">No allocations this term yet. Gift all teachers or allocate individually.</div>';
     return;
   }
-  var rows=Object.keys(d.staff).map(function(email){
-    var s=d.staff[email];
+  var rows=Object.keys(d.staff).map(function(emailKey){
+    var s=d.staff[emailKey];
     var b=(typeof AI_UNITS!=='undefined')?AI_UNITS.balance(s):((s.allocated||0)+(s.purchased||0)-(s.used||0));
     var col=b>0?'#22c55e':'#f43f5e';
+    var emailVisible=aiDisplay(emailKey);
     return '<div class="gift-row" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">'
-      +'<div class="gift-info"><div class="gift-name" style="font-size:.8rem;">'+email+'</div>'
+      +'<div class="gift-info"><div class="gift-name" style="font-size:.8rem;">'+emailVisible+'</div>'
       +'<div class="gift-role">allocated '+(s.allocated||0)+' &middot; bought '+(s.purchased||0)+' &middot; used '+(s.used||0)+'</div></div>'
       +'<div style="font-weight:800;color:'+col+';">'+b+' left</div></div>';
   }).join('');
@@ -1856,21 +1928,23 @@ function aiDraw(email,n,done){
      teacher. done(ok, outcome, poolLeft) — outcome is 'server' when the
      school record accepted the change, 'rejected' when the pool was
      short, or 'error' when the server could not be reached. */
+  var emailKey=aiKey(email);
   var rejected=false;
   LESSON_AI.ref().transaction(function(d){
     d=d||{base:(typeof AI_UNITS!=='undefined')?AI_UNITS.BASE:30,pool:0,term:LESSON_AI.termLabel(),staff:{}};
+    aiNormalizeData(d);
     d.pool=d.pool||0; d.staff=d.staff||{};
     if(d.pool<n){ rejected=true; return null; }
     d.pool-=n;
-    var s=d.staff[email]||{allocated:0,purchased:0,used:0};
+    var s=d.staff[emailKey]||{allocated:0,purchased:0,used:0};
     s.allocated=(s.allocated||0)+n;
-    d.staff[email]=s;
+    d.staff[emailKey]=s;
     _aiData=d;
     return d;
   },function(err,snapshot){
     if(err){ done(false,'error',0); }
     else if(rejected){ done(false,'rejected',((snapshot&&snapshot.val())||{}).pool||0); }
-    else { var sv=(snapshot&&snapshot.val())||_aiData; if(sv)aiLedgerSave(sv); done(true,'server',0); }
+    else { var sv=(snapshot&&snapshot.val())||_aiData; if(sv) aiNormalizeData(sv); if(sv)aiLedgerSave(sv); done(true,'server',0); }
   });
 }
 
@@ -1878,14 +1952,16 @@ function aiRecordOffline(email,n){
   /* The server could not be reached: apply the gift to the device
      ledger so the numbers on this screen stay true, and queue it for
      the next successful load. Returns how many entries await sync. */
+  var emailKey=aiKey(email);
   var d=aiLedgerLoad()||{base:(typeof AI_UNITS!=='undefined')?AI_UNITS.BASE:30,pool:0,term:LESSON_AI.termLabel(),staff:{}};
+  aiNormalizeData(d);
   d.pool=d.pool||0; d.staff=d.staff||{};
   d.pool=Math.max(0,d.pool-n);
-  var s=d.staff[email]||{allocated:0,purchased:0,used:0};
+  var s=d.staff[emailKey]||{allocated:0,purchased:0,used:0};
   s.allocated=(s.allocated||0)+n;
-  d.staff[email]=s;
+  d.staff[emailKey]=s;
   aiLedgerSave(d); _aiData=d;
-  return aiQueuePush({email:email,n:n,at:new Date().toISOString()});
+  return aiQueuePush({email:emailKey,n:n,at:new Date().toISOString()});
 }
 
 function aiReplayQueued(done){
@@ -1951,12 +2027,12 @@ var LINKS={
   },
   student:function(s){
     var tk=LINKS._token(s.id||s.reg);
-    LINKS._save(tk,{role:'student',name:(s.surname||'')+' '+(s.firstname||''),id:s.id,stuId:s.id,class:s.class,reg:s.reg,parentPhone:s.parentPhone||''});
+    LINKS._save(tk,{role:'student',name:(s.surname||'')+' '+(s.firstname||''),id:s.id,stuId:s.id,class:s.class,reg:s.reg,parentPhone:s.parentPhone||'',parentEmail:s.parentEmail||''});
     return LINKS.BASE+'rsms-student.html?token='+tk;
   },
   parent:function(s){
     var tk=LINKS._token('p'+(s.id||s.reg));
-    LINKS._save(tk,{role:'parent',childId:s.id,childName:(s.surname||'')+' '+(s.firstname||''),class:s.class,parentPhone:s.parentPhone||''});
+    LINKS._save(tk,{role:'parent',childId:s.id,childName:(s.surname||'')+' '+(s.firstname||''),class:s.class,parentPhone:s.parentPhone||'',parentEmail:s.parentEmail||''});
     return LINKS.BASE+'rsms-parent.html?token='+tk;
   }
 };
@@ -2242,7 +2318,14 @@ function renderStudents(){
     lBtn.onclick=(function(stu){return function(){copyText(LINKS.student(stu));toast('Link copied!','success');};})(s);
     var wBtn=document.createElement('button');wBtn.className='icon-btn green';wBtn.title='WhatsApp Parent';wBtn.innerHTML='&#128241;';
     wBtn.onclick=(function(stu,nm){return function(){window.open('https://wa.me/?text='+encodeURIComponent('Dear Parent of '+nm+', RSMS portal: '+LINKS.student(stu)),'_blank');};})(s,name);
-    actEl.appendChild(lBtn);actEl.appendChild(wBtn);
+    // Email result button — gold if email present, muted if missing
+    var mBtn=document.createElement('button');mBtn.innerHTML='&#9993;';
+    if(s.parentEmail){ mBtn.className='icon-btn'; mBtn.style.cssText='background:rgba(212,168,67,.14);border-color:rgba(212,168,67,.3);color:var(--gold);'; mBtn.title='Email result to '+s.parentEmail;
+      mBtn.onclick=(function(stu){return function(){ emailResultToParent(stu.id); };})(s);
+    } else { mBtn.className='icon-btn'; mBtn.title='Add parent email first (Edit)'; mBtn.style.opacity='0.45';
+      mBtn.onclick=(function(stu){return function(){ openEditStudent(stu); toast('Add Parent Email first','info'); };})(s);
+    }
+    actEl.appendChild(lBtn);actEl.appendChild(wBtn);actEl.appendChild(mBtn);
     if(_canEdit){
       var eBtn=document.createElement('button');eBtn.className='icon-btn';eBtn.title='Edit';eBtn.innerHTML='&#9999;&#65039;';
       eBtn.onclick=(function(stu){return function(){openEditStudent(stu);};})(s);
@@ -2272,7 +2355,7 @@ function openEditStudent(stu){
   var cls=document.getElementById('stu-class'); if(cls)cls.value=stu.class||'';
   var gen=document.getElementById('stu-gender'); if(gen)gen.value=stu.gender||'Male';
   setVal('stu-dob',stu.dob);setVal('stu-pphone',stu.parentPhone);
-  setVal('stu-pname',stu.parentName||'');setVal('stu-reg',stu.reg);
+  setVal('stu-pemail',stu.parentEmail||'');setVal('stu-pname',stu.parentName||'');setVal('stu-reg',stu.reg);
   var title=document.getElementById('m-student-title');
   if(title)title.textContent='Edit Student';
   // Load existing photo
@@ -2295,13 +2378,16 @@ function saveStudent(){
   var sur=val('stu-surname'),fn=val('stu-firstname'),cls=document.getElementById('stu-class').value;
   if(!sur||!fn||!cls){toast('Fill surname, firstname and class','error');return;}
   var all=getStudents();
+  // parentEmail validation helper
+  var _pemail=val('stu-pemail');
+  if(_pemail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(_pemail)){toast('Enter a valid parent email','error');return;}
   if(editStuId){
     var idx=all.findIndex(function(s){return s.id===editStuId;});
     if(idx>-1){
       all[idx].surname=sur;all[idx].firstname=fn;all[idx].class=cls;
       all[idx].gender=document.getElementById('stu-gender').value;
       all[idx].dob=val('stu-dob');all[idx].parentPhone=val('stu-pphone');
-      all[idx].parentName=val('stu-pname');all[idx].reg=val('stu-reg')||all[idx].reg;
+      all[idx].parentEmail=_pemail;all[idx].parentName=val('stu-pname');all[idx].reg=val('stu-reg')||all[idx].reg;
       var ph=val('stu-photo-data');if(ph)all[idx].photo=ph;
     }
     toast('Student updated','success');
@@ -2317,7 +2403,7 @@ function saveStudent(){
     var photoData=val('stu-photo-data')||'';
     all.push({id:'s'+Date.now(),surname:sur,firstname:fn,class:cls,
       gender:document.getElementById('stu-gender').value,dob:val('stu-dob'),
-      parentPhone:val('stu-pphone'),parentName:val('stu-pname'),reg:reg,photo:photoData});
+      parentPhone:val('stu-pphone'),parentEmail:_pemail,parentName:val('stu-pname'),reg:reg,photo:photoData});
     toast('\u2705 '+sur+' '+fn+' added','success');
   }
   saveStudents(all);
@@ -2331,7 +2417,7 @@ function saveStudent(){
   var cf2=document.getElementById('stu-cls-filter');if(cf2)cf2.value='';
   var sf2=document.getElementById('stu-search');if(sf2)sf2.value='';
   renderStudents();
-  ['stu-surname','stu-firstname','stu-dob','stu-pphone','stu-pname','stu-reg'].forEach(function(id){setVal(id,'');});
+  ['stu-surname','stu-firstname','stu-dob','stu-pphone','stu-pemail','stu-pname','stu-reg'].forEach(function(id){setVal(id,'');});
   clearStudentPhoto();
   var t=document.getElementById('m-student-title');if(t)t.textContent='Add Student';
 }
@@ -2347,13 +2433,129 @@ function csvRow(arr){return arr.map(csvEscape).join(',');}
 function exportStudentsCSV(){
   var all=getStudents();
   if(!all.length){toast('No students to export','error');return;}
-  var rows=[csvRow(['Surname','Firstname','Class','Reg','Gender','DOB','Parent Phone','Parent Name'])];
-  all.forEach(function(s){rows.push(csvRow([s.surname,s.firstname,s.class,s.reg,s.gender||'',s.dob||'',s.parentPhone||'',s.parentName||'']));});
+  var rows=[csvRow(['Surname','Firstname','Class','Reg','Gender','DOB','Parent Phone','Parent Email','Parent Name'])];
+  all.forEach(function(s){rows.push(csvRow([s.surname,s.firstname,s.class,s.reg,s.gender||'',s.dob||'',s.parentPhone||'',s.parentEmail||'',s.parentName||'']));});
   var blob=new Blob(['\ufeff'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='Students_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
   URL.revokeObjectURL(a.href);
   toast('Students exported','success');
+}
+
+
+// ── PARENT EMAIL — RESULT PUSH ───────────────────────────────────
+function _validEmail(e){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(e||'').trim()); }
+function _schoolLabel(){ var s=getSchool(); return (s.name||'School')+' – '+(s.term||'')+' '+(s.session||''); }
+function buildResultEmail(student){
+  var school=getSchool();
+  var name=(student.surname||'')+' '+(student.firstname||'');
+  var term=school.term||'Term'; var sess=school.session||'Session';
+  var subject='['+(school.name||'School')+'] '+term+' Result — '+name.trim()+' ('+student.class+')';
+  var portalLink=LINKS.parent(student);
+  var resultsLink=LINKS.student(student);
+  var body=[
+    'Dear Parent/Guardian of '+name.trim()+',',
+    '',
+    (school.name||'Your school')+' has published the '+term+' ('+sess+') result for '+name.trim()+' — Class: '+student.class+' — Reg: '+student.reg+'.',
+    '',
+    'View the result and report card:',
+    resultsLink,
+    '',
+    'Parent portal (fees, assignments & all results):',
+    portalLink,
+    '',
+    'You can also log in to the Parent Portal with your phone number to view all terms.',
+    '',
+    '— '+(school.name||'School')+' via RSMS (Rehoteq School Management System)',
+    school.phone?'Tel: '+school.phone:'',
+    school.email?'Email: '+school.email:''
+  ].filter(Boolean).join('\n');
+  return {subject:subject, body:body, to:student.parentEmail};
+}
+function logEmailSent(student, subject){
+  try{
+    var key=_key('email_log'); var logs=JSON.parse(localStorage.getItem(key)||'[]');
+    logs.unshift({at:new Date().toISOString(), stuId:student.id, name:(student.surname||'')+' '+(student.firstname||''), class:student.class, reg:student.reg, to:student.parentEmail, subject:subject});
+    if(logs.length>500) logs=logs.slice(0,500);
+    localStorage.setItem(key, JSON.stringify(logs));
+    localStorage.setItem('rsms_email_log', JSON.stringify(logs));
+    // queue for optional server-side sender (Firebase Function watches mail_queue)
+    try{
+      var sid=_sid(); if(sid && typeof firebase!=='undefined' && firebase.database){
+        firebase.database().ref('schools/'+sid+'/mail_queue').push({
+          to: student.parentEmail, subject: subject, studentId: student.id,
+          studentName: (student.surname||'')+' '+(student.firstname||''), class: student.class, reg: student.reg,
+          portalLink: LINKS.parent(student), resultsLink: LINKS.student(student),
+          term: getSchool().term||'', session: getSchool().session||'', at: new Date().toISOString()
+        });
+      }
+    }catch(e){}
+  }catch(e){}
+}
+function emailResultToParent(studentId){
+  var s=getStudents().find(function(x){return x.id===studentId;});
+  if(!s){ toast('Student not found','error'); return; }
+  if(!s.parentEmail || !_validEmail(s.parentEmail)){
+    toast('No parent email for '+(s.surname||'')+' '+(s.firstname||'')+' — edit student to add it','error');
+    openEditStudent(s); return;
+  }
+  var mail=buildResultEmail(s);
+  var href='mailto:'+encodeURIComponent(mail.to)+'?subject='+encodeURIComponent(mail.subject)+'&body='+encodeURIComponent(mail.body);
+  // try mailto
+  window.location.href=href;
+  logEmailSent(s, mail.subject);
+  // also copy portal link as fallback if mailto blocked
+  setTimeout(function(){ try{ copyText(mail.body); }catch(e){} }, 400);
+  toast('✉️ Email draft opened for '+s.parentEmail+' — send from your email app','success');
+}
+function emailClassResults(){
+  var cls=val('stu-cls-filter')||'';
+  var q=(document.getElementById('stu-search')||{value:''}).value.toLowerCase();
+  var all=getStudents();
+  var list=all.filter(function(s){
+    var name=((s.surname||'')+(s.firstname||'')).toLowerCase();
+    return (!cls||s.class===cls) && (!q||name.includes(q)||(s.reg||'').toLowerCase().includes(q));
+  });
+  var withEmail=list.filter(function(s){return s.parentEmail && _validEmail(s.parentEmail);});
+  var without=list.filter(function(s){return !s.parentEmail || !_validEmail(s.parentEmail);});
+  if(!list.length){ toast('No students in current filter','error'); return; }
+  if(!withEmail.length){ toast('No parent emails in this list — add emails first (Edit student)','error'); return; }
+  var confirmMsg='Email results to '+withEmail.length+' parent(s)'+(without.length?' ('+without.length+' without email will be skipped)':'')+'?\n\nThis opens your email app (one draft per parent, or a single draft with BCC).';
+  if(!window.confirm(confirmMsg)) return;
+  // Strategy: single mailto with BCC for up to ~30, else sequential with delay
+  var school=getSchool();
+  var term=school.term||'Term'; var sess=school.session||'';
+  if(withEmail.length<=30){
+    var subject='['+(school.name||'School')+'] '+term+' Results — '+ (cls||'All Classes') +' ('+sess+')';
+    var body=[
+      'Dear Parents/Guardians,',
+      '',
+      (school.name||'School')+' has published '+term+' ('+sess+') results'+(cls?' for '+cls:'')+'.',
+      'Each parent can view their child\'s report card via their personal portal link:',
+      ''
+    ].join('\n');
+    withEmail.forEach(function(s){
+      var name=(s.surname||'')+' '+(s.firstname||'');
+      body+='• '+name+' ('+s.class+' — '+s.reg+'): '+LINKS.parent(s)+'\n';
+    });
+    body+='\n— '+(school.name||'School')+' via RSMS\n';
+    var bcc=withEmail.map(function(s){return s.parentEmail;}).join(',');
+    var href2='mailto:?bcc='+encodeURIComponent(bcc)+'&subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+    window.location.href=href2;
+    withEmail.forEach(function(s){ logEmailSent(s, subject); });
+    toast('✉️ Email draft opened with '+withEmail.length+' parents in BCC','success');
+  } else {
+    var i=0;
+    function next(){
+      if(i>=withEmail.length){ toast('Opened '+withEmail.length+' email drafts','success'); return; }
+      var s=withEmail[i++]; var mail=buildResultEmail(s);
+      window.open('mailto:'+encodeURIComponent(mail.to)+'?subject='+encodeURIComponent(mail.subject)+'&body='+encodeURIComponent(mail.body), '_blank');
+      logEmailSent(s, mail.subject);
+      setTimeout(next, 900);
+    }
+    next();
+    toast('Opening '+withEmail.length+' drafts — allow pop-ups if prompted','info');
+  }
 }
 
 // ── STAFF ──────────────────────────────────────────────
@@ -2794,15 +2996,27 @@ function renderParentLinks(){
   students.forEach(function(s){
     var name=(s.surname||'')+' '+(s.firstname||'');
     var link=LINKS.parent(s);
+    var emNote=s.parentEmail?' &#9993; '+s.parentEmail:' <span style="color:var(--t4);">no email</span>';
     var d=document.createElement('div');d.className='link-card';
     d.innerHTML='<div class="lk-info"><div class="lk-name">Parent of '+name+'</div>'+
-      '<div class="lk-role">'+(s.class||'')+(s.parentName?' \u00b7 '+s.parentName:'')+'</div></div>';
-    var wa=document.createElement('button');wa.className='btn btn-teal btn-xs';wa.textContent='&#128241; Send to Parent';
+      '<div class="lk-role">'+(s.class||'')+(s.parentName?' \u00b7 '+s.parentName:'')+emNote+'</div></div>';
+    var row=document.createElement('div');row.className='lk-actions';
+    var wa=document.createElement('button');wa.className='btn btn-teal btn-xs';wa.textContent='\uD83D\uDCF1 WhatsApp';
     wa.onclick=(function(nm,l,ph){return function(){
       var num=ph?'234'+ph.replace(/^0/,'').replace(/\D/g,''):'';
       window.open('https://wa.me/'+(num||'')+'?text='+encodeURIComponent('Dear Parent of '+nm+', access your child\'s RSMS portal here: '+l+'\n\nView results, fees and assignments.'),'_blank');
     };})(name,link,s.parentPhone||'');
-    d.appendChild(wa);el2.appendChild(d);
+    row.appendChild(wa);
+    var em=document.createElement('button');
+    if(s.parentEmail){
+      em.className='btn btn-gold btn-xs';em.textContent='\u2709\uFE0F Email Result';
+      em.onclick=(function(stu){return function(){ emailResultToParent(stu.id); };})(s);
+    } else {
+      em.className='btn btn-ghost btn-xs';em.textContent='+ Email';
+      em.onclick=(function(stu){return function(){ openEditStudent(stu); };})(s);
+    }
+    row.appendChild(em);
+    d.appendChild(row);el2.appendChild(d);
   });
 }
 
@@ -2855,7 +3069,7 @@ function renderLessonAI(){
     }
     /* Live refresh: pool + balances update when anything changes — and
        every server copy that arrives refreshes the device ledger. */
-    try{ LESSON_AI.ref().on('value',function(snap){ var v=snap.val()||null; if(v)aiLedgerSave(v); _aiData=v; aiRender(); }); }catch(e){}
+    try{ LESSON_AI.ref().on('value',function(snap){ var v=snap.val()||null; if(v) aiNormalizeData(v); if(v)aiLedgerSave(v); _aiData=v; aiRender(); }); }catch(e){}
   });
 }
 
@@ -2866,7 +3080,9 @@ function giftAllTeachers(){
     var teachers=LESSON_AI.teachers();
     if(!teachers.length){ toast('No teachers found in staff list','error'); return; }
     var n=LESSON_AI.UNITS_PER_TERM;
-    var eligible=teachers.filter(function(t){ return (d.pool||0)>=n; });
+    // Build the maximal prefix that the current pool can actually cover
+    var eligible=[]; var remaining=d.pool||0;
+    for(var ei=0; ei<teachers.length; ei++){ if(remaining>=n){ eligible.push(teachers[ei]); remaining-=n; } }
     if(!eligible.length){
       toast('Pool has '+(d.pool||0)+' free units — not enough to gift everyone '+n+' each. Buy units or start a new term.','error');
       return;
@@ -3013,6 +3229,7 @@ function loadSettings(){
   renderFeeSchedule();
   try{ renderStreamConfig(); }catch(e){}
   try{ loadFlwConfig(); }catch(e){}
+  try{ loadEmailConfig(); }catch(e){}
   try{ loadPortalPins(); }catch(e){}
   try{ slLoadUsers(); }catch(e){}
   // Show existing logo in preview
@@ -3289,8 +3506,25 @@ function previewBulkCSV(){
   var parsed=[];
   var errors=[];
   lines.slice(start).forEach(function(line,i){
-    var cols=line.split(',');
+    // robust split respecting quoted commas
+    var cols=(function parseCSV(l){
+      var r=[],c='',q=false;for(var x=0;x<l.length;x++){var ch=l[x];
+        if(ch==='"'){ if(q&&l[x+1]==='"'){c+='"';x++;} else q=!q; }
+        else if(ch===','&&!q){r.push(c);c='';}
+        else c+=ch;
+      }r.push(c);return r;
+    })(line);
     if(cols.length<3){errors.push('Row '+(i+1+start)+': needs at least Surname, Firstname, Class');return;}
+    // col7 may be Parent Email or Photo URL — detect @ to stay backward compat
+    var col7=(cols[7]||'').trim(), col8=(cols[8]||'').trim();
+    var hasEmail=col7.indexOf('@')>-1;
+    var parentEmail=hasEmail?col7:(col8.indexOf('@')>-1?col8:'');
+    var photoUrl=hasEmail?(col8||''):col7;
+    // if 9+ cols, col7 is email, col8 is photo
+    if(cols.length>=9){ parentEmail=(cols[7]||'').trim(); photoUrl=(cols[8]||'').trim(); }
+    if(parentEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(parentEmail)){
+      errors.push('Row '+(i+1+start)+': invalid email '+parentEmail); parentEmail='';
+    }
     parsed.push({
       surname:(cols[0]||'').trim(),
       firstname:(cols[1]||'').trim(),
@@ -3299,16 +3533,17 @@ function previewBulkCSV(){
       dob:(cols[4]||'').trim(),
       parentPhone:(cols[5]||'').trim(),
       parentName:(cols[6]||'').trim(),
-      photoUrl:(cols[7]||'').trim()
+      parentEmail:parentEmail,
+      photoUrl:photoUrl
     });
   });
   if(!parsed.length){preview.innerHTML='<div style="color:var(--red);font-size:.82rem;">No valid rows found. Check format below.</div>';btn.style.display='none';return;}
   var html='<div style="font-weight:700;color:var(--green);margin-bottom:8px;font-size:.82rem;">'+parsed.length+' students ready to import:</div>';
-  html+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Surname</th><th>Firstname</th><th>Class</th><th>Phone</th></tr></thead><tbody>';
+  html+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Surname</th><th>Firstname</th><th>Class</th><th>Phone</th><th>Email</th></tr></thead><tbody>';
   parsed.slice(0,10).forEach(function(s){
-    html+='<tr><td>'+s.surname+'</td><td>'+s.firstname+'</td><td>'+s.class+'</td><td>'+(s.parentPhone||'-')+'</td></tr>';
+    var e=s.parentEmail||'-'; html+='<tr><td>'+s.surname+'</td><td>'+s.firstname+'</td><td>'+s.class+'</td><td>'+(s.parentPhone||'-')+'</td><td style="color:var(--teal);">'+e+'</td></tr>';
   });
-  if(parsed.length>10)html+='<tr><td colspan="4" style="color:var(--t3);text-align:center;">...and '+(parsed.length-10)+' more</td></tr>';
+  if(parsed.length>10)html+='<tr><td colspan="5" style="color:var(--t3);text-align:center;">...and '+(parsed.length-10)+' more</td></tr>';
   html+='</tbody></table></div>';
   if(errors.length)html+='<div style="color:var(--orange);font-size:.75rem;margin-top:8px;">'+errors.length+' rows skipped</div>';
   preview.innerHTML=html;
@@ -3335,7 +3570,7 @@ function confirmBulkImport(){
     var reg=(school.regPrefix||'REG')+'/'+new Date().getFullYear()+'/'+String(existing.length+added+1).padStart(3,'0');
     existing.push({id:'s'+Date.now()+added,surname:s.surname,firstname:s.firstname,
       class:s.class,gender:s.gender||'Male',dob:s.dob||'',
-      parentPhone:s.parentPhone||'',parentName:s.parentName||'',reg:reg,
+      parentPhone:s.parentPhone||'',parentEmail:s.parentEmail||'',parentName:s.parentName||'',reg:reg,
       photo:s.photoUrl||''});
     added++;
   });
@@ -3348,9 +3583,9 @@ function confirmBulkImport(){
 // ── CSV TEMPLATE DOWNLOAD ────────────────────────────────────────────────
 function downloadStudentTemplate(){
   var rows = [
-    'Surname,Firstname,Class,Gender,DOB (YYYY-MM-DD),Parent Phone,Parent Name,Photo URL (optional)',
-    'Adeyemi,Toluwalope,JSS 1,Male,2012-05-10,08012345678,Mr Adeyemi Rauf,',
-    'Okonkwo,Chidinma,SS 1 Science,Female,2010-03-22,09087654321,Mrs Okonkwo Grace,',
+    'Surname,Firstname,Class,Gender,DOB (YYYY-MM-DD),Parent Phone,Parent Name,Parent Email,Photo URL (optional)',
+    'Adeyemi,Toluwalope,JSS 1,Male,2012-05-10,08012345678,Mr Adeyemi Rauf,ade.parent@email.com,',
+    'Okonkwo,Chidinma,SS 1 Science,Female,2010-03-22,09087654321,Mrs Okonkwo Grace,chidi.mum@email.com,',
     'Bello,Muhammad,JSS 3,Male,2011-09-15,08033221100,Alhaji Bello,'
   ];
   var a = document.createElement('a');
@@ -4160,6 +4395,81 @@ function loadFlwConfig(){
   if(mt&&cfg.methods) mt.value=cfg.methods;
 }
 
+
+// ── RESULT EMAIL CONFIG (Resend / SendGrid) ────────────────────────
+function _emailSid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
+function loadEmailConfig(){
+  var sid=_emailSid();
+  if(!sid) return;
+  try{ firebase.database().ref('schools/'+sid+'/email_config').once('value').then(function(s){
+    var cfg=s.val()||{};
+    var prov=document.getElementById('email-provider'); if(prov&&cfg.provider) prov.value=cfg.provider;
+    var fr=document.getElementById('email-from'); if(fr) fr.value=cfg.from||'';
+    var rt=document.getElementById('email-replyto'); if(rt) rt.value=cfg.replyTo||'';
+    var st=document.getElementById('email-config-status');
+    if(st) st.textContent = cfg.updatedAt ? 'Updated '+new Date(cfg.updatedAt).toLocaleString() + (cfg.hasApiKey?' · key set':' · no key yet') : (cfg.hasApiKey?'Key set':'Not configured');
+    var ks=document.getElementById('email-key-status');
+    if(ks) { ks.textContent = cfg.hasApiKey ? '● key stored' : '○ no key yet'; ks.style.color = cfg.hasApiKey ? 'var(--green)' : 'var(--t4)'; }
+  }); }catch(e){}
+  // also load recent log
+  try{ firebase.database().ref('schools/'+sid+'/email_log').limitToLast(10).once('value').then(function(s){
+    var v=s.val()||{};
+    var rows=Object.values(v).sort(function(a,b){ return (b.at||'').localeCompare(a.at||''); });
+    var el=document.getElementById('email-log-list');
+    if(!el) return;
+    if(!rows.length){ el.innerHTML='<span style="color:var(--t4);">No emails sent yet — use Email Results on the Students page.</span>'; return; }
+    el.innerHTML = rows.map(function(r){
+      var st=r.status || (r.sentAt?'sent':'');
+      var when=r.at||r.sentAt||'';
+      var to=String(r.to||'').replace(/</g,'&lt;');
+      return '<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);">'
+        +'<div><strong style="color:var(--t1);">'+to+'</strong> <span style="color:var(--t3);">· '+String(r.subject||'').slice(0,42).replace(/</g,'&lt;')+'</span></div>'
+        +'<span style="font-size:.72rem;color:var(--t3);white-space:nowrap;">'+ (when?new Date(when).toLocaleDateString():'') +'</span></div>';
+    }).join('');
+  }); }catch(e){ var el=document.getElementById('email-log-list'); if(el) el.textContent='—'; }
+}
+function saveEmailConfig(){
+  var sid=_emailSid(); if(!sid){ toast('No school context','error'); return; }
+  var from=(document.getElementById('email-from')||{value:''}).value.trim();
+  var provider=(document.getElementById('email-provider')||{value:'resend'}).value;
+  var replyTo=(document.getElementById('email-replyto')||{value:''}).value.trim();
+  var fn=firebase.functions().httpsCallable('updateEmailConfig');
+  // legacy PIN fallback: if no auth, include bursar PIN
+  var pins=JSON.parse(localStorage.getItem('rsms_'+sid+'_portal_pins')||localStorage.getItem('rsms_portal_pins')||'{}');
+  var payload={schoolId:sid, from:from, provider:provider, replyTo:replyTo};
+  if(pins.bursar) payload.pin=pins.bursar;
+  fn(payload).then(function(){ toast('Email settings saved','success'); loadEmailConfig(); }).catch(function(e){ toast('Save failed: '+(e.message||'error'),'error'); });
+}
+function saveEmailApiKey(){
+  var sid=_emailSid(); if(!sid){ toast('No school context','error'); return; }
+  var key=(document.getElementById('email-apikey')||{value:''}).value.trim();
+  if(!key){ toast('Enter the provider API key','error'); return; }
+  var provider=(document.getElementById('email-provider')||{value:'resend'}).value;
+  var fn=firebase.functions().httpsCallable('storeEmailSecret');
+  var pins=JSON.parse(localStorage.getItem('rsms_'+sid+'_portal_pins')||localStorage.getItem('rsms_portal_pins')||'{}');
+  var payload={schoolId:sid, provider:provider, action:'set', apiKey:key};
+  if(pins.bursar) payload.pin=pins.bursar;
+  if(!confirm('Store this key in Secret Manager as rsms-email-'+sid+'? It will not be shown again.')) return;
+  fn(payload).then(function(){ toast('API key stored securely','success'); document.getElementById('email-apikey').value=''; loadEmailConfig(); }).catch(function(e){ toast('Key save failed: '+(e.message||'error'),'error'); });
+}
+function sendTestEmail(){
+  var sid=_emailSid(); if(!sid){ toast('No school context','error'); return; }
+  var myEmail=prompt('Send a test result email to which address?','');
+  if(!myEmail) return;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(myEmail.trim())){ toast('Enter a valid email','error'); return; }
+  // push a test entry to mail_queue; function will deliver it
+  try{
+    firebase.database().ref('schools/'+sid+'/mail_queue').push({
+      to: myEmail.trim(),
+      subject: '['+(getSchool().name||'School')+'] Test result email',
+      studentName: 'Test Student', studentId: 'test', class: 'JSS 1', reg: 'TEST-001',
+      term: getSchool().term||'First Term', session: getSchool().session||'2025/2026',
+      portalLink: location.origin+'/rsms-parent.html',
+      resultsLink: location.origin+'/rsms-parent.html',
+      at: new Date().toISOString(), isTest: true
+    }).then(function(){ toast('Test email queued — check inbox & Firebase email_log','success'); setTimeout(loadEmailConfig, 3000); });
+  }catch(e){ toast('Queue failed: '+e.message,'error'); }
+}
 
 // ── PORTAL PIN MANAGEMENT ─────────────────────────────────────────
 var PORTAL_ROLES = [

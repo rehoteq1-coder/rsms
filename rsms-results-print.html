@@ -168,6 +168,7 @@ select.fi option{background:var(--card);}
   <div id="generate-section" style="display:none;">
     <button class="btn btn-gold" onclick="generateCards()">📄 Generate Report Cards</button>
     <button class="btn btn-teal" onclick="window.print()">🖨️ Print All Cards</button>
+    <button class="btn btn-ghost" onclick="emailAllResults()" style="border-color:rgba(212,168,67,.35);">✉️ Email Results to Parents</button>
     <button class="btn btn-ghost" onclick="document.getElementById('cards-output').innerHTML='';document.getElementById('generate-section').style.display='none';">✕ Clear</button>
   </div>
 </div>
@@ -234,6 +235,119 @@ var LOGO     = localStorage.getItem('rsms_school_logo')||'';
 var currentStudents = [];
 var currentScores   = {}; // {stuId: {subject: {ca1,ca2,exam}}}
 var currentSubjects = [];
+// ── PARENT EMAIL PUSH (mailto + Firebase mail_queue) ──────────────
+function _validEmailRS(e){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(e||'').trim()); }
+function _sidRS(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
+function buildResultEmailRS(student, term, sess){
+  var school=JSON.parse(localStorage.getItem('rsms_school')||'{}');
+  var name=((student.surname||'')+' '+(student.firstname||'')).trim();
+  var t=term||school.term||'Term', s=sess||school.session||'Session';
+  var subject='['+(school.name||'School')+'] '+t+' Result — '+name+' ('+(student.class||'')+')';
+  var sid=_sidRS();
+  // build parent link via local LINKS if available else direct url
+  var tokens=JSON.parse(localStorage.getItem('rsms_tokens')||'{}');
+  var portalLink='';
+  try{
+    // reuse same token scheme as admin LINKS.parent would
+    var existing = Object.keys(tokens).find(function(k){
+      var v=tokens[k]; return v && v.role==='parent' && v.childId===student.id;
+    });
+    if(existing) portalLink='https://rsms.rehoteq.com/rsms-parent.html?token='+existing;
+    else {
+      // generate a token now (mirror LINKS._save logic)
+      var tk=btoa((student.id||student.reg)+'|'+Date.now()).replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
+      var data={role:'parent',childId:student.id,childName:name,class:student.class,parentPhone:student.parentPhone||'',parentEmail:student.parentEmail||''};
+      tokens[tk]=data; localStorage.setItem('rsms_tokens', JSON.stringify(tokens));
+      portalLink='https://rsms.rehoteq.com/rsms-parent.html?token='+tk;
+    }
+  }catch(e){ portalLink='https://rsms.rehoteq.com/rsms-parent.html'; }
+  var body=[
+    'Dear Parent/Guardian of '+name+',',
+    '',
+    (school.name||'Your school')+' has published the '+t+' ('+s+') result for '+name+' — Class: '+(student.class||'')+' — Reg: '+(student.reg||'')+'.',
+    '',
+    'View the report card & portal:',
+    portalLink,
+    '',
+    'You can also log in with your phone number on the Parent Portal to see all terms.',
+    '',
+    '-- '+(school.name||'School')+' via RSMS',
+    school.phone?'Tel: '+school.phone:'',
+    school.email?'Email: '+school.email:''
+  ].filter(Boolean).join('\n');
+  return {to: student.parentEmail, subject: subject, body: body, link: portalLink};
+}
+function logEmailRS(student, subject){
+  try{
+    var sid=_sidRS();
+    var key=sid?'rsms_'+sid+'_email_log':'rsms_email_log';
+    var logs=JSON.parse(localStorage.getItem(key)||'[]');
+    logs.unshift({at:new Date().toISOString(), stuId: student.id, name:(student.surname||'')+' '+(student.firstname||''), class: student.class, reg: student.reg, to: student.parentEmail, subject: subject});
+    if(logs.length>500) logs=logs.slice(0,500);
+    localStorage.setItem(key, JSON.stringify(logs));
+    localStorage.setItem('rsms_email_log', JSON.stringify(logs));
+    try{
+      if(sid && typeof firebase!=='undefined' && firebase.database){
+        firebase.database().ref('schools/'+sid+'/mail_queue').push({
+          to: student.parentEmail, subject: subject, studentId: student.id,
+          studentName:(student.surname||'')+' '+(student.firstname||''),
+          class: student.class, reg: student.reg, portalLink: buildResultEmailRS(student, document.getElementById('term-sel').value, document.getElementById('sess-in').value).link,
+          term: document.getElementById('term-sel').value||'', session: document.getElementById('sess-in').value||'',
+          at: new Date().toISOString()
+        });
+      }
+    }catch(e){}
+  }catch(e){}
+}
+function emailOneResult(studentId){
+  var s=STUDENTS.find(function(x){return x.id===studentId;});
+  if(!s){ toast('Student not found','error'); return; }
+  if(!s.parentEmail || !_validEmailRS(s.parentEmail)){
+    toast('No parent email for '+((s.surname||'')+' '+(s.firstname||''))+' — add it in Admin → Students → Edit','error');
+    return;
+  }
+  var term=(document.getElementById('term-sel')||{value:'First Term'}).value;
+  var sess=(document.getElementById('sess-in')||{value:'2025/2026'}).value;
+  var mail=buildResultEmailRS(s, term, sess);
+  window.location.href='mailto:'+encodeURIComponent(mail.to)+'?subject='+encodeURIComponent(mail.subject)+'&body='+encodeURIComponent(mail.body);
+  logEmailRS(s, mail.subject);
+  toast('✉️ Email draft opened for '+mail.to,'success');
+}
+function emailAllResults(){
+  if(!currentStudents.length){ toast('Load a class preview first','error'); return; }
+  var term=(document.getElementById('term-sel')||{value:'First Term'}).value;
+  var sess=(document.getElementById('sess-in')||{value:'2025/2026'}).value;
+  var school=JSON.parse(localStorage.getItem('rsms_school')||'{}');
+  var withEmail=currentStudents.filter(function(s){return s.parentEmail && _validEmailRS(s.parentEmail);});
+  var without=currentStudents.filter(function(s){return !s.parentEmail || !_validEmailRS(s.parentEmail);});
+  if(!withEmail.length){ toast('No parent emails for this class — add emails in Admin → Students','error'); return; }
+  if(!window.confirm('Email '+term+' results to '+withEmail.length+' parent(s)'+(without.length?' ('+without.length+' without email will be skipped)':'')+'?')) return;
+  if(withEmail.length<=30){
+    var subject='['+(school.name||'School')+'] '+term+' Results — '+document.getElementById('cls-sel').value+' ('+sess+')';
+    var body='Dear Parents/Guardians,\n\n'+(school.name||'School')+' has published '+term+' ('+sess+') results for '+document.getElementById('cls-sel').value+'.\nEach parent can view their child\'s report card via their personal link:\n\n';
+    withEmail.forEach(function(s){
+      var name=((s.surname||'')+' '+(s.firstname||'')).trim();
+      var mail=buildResultEmailRS(s, term, sess);
+      body+='• '+name+' ('+s.class+' — '+s.reg+'): '+mail.link+'\n';
+    });
+    body+='\n— '+(school.name||'School')+' via RSMS\n';
+    var bcc=withEmail.map(function(s){return s.parentEmail;}).join(',');
+    window.location.href='mailto:?bcc='+encodeURIComponent(bcc)+'&subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+    withEmail.forEach(function(s){ logEmailRS(s, subject); });
+    toast('✉️ Draft opened with '+withEmail.length+' parents in BCC','success');
+  } else {
+    var i=0;
+    (function next(){
+      if(i>=withEmail.length){ toast('Opened '+withEmail.length+' drafts','success'); return; }
+      var s=withEmail[i++]; var mail=buildResultEmailRS(s, term, sess);
+      window.open('mailto:'+encodeURIComponent(mail.to)+'?subject='+encodeURIComponent(mail.subject)+'&body='+encodeURIComponent(mail.body), '_blank');
+      logEmailRS(s, mail.subject);
+      setTimeout(next, 850);
+    })();
+    toast('Opening '+withEmail.length+' drafts — allow pop-ups','info');
+  }
+}
+
 
 // ── INIT ──────────────────────────────────────────────────────
 function initResultPage(){
@@ -455,14 +569,16 @@ function showPreview(cls, term, sess){
     },0);
     var row=document.createElement('div');
     row.className='student-preview';
+    row.style.display='flex'; row.style.alignItems='center'; row.style.justifyContent='space-between';
+    var emailIcon = s.parentEmail && _validEmailRS(s.parentEmail)
+      ? '<button onclick="emailOneResult(\''+s.id+'\')" title="Email result to '+s.parentEmail+'" style="width:30px;height:30px;border-radius:8px;border:1px solid rgba(212,168,67,.35);background:rgba(212,168,67,.14);color:#d4a843;cursor:pointer;font-size:.9rem;flex-shrink:0;">✉️</button>'
+      : '<span title="No parent email — add in Admin" style="width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid rgba(255,255,255,.08);color:var(--t4);font-size:.75rem;opacity:.45;">✉️</span>';
     row.innerHTML=
-      '<div>'+
+      '<div style="flex:1;min-width:0;">'+
         '<div style="font-weight:700;font-size:.85rem;">'+name+'</div>'+
-        '<div style="font-size:.72rem;color:var(--t3);">'+s.reg+'</div>'+
+        '<div style="font-size:.72rem;color:var(--t3);">'+s.reg+(s.parentEmail?' · <span style="color:#d4a843;">'+s.parentEmail+'</span>':' · <span style="color:var(--t4);">no email</span>')+'</div>'+
       '</div>'+
-      '<span class="badge '+(subjectCount>0?'bg-green':'bg-red')+'">'+
-        subjectCount+' subject'+(subjectCount!==1?'s':'')+
-      '</span>';
+      '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'+emailIcon+'<span class="badge '+(subjectCount>0?'bg-green':'bg-red')+'">'+subjectCount+' subject'+(subjectCount!==1?'s':'')+'</span></div>';
     previewList.appendChild(row);
   });
 

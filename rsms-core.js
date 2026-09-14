@@ -400,6 +400,23 @@ var LESSON_AI = {
     return {alreadyDone:alreadyDone, teachers:teachers, count:teachers.length};
   }
 };
+function aiStudioLink(){
+  try{
+    var s=JSON.parse(localStorage.getItem('rsms_school')||'{}')||{};
+    var schoolId=s.schoolId||'';
+    var user=(function(){try{return JSON.parse(sessionStorage.getItem('rsms_user')||'{}')||{};}catch(e){return {};}})();
+    var email='';
+    if(typeof AI_UNITS!=='undefined' && typeof AI_UNITS.normEmail==='function'){
+      email=AI_UNITS.normEmail(user.email||'') || (AI_UNITS.normEmail((user.name||'').replace(/\s+/g,''))||'unknown')+'@rsms.school';
+    } else {
+      email=(user.email||((user.name||'').replace(/\s+/g,''))+'@rsms.school').toLowerCase();
+    }
+    if(schoolId && email) return 'https://rehoteq.com/lesson-ai.html?school='+encodeURIComponent(schoolId)+'&teacher='+encodeURIComponent(email);
+    if(email) return 'https://rehoteq.com/lesson-ai.html?teacher='+encodeURIComponent(email);
+    return 'https://rehoteq.com/lesson-ai.html';
+  }catch(e){ return 'https://rehoteq.com/lesson-ai.html'; }
+}
+
 
 // ── LINK GENERATOR ────────────────────────────────────
 var LINKS = {

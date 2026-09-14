@@ -29,6 +29,8 @@ var https = require('firebase-functions/v2/https');
 var gateway = require('./gateway');
 var secretstore = require('./secretstore');
 var offlineSync = require('./offlineSync');
+var email = require('./email');
+var dbV2 = require('firebase-functions/v2/database');
 
 if(!admin.apps.length) admin.initializeApp();
 
@@ -616,6 +618,204 @@ exports.offlineSyncPull = https.onCall({maxInstances:5, timeoutSeconds:60}, func
   });
 });
 
+
+// ── RESULT EMAIL DELIVERY (mail_queue → provider) ─────────────────
+// Client pushes schools/{schoolId}/mail_queue/{pushId} {to,subject,…}.
+// The function sends one transactional email per entry, marks it sent,
+// and appends an email_log row. Idempotent: a pushId already marked
+// sent/failed is skipped. A missing/invalid email is marked failed
+// (no retry). A transient provider error keeps the entry for retry
+// (the next write to the same pushId will not re-trigger, so the client
+// should not delete failed entries; an operator retries via resend).
+
+function gateEmailAccess(request, data, schoolId){
+  // Same dual-mode gate as gateway secrets: Firebase Auth claims or legacy PIN
+  return gateSchoolAccess(request, data, schoolId);
+}
+
+exports.storeEmailSecret = https.onCall({maxInstances:5}, function(request){
+  var data = callableData(request);
+  var schoolId = cleanText(data.schoolId, 160);
+  var apiKey = data.apiKey === undefined || data.apiKey === null ? '' : String(data.apiKey);
+  var action = cleanText(data.action, 16).toLowerCase();
+  if(!schoolId) throw new https.HttpsError('invalid-argument','schoolId is required.');
+  if(action !== 'set' && action !== 'revoke') throw new https.HttpsError('invalid-argument','action must be set or revoke.');
+  if(action === 'set' && (!apiKey || apiKey.length < 10 || apiKey.length > 2000)){
+    throw new https.HttpsError('invalid-argument','A valid provider API key is required.');
+  }
+  return gateEmailAccess(request, data, schoolId).then(function(mode){
+    var op = action === 'set' ? email.createEmailSecret(schoolId, apiKey) : email.revokeEmailSecret(schoolId);
+    var stamp = new Date().toISOString();
+    return op.then(function(){
+      return database().ref('schools/'+schoolId+'/email_config').update({
+        hasApiKey: action === 'set',
+        provider: cleanText((data.provider||'resend'), 20).toLowerCase() || 'resend',
+        updatedAt: stamp,
+        updatedBy: mode
+      });
+    }).then(function(){
+      return database().ref('schools/'+schoolId+'/audit_log').push({
+        id:'email-secret-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),
+        action: action === 'set' ? 'Email provider key configured' : 'Email provider key revoked',
+        type:'email_settings',
+        details:'Email provider key '+(action==='set'?'configured':'revoked')+' · stored in Secret Manager as '+email.emailSecretName(schoolId),
+        timestamp: stamp, date: stamp.slice(0,10), user: 'Admin ('+mode+')'
+      });
+    }).then(function(){ return {ok:true, action:action}; });
+  }).catch(function(e){
+    if(e instanceof https.HttpsError) throw e;
+    throw new https.HttpsError('internal','The email key could not be saved.');
+  });
+});
+
+exports.updateEmailConfig = https.onCall({maxInstances:5}, function(request){
+  var data = callableData(request);
+  var schoolId = cleanText(data.schoolId, 160);
+  if(!schoolId) throw new https.HttpsError('invalid-argument','schoolId is required.');
+  return gateEmailAccess(request, data, schoolId).then(function(mode){
+    var cfg = {};
+    if(data.from !== undefined) {
+      var from = String(data.from||'').trim().slice(0,200);
+      if(from && !email.isValidFromAddress(from)) throw new https.HttpsError('invalid-argument','From address is not a valid email.');
+      cfg.from = from;
+    }
+    if(data.provider !== undefined) {
+      var p = String(data.provider||'').toLowerCase().trim();
+      if(p && p!=='resend' && p!=='sendgrid') throw new https.HttpsError('invalid-argument','provider must be resend or sendgrid.');
+      cfg.provider = p || 'resend';
+    }
+    if(data.replyTo !== undefined) {
+      var rt = String(data.replyTo||'').trim().slice(0,320);
+      if(rt && !email.isValidEmail(rt)) throw new https.HttpsError('invalid-argument','replyTo must be a valid email.');
+      cfg.replyTo = rt;
+    }
+    cfg.updatedAt = new Date().toISOString();
+    cfg.updatedBy = mode;
+    return database().ref('schools/'+schoolId+'/email_config').update(cfg).then(function(){
+      return {ok:true, config:cfg};
+    });
+  });
+});
+
+exports.sendResultEmail = dbV2.onValueCreated({
+  ref: 'schools/{schoolId}/mail_queue/{pushId}',
+  region: 'europe-west1',
+  maxInstances: 10,
+  memory: '256MiB'
+}, async function(event){
+  var schoolId = event.params.schoolId;
+  var pushId = event.params.pushId;
+  var snap = event.data;
+  if(!snap) return null;
+  var entry = snap.val() || {};
+  // Idempotency: already processed
+  if(entry.sentAt || entry.failedAt || entry.status === 'sent' || entry.status === 'failed') return null;
+
+  var to = cleanText(entry.to, 320);
+  var subject = cleanText(entry.subject, 500);
+  var studentId = cleanText(entry.studentId, 64);
+  var studentName = cleanText(entry.studentName || entry.student || '', 160);
+  var portalLink = String(entry.portalLink || entry.resultsLink || '').trim().slice(0, 2000);
+  var resultsLink = String(entry.resultsLink || portalLink).trim().slice(0, 2000);
+  var cls = cleanText(entry.class || entry.className || '', 64);
+  var reg = cleanText(entry.reg || '', 64);
+  var term = cleanText(entry.term || '', 64);
+  var sess = cleanText(entry.session || '', 64);
+
+  if(!email.isValidEmail(to)){
+    await database().ref('schools/'+schoolId+'/mail_queue/'+pushId).update({
+      status:'failed', failedAt: new Date().toISOString(), error:'invalid-recipient-email'
+    });
+    return null;
+  }
+  if(!subject){
+    await database().ref('schools/'+schoolId+'/mail_queue/'+pushId).update({
+      status:'failed', failedAt: new Date().toISOString(), error:'missing-subject'
+    });
+    return null;
+  }
+
+  // Fetch school context for branded email
+  var infoSnap = await database().ref('schools/'+schoolId+'/info').once('value');
+  var info = infoSnap.val() || {};
+  // Fallback: try public info shape or bare school node
+  if(!info.name){
+    var alt = await database().ref('schools/'+schoolId).once('value').then(function(s){ var v=s.val()||{}; return v.info || v; });
+    if(alt && alt.name) info = alt;
+  }
+  var cfgSnap = await database().ref('schools/'+schoolId+'/email_config').once('value');
+  var emailCfg = cfgSnap.val() || {};
+  var provider = email.resolveProvider(emailCfg);
+  var apiKey = '';
+  try { apiKey = await email.resolveApiKey(schoolId, provider); } catch(e){
+    await database().ref('schools/'+schoolId+'/mail_queue/'+pushId).update({
+      status:'failed', failedAt: new Date().toISOString(), error:'secret-access-failed: '+(e.message||'unknown')
+    });
+    return null;
+  }
+  if(!apiKey){
+    // No key configured — mark as queued (operator must configure)
+    await database().ref('schools/'+schoolId+'/mail_queue/'+pushId).update({
+      status:'queued', queuedAt: new Date().toISOString(), error:'email-provider-not-configured: set RESEND_API_KEY or per-school secret '+email.emailSecretName(schoolId)
+    });
+    return null;
+  }
+
+  var schoolName = info.name || info.schoolName || 'School';
+  var schoolAddress = info.address || '';
+  var schoolPhone = info.phone || '';
+  var schoolEmail = info.email || emailCfg.replyTo || '';
+  var logoUrl = info.logoUrl || info.logo || '';
+  // Prefer entry's term/session, fall back to school info
+  if(!term) term = cleanText(info.term || 'Term', 64);
+  if(!sess) sess = cleanText(info.session || '', 64);
+
+  var html = email.buildResultHtml({
+    studentName: studentName || 'Student',
+    className: cls, reg: reg, term: term, session: sess,
+    schoolName: schoolName, schoolAddress: schoolAddress,
+    schoolPhone: schoolPhone, schoolEmail: schoolEmail,
+    portalLink: portalLink, resultsLink: resultsLink, logoUrl: logoUrl
+  });
+  var text = entry.body ? String(entry.body) : email.buildResultText({
+    studentName: studentName || 'Student', className: cls, reg: reg,
+    term: term, session: sess, schoolName: schoolName,
+    schoolPhone: schoolPhone, schoolEmail: schoolEmail,
+    portalLink: portalLink, resultsLink: resultsLink
+  });
+  var from = email.defaultFrom({name: schoolName, schoolId: schoolId, address: schoolAddress, phone: schoolPhone, email: schoolEmail, term: term, session: sess}, emailCfg);
+  var replyTo = cleanText(emailCfg.replyTo || schoolEmail, 320);
+
+  try {
+    var result = await email.sendEmail({provider: provider, to: to, subject: subject, html: html, text: text, from: from, replyTo: replyTo, apiKey: apiKey});
+    var now = new Date().toISOString();
+    await database().ref('schools/'+schoolId+'/mail_queue/'+pushId).update({
+      status:'sent', sentAt: now, provider: provider, providerId: result.id || '', from: from
+    });
+    // Append to email_log for the admin timeline
+    await database().ref('schools/'+schoolId+'/email_log').push({
+      at: now, pushId: pushId, to: to, subject: subject,
+      studentId: studentId, studentName: studentName, class: cls, reg: reg,
+      term: term, session: sess, portalLink: portalLink, resultsLink: resultsLink,
+      provider: provider, providerId: result.id || '', from: from
+    });
+    return null;
+  } catch(err){
+    var msg = String(err && err.message || 'send-failed').slice(0, 500);
+    var isTransient = /rate limit|timeout|503|502|429|fetch failed|ETIMEDOUT|ECONN/i.test(msg);
+    await database().ref('schools/'+schoolId+'/mail_queue/'+pushId).update({
+      status: isTransient ? 'retry' : 'failed',
+      failedAt: new Date().toISOString(),
+      error: msg,
+      provider: provider
+    });
+    // Throw for transient so Functions retries (v2 database triggers retry on throw)
+    if(isTransient) throw err;
+    return null;
+  }
+});
+
+
 // Exported only for focused emulator/integration tests; deployment exports
 // are the functions above.
 exports._private = {
@@ -625,5 +825,6 @@ exports._private = {
   timingSafeTextEqual:timingSafeTextEqual,
   sha256:sha256,
   secretstore:secretstore,
-  offlineSync:offlineSync
+  offlineSync:offlineSync,
+  email:email
 };
