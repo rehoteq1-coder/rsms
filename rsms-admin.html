@@ -1191,6 +1191,43 @@ window.RSMS_DB = {
     <button class="btn btn-teal btn-full" onclick="saveFlwConfig()">&#9989; Save Payment Config</button>
   </div>
 
+  <!-- Result Email Delivery (Resend / SendGrid) -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">✉️ Result Email Delivery <span style="font-size:.72rem;color:var(--t3);font-weight:400;">— server-sent via provider</span></div>
+    <div style="font-size:.78rem;color:var(--t3);margin-bottom:12px;line-height:1.6;">
+      Emails queued when you hit <strong style="color:var(--t1);">Email Results</strong> are sent automatically from the server (no mail app needed). Set your provider key once — it is stored in Secret Manager, never in the database.<br>
+      <span style="color:var(--gold);">Recommended: Resend</span> — get a key at <a href="https://resend.com/api-keys" target="_blank" style="color:var(--teal);">resend.com/api-keys</a> (verify your domain first) or use SendGrid.
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Provider</label>
+        <select class="fi" id="email-provider" style="height:46px;">
+          <option value="resend">Resend (recommended)</option>
+          <option value="sendgrid">SendGrid</option>
+        </select>
+      </div>
+      <div class="fg"><label>From address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4);">— must be from a verified domain</span></label>
+        <input class="fi" id="email-from" placeholder="e.g. Results &lt;noreply@myschool.com&gt; or noreply@myschool.com" />
+      </div>
+    </div>
+    <div class="fg"><label>Reply-To (optional)</label>
+      <input class="fi" id="email-replyto" type="email" placeholder="e.g. info@myschool.com" />
+    </div>
+    <div class="fg"><label>Provider API Key <span id="email-key-status" style="font-weight:700;margin-left:8px;"></span></label>
+      <input class="fi" id="email-apikey" type="password" placeholder="re_xxx… (Resend) or SG.xxx… (SendGrid) — leave blank to keep existing" />
+      <div style="font-size:.72rem;color:var(--t3);margin-top:6px;">Stored securely in Google Secret Manager as <code style="font-family:var(--mono);background:var(--card2);padding:1px 5px;border-radius:4px;">rsms-email-&lt;schoolId&gt;</code>. Never shown again after saving.</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+      <button class="btn btn-gold" onclick="saveEmailConfig()">💾 Save Email Settings</button>
+      <button class="btn btn-teal btn-sm" onclick="saveEmailApiKey()">🔑 Save API Key</button>
+      <button class="btn btn-ghost btn-sm" onclick="sendTestEmail()">✉️ Send Test to Me</button>
+    </div>
+    <div style="font-size:.72rem;color:var(--t3);margin-top:10px;">Status: <span id="email-config-status" style="color:var(--t2);">—</span></div>
+    <div style="margin-top:14px;">
+      <div style="font-weight:700;color:var(--t1);font-size:.82rem;margin-bottom:6px;">Recent sends (email_log)</div>
+      <div id="email-log-list" style="font-size:.78rem;color:var(--t3);">Loading…</div>
+    </div>
+  </div>
+
   <!-- Portal PIN / Password Management -->
   <div class="card" style="margin-bottom:12px;">
     <div class="card-title">&#128274; Portal PINs &amp; Passwords</div>
@@ -3192,6 +3229,7 @@ function loadSettings(){
   renderFeeSchedule();
   try{ renderStreamConfig(); }catch(e){}
   try{ loadFlwConfig(); }catch(e){}
+  try{ loadEmailConfig(); }catch(e){}
   try{ loadPortalPins(); }catch(e){}
   try{ slLoadUsers(); }catch(e){}
   // Show existing logo in preview
@@ -4357,6 +4395,81 @@ function loadFlwConfig(){
   if(mt&&cfg.methods) mt.value=cfg.methods;
 }
 
+
+// ── RESULT EMAIL CONFIG (Resend / SendGrid) ────────────────────────
+function _emailSid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
+function loadEmailConfig(){
+  var sid=_emailSid();
+  if(!sid) return;
+  try{ firebase.database().ref('schools/'+sid+'/email_config').once('value').then(function(s){
+    var cfg=s.val()||{};
+    var prov=document.getElementById('email-provider'); if(prov&&cfg.provider) prov.value=cfg.provider;
+    var fr=document.getElementById('email-from'); if(fr) fr.value=cfg.from||'';
+    var rt=document.getElementById('email-replyto'); if(rt) rt.value=cfg.replyTo||'';
+    var st=document.getElementById('email-config-status');
+    if(st) st.textContent = cfg.updatedAt ? 'Updated '+new Date(cfg.updatedAt).toLocaleString() + (cfg.hasApiKey?' · key set':' · no key yet') : (cfg.hasApiKey?'Key set':'Not configured');
+    var ks=document.getElementById('email-key-status');
+    if(ks) { ks.textContent = cfg.hasApiKey ? '● key stored' : '○ no key yet'; ks.style.color = cfg.hasApiKey ? 'var(--green)' : 'var(--t4)'; }
+  }); }catch(e){}
+  // also load recent log
+  try{ firebase.database().ref('schools/'+sid+'/email_log').limitToLast(10).once('value').then(function(s){
+    var v=s.val()||{};
+    var rows=Object.values(v).sort(function(a,b){ return (b.at||'').localeCompare(a.at||''); });
+    var el=document.getElementById('email-log-list');
+    if(!el) return;
+    if(!rows.length){ el.innerHTML='<span style="color:var(--t4);">No emails sent yet — use Email Results on the Students page.</span>'; return; }
+    el.innerHTML = rows.map(function(r){
+      var st=r.status || (r.sentAt?'sent':'');
+      var when=r.at||r.sentAt||'';
+      var to=String(r.to||'').replace(/</g,'&lt;');
+      return '<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);">'
+        +'<div><strong style="color:var(--t1);">'+to+'</strong> <span style="color:var(--t3);">· '+String(r.subject||'').slice(0,42).replace(/</g,'&lt;')+'</span></div>'
+        +'<span style="font-size:.72rem;color:var(--t3);white-space:nowrap;">'+ (when?new Date(when).toLocaleDateString():'') +'</span></div>';
+    }).join('');
+  }); }catch(e){ var el=document.getElementById('email-log-list'); if(el) el.textContent='—'; }
+}
+function saveEmailConfig(){
+  var sid=_emailSid(); if(!sid){ toast('No school context','error'); return; }
+  var from=(document.getElementById('email-from')||{value:''}).value.trim();
+  var provider=(document.getElementById('email-provider')||{value:'resend'}).value;
+  var replyTo=(document.getElementById('email-replyto')||{value:''}).value.trim();
+  var fn=firebase.functions().httpsCallable('updateEmailConfig');
+  // legacy PIN fallback: if no auth, include bursar PIN
+  var pins=JSON.parse(localStorage.getItem('rsms_'+sid+'_portal_pins')||localStorage.getItem('rsms_portal_pins')||'{}');
+  var payload={schoolId:sid, from:from, provider:provider, replyTo:replyTo};
+  if(pins.bursar) payload.pin=pins.bursar;
+  fn(payload).then(function(){ toast('Email settings saved','success'); loadEmailConfig(); }).catch(function(e){ toast('Save failed: '+(e.message||'error'),'error'); });
+}
+function saveEmailApiKey(){
+  var sid=_emailSid(); if(!sid){ toast('No school context','error'); return; }
+  var key=(document.getElementById('email-apikey')||{value:''}).value.trim();
+  if(!key){ toast('Enter the provider API key','error'); return; }
+  var provider=(document.getElementById('email-provider')||{value:'resend'}).value;
+  var fn=firebase.functions().httpsCallable('storeEmailSecret');
+  var pins=JSON.parse(localStorage.getItem('rsms_'+sid+'_portal_pins')||localStorage.getItem('rsms_portal_pins')||'{}');
+  var payload={schoolId:sid, provider:provider, action:'set', apiKey:key};
+  if(pins.bursar) payload.pin=pins.bursar;
+  if(!confirm('Store this key in Secret Manager as rsms-email-'+sid+'? It will not be shown again.')) return;
+  fn(payload).then(function(){ toast('API key stored securely','success'); document.getElementById('email-apikey').value=''; loadEmailConfig(); }).catch(function(e){ toast('Key save failed: '+(e.message||'error'),'error'); });
+}
+function sendTestEmail(){
+  var sid=_emailSid(); if(!sid){ toast('No school context','error'); return; }
+  var myEmail=prompt('Send a test result email to which address?','');
+  if(!myEmail) return;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(myEmail.trim())){ toast('Enter a valid email','error'); return; }
+  // push a test entry to mail_queue; function will deliver it
+  try{
+    firebase.database().ref('schools/'+sid+'/mail_queue').push({
+      to: myEmail.trim(),
+      subject: '['+(getSchool().name||'School')+'] Test result email',
+      studentName: 'Test Student', studentId: 'test', class: 'JSS 1', reg: 'TEST-001',
+      term: getSchool().term||'First Term', session: getSchool().session||'2025/2026',
+      portalLink: location.origin+'/rsms-parent.html',
+      resultsLink: location.origin+'/rsms-parent.html',
+      at: new Date().toISOString(), isTest: true
+    }).then(function(){ toast('Test email queued — check inbox & Firebase email_log','success'); setTimeout(loadEmailConfig, 3000); });
+  }catch(e){ toast('Queue failed: '+e.message,'error'); }
+}
 
 // ── PORTAL PIN MANAGEMENT ─────────────────────────────────────────
 var PORTAL_ROLES = [

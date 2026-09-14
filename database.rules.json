@@ -134,6 +134,17 @@
           "$pushId": {
             ".validate": "newData.hasChildren(['to','subject']) && newData.child('to').isString() && newData.child('to').val().matches(/^[^@]+@[^@]+\\.[^@]+$/)"
           }
+        },
+        "email_config": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "email_log": {
+          ".read": "auth != null",
+          ".write": "auth != null",
+          "$pushId": {
+            ".validate": "newData.hasChildren(['to','subject'])"
+          }
         }
       }
     }
