@@ -435,6 +435,7 @@ textarea.fi { padding:12px 14px; height:auto; resize:vertical; }
   box-shadow:0 4px 20px rgba(0,0,0,.2);
 }
 .toast.show { transform:translateX(-50%) translateY(0); }
+.toast:empty { display:none; }
 .toast.ok   { background:#14532d; border-left:3px solid var(--green); }
 .toast.err  { background:#4c0519; border-left:3px solid var(--red); }
 .toast.info { background:#0c1a2e; border-left:3px solid var(--teal); }
@@ -667,7 +668,7 @@ body{background:var(--bg);min-height:100vh;font-family:var(--sans);}
       <label for="staff-password" style="display:none;">Password</label>
       <input class="staff-login-field" id="staff-password" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter'){emailLogin();}"/>
       <button type="button" class="staff-login-btn" id="staff-email-btn" onclick="emailLogin()">Sign In</button>
-      <p class="staff-login-note" id="staff-login-note">School PIN sign-in remains available above.</p>
+      <p class="staff-login-note" id="staff-login-note">School PIN sign-in remains available in the next step.</p>
     </section>
   </div>
 
