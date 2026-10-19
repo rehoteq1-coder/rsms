@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.rehoteq.rsms",
+      "sha256_cert_fingerprints": ["18:AD:16:F5:00:C0:8D:D9:C8:8A:CA:36:7B:25:54:F2:5B:55:83:00:63:26:8B:82:BA:DF:CD:25:9C:1D:18:31"]
+    }
+  }
+]
