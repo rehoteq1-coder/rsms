@@ -1360,8 +1360,8 @@ function renderSchools(){
       '</div>'+
       '<div class="sc-stats">'+
         '<div class="sc-stat"><div class="sc-sv">'+naira(pp.monthly)+'</div><div class="sc-sl">/month</div></div>'+
-        '<div class="sc-stat"><div class="sc-sv">'+(s.studentsCount||0)+'</div><div class="sc-sl">Students</div></div>'+
-        '<div class="sc-stat"><div class="sc-sv">'+(s.staffCount||0)+'</div><div class="sc-sl">Staff</div></div>'+
+        '<div class="sc-stat"><div class="sc-sv" data-cnt="students" data-sid="'+s.schoolId+'">'+(s.studentsCount||0)+'</div><div class="sc-sl">Students</div></div>'+
+        '<div class="sc-stat"><div class="sc-sv" data-cnt="staff" data-sid="'+s.schoolId+'">'+(s.staffCount||0)+'</div><div class="sc-sl">Staff</div></div>'+
         '<div class="sc-stat"><div class="sc-sv" style="color:'+(s.status==='active'?'var(--green)':'var(--red)')+';">'+(s.status||'active')+'</div><div class="sc-sl">Status</div></div>'+
       '</div>'+
       '<div class="sc-actions">';
@@ -1387,6 +1387,23 @@ function renderSchools(){
     actDiv.appendChild(bb);
     d.appendChild(actDiv);
     el.appendChild(d);
+  });
+  _fillLiveCounts();
+}
+
+// Students/Staff counters, counted live from each school's roster on
+// Firebase (schools/<id>/students, /staff — the nodes the migrate step
+// publishes). The record's studentsCount/staffCount stay untouched, and a
+// school whose roster was never migrated simply keeps showing 0.
+function _fillLiveCounts(){
+  var db=_fbDB();
+  if(!db) return;
+  Array.prototype.forEach.call(document.querySelectorAll('[data-cnt]'),function(el){
+    var sid=el.getAttribute('data-sid'), key=el.getAttribute('data-cnt');
+    if(!sid) return;
+    db.ref('schools/'+sid+'/'+key).limitToFirst(2000).once('value').then(function(snap){
+      el.textContent=snap.numChildren();
+    }).catch(function(){});
   });
 }
 

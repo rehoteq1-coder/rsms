@@ -530,11 +530,12 @@ function _ctrlFB(){
   }catch(e){ return null; }
 }
 
-// ── SCHOOL ID: new STATE-TYPE-SEQ pattern ────────────────────
-// New schools take OD-SEC-0001-style IDs. Existing records keep their IDs
-// untouched (REH-..., legacy registry IDs); the sequence is computed from
-// every ID already known locally AND on Firebase, so two devices can never
-// allocate the same number.
+// ── SCHOOL ID: REH-XXXXXXXX pattern ─────────────────────────
+// New schools take REH-XXXXXXXX IDs, the pattern the portals and admin
+// links already use (like the demo school REH-2J8KQ2XF). Existing records
+// keep their IDs untouched (legacy registry IDs), and every generated ID
+// is checked against the IDs known locally AND on Firebase so two devices
+// can never allocate the same one.
 var _fbIdCache=null;
 function _ctrlNewPatternIds(){
   var ids=[];
@@ -547,15 +548,6 @@ function _ctrlNewPatternIds(){
   push('OND-ENT-0001'); push('OND-SEC-0001'); // built-in registry schools
   return ids;
 }
-function _nextSeqFor(ids,state,type){
-  var re=/^[A-Z]{2}-[A-Z]{2}-\d{4}$/, max=0;
-  ids.forEach(function(id){
-    if(!re.test(id)) return;
-    var p=id.split('-');
-    if(p[0]===state&&p[1]===type){ var n=parseInt(p[2],10); if(n>max) max=n; }
-  });
-  return max+1;
-}
 function refreshFbIds(cb){
   var db=_ctrlFB();
   if(!db){ if(cb)cb(false); return; }
@@ -564,11 +556,41 @@ function refreshFbIds(cb){
     if(cb)cb(true);
   }).catch(function(){ if(cb)cb(false); });
 }
-function nextSchoolId(state,type,cb){
+// REH-XXXXXXXX: 8 chars from the same unambiguous alphabet the superadmin
+// console uses, retried until the ID is unused locally and on Firebase.
+function _rehRef(){
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var r='';for(var i=0;i<8;i++)r+=chars[Math.floor(Math.random()*chars.length)];
+  return r;
+}
+function genRehId(cb){
   refreshFbIds(function(){
-    var seq=_nextSeqFor(_ctrlNewPatternIds().concat(_fbIdCache||[]),state,type);
-    cb(state+'-'+type+'-'+String(seq).padStart(4,'0'));
+    var taken=_ctrlNewPatternIds().concat(_fbIdCache||[]);
+    for(var i=0;i<40;i++){
+      var id='REH-'+_rehRef();
+      if(taken.indexOf(id)<0){ cb(id); return; }
+    }
+    cb('REH-'+_rehRef());
   });
+}
+// Real dashboard totals: student/staff rosters are counted live from each
+// deployed school on Firebase (schools/<id>/students, /staff — the same
+// nodes the migrate step publishes), no more invented numbers.
+function _ctrlLiveTotals(cb){
+  var out={students:0,staff:0},left=0;
+  var db=_ctrlFB();
+  if(!db||!DB.schools.length){ cb(out); return; }
+  DB.schools.forEach(function(s){
+    if(!s.schoolID) return;
+    ['students','staff'].forEach(function(k){
+      left++;
+      db.ref('schools/'+s.schoolID+'/'+k).limitToFirst(2000).once('value').then(function(snap){
+        out[k]+=snap.numChildren();
+        if(--left===0) cb(out);
+      }).catch(function(){ if(--left===0) cb(out); });
+    });
+  });
+  if(!left) cb(out);
 }
 
 // ── REGISTRY ↔ FIREBASE SYNC (records survive device loss) ──
@@ -602,19 +624,10 @@ function syncRegistryFromFb(done){
 }
 
 function genRegId(){
-  var st=(document.getElementById('reg-state')||{}).value||'OD';
-  var ty=(document.getElementById('reg-type')||{}).value||'ENT';
-  nextSchoolId(st,ty,function(id){
+  genRehId(function(id){
     var el=document.getElementById('reg-sid');
     if(el) el.value=id;
   });
-}
-function _fillRegStateType(){
-  var ds=document.getElementById('dep-state'), dt=document.getElementById('dep-type');
-  var rs=document.getElementById('reg-state'), rt=document.getElementById('reg-type');
-  if(ds&&rs){ rs.innerHTML=ds.innerHTML; rt.innerHTML=dt.innerHTML;
-    rs.value=rs.options[0]?rs.options[0].value:'OD';
-    rt.value=rt.options[0]?rt.options[0].value:'ENT'; }
 }
 var sendHistory = JSON.parse(localStorage.getItem('rsms_send_history') || '[]');
 var ONBOARD_URL = '';
@@ -684,7 +697,8 @@ function initApp(){
   var queue=getQueue().length;
   countUp('k-schools',schools.length);
   document.getElementById('k-revenue').textContent='₦'+revenue.toLocaleString();
-  countUp('k-students',schools.length*(Math.floor(100+Math.random()*200)));
+  countUp('k-students',0);
+  _ctrlLiveTotals(function(t){ countUp('k-students',t.students); });
   countUp('k-queue',queue);
   document.getElementById('nav-pip').style.display=queue?'block':'none';
   document.getElementById('rev-total').textContent='₦'+revenue.toLocaleString();
@@ -863,9 +877,7 @@ function shareLink(platform){
 
 // ── DEPLOY ──
 function previewDeployID(){
-  var state=document.getElementById('dep-state').value||'OD';
-  var type=document.getElementById('dep-type').value||'SEC';
-  nextSchoolId(state,type,function(id){
+  genRehId(function(id){
     var pw=Math.random().toString(36).slice(-8).toUpperCase();
     document.getElementById('gen-id').textContent=id;
     document.getElementById('gen-pw').textContent=pw;
@@ -1054,7 +1066,6 @@ function _renderRegistryNow(){
 
 function openAddSchool(){
   document.getElementById('m-add-school').style.display='flex';
-  _fillRegStateType();
   genRegId();
 }
 function closeAddSchool(){
@@ -1215,21 +1226,14 @@ function buildRegBtn(label, action, arg1, arg2, isDanger) {
       <div style="font-size:.7rem;color:rgba(240,242,255,.25);margin-top:5px;">Lowercase letters and numbers only. No spaces.</div>
     </div>
     <div style="margin-bottom:12px;">
-      <label style="font-size:.65rem;font-weight:800;color:rgba(240,242,255,.35);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:5px;">State / Type</label>
-      <div style="display:flex;gap:8px;">
-        <select id="reg-state" onchange="genRegId()" style="flex:1;height:48px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:0 14px;color:#f0f2ff;font-size:.95rem;font-family:Outfit,sans-serif;outline:none;cursor:pointer;"></select>
-        <select id="reg-type" onchange="genRegId()" style="flex:1;height:48px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:0 14px;color:#f0f2ff;font-size:.95rem;font-family:Outfit,sans-serif;outline:none;cursor:pointer;"></select>
-      </div>
-    </div>
-    <div style="margin-bottom:12px;">
-      <label style="font-size:.65rem;font-weight:800;color:rgba(240,242,255,.35);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:5px;">School ID * <span style="color:rgba(212,168,67,.5);font-size:.6rem;">STATE-TYPE-0001</span></label>
+      <label style="font-size:.65rem;font-weight:800;color:rgba(240,242,255,.35);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:5px;">School ID * <span style="color:rgba(212,168,67,.5);font-size:.6rem;">REH-XXXXXXXX</span></label>
       <div style="display:flex;align-items:center;gap:8px;">
-        <input id="reg-sid" type="text" placeholder="e.g. OD-ENT-0001"
+        <input id="reg-sid" type="text" placeholder="e.g. REH-2J8KQ2XF"
           oninput="this.value=this.value.toUpperCase()"
           style="flex:1;height:48px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:0 14px;color:#f0f2ff;font-size:.95rem;font-family:monospace;letter-spacing:.12em;font-weight:700;outline:none;"/>
         <button onclick="genRegId()" style="height:48px;width:48px;flex:none;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#d4a843;font-size:1rem;cursor:pointer;">↻</button>
       </div>
-      <div style="font-size:.7rem;color:rgba(240,242,255,.25);margin-top:5px;">Auto-generated in the new pattern. Editable if a school must keep a fixed ID.</div>
+      <div style="font-size:.7rem;color:rgba(240,242,255,.25);margin-top:5px;">Auto-generated REH- ID. Editable if a school must keep a fixed ID.</div>
     </div>
     <div style="margin-bottom:12px;">
       <label style="font-size:.65rem;font-weight:800;color:rgba(240,242,255,.35);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:5px;">Plan</label>
