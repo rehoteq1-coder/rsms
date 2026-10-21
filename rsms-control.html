@@ -488,7 +488,27 @@ textarea.fi{height:auto;min-height:90px;padding:13px 15px;resize:vertical;}
 <div class="toast" id="toast"></div>
 
 <script>
-var MASTER_PW = localStorage.getItem('rsms_ctrl_pw') || 'rehoteq@boss2025';
+// Password is checked as a SHA-256 hash so the plaintext never ships in the
+// public repo. To change the password, store the SHA-256 hex of the new one in
+// localStorage under 'rsms_ctrl_pw_hash' (the old plaintext override is
+// migrated automatically on first login).
+var MASTER_PW_HASH = 'ea485648cf5452e2105c11c53e2c8787de34983aa88ae38d82f30025b954c07e';
+async function sha256hex(str){
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+}
+async function expectedCtrlHash(){
+  var h = localStorage.getItem('rsms_ctrl_pw_hash');
+  if(h) return h;
+  var legacy = localStorage.getItem('rsms_ctrl_pw');
+  if(legacy){
+    var d = await sha256hex(legacy);
+    localStorage.setItem('rsms_ctrl_pw_hash', d);
+    localStorage.removeItem('rsms_ctrl_pw');
+    return d;
+  }
+  return MASTER_PW_HASH;
+}
 var DB = {
   schools: JSON.parse(localStorage.getItem('rsms_super_schools') || '[]'),
   payments: JSON.parse(localStorage.getItem('rsms_super_payments') || '[]'),
@@ -504,9 +524,11 @@ function getOnboardURL(){
 }
 
 // ── LOGIN ──
-function doLogin(){
+async function doLogin(){
   var pw = document.getElementById('ctrl-pw').value;
-  if(pw === MASTER_PW){
+  var entered = await sha256hex(pw);
+  var expect  = await expectedCtrlHash();
+  if(entered === expect){
     sessionStorage.setItem('rsms_ctrl_auth','true');
     document.getElementById('login-screen').style.display='none';
     document.getElementById('main-app').style.display='flex';
