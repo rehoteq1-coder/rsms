@@ -440,6 +440,26 @@ textarea.fi{height:auto;min-height:90px;padding:13px 15px;resize:vertical;}
       </div>
     </div>
 
+
+    <!-- ═══ CONSOLE (superadmin, single-PWA merge) ═══ -->
+    <div class="page" id="page-console">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;">
+        <div>
+          <div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--t1);">🛠️ Superadmin Console</div>
+          <div style="font-size:var(--fs-sm);color:var(--t3);">Schools, admin links, branding and plans in one place.</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="openConsole()">Reload</button>
+      </div>
+      <div style="border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;">
+        <iframe id="console-frame" title="RSMS Superadmin Console" style="width:100%;height:78vh;border:0;display:none;"></iframe>
+        <div id="console-placeholder" style="padding:30px 20px;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:8px;">🛠️</div>
+          <div style="font-weight:700;color:var(--t1);margin-bottom:6px;">Full superadmin tools, built in</div>
+          <div style="font-size:var(--fs-sm);color:var(--t3);margin-bottom:16px;">Create schools, generate and verify admin links, edit branding and plans. The console asks for its own password once, inside the frame.</div>
+          <button class="btn btn-gold" onclick="openConsole()">Open console</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- BOTTOM NAV -->
@@ -450,6 +470,7 @@ textarea.fi{height:auto;min-height:90px;padding:13px 15px;resize:vertical;}
     <div class="nav-item" onclick="switchTab('revenue',this)"><span class="nav-ico">💰</span><div class="nav-lbl">Revenue</div></div>
     <div class="nav-item" onclick="switchTab('send',this)"><span class="nav-ico">📲</span><div class="nav-lbl">Send Link</div></div>
     <div class="nav-item" onclick="switchTab('deploy',this)"><span class="nav-ico">🚀</span><div class="nav-lbl">Deploy</div></div>
+    <div class="nav-item" onclick="switchTab('console',this)"><span class="nav-ico">🛠️</span><div class="nav-lbl">Console</div></div>
   </div>
 </div>
 
@@ -506,7 +527,7 @@ function toast(msg,type){
 
 // ── TABS ──
 function switchTab(name,el){
-  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');p.style.display='';});
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
   if(el)el.classList.add('active');
@@ -515,6 +536,17 @@ function switchTab(name,el){
   if(name==='revenue')renderRevenue();
   if(name==='deploy')previewDeployID();
   if(name==='send')initSendPage();
+  if(name==='console')openConsole();
+}
+
+// ── SUPERADMIN CONSOLE (single-PWA merge) ─────────────────
+function openConsole(){
+  var f=document.getElementById('console-frame');
+  if(!f)return;
+  if(!f.dataset.loaded){ f.src='rsms-superadmin.html'; f.dataset.loaded='1'; }
+  f.style.display='block';
+  var ph=document.getElementById('console-placeholder');
+  if(ph)ph.style.display='none';
 }
 
 // ── INIT ──
@@ -832,7 +864,7 @@ window.addEventListener('load',function(){
     initApp();
     if(tab){
       var navItems=document.querySelectorAll('.nav-item');
-      var tabMap={deploy:navItems[5],send:navItems[4],schools:navItems[1]};
+      var tabMap={deploy:navItems[5],send:navItems[4],schools:navItems[1],console:navItems[6]};
       if(tabMap[tab])switchTab(tab,tabMap[tab]);
     }
   }
