@@ -735,6 +735,7 @@ select.fi option{background:var(--card);color:var(--t1);}
     <div class="link-output-wrap">
       <input class="fi" id="link-output" readonly style="font-family:var(--mono);font-size:.68rem;height:38px;"/>
     </div>
+    <div id="link-check" style="font-size:.75rem;margin:-4px 0 14px;"></div>
     <div style="font-size:.75rem;color:var(--t3);margin-bottom:14px;">
       &#8505;&#65039; This link logs the admin directly in. They should bookmark it after first login.
     </div>
@@ -1101,21 +1102,70 @@ function _fbDB(){
   }catch(e){ return null; }
 }
 
-function saveSchools(d){
+function saveSchools(d, cb){
   try{ localStorage.setItem('rsms_sa_schools',JSON.stringify(d)); }catch(e){ toast('Storage full! Remove unused schools.','error'); }
-  // Auto push public data to Firebase
-  var db=_fbDB(); if(!db) return;
+  publishSchools(d, cb);
+}
+
+// Firebase-first publishing. Firebase is the source of truth other devices
+// resolve (login page, admin portal); localStorage is only this console's
+// cache. Every school carries a syncState so a failed publish is visible,
+// never silent.
+function _schoolPub(sc){
+  var tok=sc.adminToken||'';
+  return {schoolId:sc.schoolId,name:sc.name,plan:sc.plan,
+    state:sc.state||'',subdomain:sc.subdomain||'',
+    brandColor:(sc.branding&&sc.branding.brandColor)||'#d4a843',
+    logoUrl:(sc.branding&&sc.branding.logoUrl)||'',
+    bgImages:(sc.branding&&sc.branding.bgImages)||[],
+    adminToken:tok,updatedAt:new Date().toISOString()};
+}
+
+function _persistSchools(d){
+  try{ localStorage.setItem('rsms_sa_schools',JSON.stringify(d)); }catch(e){}
+}
+
+function _markSync(schoolId,state,syncedAt){
+  var all=getSchools();
+  var i=all.findIndex(function(x){return x.schoolId===schoolId;});
+  if(i<0) return;
+  all[i].syncState=state;
+  all[i].syncedAt=syncedAt||'';
+  _persistSchools(all);
+}
+
+function publishSchools(d, cb){
+  var db=_fbDB();
+  if(!db){
+    d.forEach(function(sc){ sc.syncState='pending'; });
+    d.forEach(function(sc){ _markSync(sc.schoolId,'pending',''); });
+    if(cb)cb('Firebase unavailable');
+    return;
+  }
+  if(!d.length){ if(cb)cb(null); return; }
+  var left=d.length, failed=[];
   d.forEach(function(sc){
-    var tok=sc.adminToken||'';
-    var pub={schoolId:sc.schoolId,name:sc.name,plan:sc.plan,
-      state:sc.state||'',subdomain:sc.subdomain||'',
-      brandColor:(sc.branding&&sc.branding.brandColor)||'#d4a843',
-      logoUrl:(sc.branding&&sc.branding.logoUrl)||'',
-      bgImages:(sc.branding&&sc.branding.bgImages)||[],
-      adminToken:tok,updatedAt:new Date().toISOString()};
-    db.ref('public_schools/'+sc.schoolId).set(pub);
-    if(sc.subdomain) db.ref('public_schools_by_subdomain/'+sc.subdomain).set(pub);
-    db.ref('schools/'+sc.schoolId+'/info').set(sc);
+    var upd={};
+    upd['public_schools/'+sc.schoolId]=_schoolPub(sc);
+    if(sc.subdomain) upd['public_schools_by_subdomain/'+sc.subdomain]=_schoolPub(sc);
+    upd['schools/'+sc.schoolId+'/info']=sc;
+    db.ref().update(upd, function(err){
+      left--;
+      if(err){ failed.push(sc.schoolId); _markSync(sc.schoolId,'pending',''); }
+      else _markSync(sc.schoolId,'synced',new Date().toISOString());
+      if(left===0&&cb) cb(failed.length?('publish failed for '+failed.join(', ')):null);
+    });
+  });
+}
+
+function publishPendingSchools(){
+  var all=getSchools();
+  var pending=all.filter(function(s){return s.syncState==='pending';});
+  if(!pending.length) return;
+  publishSchools(pending, function(err){
+    if(err) toast('Some schools are still unpublished ('+err+'). Open Schools to retry.','error');
+    else toast(pending.length+' pending school(s) published to Firebase','success');
+    if(window.onPage_schools) window.onPage_schools();
   });
 }
 function getTokens(){
@@ -1124,13 +1174,15 @@ function getTokens(){
   var t2=JSON.parse(localStorage.getItem('rsms_tokens')||'{}');
   return Object.assign({}, t2, t1); // sa_tokens takes priority
 }
-function saveTokens(d){
+function saveTokens(d, cb){
   localStorage.setItem('rsms_sa_tokens',JSON.stringify(d));
-  var db=_fbDB(); if(!db) return;
-  Object.keys(d).forEach(function(tok){
-    var td=d[tok]; if(!td||!td.schoolId) return;
-    db.ref('schools/'+td.schoolId+'/tokens/'+tok).set(td);
-  });
+  var db=_fbDB();
+  if(!db){ if(cb)cb('Firebase unavailable'); return; }
+  var entries=Object.keys(d).filter(function(tok){ return d[tok]&&d[tok].schoolId; });
+  if(!entries.length){ if(cb)cb(null); return; }
+  var upd={};
+  entries.forEach(function(tok){ upd['schools/'+d[tok].schoolId+'/tokens/'+tok]=d[tok]; });
+  db.ref().update(upd, function(err){ if(cb)cb(err||null); });
 }
 
 // ── UTILS ───────────────────────────────────────────────
@@ -1218,6 +1270,7 @@ function showDashboard(){
   gEl('screen-login').style.display = 'none';
   gEl('screen-main').style.display  = 'block';
   showPage('home');
+  publishPendingSchools();
 }
 
 function saLogout(){
@@ -1406,33 +1459,16 @@ function createSchool(){
   closeModal('m-create-school');
   showPage('schools');
 
-  // Immediately publish new school to Firebase so login page can find it
-  try{
-    if(typeof firebase !== 'undefined'){
-      var _cfg={apiKey:'AIzaSyDKkmeHjIJm1vTg9A-o_AZnhIp1f3jmG2M',
-        databaseURL:'https://rsms-a84ff-default-rtdb.europe-west1.firebasedatabase.app',
-        projectId:'rsms-a84ff'};
-      if(!firebase.apps.length) firebase.initializeApp(_cfg);
-      // Get the just-created school
-      var _all=getSchools();
-      var _sc=_all[_all.length-1];
-      if(_sc){
-        var _pub={schoolId:_sc.schoolId,name:_sc.name,plan:_sc.plan,
-          state:_sc.state||'',subdomain:_sc.subdomain||'',
-          brandColor:(_sc.branding&&_sc.branding.brandColor)||'#d4a843',
-          logoUrl:(_sc.branding&&_sc.branding.logoUrl)||'',
-          bgImages:(_sc.branding&&_sc.branding.bgImages)||[],
-          adminToken:_sc.adminToken||'',
-          updatedAt:new Date().toISOString()};
-        firebase.database().ref('public_schools/'+_sc.schoolId).set(_pub)
-          .then(function(){ toast('School created & published to Firebase! Staff can now login with the School ID.','success'); })
-          .catch(function(e){ toast('School created. Firebase sync pending.','info'); });
-        // Cache locally too
-        var _p=JSON.parse(localStorage.getItem('rsms_public_schools')||'{}');
-        _p[_sc.schoolId]=_pub; try{ localStorage.setItem('rsms_public_schools',JSON.stringify(_p)); }catch(e){}
-      }
-    }
-  }catch(e){}
+  // Publish to Firebase immediately so the login and admin pages can resolve
+  // this school and its token. A failed publish is loud, never silent.
+  var _all=getSchools();
+  var _sc=_all[_all.length-1];
+  if(_sc){
+    publishSchools([_sc], function(err){
+      if(err) toast('School created locally, but Firebase publish FAILED ('+err+'). Verify the link before sharing.','error');
+      else toast('School created & published to Firebase! Staff can now login with the School ID.','success');
+    });
+  }
 }
 
 function openEditSchool(s){
@@ -1465,11 +1501,55 @@ function genAdminLink(school){
     brandColor:(school.branding&&school.branding.brandColor)||'#d4a843',
     logoUrl:(school.branding&&school.branding.logoUrl)||'',
     subdomain:school.subdomain||'',name:'Admin',active:true};
-  saveTokens(tokens);
+  saveTokens(tokens, function(err){
+    if(err) toast('Token saved locally but Firebase publish failed ('+err+')','error');
+  });
   var BASE = 'https://rsms.rehoteq.com/rsms-admin.html?token='+token;
   gEl('link-output').value = BASE;
   gEl('link-school-name').textContent = school.name+' ('+school.plan+')';
   openModal('m-link-modal');
+  verifyAdminLink(school);
+}
+
+// Verify the link the way the admin page will see it: read the school and the
+// token back from Firebase. A link must pass this before it is shared.
+function verifyAdminLink(school){
+  var box=gEl('link-check'); if(!box) return;
+  var db=_fbDB();
+  if(!db){ box.innerHTML='<span style="color:#e5484d;">&#9888;&#65039; Cannot verify: Firebase unavailable on this device.</span>'; return; }
+  box.textContent='&#8987; Checking link against Firebase…';
+  var sid=school.schoolId, tok=school.adminToken;
+  if(!sid||!tok){ box.innerHTML='<span style="color:#e5484d;">&#9888;&#65039; Missing school ID or admin token.</span>'; return; }
+  db.ref('public_schools/'+sid).once('value').then(function(ps){
+    var pub=ps.val();
+    return db.ref('schools/'+sid+'/tokens/'+tok).once('value').then(function(ts){
+      var rec=ts.val();
+      var tokMatches=!!(pub&&pub.adminToken===tok);
+      if(pub&&rec&&tokMatches){
+        box.innerHTML='<span style="color:#30a46c;">&#9989; Verified: school and admin token are live on Firebase. Safe to share.</span>';
+      }else{
+        var miss=[];
+        if(!pub) miss.push('school not published to public_schools');
+        if(pub&&!tokMatches) miss.push('published adminToken does not match this link');
+        if(!rec) miss.push('admin token missing under schools/'+sid+'/tokens');
+        box.innerHTML='<span style="color:#e5484d;">&#9888;&#65039; NOT ready to share: '+miss.join('; ')+'.</span> <a href="javascript:void(0)" onclick="republishSchool(\''+sid+'\')" style="color:#d4a843;">Republish now</a>';
+      }
+    });
+  }).catch(function(e){
+    box.innerHTML='<span style="color:#e5484d;">&#9888;&#65039; Verification failed: '+((e&&e.message)||e)+'</span>';
+  });
+}
+
+function republishSchool(schoolId){
+  var all=getSchools();
+  var sc=all.find(function(x){return x.schoolId===schoolId;});
+  if(!sc){ toast('School not found locally','error'); return; }
+  saveTokens(getTokens(), function(){
+    publishSchools([sc], function(err){
+      if(err){ toast('Republish failed: '+err,'error'); verifyAdminLink(sc); }
+      else{ toast('Republished to Firebase','success'); verifyAdminLink(sc); }
+    });
+  });
 }
 
 function copyAdminLink(){
