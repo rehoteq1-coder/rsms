@@ -487,6 +487,8 @@ textarea.fi{height:auto;min-height:90px;padding:13px 15px;resize:vertical;}
 
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
 // Password is checked as a SHA-256 hash so the plaintext never ships in the
 // public repo. To change the password, store the SHA-256 hex of the new one in
@@ -515,6 +517,105 @@ var DB = {
   schoolCount: parseInt(localStorage.getItem('rsms_school_count') || '0')
 };
 var deferredPrompt = null;
+
+// ── FIREBASE (rsms-a84ff, the same project the portals use) ──
+function _ctrlFB(){
+  try{
+    if(typeof firebase==='undefined') return null;
+    var cfg={apiKey:'AIzaSyDKkmeHjIJm1vTg9A-o_AZnhIp1f3jmG2M',
+      databaseURL:'https://rsms-a84ff-default-rtdb.europe-west1.firebasedatabase.app',
+      projectId:'rsms-a84ff'};
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    return firebase.database();
+  }catch(e){ return null; }
+}
+
+// ── SCHOOL ID: new STATE-TYPE-SEQ pattern ────────────────────
+// New schools take OD-SEC-0001-style IDs. Existing records keep their IDs
+// untouched (REH-..., legacy registry IDs); the sequence is computed from
+// every ID already known locally AND on Firebase, so two devices can never
+// allocate the same number.
+var _fbIdCache=null;
+function _ctrlNewPatternIds(){
+  var ids=[];
+  var push=function(v){ if(typeof v==='string'&&v.trim()) ids.push(v.trim().toUpperCase()); };
+  var map=JSON.parse(localStorage.getItem('rsms_school_map')||'{}');
+  Object.keys(map).forEach(function(k){ push(map[k]); });
+  var reg=JSON.parse(localStorage.getItem('rsms_schools_registry')||'{}');
+  Object.keys(reg).forEach(function(k){ if(reg[k]&&reg[k].schoolId) push(reg[k].schoolId); });
+  JSON.parse(localStorage.getItem('rsms_super_schools')||'[]').forEach(function(s){ push(s.schoolID); });
+  push('OND-ENT-0001'); push('OND-SEC-0001'); // built-in registry schools
+  return ids;
+}
+function _nextSeqFor(ids,state,type){
+  var re=/^[A-Z]{2}-[A-Z]{2}-\d{4}$/, max=0;
+  ids.forEach(function(id){
+    if(!re.test(id)) return;
+    var p=id.split('-');
+    if(p[0]===state&&p[1]===type){ var n=parseInt(p[2],10); if(n>max) max=n; }
+  });
+  return max+1;
+}
+function refreshFbIds(cb){
+  var db=_ctrlFB();
+  if(!db){ if(cb)cb(false); return; }
+  db.ref('public_schools').limitToFirst(5000).once('value').then(function(s){
+    _fbIdCache=Object.keys(s.val()||{});
+    if(cb)cb(true);
+  }).catch(function(){ if(cb)cb(false); });
+}
+function nextSchoolId(state,type,cb){
+  refreshFbIds(function(){
+    var seq=_nextSeqFor(_ctrlNewPatternIds().concat(_fbIdCache||[]),state,type);
+    cb(state+'-'+type+'-'+String(seq).padStart(4,'0'));
+  });
+}
+
+// ── REGISTRY ↔ FIREBASE SYNC (records survive device loss) ──
+// Firebase is the source of truth once synced; local-only entries are pushed
+// up so nothing stays stranded on one device. Existing records are only ever
+// added or mirrored, never rewritten.
+var _regSynced=false;
+function syncRegistryFromFb(done){
+  var db=_ctrlFB();
+  if(!db||_regSynced){ if(done)done(); return; }
+  db.ref('control_registry').limitToFirst(5000).once('value').then(function(s){
+    var remote=s.val()||{};
+    var reg=JSON.parse(localStorage.getItem('rsms_schools_registry')||'{}');
+    var map=JSON.parse(localStorage.getItem('rsms_school_map')||'{}');
+    var changed=false;
+    Object.keys(remote).forEach(function(sub){
+      var r=remote[sub];
+      if(!r||!r.schoolId) return;
+      if(JSON.stringify(reg[sub])!==JSON.stringify(r)){ reg[sub]=r; map[sub]=r.schoolId; changed=true; }
+    });
+    Object.keys(reg).forEach(function(sub){
+      if(!remote[sub]) db.ref('control_registry/'+sub).set(reg[sub]);
+    });
+    if(changed){
+      localStorage.setItem('rsms_schools_registry',JSON.stringify(reg));
+      localStorage.setItem('rsms_school_map',JSON.stringify(map));
+    }
+    _regSynced=true;
+    if(done)done();
+  }).catch(function(){ _regSynced=true; if(done)done(); });
+}
+
+function genRegId(){
+  var st=(document.getElementById('reg-state')||{}).value||'OD';
+  var ty=(document.getElementById('reg-type')||{}).value||'ENT';
+  nextSchoolId(st,ty,function(id){
+    var el=document.getElementById('reg-sid');
+    if(el) el.value=id;
+  });
+}
+function _fillRegStateType(){
+  var ds=document.getElementById('dep-state'), dt=document.getElementById('dep-type');
+  var rs=document.getElementById('reg-state'), rt=document.getElementById('reg-type');
+  if(ds&&rs){ rs.innerHTML=ds.innerHTML; rt.innerHTML=dt.innerHTML;
+    rs.value=rs.options[0]?rs.options[0].value:'OD';
+    rt.value=rt.options[0]?rt.options[0].value:'ENT'; }
+}
 var sendHistory = JSON.parse(localStorage.getItem('rsms_send_history') || '[]');
 var ONBOARD_URL = '';
 
@@ -764,13 +865,13 @@ function shareLink(platform){
 function previewDeployID(){
   var state=document.getElementById('dep-state').value||'OD';
   var type=document.getElementById('dep-type').value||'SEC';
-  var seq=String(DB.schoolCount+1).padStart(4,'0');
-  var id=state+'-'+type+'-'+seq;
-  var pw=Math.random().toString(36).slice(-8).toUpperCase();
-  document.getElementById('gen-id').textContent=id;
-  document.getElementById('gen-pw').textContent=pw;
-  document.getElementById('gen-tc').textContent='TCH-'+id+'-'+Math.floor(1000+Math.random()*9000);
-  document.getElementById('gen-sc').textContent='STU-'+id+'-'+Math.floor(1000+Math.random()*9000);
+  nextSchoolId(state,type,function(id){
+    var pw=Math.random().toString(36).slice(-8).toUpperCase();
+    document.getElementById('gen-id').textContent=id;
+    document.getElementById('gen-pw').textContent=pw;
+    document.getElementById('gen-tc').textContent='TCH-'+id+'-'+Math.floor(1000+Math.random()*9000);
+    document.getElementById('gen-sc').textContent='STU-'+id+'-'+Math.floor(1000+Math.random()*9000);
+  });
 }
 
 function deploySchool(){
@@ -790,6 +891,16 @@ function deploySchool(){
   localStorage.setItem('rsms_super_schools',JSON.stringify(DB.schools));
   localStorage.setItem('rsms_school_count',String(DB.schoolCount));
   toast('🚀 '+name+' deployed! ID: '+schoolID,'success');
+  // Persist the deploy record so it survives device loss. This only adds;
+  // existing Firebase records are never rewritten.
+  var _db=_ctrlFB();
+  if(_db){
+    _db.ref('control_deploys/'+schoolID).set(school).catch(function(e){
+      toast('Deployed locally. Firebase sync failed ('+((e&&e.message)||e)+')','error');
+    });
+  }else{
+    toast('Deployed locally. Firebase unavailable on this device.','error');
+  }
   countUp('k-schools',DB.schools.length);
   previewDeployID();
 }
@@ -901,6 +1012,9 @@ function showRegistry(){
 }
 
 function renderRegistry(){
+  syncRegistryFromFb(function(){ _renderRegistryNow(); });
+}
+function _renderRegistryNow(){
   var map = JSON.parse(localStorage.getItem('rsms_school_map')||'{}');
   var builtin = {'sharonrose':'OND-ENT-0001','gtc':'OND-SEC-0001'};
   Object.keys(builtin).forEach(function(k){ if(!map[k]) map[k]=builtin[k]; });
@@ -940,6 +1054,8 @@ function renderRegistry(){
 
 function openAddSchool(){
   document.getElementById('m-add-school').style.display='flex';
+  _fillRegStateType();
+  genRegId();
 }
 function closeAddSchool(){
   document.getElementById('m-add-school').style.display='none';
@@ -952,6 +1068,10 @@ function saveSchoolReg(){
   var plan = document.getElementById('reg-plan').value;
   var notes= document.getElementById('reg-notes').value.trim();
   if(!name||!sub||!sid){ alert('Fill School Name, Subdomain and School ID'); return; }
+  // An ID already used locally or published on Firebase is refused, so
+  // existing records are never overwritten or shadowed.
+  if(_ctrlNewPatternIds().indexOf(sid)>-1){ alert('School ID '+sid+' is already in use on this device. Tap ↻ to generate a fresh one.'); return; }
+  if(_fbIdCache&&_fbIdCache.indexOf(sid)>-1){ alert('School ID '+sid+' is already published on Firebase. Tap ↻ to generate a fresh one.'); return; }
 
   // Save to school map (for auto-detection)
   var map = JSON.parse(localStorage.getItem('rsms_school_map')||'{}');
@@ -975,7 +1095,16 @@ function saveSchoolReg(){
     var el=document.getElementById(id); if(el) el.value='';
   });
 
-  ctrlToast('✅ '+name+' registered — '+sub+'.rehoteq.com is live!','success');
+  _fbIdCache=_fbIdCache||[]; _fbIdCache.push(sid);
+  var _db=_ctrlFB();
+  if(_db){
+    _db.ref('control_registry/'+sub).set({name:name,subdomain:sub,schoolId:sid,plan:plan,notes:notes,
+      url:'https://'+sub+'.rehoteq.com',registeredAt:new Date().toISOString()})
+      .then(function(){ ctrlToast('✅ '+name+' registered & saved to Firebase — '+sub+'.rehoteq.com is live!','success'); })
+      .catch(function(e){ ctrlToast('⚠️ Registered locally; Firebase save failed ('+((e&&e.message)||e)+')','error'); });
+  }else{
+    ctrlToast('✅ '+name+' registered locally — Firebase unavailable on this device','error');
+  }
 }
 
 function copyLink(url){
@@ -1086,10 +1215,21 @@ function buildRegBtn(label, action, arg1, arg2, isDanger) {
       <div style="font-size:.7rem;color:rgba(240,242,255,.25);margin-top:5px;">Lowercase letters and numbers only. No spaces.</div>
     </div>
     <div style="margin-bottom:12px;">
-      <label style="font-size:.65rem;font-weight:800;color:rgba(240,242,255,.35);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:5px;">School ID *</label>
-      <input id="reg-sid" type="text" placeholder="e.g. OND-ENT-0001"
-        oninput="this.value=this.value.toUpperCase()"
-        style="width:100%;height:48px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:0 14px;color:#f0f2ff;font-size:.95rem;font-family:monospace;letter-spacing:.12em;font-weight:700;outline:none;"/>
+      <label style="font-size:.65rem;font-weight:800;color:rgba(240,242,255,.35);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:5px;">State / Type</label>
+      <div style="display:flex;gap:8px;">
+        <select id="reg-state" onchange="genRegId()" style="flex:1;height:48px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:0 14px;color:#f0f2ff;font-size:.95rem;font-family:Outfit,sans-serif;outline:none;cursor:pointer;"></select>
+        <select id="reg-type" onchange="genRegId()" style="flex:1;height:48px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:0 14px;color:#f0f2ff;font-size:.95rem;font-family:Outfit,sans-serif;outline:none;cursor:pointer;"></select>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:.65rem;font-weight:800;color:rgba(240,242,255,.35);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:5px;">School ID * <span style="color:rgba(212,168,67,.5);font-size:.6rem;">STATE-TYPE-0001</span></label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input id="reg-sid" type="text" placeholder="e.g. OD-ENT-0001"
+          oninput="this.value=this.value.toUpperCase()"
+          style="flex:1;height:48px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:0 14px;color:#f0f2ff;font-size:.95rem;font-family:monospace;letter-spacing:.12em;font-weight:700;outline:none;"/>
+        <button onclick="genRegId()" style="height:48px;width:48px;flex:none;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#d4a843;font-size:1rem;cursor:pointer;">↻</button>
+      </div>
+      <div style="font-size:.7rem;color:rgba(240,242,255,.25);margin-top:5px;">Auto-generated in the new pattern. Editable if a school must keep a fixed ID.</div>
     </div>
     <div style="margin-bottom:12px;">
       <label style="font-size:.65rem;font-weight:800;color:rgba(240,242,255,.35);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:5px;">Plan</label>
