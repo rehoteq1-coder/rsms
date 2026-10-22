@@ -548,6 +548,15 @@ function _ctrlNewPatternIds(){
   push('OND-ENT-0001'); push('OND-SEC-0001'); // built-in registry schools
   return ids;
 }
+var _pubSchools=null;
+function _loadPubSchools(cb){
+  var db=_ctrlFB();
+  if(!db){ if(cb)cb(null); return; }
+  db.ref('public_schools').limitToFirst(500).once('value').then(function(s){
+    _pubSchools=s.val()||{};
+    if(cb)cb(_pubSchools);
+  }).catch(function(){ if(cb)cb(null); });
+}
 function refreshFbIds(cb){
   var db=_ctrlFB();
   if(!db){ if(cb)cb(false); return; }
@@ -576,15 +585,18 @@ function genRehId(cb){
 // Real dashboard totals: student/staff rosters are counted live from each
 // deployed school on Firebase (schools/<id>/students, /staff — the same
 // nodes the migrate step publishes), no more invented numbers.
-function _ctrlLiveTotals(cb){
+function _ctrlLiveTotals(ids,cb){
   var out={students:0,staff:0},left=0;
   var db=_ctrlFB();
-  if(!db||!DB.schools.length){ cb(out); return; }
-  DB.schools.forEach(function(s){
-    if(!s.schoolID) return;
+  var targets=(ids||[]).concat(DB.schools.map(function(s){return s.schoolID;}).filter(Boolean));
+  var uniq={};
+  targets.forEach(function(i){ if(i&&!uniq[i]) uniq[i]=1; });
+  targets=Object.keys(uniq);
+  if(!db||!targets.length){ cb(out); return; }
+  targets.forEach(function(sid){
     ['students','staff'].forEach(function(k){
       left++;
-      db.ref('schools/'+s.schoolID+'/'+k).limitToFirst(2000).once('value').then(function(snap){
+      db.ref('schools/'+sid+'/'+k).limitToFirst(2000).once('value').then(function(snap){
         out[k]+=snap.numChildren();
         if(--left===0) cb(out);
       }).catch(function(){ if(--left===0) cb(out); });
@@ -698,7 +710,15 @@ function initApp(){
   countUp('k-schools',schools.length);
   document.getElementById('k-revenue').textContent='₦'+revenue.toLocaleString();
   countUp('k-students',0);
-  _ctrlLiveTotals(function(t){ countUp('k-students',t.students); });
+  // The home tiles read the console's published schools, not just this
+  // device's local deploys, so the Control Centre and the superadmin panel
+  // report the same numbers.
+  _loadPubSchools(function(pub){
+    var ids=pub?Object.keys(pub):[];
+    countUp('k-schools',Math.max(ids.length,schools.length));
+    _ctrlLiveTotals(ids,function(t){ countUp('k-students',t.students); });
+    renderHomeSchools();
+  });
   countUp('k-queue',queue);
   document.getElementById('nav-pip').style.display=queue?'block':'none';
   document.getElementById('rev-total').textContent='₦'+revenue.toLocaleString();
@@ -727,8 +747,16 @@ function buildRevBars(){
 
 function renderHomeSchools(){
   var el=document.getElementById('home-schools');
-  if(!DB.schools.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t4);font-size:var(--fs-sm);">No schools deployed yet</div>';return;}
-  el.innerHTML=DB.schools.slice(0,4).map(function(s){
+  var rows=DB.schools.slice(0,4);
+  if(_pubSchools){
+    var pubRows=Object.keys(_pubSchools).slice(0,4).map(function(id){
+      var sc=_pubSchools[id]||{};
+      return {name:sc.name||id,schoolID:id,plan:sc.plan||'Active'};
+    });
+    if(pubRows.length) rows=pubRows;
+  }
+  if(!rows.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t4);font-size:var(--fs-sm);">No schools deployed yet</div>';return;}
+  el.innerHTML=rows.map(function(s){
     return '<div class="school-card">'+
       '<div class="school-av">'+s.name.charAt(0)+'</div>'+
       '<div><div class="school-name">'+s.name+'</div><div class="school-meta">'+s.schoolID+' • '+s.plan+'</div></div>'+
