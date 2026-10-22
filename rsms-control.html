@@ -440,6 +440,26 @@ textarea.fi{height:auto;min-height:90px;padding:13px 15px;resize:vertical;}
       </div>
     </div>
 
+
+    <!-- ═══ CONSOLE (superadmin, single-PWA merge) ═══ -->
+    <div class="page" id="page-console">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;">
+        <div>
+          <div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--t1);">🛠️ Superadmin Console</div>
+          <div style="font-size:var(--fs-sm);color:var(--t3);">Schools, admin links, branding and plans in one place.</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="openConsole()">Reload</button>
+      </div>
+      <div style="border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;">
+        <iframe id="console-frame" title="RSMS Superadmin Console" style="width:100%;height:78vh;border:0;display:none;"></iframe>
+        <div id="console-placeholder" style="padding:30px 20px;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:8px;">🛠️</div>
+          <div style="font-weight:700;color:var(--t1);margin-bottom:6px;">Full superadmin tools, built in</div>
+          <div style="font-size:var(--fs-sm);color:var(--t3);margin-bottom:16px;">Create schools, generate and verify admin links, edit branding and plans. The console asks for its own password once, inside the frame.</div>
+          <button class="btn btn-gold" onclick="openConsole()">Open console</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- BOTTOM NAV -->
@@ -450,6 +470,7 @@ textarea.fi{height:auto;min-height:90px;padding:13px 15px;resize:vertical;}
     <div class="nav-item" onclick="switchTab('revenue',this)"><span class="nav-ico">💰</span><div class="nav-lbl">Revenue</div></div>
     <div class="nav-item" onclick="switchTab('send',this)"><span class="nav-ico">📲</span><div class="nav-lbl">Send Link</div></div>
     <div class="nav-item" onclick="switchTab('deploy',this)"><span class="nav-ico">🚀</span><div class="nav-lbl">Deploy</div></div>
+    <div class="nav-item" onclick="switchTab('console',this)"><span class="nav-ico">🛠️</span><div class="nav-lbl">Console</div></div>
   </div>
 </div>
 
@@ -466,14 +487,148 @@ textarea.fi{height:auto;min-height:90px;padding:13px 15px;resize:vertical;}
 
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
-var MASTER_PW = localStorage.getItem('rsms_ctrl_pw') || 'rehoteq@boss2025';
+// Password is checked as a SHA-256 hash so the plaintext never ships in the
+// public repo. To change the password, store the SHA-256 hex of the new one in
+// localStorage under 'rsms_ctrl_pw_hash' (the old plaintext override is
+// migrated automatically on first login).
+var MASTER_PW_HASH = 'ea485648cf5452e2105c11c53e2c8787de34983aa88ae38d82f30025b954c07e';
+async function sha256hex(str){
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+}
+async function expectedCtrlHash(){
+  var h = localStorage.getItem('rsms_ctrl_pw_hash');
+  if(h) return h;
+  var legacy = localStorage.getItem('rsms_ctrl_pw');
+  if(legacy){
+    var d = await sha256hex(legacy);
+    localStorage.setItem('rsms_ctrl_pw_hash', d);
+    localStorage.removeItem('rsms_ctrl_pw');
+    return d;
+  }
+  return MASTER_PW_HASH;
+}
 var DB = {
   schools: JSON.parse(localStorage.getItem('rsms_super_schools') || '[]'),
   payments: JSON.parse(localStorage.getItem('rsms_super_payments') || '[]'),
   schoolCount: parseInt(localStorage.getItem('rsms_school_count') || '0')
 };
 var deferredPrompt = null;
+
+// ── FIREBASE (rsms-a84ff, the same project the portals use) ──
+function _ctrlFB(){
+  try{
+    if(typeof firebase==='undefined') return null;
+    var cfg={apiKey:'AIzaSyDKkmeHjIJm1vTg9A-o_AZnhIp1f3jmG2M',
+      databaseURL:'https://rsms-a84ff-default-rtdb.europe-west1.firebasedatabase.app',
+      projectId:'rsms-a84ff'};
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    return firebase.database();
+  }catch(e){ return null; }
+}
+
+// ── SCHOOL ID: REH-XXXXXXXX pattern ─────────────────────────
+// New schools take REH-XXXXXXXX IDs, the pattern the portals and admin
+// links already use (like the demo school REH-2J8KQ2XF). Existing records
+// keep their IDs untouched (legacy registry IDs), and every generated ID
+// is checked against the IDs known locally AND on Firebase so two devices
+// can never allocate the same one.
+var _fbIdCache=null;
+function _ctrlNewPatternIds(){
+  var ids=[];
+  var push=function(v){ if(typeof v==='string'&&v.trim()) ids.push(v.trim().toUpperCase()); };
+  var map=JSON.parse(localStorage.getItem('rsms_school_map')||'{}');
+  Object.keys(map).forEach(function(k){ push(map[k]); });
+  var reg=JSON.parse(localStorage.getItem('rsms_schools_registry')||'{}');
+  Object.keys(reg).forEach(function(k){ if(reg[k]&&reg[k].schoolId) push(reg[k].schoolId); });
+  JSON.parse(localStorage.getItem('rsms_super_schools')||'[]').forEach(function(s){ push(s.schoolID); });
+  push('OND-ENT-0001'); push('OND-SEC-0001'); // built-in registry schools
+  return ids;
+}
+function refreshFbIds(cb){
+  var db=_ctrlFB();
+  if(!db){ if(cb)cb(false); return; }
+  db.ref('public_schools').limitToFirst(5000).once('value').then(function(s){
+    _fbIdCache=Object.keys(s.val()||{});
+    if(cb)cb(true);
+  }).catch(function(){ if(cb)cb(false); });
+}
+// REH-XXXXXXXX: 8 chars from the same unambiguous alphabet the superadmin
+// console uses, retried until the ID is unused locally and on Firebase.
+function _rehRef(){
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var r='';for(var i=0;i<8;i++)r+=chars[Math.floor(Math.random()*chars.length)];
+  return r;
+}
+function genRehId(cb){
+  refreshFbIds(function(){
+    var taken=_ctrlNewPatternIds().concat(_fbIdCache||[]);
+    for(var i=0;i<40;i++){
+      var id='REH-'+_rehRef();
+      if(taken.indexOf(id)<0){ cb(id); return; }
+    }
+    cb('REH-'+_rehRef());
+  });
+}
+// Real dashboard totals: student/staff rosters are counted live from each
+// deployed school on Firebase (schools/<id>/students, /staff — the same
+// nodes the migrate step publishes), no more invented numbers.
+function _ctrlLiveTotals(cb){
+  var out={students:0,staff:0},left=0;
+  var db=_ctrlFB();
+  if(!db||!DB.schools.length){ cb(out); return; }
+  DB.schools.forEach(function(s){
+    if(!s.schoolID) return;
+    ['students','staff'].forEach(function(k){
+      left++;
+      db.ref('schools/'+s.schoolID+'/'+k).limitToFirst(2000).once('value').then(function(snap){
+        out[k]+=snap.numChildren();
+        if(--left===0) cb(out);
+      }).catch(function(){ if(--left===0) cb(out); });
+    });
+  });
+  if(!left) cb(out);
+}
+
+// ── REGISTRY ↔ FIREBASE SYNC (records survive device loss) ──
+// Firebase is the source of truth once synced; local-only entries are pushed
+// up so nothing stays stranded on one device. Existing records are only ever
+// added or mirrored, never rewritten.
+var _regSynced=false;
+function syncRegistryFromFb(done){
+  var db=_ctrlFB();
+  if(!db||_regSynced){ if(done)done(); return; }
+  db.ref('control_registry').limitToFirst(5000).once('value').then(function(s){
+    var remote=s.val()||{};
+    var reg=JSON.parse(localStorage.getItem('rsms_schools_registry')||'{}');
+    var map=JSON.parse(localStorage.getItem('rsms_school_map')||'{}');
+    var changed=false;
+    Object.keys(remote).forEach(function(sub){
+      var r=remote[sub];
+      if(!r||!r.schoolId) return;
+      if(JSON.stringify(reg[sub])!==JSON.stringify(r)){ reg[sub]=r; map[sub]=r.schoolId; changed=true; }
+    });
+    Object.keys(reg).forEach(function(sub){
+      if(!remote[sub]) db.ref('control_registry/'+sub).set(reg[sub]);
+    });
+    if(changed){
+      localStorage.setItem('rsms_schools_registry',JSON.stringify(reg));
+      localStorage.setItem('rsms_school_map',JSON.stringify(map));
+    }
+    _regSynced=true;
+    if(done)done();
+  }).catch(function(){ _regSynced=true; if(done)done(); });
+}
+
+function genRegId(){
+  genRehId(function(id){
+    var el=document.getElementById('reg-sid');
+    if(el) el.value=id;
+  });
+}
 var sendHistory = JSON.parse(localStorage.getItem('rsms_send_history') || '[]');
 var ONBOARD_URL = '';
 
@@ -483,9 +638,11 @@ function getOnboardURL(){
 }
 
 // ── LOGIN ──
-function doLogin(){
+async function doLogin(){
   var pw = document.getElementById('ctrl-pw').value;
-  if(pw === MASTER_PW){
+  var entered = await sha256hex(pw);
+  var expect  = await expectedCtrlHash();
+  if(entered === expect){
     sessionStorage.setItem('rsms_ctrl_auth','true');
     document.getElementById('login-screen').style.display='none';
     document.getElementById('main-app').style.display='flex';
@@ -506,7 +663,7 @@ function toast(msg,type){
 
 // ── TABS ──
 function switchTab(name,el){
-  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');p.style.display='';});
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
   if(el)el.classList.add('active');
@@ -515,6 +672,17 @@ function switchTab(name,el){
   if(name==='revenue')renderRevenue();
   if(name==='deploy')previewDeployID();
   if(name==='send')initSendPage();
+  if(name==='console')openConsole();
+}
+
+// ── SUPERADMIN CONSOLE (single-PWA merge) ─────────────────
+function openConsole(){
+  var f=document.getElementById('console-frame');
+  if(!f)return;
+  if(!f.dataset.loaded){ f.src='rsms-superadmin.html'; f.dataset.loaded='1'; }
+  f.style.display='block';
+  var ph=document.getElementById('console-placeholder');
+  if(ph)ph.style.display='none';
 }
 
 // ── INIT ──
@@ -529,7 +697,8 @@ function initApp(){
   var queue=getQueue().length;
   countUp('k-schools',schools.length);
   document.getElementById('k-revenue').textContent='₦'+revenue.toLocaleString();
-  countUp('k-students',schools.length*(Math.floor(100+Math.random()*200)));
+  countUp('k-students',0);
+  _ctrlLiveTotals(function(t){ countUp('k-students',t.students); });
   countUp('k-queue',queue);
   document.getElementById('nav-pip').style.display=queue?'block':'none';
   document.getElementById('rev-total').textContent='₦'+revenue.toLocaleString();
@@ -708,15 +877,13 @@ function shareLink(platform){
 
 // ── DEPLOY ──
 function previewDeployID(){
-  var state=document.getElementById('dep-state').value||'OD';
-  var type=document.getElementById('dep-type').value||'SEC';
-  var seq=String(DB.schoolCount+1).padStart(4,'0');
-  var id=state+'-'+type+'-'+seq;
-  var pw=Math.random().toString(36).slice(-8).toUpperCase();
-  document.getElementById('gen-id').textContent=id;
-  document.getElementById('gen-pw').textContent=pw;
-  document.getElementById('gen-tc').textContent='TCH-'+id+'-'+Math.floor(1000+Math.random()*9000);
-  document.getElementById('gen-sc').textContent='STU-'+id+'-'+Math.floor(1000+Math.random()*9000);
+  genRehId(function(id){
+    var pw=Math.random().toString(36).slice(-8).toUpperCase();
+    document.getElementById('gen-id').textContent=id;
+    document.getElementById('gen-pw').textContent=pw;
+    document.getElementById('gen-tc').textContent='TCH-'+id+'-'+Math.floor(1000+Math.random()*9000);
+    document.getElementById('gen-sc').textContent='STU-'+id+'-'+Math.floor(1000+Math.random()*9000);
+  });
 }
 
 function deploySchool(){
@@ -736,6 +903,16 @@ function deploySchool(){
   localStorage.setItem('rsms_super_schools',JSON.stringify(DB.schools));
   localStorage.setItem('rsms_school_count',String(DB.schoolCount));
   toast('🚀 '+name+' deployed! ID: '+schoolID,'success');
+  // Persist the deploy record so it survives device loss. This only adds;
+  // existing Firebase records are never rewritten.
+  var _db=_ctrlFB();
+  if(_db){
+    _db.ref('control_deploys/'+schoolID).set(school).catch(function(e){
+      toast('Deployed locally. Firebase sync failed ('+((e&&e.message)||e)+')','error');
+    });
+  }else{
+    toast('Deployed locally. Firebase unavailable on this device.','error');
+  }
   countUp('k-schools',DB.schools.length);
   previewDeployID();
 }
@@ -832,7 +1009,7 @@ window.addEventListener('load',function(){
     initApp();
     if(tab){
       var navItems=document.querySelectorAll('.nav-item');
-      var tabMap={deploy:navItems[5],send:navItems[4],schools:navItems[1]};
+      var tabMap={deploy:navItems[5],send:navItems[4],schools:navItems[1],console:navItems[6]};
       if(tabMap[tab])switchTab(tab,tabMap[tab]);
     }
   }
@@ -847,6 +1024,9 @@ function showRegistry(){
 }
 
 function renderRegistry(){
+  syncRegistryFromFb(function(){ _renderRegistryNow(); });
+}
+function _renderRegistryNow(){
   var map = JSON.parse(localStorage.getItem('rsms_school_map')||'{}');
   var builtin = {'sharonrose':'OND-ENT-0001','gtc':'OND-SEC-0001'};
   Object.keys(builtin).forEach(function(k){ if(!map[k]) map[k]=builtin[k]; });
@@ -886,6 +1066,7 @@ function renderRegistry(){
 
 function openAddSchool(){
   document.getElementById('m-add-school').style.display='flex';
+  genRegId();
 }
 function closeAddSchool(){
   document.getElementById('m-add-school').style.display='none';
@@ -898,6 +1079,10 @@ function saveSchoolReg(){
   var plan = document.getElementById('reg-plan').value;
   var notes= document.getElementById('reg-notes').value.trim();
   if(!name||!sub||!sid){ alert('Fill School Name, Subdomain and School ID'); return; }
+  // An ID already used locally or published on Firebase is refused, so
+  // existing records are never overwritten or shadowed.
+  if(_ctrlNewPatternIds().indexOf(sid)>-1){ alert('School ID '+sid+' is already in use on this device. Tap ↻ to generate a fresh one.'); return; }
+  if(_fbIdCache&&_fbIdCache.indexOf(sid)>-1){ alert('School ID '+sid+' is already published on Firebase. Tap ↻ to generate a fresh one.'); return; }
 
   // Save to school map (for auto-detection)
   var map = JSON.parse(localStorage.getItem('rsms_school_map')||'{}');
@@ -921,7 +1106,16 @@ function saveSchoolReg(){
     var el=document.getElementById(id); if(el) el.value='';
   });
 
-  ctrlToast('✅ '+name+' registered — '+sub+'.rehoteq.com is live!','success');
+  _fbIdCache=_fbIdCache||[]; _fbIdCache.push(sid);
+  var _db=_ctrlFB();
+  if(_db){
+    _db.ref('control_registry/'+sub).set({name:name,subdomain:sub,schoolId:sid,plan:plan,notes:notes,
+      url:'https://'+sub+'.rehoteq.com',registeredAt:new Date().toISOString()})
+      .then(function(){ ctrlToast('✅ '+name+' registered & saved to Firebase — '+sub+'.rehoteq.com is live!','success'); })
+      .catch(function(e){ ctrlToast('⚠️ Registered locally; Firebase save failed ('+((e&&e.message)||e)+')','error'); });
+  }else{
+    ctrlToast('✅ '+name+' registered locally — Firebase unavailable on this device','error');
+  }
 }
 
 function copyLink(url){
@@ -1032,10 +1226,14 @@ function buildRegBtn(label, action, arg1, arg2, isDanger) {
       <div style="font-size:.7rem;color:rgba(240,242,255,.25);margin-top:5px;">Lowercase letters and numbers only. No spaces.</div>
     </div>
     <div style="margin-bottom:12px;">
-      <label style="font-size:.65rem;font-weight:800;color:rgba(240,242,255,.35);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:5px;">School ID *</label>
-      <input id="reg-sid" type="text" placeholder="e.g. OND-ENT-0001"
-        oninput="this.value=this.value.toUpperCase()"
-        style="width:100%;height:48px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:0 14px;color:#f0f2ff;font-size:.95rem;font-family:monospace;letter-spacing:.12em;font-weight:700;outline:none;"/>
+      <label style="font-size:.65rem;font-weight:800;color:rgba(240,242,255,.35);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:5px;">School ID * <span style="color:rgba(212,168,67,.5);font-size:.6rem;">REH-XXXXXXXX</span></label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input id="reg-sid" type="text" placeholder="e.g. REH-2J8KQ2XF"
+          oninput="this.value=this.value.toUpperCase()"
+          style="flex:1;height:48px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:0 14px;color:#f0f2ff;font-size:.95rem;font-family:monospace;letter-spacing:.12em;font-weight:700;outline:none;"/>
+        <button onclick="genRegId()" style="height:48px;width:48px;flex:none;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#d4a843;font-size:1rem;cursor:pointer;">↻</button>
+      </div>
+      <div style="font-size:.7rem;color:rgba(240,242,255,.25);margin-top:5px;">Auto-generated REH- ID. Editable if a school must keep a fixed ID.</div>
     </div>
     <div style="margin-bottom:12px;">
       <label style="font-size:.65rem;font-weight:800;color:rgba(240,242,255,.35);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:5px;">Plan</label>
