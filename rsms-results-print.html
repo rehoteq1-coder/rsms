@@ -225,6 +225,24 @@ function loadSignaturesFromFirebase(cb){
 function _sid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
 function _key(k){ var id=_sid(); return id?'rsms_'+id+'_'+k:'rsms_'+k; }
 function _lsget(k){ return localStorage.getItem(_key(k))||localStorage.getItem('rsms_'+k)||null; }
+
+// ── RESULT SECURITY: teachers and class teachers may only view published results ──
+function _fromTeacherPortal(){
+  var f=''; try{ f=sessionStorage.getItem('rsms_result_from')||''; }catch(e){}
+  return f.indexOf('rsms-teacher')===0||f.indexOf('rsms-classteacher')===0;
+}
+function _publishedFor(cls,term){
+  var pub={};
+  try{ pub=JSON.parse(_lsget('published_results')||'{}'); }catch(e){}
+  return !!(pub&&pub[cls]&&pub[cls][term]);
+}
+function gateTeacherResults(cls,term){
+  if(!_fromTeacherPortal()) return false;
+  if(_publishedFor(cls,term)) return false;
+  toast('Results for '+cls+' ('+term+') are not yet published. The principal publishes results; only published results can be viewed or printed here.','error');
+  return true;
+}
+
 // ─────────────────────────────────────────────────────────────
 
 // ── DATA ──────────────────────────────────────────────────────
@@ -536,6 +554,7 @@ function loadScores(cls, term, sess){
 
 // ── PREVIEW ───────────────────────────────────────────────────
 function showPreview(cls, term, sess){
+  if(gateTeacherResults(cls,term)) return;
   var previewCard=document.getElementById('preview-card');
   var previewList=document.getElementById('preview-list');
   var genSection=document.getElementById('generate-section');
@@ -660,6 +679,7 @@ function generateCards(){
   var ca2Max  = parseInt(document.getElementById('ca2-max').value)||20;
   var examMax = parseInt(document.getElementById('exam-max').value)||60;
   var totalMax= ca1Max+ca2Max+examMax;
+  if(gateTeacherResults(cls,term)) return;
 
   if(!cls){toast('Select a class first','error');return;}
   if(!currentStudents.length){toast('No students loaded','error');return;}
