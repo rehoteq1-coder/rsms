@@ -672,6 +672,17 @@ var RSMS_FB = (function(){
     return v || localStorage.getItem('rsms_'+key);
   }
 
+  function dedupeById(arr){
+    var seen={},out=[];
+    arr.forEach(function(x){
+      if(!x) return;
+      var k=String(x.id||'');
+      if(k&&seen[k]) return;
+      if(k) seen[k]=1;
+      out.push(x);
+    });
+    return out;
+  }
   function getStudents(cb){
     var cached = JSON.parse(_lsGet('students')||'[]');
     if(cb) cb(cached);
@@ -679,7 +690,7 @@ var RSMS_FB = (function(){
       _db.ref('schools/'+_sid+'/students').once('value').then(function(snap){
         var val=snap.val();
         if(val){
-          var data=Array.isArray(val)?val.filter(Boolean):Object.values(val).filter(Boolean);
+          var data=dedupeById(Array.isArray(val)?val.filter(Boolean):Object.values(val).filter(Boolean));
           _lsSet('students',data);
           if(cb) cb(data);
         }
@@ -695,7 +706,7 @@ var RSMS_FB = (function(){
       _db.ref('schools/'+_sid+'/staff').once('value').then(function(snap){
         var val=snap.val();
         if(val){
-          var data=Array.isArray(val)?val.filter(Boolean):Object.values(val).filter(Boolean);
+          var data=dedupeById(Array.isArray(val)?val.filter(Boolean):Object.values(val).filter(Boolean));
           _lsSet('staff',data);
           if(cb) cb(data);
         }

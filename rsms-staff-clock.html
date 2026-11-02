@@ -733,9 +733,16 @@ function addStaff(){
   var role=document.getElementById('ns-role').value;
   if(!name){toast('⚠️ Enter staff name','error');return;}
   var sid='SID-'+Date.now().toString().slice(-5);
+function rsmsWriteBoth(k,v){
+  var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+  var j=JSON.stringify(v);
+  try{localStorage.setItem('rsms_'+k,j);}catch(e){}
+  if(sid){try{localStorage.setItem('rsms_'+sid+'_'+k,j);}catch(e){}}
+}
+  if(DB.staff.some(function(x){return String(x.name||'').toLowerCase()===name.toLowerCase();})){toast('Staff with this name already exists','error');return;}
   var staff={id:'st'+Date.now(),name:name,role:role,dept:document.getElementById('ns-dept').value,staffId:document.getElementById('ns-sid').value||sid,phone:document.getElementById('ns-phone').value,status:'Active'};
   DB.staff.push(staff);
-  localStorage.setItem('rsms_staff',JSON.stringify(DB.staff));
+  rsmsWriteBoth('staff',DB.staff);
   closeM('m-add-staff');
   ['ns-name','ns-dept','ns-sid','ns-phone'].forEach(function(id){document.getElementById(id).value='';});
   renderStaffList();

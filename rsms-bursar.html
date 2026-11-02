@@ -3060,13 +3060,19 @@ function runReconciliation(){
 }
 
 var _origSaveStudents = window.saveStudents;
+function rsmsWriteBoth(k,v){
+  var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+  var j=JSON.stringify(v);
+  try{localStorage.setItem('rsms_'+k,j);}catch(e){}
+  if(sid){try{localStorage.setItem('rsms_'+sid+'_'+k,j);}catch(e){}}
+}
 window.saveStudents = function(data){
-  localStorage.setItem('rsms_students', JSON.stringify(data));
+  rsmsWriteBoth('students', data);
   if(typeof RSMS_FB !== 'undefined' && RSMS_FB.isReady()) RSMS_FB.saveStudents(data);
 };
 var _origSaveStaff = window.saveStaff;
 window.saveStaff = function(data){
-  localStorage.setItem('rsms_staff', JSON.stringify(data));
+  rsmsWriteBoth('staff', data);
   if(typeof RSMS_FB !== 'undefined' && RSMS_FB.isReady()) RSMS_FB.saveStaff(data);
 };
 var _origSaveFees = window.saveFees;
