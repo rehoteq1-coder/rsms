@@ -2169,8 +2169,16 @@ function _get(k,fb){
 }
 function _set(k,d){ localStorage.setItem(_key(k),JSON.stringify(d)); }
 
-function getStudents(){ return _get('students','[]'); }
-function getStaff(){ return _get('staff','[]'); }
+function _realRecords(arr,kind){
+  return (Array.isArray(arr)?arr:[]).filter(function(x){
+    if(!x||typeof x!=='object') return false;
+    if(!x.id) return false;
+    if(kind==='staff') return String(x.name||'').trim()!=='';
+    return String(x.surname||'').trim()!==''||String(x.firstname||'').trim()!=='';
+  });
+}
+function getStudents(){ return _realRecords(_get('students','[]'),'students'); }
+function getStaff(){ return _realRecords(_get('staff','[]'),'staff'); }
 function getFees(){ return _get('fees','[]'); }
 function saveStudents(d){ _set('students',d); }
 function saveStaff(d){ _set('staff',d); }
