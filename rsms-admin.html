@@ -690,7 +690,7 @@ window.RSMS_DB = {
   <div class="sb-section">OVERVIEW</div>
   <div class="sb-item active" onclick="showPage('home',this)"><span class="ico">&#127968;</span>Dashboard</div>
   <div class="sb-section">PEOPLE</div>
-  <div class="sb-item" onclick="showPage('students',this)"><span class="ico">&#128100;</span>Students</div>
+  <div class="sb-item" onclick="showPage('students',this);loadApplications()"><span class="ico">&#128100;</span>Students</div>
   <div class="sb-item" onclick="showPage('staff',this)"><span class="ico">&#128104;&#8205;&#127979;</span>Staff</div>
   <div class="sb-section">COMMUNICATION</div>
   <div class="sb-item" onclick="showPage('broadcast',this)" style="position:relative;">
@@ -847,11 +847,17 @@ window.RSMS_DB = {
   <div class="search-bar">
     <select class="fi" id="stu-cls-filter" onchange="renderStudents()"><option value="">All Classes</option></select>
     <input class="fi" id="stu-search" placeholder="&#128269; Search name or reg..." oninput="renderStudents()"/>
+    <button class="btn btn-navy btn-sm" onclick="issueMissingStudentPins()" style="white-space:nowrap;">Issue PINs</button>
   </div>
   <div class="card" style="padding:0 14px;" id="students-list"></div>
 </div>
 
 <!-- ════ STAFF ════ -->
+<div class="card" style="margin-top:14px;">
+  <div class="sec-title">Online Applications</div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:6px;"><button class="btn btn-light btn-xs" onclick="loadApplications()">Refresh</button></div>
+  <div id="applications-list" style="font-size:.85rem;color:var(--t3);">Loading applications...</div>
+</div>
 <div class="page" id="pg-staff">
   <div class="pg-hd">
     <div><div class="pg-title">Staff</div><div class="pg-sub" id="staff-count-lbl">Loading...</div></div>
@@ -1384,7 +1390,7 @@ window.RSMS_DB = {
   <button class="bn-item active" onclick="showPage('home',this)">
     <div class="bn-ico">&#127968;</div><div class="bn-lbl">Home</div>
   </button>
-  <button class="bn-item" onclick="showPage('students',this)">
+  <button class="bn-item" onclick="showPage('students',this);loadApplications()">
     <div class="bn-ico">&#128100;</div><div class="bn-lbl">Students</div>
   </button>
   <button class="bn-item" onclick="showPage('staff',this)">
@@ -1415,6 +1421,12 @@ window.RSMS_DB = {
     <div class="f2">
       <div class="fg"><label>Date of Birth</label><input class="fi" id="stu-dob" type="date"/></div>
       <div class="fg"><label>Reg Number (auto if blank)</label><input class="fi" id="stu-reg" placeholder="Auto-generated"/></div>
+      <div class="fg"><label>Access PIN <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4);">— student &amp; parent login</span></label>
+        <div style="display:flex;gap:8px;">
+          <input class="fi" id="stu-pin" maxlength="4" inputmode="numeric" placeholder="4-digit PIN" style="flex:1;"/>
+          <button type="button" class="btn btn-navy btn-sm" onclick="genStudentPin()" style="white-space:nowrap;">Generate</button>
+        </div>
+      </div>
     </div>
     <div class="fg"><label>Parent/Guardian Name</label><input class="fi" id="stu-pname" placeholder="Parent full name"/></div>
     <div class="f2">
@@ -2351,7 +2363,7 @@ function renderStudents(){
 
 function openEditStudent(stu){
   editStuId=stu.id;
-  setVal('stu-surname',stu.surname);setVal('stu-firstname',stu.firstname);
+  setVal('stu-surname',stu.surname);setVal('stu-firstname',stu.firstname);setVal('stu-pin',stu.pin||'');
   var cls=document.getElementById('stu-class'); if(cls)cls.value=stu.class||'';
   var gen=document.getElementById('stu-gender'); if(gen)gen.value=stu.gender||'Male';
   setVal('stu-dob',stu.dob);setVal('stu-pphone',stu.parentPhone);
@@ -2374,6 +2386,91 @@ function openEditStudent(stu){
   openModal('m-add-student');
 }
 
+
+function genStudentPinRaw(){ return String(Math.floor(1000+Math.random()*9000)); }
+function genStudentPin(){ var i=document.getElementById('stu-pin'); if(i) i.value=genStudentPinRaw(); }
+function issueMissingStudentPins(){
+  var all=getStudents(); var n=0;
+  all.forEach(function(s){ if(!s.pin){ s.pin=genStudentPinRaw(); n++; } });
+  if(n){ saveStudents(all); renderStudents(); toast(n+' student'+(n===1?'':'s')+' now have access PINs. Export CSV to see them.','success'); }
+  else { toast('All students already have access PINs.','info'); }
+}
+function _escA(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function loadApplications(){
+  var el=document.getElementById('applications-list'); if(!el) return;
+  var apps=[];
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(k&&k.indexOf('rsms_application_')===0){ try{ var v=JSON.parse(localStorage.getItem(k)); if(v&&v.ref) apps.push(v); }catch(e){} }
+    }
+  }catch(e){}
+  var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+  var _done={};
+  function _render(){
+    var seen={}; var uniq=[];
+    apps.forEach(function(a){ if(a&&a.ref&&!seen[a.ref]){ seen[a.ref]=1; uniq.push(a); } });
+    window._rsmsApps=uniq; renderApplications();
+  }
+  if(sid&&typeof firebase!=='undefined'&&firebase.database){
+    try{
+      firebase.database().ref('applications/'+sid).once('value').then(function(snap){
+        var v=snap.val()||{};
+        Object.keys(v).forEach(function(k){ if(v[k]&&typeof v[k]==='object'){ var a=v[k]; a.ref=a.ref||k; a._cloud=true; apps.push(a); } });
+        _render();
+      }).catch(function(){ _render(); });
+      setTimeout(_render, 4000);
+    }catch(e){ _render(); }
+  } else { _render(); }
+}
+function renderApplications(){
+  var el=document.getElementById('applications-list'); if(!el) return;
+  var apps=window._rsmsApps||[];
+  if(!apps.length){
+    el.innerHTML='<div style="color:var(--t4);font-size:.85rem;">No applications yet. Forms submitted on your school\'s Apply page will appear here.</div>';
+    return;
+  }
+  apps.sort(function(a,b){ return String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')); });
+  var h='';
+  apps.forEach(function(a){
+    var name=(String(a.surname||a.lastname||'')+' '+String(a.firstname||a.firstName||'')).trim()||'Unnamed applicant';
+    var cls=a.class||a.currentClass||a.classChoice||'';
+    var phone=a.parentPhone||a.p1Phone||a.phone1||'';
+    h+='<div style="border:1px solid var(--line2);border-radius:10px;padding:10px;margin-bottom:8px;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">'
+      +'<div><strong>'+_escA(name)+'</strong>'
+      +'<div style="font-size:.75rem;color:var(--t3);">'+_escA(cls)+(_escA(phone)?' · '+_escA(phone):'')+' · '+_escA(a.status||'pending')+(a._cloud?' · online':'')+'</div></div>'
+      +'<div style="display:flex;gap:6px;">'
+      +'<button class="btn btn-gold btn-xs" onclick="prefillStudentFromApp(\''+_escA(a.ref)+'\')">Add as student</button>'
+      +'<button class="btn btn-light btn-xs" onclick="deleteApplication(\''+_escA(a.ref)+'\')">Dismiss</button>'
+      +'</div></div>'
+      +'<div style="font-size:.7rem;color:var(--t4);margin-top:4px;">Ref: '+_escA(a.ref)+' · '+_escA(String(a.submittedAt||'').slice(0,10))+'</div>'
+      +'</div>';
+  });
+  el.innerHTML=h;
+}
+function prefillStudentFromApp(ref){
+  var apps=window._rsmsApps||[];
+  var a=apps.find(function(x){return x.ref===ref;}); if(!a) return;
+  editStuId=null;
+  var t=document.getElementById('m-student-title'); if(t) t.textContent='Add Student';
+  setVal('stu-surname',a.surname||a.lastname||''); setVal('stu-firstname',a.firstname||a.firstName||'');
+  var clsSel=document.getElementById('stu-class');
+  var cls=a.class||a.currentClass||a.classChoice||'';
+  if(clsSel&&cls){ for(var i=0;i<clsSel.options.length;i++){ if(clsSel.options[i].text===cls){ clsSel.selectedIndex=i; break; } } }
+  setVal('stu-pphone',a.parentPhone||a.p1Phone||a.phone1||'');
+  setVal('stu-pname',a.parentName||a.p1Name||'');
+  setVal('stu-pemail',a.parentEmail||a.p1Email||'');
+  if(typeof openModal==='function') openModal('m-add-student');
+}
+function deleteApplication(ref){
+  window._rsmsApps=(window._rsmsApps||[]).filter(function(a){ return a.ref!==ref; });
+  try{ localStorage.removeItem('rsms_application_'+ref); }catch(e){}
+  var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+  if(sid&&typeof firebase!=='undefined'&&firebase.database){ try{ firebase.database().ref('applications/'+sid+'/'+ref).remove(); }catch(e){} }
+  renderApplications();
+}
+
 function saveStudent(){
   var sur=val('stu-surname'),fn=val('stu-firstname'),cls=document.getElementById('stu-class').value;
   if(!sur||!fn||!cls){toast('Fill surname, firstname and class','error');return;}
@@ -2388,6 +2485,7 @@ function saveStudent(){
       all[idx].gender=document.getElementById('stu-gender').value;
       all[idx].dob=val('stu-dob');all[idx].parentPhone=val('stu-pphone');
       all[idx].parentEmail=_pemail;all[idx].parentName=val('stu-pname');all[idx].reg=val('stu-reg')||all[idx].reg;
+      var _np=val('stu-pin'); if(_np){ all[idx].pin=_np; } else if(!all[idx].pin){ all[idx].pin=genStudentPinRaw(); }
       var ph=val('stu-photo-data');if(ph)all[idx].photo=ph;
     }
     toast('Student updated','success');
@@ -2403,7 +2501,7 @@ function saveStudent(){
     var photoData=val('stu-photo-data')||'';
     all.push({id:'s'+Date.now(),surname:sur,firstname:fn,class:cls,
       gender:document.getElementById('stu-gender').value,dob:val('stu-dob'),
-      parentPhone:val('stu-pphone'),parentEmail:_pemail,parentName:val('stu-pname'),reg:reg,photo:photoData});
+      parentPhone:val('stu-pphone'),parentEmail:_pemail,parentName:val('stu-pname'),reg:reg,pin:(val('stu-pin')||genStudentPinRaw()),photo:photoData});
     toast('\u2705 '+sur+' '+fn+' added','success');
   }
   saveStudents(all);
@@ -2417,7 +2515,7 @@ function saveStudent(){
   var cf2=document.getElementById('stu-cls-filter');if(cf2)cf2.value='';
   var sf2=document.getElementById('stu-search');if(sf2)sf2.value='';
   renderStudents();
-  ['stu-surname','stu-firstname','stu-dob','stu-pphone','stu-pemail','stu-pname','stu-reg'].forEach(function(id){setVal(id,'');});
+  ['stu-surname','stu-firstname','stu-dob','stu-pphone','stu-pemail','stu-pname','stu-reg','stu-pin'].forEach(function(id){setVal(id,'');});
   clearStudentPhoto();
   var t=document.getElementById('m-student-title');if(t)t.textContent='Add Student';
 }
@@ -2433,8 +2531,8 @@ function csvRow(arr){return arr.map(csvEscape).join(',');}
 function exportStudentsCSV(){
   var all=getStudents();
   if(!all.length){toast('No students to export','error');return;}
-  var rows=[csvRow(['Surname','Firstname','Class','Reg','Gender','DOB','Parent Phone','Parent Email','Parent Name'])];
-  all.forEach(function(s){rows.push(csvRow([s.surname,s.firstname,s.class,s.reg,s.gender||'',s.dob||'',s.parentPhone||'',s.parentEmail||'',s.parentName||'']));});
+  var rows=[csvRow(['Surname','Firstname','Class','Reg','Gender','DOB','Parent Phone','Parent Email','Parent Name','Access PIN'])];
+  all.forEach(function(s){rows.push(csvRow([s.surname,s.firstname,s.class,s.reg,s.gender||'',s.dob||'',s.parentPhone||'',s.parentEmail||'',s.parentName||'',s.pin||'']));});
   var blob=new Blob(['\ufeff'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='Students_'+new Date().toISOString().slice(0,10)+'.csv';a.click();

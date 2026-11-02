@@ -857,6 +857,7 @@ body{background:var(--bg);min-height:100vh;font-family:var(--sans);}
       <button class="role-btn" data-role="hod"          onclick="selectRole('hod')"><div class="role-ico">&#127891;</div><div class="role-lbl">HOD</div></button>
       <button class="role-btn" data-role="vp"           onclick="selectRole('vp')"><div class="role-ico">&#127891;</div><div class="role-lbl">VP Academic</div></button>
       <button class="role-btn" data-role="bursar"       onclick="selectRole('bursar')"><div class="role-ico">&#127968;</div><div class="role-lbl">Bursar</div></button>
+      <button class="role-btn" data-role="principal"     onclick="selectRole('principal')"><div class="role-ico">&#128188;</div><div class="role-lbl">Principal</div></button>
       <button class="role-btn" data-role="student"      onclick="selectRole('student')"><div class="role-ico">&#129489;</div><div class="role-lbl">Student</div></button>
       <button class="role-btn" data-role="parent"       onclick="selectRole('parent')"><div class="role-ico">&#128106;</div><div class="role-lbl">Parent</div></button>
     </div>
@@ -916,7 +917,7 @@ var RSMS = {
   students: function(){ return JSON.parse(localStorage.getItem('rsms_students')||'[]'); },
   staff:    function(){ return JSON.parse(localStorage.getItem('rsms_staff')||'[]'); },
   fees:     function(){ return JSON.parse(localStorage.getItem('rsms_fees')||'[]'); },
-  pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||({admin:'admin123',bursar:'bursar123',teacher:'teacher123',classteacher:'ct123',hod:'hod123',vp:'vp123',student:'student123',parent:'parent123'}[role]||'pass123'); },
+  pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||({admin:'admin123',principal:'principal123',bursar:'bursar123',teacher:'teacher123',classteacher:'ct123',hod:'hod123',vp:'vp123',student:'student123',parent:'parent123'}[role]||'pass123'); },
   save:     function(key,data){ localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
   logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
 };
@@ -1209,13 +1210,14 @@ var PORTAL_MAP = {
   admin:'rsms-admin.html', classteacher:'rsms-classteacher.html',
   teacher:'rsms-teacher.html', hod:'rsms-hod.html',
   vp:'rsms-vp.html', bursar:'rsms-bursar.html',
+  principal:'rsms-principal.html',
   student:'rsms-student.html', parent:'rsms-parent.html',
 };
 
 // Roles that need identity step
 var NEEDS_IDENTITY = ['classteacher','teacher','student','parent'];
 // Roles that go straight through (only 1 per school)
-var DIRECT_ROLES = ['admin','hod','vp','bursar'];
+var DIRECT_ROLES = ['admin','hod','vp','bursar','principal'];
 
 var STATE = {
   school: null,   // {schoolId, name, plan, brandColor, logoUrl, bgImages, adminToken, subdomain}
@@ -1861,11 +1863,15 @@ function doLogin(){
   var pers=STATE.person||{};
   var sRec=staffArr.find(function(s){return s.id===pers.id;})||null;
   var sPin=null;
-  if(['admin','hod','vp','bursar'].indexOf(STATE.role)>=0){
+  if(['admin','hod','vp','bursar','principal'].indexOf(STATE.role)>=0){
     sPin=(JSON.parse(localStorage.getItem('rsms_portal_pins')||'{}')||{})[STATE.role]||null;
   } else if(sRec&&sRec.pin){ sPin=sRec.pin; }
   else if(pers.pin){ sPin=pers.pin; }
   STATE._expectedPin=sPin;
+  if(['student','parent'].indexOf(STATE.role)>=0 && !sPin){
+    toast('No access PIN set for this student yet. Ask the school admin to issue one from the Admin portal.','error');
+    return;
+  }
   if(sPin){ goToStep(4); } else { enterPortal(); }
 }
 

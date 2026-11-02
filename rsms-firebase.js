@@ -448,6 +448,15 @@ var RSMS_FB = (function(){
   }
 
   function saveScores(cls, term, sess, data){
+
+    // RESULT SECURITY: no score edits once results for this class+term are published
+    var _pubRaw = null;
+    try{ _pubRaw = (_sid ? localStorage.getItem('rsms_'+_sid+'_published_results') : null) || localStorage.getItem('rsms_published_results'); }catch(e){}
+    var _pub = {}; try{ _pub = JSON.parse(_pubRaw||'{}'); }catch(e){}
+    if(_pub && _pub[cls] && _pub[cls][term]){
+      try{ if(typeof toast==='function') toast('Results for '+cls+' ('+term+') are already published. Scores are locked.','error'); }catch(e){}
+      return;
+    }
     // Write to both scoped and unscoped score localStorage keys
     var json = JSON.stringify(data);
     try{ localStorage.setItem(_scoreKey(cls,term,sess), json); }catch(e){}
