@@ -697,21 +697,23 @@ function generateCards(){
 
   // ── Calculate cumulative (auto) ──────────────────────────
   function getCumulative(stuId,subj,currentTerm){
-    // Read previous term scores
+    // Cumulative add-up: sum ALL previous terms of the SAME session
     var termOrder=['First Term','Second Term','Third Term'];
     var tIdx=termOrder.indexOf(currentTerm);
     if(tIdx<=0) return null;
-    var prevTerm=termOrder[tIdx-1];
-    // Find prev term scoped key
     var sid2=_sid();
-    var prevKey=(sid2?'rsms_'+sid2+'_scores_':'rsms_scores_')+
-      cls.replace(/\s+/g,'_')+'_'+prevTerm.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
-    var prevUnscoped='rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+prevTerm.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
-    var prevScores=JSON.parse(localStorage.getItem(prevKey)||localStorage.getItem(prevUnscoped)||'{}');
-    var prevEntry=Object.values(prevScores).find(function(e){ return e&&e.stuId===stuId&&e.subject===subj; });
-    if(!prevEntry) return null;
-    var prevTotal=parseInt(prevEntry.ca1||0)+parseInt(prevEntry.ca2||0)+parseInt(prevEntry.exam||0);
-    return prevTotal;
+    var total=0, found=0;
+    for(var i=0;i<tIdx;i++){
+      var pt=termOrder[i];
+      var key=(sid2?'rsms_'+sid2+'_scores_':'rsms_scores_')+
+        cls.replace(/\s+/g,'_')+'_'+pt.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
+      var unscoped='rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+pt.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
+      var tScores=JSON.parse(localStorage.getItem(key)||localStorage.getItem(unscoped)||'{}');
+      var entry=Object.values(tScores).find(function(e){ return e&&e.stuId===stuId&&e.subject===subj; });
+      if(entry){ total+=parseInt(entry.ca1||0)+parseInt(entry.ca2||0)+parseInt(entry.exam||0); found++; }
+    }
+    if(!found) return null;
+    return {total:total, terms:found};
   }
 
   // ── Sort for positions ──────────────────────────────────
@@ -772,15 +774,17 @@ function generateCards(){
       return sc&&(parseInt(sc.ca1||0)+parseInt(sc.ca2||0)+parseInt(sc.exam||0)>0);
     });
 
-    var grandTotalWithCum=0;
+    var grandTotalWithCum=0, cumDenom=0;
     subjWithScores.forEach(function(subj,idx){
       var sc=scores[subj]||{ca1:0,ca2:0,exam:0};
       var ca1=parseInt(sc.ca1||0),ca2=parseInt(sc.ca2||0),exam=parseInt(sc.exam||0);
       var tot=ca1+ca2+exam;
       var cum=showCumulative?getCumulative(stu.id,subj,term):null;
-      var grandTot=showCumulative&&cum!==null?Math.round((tot+cum)/2):tot;
+      var grandTot=tot, cumTerms=1;
+      if(showCumulative&&cum!==null){ grandTot=tot+cum.total; cumTerms=1+cum.terms; }
       grandTotalWithCum+=grandTot;
-      var g=grade(grandTot);
+      cumDenom+=totalMax*cumTerms;
+      var g=grade(Math.round(grandTot/(totalMax*cumTerms)*100));
       var rem=gradeRemark(g);
       var gc=gradeClass(g);
       subjectRows+=
@@ -798,7 +802,7 @@ function generateCards(){
         '</tr>';
     });
 
-    var finalAvg=subjCount?Math.round(grandTotalWithCum/subjCount):avg;
+    var finalAvg=cumDenom?Math.round(grandTotalWithCum/cumDenom*100):avg;
     var finalGrade=grade(finalAvg);
 
     // Affective traits
@@ -898,7 +902,7 @@ function generateCards(){
             '<th style="padding:4px 6px;text-align:center;border:1px solid #aaa;width:7%;">CA2<br>/'+ca2Max+'</th>'+
             '<th style="padding:4px 6px;text-align:center;border:1px solid #aaa;width:8%;">Exam<br>/'+examMax+'</th>'+
             '<th style="padding:4px 6px;text-align:center;border:1px solid #aaa;width:8%;background:#d4a843;color:#000;">Total<br>/'+totalMax+'</th>'+
-            (showCum?'<th style="padding:4px 6px;text-align:center;border:1px solid #aaa;width:8%;background:#fef3c7;color:#000;">Prev<br>Term</th>':'') +
+            (showCum?'<th style="padding:4px 6px;text-align:center;border:1px solid #aaa;width:8%;background:#fef3c7;color:#000;">Prev<br>Terms</th>':'') +
             (showCum?'<th style="padding:4px 6px;text-align:center;border:1px solid #aaa;width:9%;background:#fef3c7;color:#000;">Grand<br>Total</th>':'') +
             '<th style="padding:4px 6px;text-align:center;border:1px solid #aaa;width:7%;">Grade</th>'+
             '<th style="padding:4px 6px;text-align:center;border:1px solid #aaa;width:10%;">Remark</th>'+
