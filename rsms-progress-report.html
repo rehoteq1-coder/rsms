@@ -294,6 +294,9 @@ select.fi{cursor:pointer;}
 function _sid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
 function _key(k){ var id=_sid(); return id?'rsms_'+id+'_'+k:'rsms_'+k; }
 function _lsget(k){ return localStorage.getItem(_key(k))||localStorage.getItem('rsms_'+k)||null; }
+function _isEarlyYears(cls){
+  return /\b(pre[\s\-]?nursery|prenursery|creche|cr\u00e8che|play\s?group|kg\b|k\.g\b|kindergarten)/i.test(String(cls||''));
+}
 function _slug(t){ return (t||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 function _lsset(k,d){ var id=_sid(); var json=JSON.stringify(d); localStorage.setItem('rsms_'+k,json); if(id) localStorage.setItem('rsms_'+id+'_'+k,json); }
 // ─────────────────────────────────────────────────────────────
@@ -383,6 +386,12 @@ function generateReports(){
   var principal= document.getElementById('sel-principal').value||DB.school.principal||'Principal';
 
   var students = cls ? DB.students.filter(function(s){return (s.class||'')=== cls;}) : DB.students;
+  if(cls && !_isEarlyYears(cls)){
+    toast('Progress reports are only for KG, pre-nursery, creche and playgroup classes. '+cls+' uses the terminal report card on the Results page.','error');
+    document.getElementById('reports-output').innerHTML='';
+    return;
+  }
+  if(!cls){ students = students.filter(function(s){return _isEarlyYears(s.class);}); }
 
   // If no students, use demo
   if(!students.length){
@@ -621,7 +630,7 @@ window.addEventListener('load',function(){
   var sel = document.getElementById('sel-class');
   var ctrlSel = document.getElementById('ctrl-class');
   // Add dynamic classes not already in dropdown
-  classes.forEach(function(cls){
+  classes.filter(function(c){return _isEarlyYears(c);}).forEach(function(cls){
     var exists = false;
     for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===cls){exists=true;break;}}
     if(!exists){

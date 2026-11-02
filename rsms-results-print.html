@@ -554,6 +554,7 @@ function loadScores(cls, term, sess){
 
 // ── PREVIEW ───────────────────────────────────────────────────
 function showPreview(cls, term, sess){
+  if(_isEarlyYears(cls)){ toast('KG, pre-nursery, creche and playgroup classes use the Progress Report card, not the terminal report.','error'); return; }
   if(gateTeacherResults(cls,term)) return;
   var previewCard=document.getElementById('preview-card');
   var previewList=document.getElementById('preview-list');
@@ -670,6 +671,9 @@ function goBack(){
 }
 
 // ── GENERATE CARDS ────────────────────────────────────────────
+function _isEarlyYears(cls){
+  return /\b(pre[\s\-]?nursery|prenursery|creche|cr\u00e8che|play\s?group|kg\b|k\.g\b|kindergarten)/i.test(String(cls||''));
+}
 function generateCards(){
   var cls     = document.getElementById('cls-sel').value;
   var term    = document.getElementById('term-sel').value;
@@ -678,6 +682,7 @@ function generateCards(){
   var ca1Max  = parseInt(document.getElementById('ca1-max').value)||20;
   var ca2Max  = parseInt(document.getElementById('ca2-max').value)||20;
   var examMax = parseInt(document.getElementById('exam-max').value)||60;
+  if(_isEarlyYears(cls)){ toast('KG, pre-nursery, creche and playgroup classes use the Progress Report card, not the terminal report. Generate '+cls+' from the Progress Report page instead.','error'); return; }
   var totalMax= ca1Max+ca2Max+examMax;
   if(gateTeacherResults(cls,term)) return;
 
