@@ -294,6 +294,7 @@ select.fi{cursor:pointer;}
 function _sid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
 function _key(k){ var id=_sid(); return id?'rsms_'+id+'_'+k:'rsms_'+k; }
 function _lsget(k){ return localStorage.getItem(_key(k))||localStorage.getItem('rsms_'+k)||null; }
+function _slug(t){ return (t||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 function _lsset(k,d){ var id=_sid(); var json=JSON.stringify(d); localStorage.setItem('rsms_'+k,json); if(id) localStorage.setItem('rsms_'+id+'_'+k,json); }
 // ─────────────────────────────────────────────────────────────
 
@@ -445,31 +446,28 @@ function buildProgressCard(stu,name,logo,photo,term,session,nextTerm,daysOpen,te
   }
 
   var DEV_AREAS = [
-    {area:'Cognitive Development',items:['Problem Solving','Attention & Concentration','Memory & Recall','Logical Thinking','Curiosity']},
-    {area:'Language & Communication',items:['Oral Expression','Listening Skills','Vocabulary','Story Narration','Response to Instructions']},
-    {area:'Early Literacy',items:['Letter Recognition','Phonics','Reading Readiness','Pre-Writing Skills','Book Handling']},
-    {area:'Early Numeracy',items:['Number Recognition (1-20)','Counting Objects','Sorting & Matching','Shape Recognition','Size Comparison']},
-    {area:'Fine Motor Skills',items:['Pencil/Crayon Grip','Cutting with Scissors','Drawing & Colouring','Bead Threading','Puzzle Assembly']},
-    {area:'Gross Motor Skills',items:['Running & Jumping','Balance & Coordination','Ball Skills','Dancing','Physical Endurance']},
-    {area:'Social & Emotional',items:['Sharing & Taking Turns','Respect for Others','Self Control','Friendship Skills','Emotional Expression']},
-    {area:'Creative Arts',items:['Drawing & Painting','Music & Rhythm','Dramatic Play','Craft','Imagination']},
-    {area:'Self Care',items:['Personal Hygiene','Dressing','Tidying Up','Following Routine','Care of Belongings']},
-    {area:'Religious & Moral',items:['Obedience & Respect','Honesty','Kindness','Prayer Participation','Moral Conduct']}
+    {area:'Cognitive Development',items:['Problem Solving','Attention & Concentration','Memory & Recall','Logical Thinking']},
+    {area:'Language & Communication',items:['Oral Expression','Listening Skills','Vocabulary','Response to Instructions']},
+    {area:'Early Literacy & Numeracy',items:['Letter Recognition','Reading Readiness','Counting & Numbers','Shapes & Sorting']},
+    {area:'Physical Development',items:['Pencil Grip & Writing','Drawing & Colouring','Running & Balance','Cutting & Craft Work']},
+    {area:'Social & Emotional',items:['Sharing & Taking Turns','Respect for Others','Self Control & Confidence','Following Routine & Tidying Up']}
   ];
 
-  var PERSONAL = ['Neatness','Punctuality','Class Participation','Politeness','Cooperation','Initiative','Health Habits','Relationship with Teacher','Confidence','Concentration'];
+  var PERSONAL = ['Neatness','Punctuality','Politeness','Honesty','Obedience','Class Participation','Cooperation','Confidence'];
 
   // Build dev areas table rows
   var devRows = '';
   DEV_AREAS.forEach(function(section){
     devRows += '<tr style="background:#e8e4f0;"><td colspan="6" style="padding:5px 8px;font-weight:700;font-size:8px;color:#1a0a3e;text-transform:uppercase;letter-spacing:.06em;">'+section.area+'</td></tr>';
     section.items.forEach(function(item){
-      devRows += '<tr>'+
+      var slug=_slug(section.area+'-'+item), sv=ratings[slug]||'';
+      function dot(r){ return '<div class="rc '+r+'" data-r="'+r+'"'+(sv===r?' style="opacity:1;transform:scale(1.15);"':'')+'>'+r.toUpperCase()+'</div>'; }
+      devRows += '<tr data-key="'+stu.id+'|'+slug+'">'+
         '<td style="padding:5px 8px;font-size:9.5px;font-weight:600;color:#1a0a3e;padding-left:14px;">'+item+'</td>'+
-        '<td style="text-align:center;width:30px;"><div class="rc e" data-r="e">E</div></td>'+
-        '<td style="text-align:center;width:30px;"><div class="rc g" data-r="g">G</div></td>'+
-        '<td style="text-align:center;width:30px;"><div class="rc f" data-r="f">F</div></td>'+
-        '<td style="text-align:center;width:30px;"><div class="rc n" data-r="n">N</div></td>'+
+        '<td style="text-align:center;width:30px;">'+dot('e')+'</td>'+
+        '<td style="text-align:center;width:30px;">'+dot('g')+'</td>'+
+        '<td style="text-align:center;width:30px;">'+dot('f')+'</td>'+
+        '<td style="text-align:center;width:30px;">'+dot('n')+'</td>'+
         '<td style="font-size:8px;color:#777;min-width:70px;padding:0 6px;"></td>'+
       '</tr>';
     });
@@ -477,37 +475,28 @@ function buildProgressCard(stu,name,logo,photo,term,session,nextTerm,daysOpen,te
 
   // Personal skills
   var half = Math.ceil(PERSONAL.length/2);
-  var skills1 = PERSONAL.slice(0,half).map(function(s){
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:9px;">'+
+  function skillRow(s){
+    var slug=_slug(s), sv=ratings[slug]||'';
+    function dot(r){ return '<div class="rd '+r+'" data-r="'+r+'"'+(sv===r?' style="opacity:1;transform:scale(1.15);"':'')+'>'+r.toUpperCase()+'</div>'; }
+    return '<div data-key="'+stu.id+'|'+slug+'" style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:9px;">'+
       '<span style="font-weight:600;color:#1a0a3e;">'+s+'</span>'+
-      '<div style="display:flex;gap:2px;">'+
-        '<div class="rd e" data-r="e">E</div>'+
-        '<div class="rd g" data-r="g">G</div>'+
-        '<div class="rd f" data-r="f">F</div>'+
-        '<div class="rd n" data-r="n">N</div>'+
-      '</div></div>';
-  }).join('');
-  var skills2 = PERSONAL.slice(half).map(function(s){
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:9px;">'+
-      '<span style="font-weight:600;color:#1a0a3e;">'+s+'</span>'+
-      '<div style="display:flex;gap:2px;">'+
-        '<div class="rd e" data-r="e">E</div>'+
-        '<div class="rd g" data-r="g">G</div>'+
-        '<div class="rd f" data-r="f">F</div>'+
-        '<div class="rd n" data-r="n">N</div>'+
-      '</div></div>';
-  }).join('');
+      '<div style="display:flex;gap:2px;">'+dot('e')+dot('g')+dot('f')+dot('n')+'</div>'+
+    '</div>';
+  }
+  var half = Math.ceil(PERSONAL.length/2);
+  var skills1 = PERSONAL.slice(0,half).map(skillRow).join('');
+  var skills2 = PERSONAL.slice(half).map(skillRow).join('');
 
   return '<div class="report-card">'+
     // HEADER
-    '<div style="display:grid;grid-template-columns:72px 1fr 72px;align-items:center;gap:8px;padding:10px 14px;border-bottom:3px solid #1a0a3e;">'+
-      '<div style="width:72px;height:72px;border:1px solid #ccc;overflow:hidden;display:flex;align-items:center;justify-content:center;">'+logo+'</div>'+
+    '<div style="padding:10px 14px;border-bottom:3px solid #1a0a3e;text-align:center;position:relative;">'+
+      (photo?'<div style="position:absolute;top:10px;right:14px;width:72px;height:80px;border:1px solid #999;overflow:hidden;background:#f5f5f5;display:flex;align-items:center;justify-content:center;">'+photo+'</div>':'')+
+      '<div style="width:76px;height:76px;border:1px solid #ccc;overflow:hidden;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;">'+logo+'</div>'+
       '<div style="text-align:center;">'+
         '<div style="font-size:15px;font-weight:900;color:#1a0a3e;text-transform:uppercase;margin-bottom:2px;">'+DB.school.name+'</div>'+
         '<div style="font-size:8.5px;color:#555;margin-bottom:3px;">'+(DB.school.address||'School Address')+'</div>'+
         '<div style="font-size:10px;font-weight:700;color:#1a0a3e;background:#f0f0f0;padding:3px 10px;border-radius:3px;display:inline-block;">Early Childhood Progress Report</div>'+
       '</div>'+
-      (photo?'<div style="width:72px;height:80px;border:1px solid #999;overflow:hidden;background:#f5f5f5;display:flex;align-items:center;justify-content:center;">'+photo+'</div>':'')+
     '</div>'+
     // GOLD BAND
     '<div style="background:#d4a843;color:#000;text-align:center;padding:5px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.2em;">Official Progress Report</div>'+
@@ -593,6 +582,13 @@ function srow(label,val){
 document.addEventListener('click', function(e){
   var el = e.target;
   if(!el.dataset.r) return;
+  var keyWrap = el.closest('[data-key]');
+  if(keyWrap && keyWrap.dataset.key){
+    var kp = keyWrap.dataset.key.split('|'), stuId = kp[0], slug = kp[1];
+    DB.progressRatings[stuId] = DB.progressRatings[stuId] || {};
+    DB.progressRatings[stuId][slug] = el.dataset.r;
+    _lsset('progress_ratings', DB.progressRatings);
+  }
   var row = el.closest('tr');
   var wrap = el.closest('div');
   if(row){

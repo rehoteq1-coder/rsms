@@ -850,21 +850,19 @@ function generateCards(){
       'color:#111;position:relative;';
 
     card.innerHTML=
-      // ── SCHOOL HEADER ──
-      '<div style="border-bottom:3px solid #1a0a3e;padding-bottom:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">'+
-        '<div style="width:80px;text-align:center;">'+logoHtml+'</div>'+
-        '<div style="flex:1;text-align:center;padding:0 8px;">'+
+      // ── SCHOOL HEADER (logo top-centre, school name beneath it) ──
+      '<div style="border-bottom:3px solid #1a0a3e;padding-bottom:8px;margin-bottom:8px;text-align:center;position:relative;">'+
+        (phHtml?'<div style="position:absolute;top:0;right:0;">'+phHtml+'</div>':'')+
+        (LOGO?'<img src="'+LOGO+'" style="width:84px;height:84px;object-fit:contain;display:block;margin:0 auto 4px;"/>':'')+
           '<div style="font-size:16pt;font-weight:900;color:#1a0a3e;font-family:Georgia,serif;">'+SCHOOL.name+'</div>'+
           (SCHOOL.address?'<div style="font-size:8.5pt;color:#555;margin-top:2px;">'+SCHOOL.address+'</div>':'')+
           (SCHOOL.phone?'<div style="font-size:8.5pt;color:#555;">Tel: '+SCHOOL.phone+'</div>':'')+
           (SCHOOL.motto?'<div style="font-size:8pt;color:#1a0a3e;font-style:italic;margin-top:2px;">'+SCHOOL.motto+'</div>':'')+
-        '</div>'+
-        (showPhoto?'<div style="width:80px;text-align:center;">'+phHtml+'</div>':'')+
       '</div>'+
 
       // ── REPORT TITLE ──
       '<div style="text-align:center;background:#1a0a3e;color:#fff;padding:5px;margin-bottom:8px;font-size:11pt;font-weight:800;letter-spacing:1px;">'+
-        'STUDENT ACADEMIC REPORT &mdash; '+term.toUpperCase()+' '+sess+
+        'TERMINAL REPORT &mdash; '+term.toUpperCase()+' '+sess+
       '</div>'+
 
       // ── STUDENT BIO ──
