@@ -446,7 +446,13 @@ function runSecurityScan(){
     // Check for anomalies
     var findings=[];
     // 1. Check if students data is consistent
-    var students=JSON.parse(localStorage.getItem('rsms_students')||'[]');
+    function rsmsWriteBoth(k,v){
+  var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+  var j=JSON.stringify(v);
+  try{localStorage.setItem('rsms_'+k,j);}catch(e){}
+  if(sid){try{localStorage.setItem('rsms_'+sid+'_'+k,j);}catch(e){}}
+}
+var students=JSON.parse(localStorage.getItem('rsms_students')||'[]');
     var orphaned=students.filter(function(s){return !s.reg||!s.class;});
     if(orphaned.length)findings.push({type:'data_anomaly',detail:orphaned.length+' students missing reg/class'});
     // 2. Check storage
@@ -488,7 +494,7 @@ function runAutoFix(){
     var before=students.length;
     var cleaned=students.filter(function(s){return s.id&&s.surname;});
     if(cleaned.length<before){
-      localStorage.setItem('rsms_students',JSON.stringify(cleaned));
+      rsmsWriteBoth('students',cleaned);
       fixes.push({icon:'🗑',text:'Removed '+(before-cleaned.length)+' orphaned student record(s)',time:new Date().toLocaleTimeString()});
     }
     // Fix 2: Ensure school data has all required fields

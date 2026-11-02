@@ -624,6 +624,18 @@ window.addEventListener('load',function(){
   buildStats();
   buildActivity();
   buildNav();
+  // The cloud sync lands a moment after load: re-read and refresh the counters.
+  setTimeout(function(){
+    try{
+      DB.students=JSON.parse(localStorage.getItem('rsms_students')||'[]');
+      DB.staff=JSON.parse(localStorage.getItem('rsms_staff')||'[]');
+      DB.fees=JSON.parse(localStorage.getItem('rsms_fees')||'[]');
+      buildStats(); buildActivity();
+      var bc=document.getElementById('bc-stat-val');
+      var cfg=(ROLES||{})[role]||{};
+      if(bc&&typeof cfg.statVal==='function') bc.textContent=cfg.statVal();
+    }catch(e){}
+  },1800);
 });
 </script>
 </body>

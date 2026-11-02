@@ -2737,6 +2737,8 @@ function saveStaff2(){
     }
     toast('Staff updated','success');
   } else {
+    var dupS=all.find(function(s){return String(s.name||'').toLowerCase()===name.toLowerCase();});
+    if(dupS){toast('Staff with this name already exists','error');return;}
     all.push({id:'t'+Date.now(),name:name,role:role,
       dept:document.getElementById('stf-dept').value,
       myClass:document.getElementById('stf-class').value,
