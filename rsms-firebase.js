@@ -675,10 +675,13 @@ var RSMS_FB = (function(){
   function dedupeById(arr){
     var seen={},out=[];
     arr.forEach(function(x){
-      if(!x) return;
-      var k=String(x.id||'');
-      if(k&&seen[k]) return;
-      if(k) seen[k]=1;
+      if(!x||typeof x!=='object') return;          // drop junk values (booleans, strings)
+      if(!x.id) return;                            // every real record has an id
+      var nm=String(x.surname||'')+String(x.firstname||'')+String(x.name||'');
+      if(!nm.trim()) return;                       // drop nameless entries
+      var k=String(x.id);
+      if(seen[k]) return;
+      seen[k]=1;
       out.push(x);
     });
     return out;
