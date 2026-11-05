@@ -508,48 +508,26 @@ function loadScores(cls, term, sess){
   currentScores  = {};
   currentSubjects = [];
 
-  var clsKey = cls.replace(/\s+/g,'_');
-  var _schoolId=_sid();
-  var _scopedPfx=_schoolId?'rsms_'+_schoolId+'_scores_':'';
-
-  // Scan ALL score keys — both scoped and unscoped
-  for(var i=0;i<localStorage.length;i++){
-    var k=localStorage.key(i);
-    if(!k) continue;
-    var _isScoped=_scopedPfx&&k.indexOf(_scopedPfx)===0;
-    var _isUnscoped=k.indexOf('rsms_scores_')===0;
-    if(!_isScoped&&!_isUnscoped) continue;
-    var _stripped=_isScoped?k.replace(_scopedPfx,''):k.replace('rsms_scores_','');
-    if(_stripped.indexOf(clsKey)<0) continue;
-    var data=JSON.parse(localStorage.getItem(k)||'{}');
-    Object.keys(data).forEach(function(entryKey){
-      var e=data[entryKey];
-      if(!e||!e.stuId||!e.subject) return;
-      var sid=e.stuId;
-      var subj=e.subject;
-      if(!currentScores[sid]) currentScores[sid]={};
-      // Only overwrite if no score yet or new score has data
-      if(!currentScores[sid][subj]||
-        (parseInt(e.ca1||0)+parseInt(e.ca2||0)+parseInt(e.exam||0)>0)){
-        currentScores[sid][subj]={
-          ca1:parseInt(e.ca1||0),
-          ca2:parseInt(e.ca2||0),
-          exam:parseInt(e.exam||0)
-        };
-      }
-      if(currentSubjects.indexOf(subj)<0) currentSubjects.push(subj);
-      // Add student to list if not already there
-      if(!currentStudents.find(function(s){return s.id===sid;})){
-        // Look up from full student list
-        var fullStu=STUDENTS.find(function(s){return s.id===sid;});
-        if(fullStu) currentStudents.push(fullStu);
-        else currentStudents.push({
-          id:sid,surname:e.surname||'',firstname:e.firstname||'',
-          class:cls,reg:e.reg||sid
-        });
-      }
-    });
-  }
+  // Read only the selected class, term and session. Prefer the school-scoped copy.
+  var suffix=cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
+  var schoolId=_sid();
+  var scoped=schoolId?'rsms_'+schoolId+'_scores_'+suffix:null;
+  var raw=(scoped && localStorage.getItem(scoped)) || localStorage.getItem('rsms_scores_'+suffix) || '{}';
+  var data=JSON.parse(raw);
+  Object.keys(data).forEach(function(entryKey){
+    var e=data[entryKey];
+    if(!e||!e.stuId||!e.subject) return;
+    // Guard against incorrectly filed legacy entries.
+    if((e.class && e.class!==cls)||(e.term && e.term!==term)||(e.session && e.session!==sess)) return;
+    var sid=e.stuId, subj=e.subject;
+    if(!currentScores[sid]) currentScores[sid]={};
+    currentScores[sid][subj]={ca1:parseInt(e.ca1||0),ca2:parseInt(e.ca2||0),exam:parseInt(e.exam||0)};
+    if(currentSubjects.indexOf(subj)<0) currentSubjects.push(subj);
+    if(!currentStudents.find(function(s){return s.id===sid;})){
+      var fullStu=STUDENTS.find(function(s){return s.id===sid;});
+      if(fullStu && fullStu.class===cls) currentStudents.push(fullStu);
+    }
+  });
 
   currentSubjects.sort();
   showPreview(cls, term, sess);
@@ -585,7 +563,7 @@ function showPreview(cls, term, sess){
     var scores=currentScores[s.id]||{};
     var subjectCount=Object.keys(scores).filter(function(subj){
       var sc=scores[subj];
-      return sc&&(sc.ca1||sc.ca2||sc.exam);
+      return !!sc;
     }).length;
     var total=Object.values(scores).reduce(function(a,sc){
       return a+(parseInt(sc.ca1||0)+parseInt(sc.ca2||0)+parseInt(sc.exam||0));
@@ -779,7 +757,7 @@ function generateCards(){
 
     var subjWithScores=currentSubjects.filter(function(subj){
       var sc=scores[subj];
-      return sc&&(parseInt(sc.ca1||0)+parseInt(sc.ca2||0)+parseInt(sc.exam||0)>0);
+      return !!sc;
     });
 
     var grandTotalWithCum=0, cumDenom=0;

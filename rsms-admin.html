@@ -625,6 +625,7 @@ select.fi option{background:var(--card);color:var(--t1);}
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="rsms-config.js"></script>
 <script src="rsms-firebase.js"></script>
+<script src="rsms-roster.js"></script>
 <script src="rsms-ai-units.js"></script>
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 <script>
@@ -637,7 +638,7 @@ window.RSMS_DB = {
     var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
     function tryWarm(tries){
       // Check _ready directly — don't require _sid from isReady()
-      if(typeof RSMS_FB!=='undefined' && typeof firebase!=='undefined'){
+      if(typeof RSMS_FB!=='undefined' && typeof firebase!=='undefined' && RSMS_FB.isReady()) {
         try{
           // Firebase is loaded — attempt warmCache directly
           if(sid){
@@ -754,6 +755,11 @@ window.RSMS_DB = {
         <div style="font-size:.7rem;color:rgba(255,255,255,.35);margin-top:3px;" id="dash-staff">0 Staff</div>
       </div>
     </div>
+  </div>
+
+  <div style="margin:10px 16px 0;">
+    <button class="btn btn-light btn-xs" type="button" onclick="checkStudentRosterCounts()">Check student count</button>
+    <div id="student-count-check" role="status" style="font-size:.75rem;color:var(--t3);margin-top:6px;white-space:pre-wrap;"></div>
   </div>
 
   <!-- Onboarding prompt -->
@@ -2172,14 +2178,7 @@ function _get(k,fb){
 }
 function _set(k,d){ localStorage.setItem(_key(k),JSON.stringify(d)); }
 
-function _realRecords(arr,kind){
-  return (Array.isArray(arr)?arr:[]).filter(function(x){
-    if(!x||typeof x!=='object') return false;
-    if(!x.id) return false;
-    if(kind==='staff') return String(x.name||'').trim()!=='';
-    return String(x.surname||'').trim()!==''||String(x.firstname||'').trim()!=='';
-  });
-}
+function _realRecords(arr,kind){ return RSMSRoster.records(arr,kind); }
 function getStudents(){ return _realRecords(_get('students','[]'),'students'); }
 function getStaff(){ return _realRecords(_get('staff','[]'),'staff'); }
 function getFees(){ return _get('fees','[]'); }
@@ -2212,6 +2211,43 @@ window.onPage_passwords  = renderPasswords;
 window.onPage_links      = initLinks;
 window.onPage_lessonai   = renderLessonAI;
 window.onPage_settings   = loadSettings;
+
+// Firebase updates arrive asynchronously, often after the initial render.
+window.onFirebaseUpdate_students=function(){
+  try{renderDashboard();}catch(e){}
+  try{renderStudents();}catch(e){}
+};
+window.onFirebaseUpdate_staff=function(){
+  try{renderDashboard();}catch(e){}
+  try{renderStaff();}catch(e){}
+};
+
+// Read-only diagnostic: never reconciles, imports, deletes, or uploads records.
+function checkStudentRosterCounts(){
+  var out=document.getElementById('student-count-check');
+  var sid=_sid();
+  if(!sid || typeof firebase==='undefined' || typeof RSMS_FB==='undefined' || !RSMS_FB.isReady()){
+    out.textContent='Database connection is not ready. Try again when online.';return;
+  }
+  var local=getStudents().length, finished=false;
+  out.textContent='Checking '+sid+'…';
+  var timeout=setTimeout(function(){if(!finished){finished=true;out.textContent='Database check timed out. Local count: '+local+'. No data was changed.';}},10000);
+  function finish(message){if(finished)return;finished=true;clearTimeout(timeout);out.textContent=message;}
+  try{
+    var db=firebase.database();
+    db.ref('.info/connected').once('value').then(function(connected){
+      if(!connected.val()) throw new Error('offline');
+      return db.ref('schools/'+sid+'/students').once('value');
+    }).then(function(snapshot){
+      if(_sid()!==sid){finish('School changed during the check; please try again.');return;}
+      var value=snapshot.val();
+      var rows=Array.isArray(value)?value:(value && typeof value==='object'?Object.values(value):[]);
+      var objects=rows.filter(function(v){return v && typeof v==='object' && !Array.isArray(v);});
+      var valid=RSMSRoster.count(value,'students');
+      finish('School: '+sid+'\nAdmin roster: '+local+' students\nDatabase: '+valid+' valid students; '+(objects.length-valid)+' student-like records missing an ID or name.\nRead-only check; no data was changed.');
+    }).catch(function(){finish('Could not read the database roster. Local count: '+local+'. Check connection and permissions. No data was changed.');});
+  }catch(e){finish('Database check unavailable. No data was changed.');}
+}
 
 // ── DASHBOARD ──────────────────────────────────────────
 function renderDashboard(){
@@ -4334,82 +4370,16 @@ window.addEventListener('DOMContentLoaded',function(){
   // Apply plan gates immediately (no async needed)
   try{ if(typeof PLAN_GUARD!=='undefined') PLAN_GUARD.applyGates(); }catch(e){}
 
-  // ── AUTO-MIGRATION: move data from unscoped → scoped keys ──
-  // Fixes: students exist in localStorage but don't show in list
-  try{
-    var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
-    if(sid){
-      ['students','staff','fees'].forEach(function(key){
-        var scopedKey='rsms_'+sid+'_'+key;
-        var unscopedKey='rsms_'+key;
-        var scoped=localStorage.getItem(scopedKey);
-        var unscoped=localStorage.getItem(unscopedKey);
-        // If scoped is missing or empty, but unscoped has data — migrate
-        var scopedLen=0,unscopedLen=0;
-        try{ scopedLen=(JSON.parse(scoped||'[]')||[]).length; }catch(e){}
-        try{ unscopedLen=(JSON.parse(unscoped||'[]')||[]).length; }catch(e){}
-        if(unscopedLen>scopedLen){
-          localStorage.setItem(scopedKey,unscoped);
-          console.log('RSMS: migrated '+unscopedLen+' '+key+' to scoped key');
-        }
-      });
-    }
-  }catch(e){ console.warn('RSMS migration error:',e.message); }
-
-  // Pre-render runs after window.load now (after checkToken sets schoolId)
-  // Init Firebase with delay to avoid blocking page render
+  // The old startup reconciliation read localStorage as both "remote" and
+  // local, then could overwrite a cloud roster with a smaller cached copy.
+  // Never upload or migrate rosters automatically based on their size or age.
+  // Explicit edits still follow the existing save path.
   setTimeout(function(){
-    try{
-      if(typeof RSMS_DB!=='undefined'){
-        RSMS_DB.init(function(){
-          try{
-            // FIX C4: Added scores to sync list. FIX C5: Use lastModified timestamps, not array length
-            var syncKeys=['students','staff','fees','ct_remarks','broadcasts','fee_schedule'];
-            // Also sync any score keys in localStorage
-            for(var si=0;si<localStorage.length;si++){
-              var sk=localStorage.key(si);
-              if(sk&&sk.indexOf('rsms_scores_')===0) syncKeys.push(sk.replace('rsms_',''));
-            }
-            syncKeys.forEach(function(key){
-              RSMS_DB.get(key,function(err,data){
-                try{
-                  var scopedKey = (typeof _key==='function') ? _key(key) : 'rsms_'+key;
-                  var localRaw=localStorage.getItem(scopedKey)||localStorage.getItem('rsms_'+key)||'[]';
-                  var local=JSON.parse(localRaw);
-                  var localTs=parseInt(localStorage.getItem(scopedKey+'_ts')||'0');
-                  var remoteTs=0;
-                  var remoteLen=0,localLen=0;
-                  if(data){
-                    remoteLen=Array.isArray(data)?data.length:Object.keys(data).length;
-                    remoteTs=parseInt((data._syncTs||0))||0;
-                  }
-                  localLen=Array.isArray(local)?local.length:Object.keys(local).length;
-                  
-                  // Sync decision: prefer most-recently-modified, fallback to non-empty
-                  if(remoteTs>localTs && remoteLen>0){
-                    if(typeof _set==='function') _set(key,data);
-                    localStorage.setItem('rsms_'+key,JSON.stringify(data));
-                    localStorage.setItem(scopedKey+'_ts',String(remoteTs));
-                  } else if(localTs>remoteTs && localLen>0 && typeof RSMS_DB!=='undefined'&&RSMS_DB.isReady()){
-                    local._syncTs=Date.now();
-                    RSMS_DB.set(key,local);
-                  } else if(remoteLen>0 && localLen===0){
-                    // Fresh device — pull from Firebase
-                    if(typeof _set==='function') _set(key,data);
-                    localStorage.setItem('rsms_'+key,JSON.stringify(data));
-                  } else if(localLen>0 && remoteLen===0 && typeof RSMS_DB!=='undefined'&&RSMS_DB.isReady()){
-                    // First-time push to Firebase
-                    local._syncTs=Date.now();
-                    RSMS_DB.set(key,local);
-                  }
-                }catch(e2){console.warn('Sync error for '+key+':',e2.message);}
-              });
-            });
-          }catch(e){}
-        });
-      }
-    }catch(e){ console.warn('Firebase init failed:',e.message); }
-  }, 800);
+    if(typeof RSMS_DB!=='undefined') RSMS_DB.init(function(){
+      try{renderStudents();renderStaff();renderDashboard();}catch(e){}
+    });
+  },800);
+
 });
 /* Safe save wrappers — write localStorage first, then sync Firebase async */
 function _fbSync(key,data){

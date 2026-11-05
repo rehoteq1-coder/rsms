@@ -523,6 +523,7 @@ select.fi option{background:var(--card);color:var(--t1);}
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="rsms-firebase.js"></script>
+<script src="rsms-roster.js"></script>
 </head>
 <body>
 
@@ -1363,8 +1364,8 @@ function renderSchools(){
       '</div>'+
       '<div class="sc-stats">'+
         '<div class="sc-stat"><div class="sc-sv">'+naira(pp.monthly)+'</div><div class="sc-sl">/month</div></div>'+
-        '<div class="sc-stat"><div class="sc-sv" data-cnt="students" data-sid="'+s.schoolId+'">'+(s.studentsCount||0)+'</div><div class="sc-sl">Students</div></div>'+
-        '<div class="sc-stat"><div class="sc-sv" data-cnt="staff" data-sid="'+s.schoolId+'">'+(s.staffCount||0)+'</div><div class="sc-sl">Staff</div></div>'+
+        '<div class="sc-stat"><div class="sc-sv" data-cnt="students" data-sid="'+s.schoolId+'">—</div><div class="sc-sl">Students</div></div>'+
+        '<div class="sc-stat"><div class="sc-sv" data-cnt="staff" data-sid="'+s.schoolId+'">—</div><div class="sc-sl">Staff</div></div>'+
         '<div class="sc-stat"><div class="sc-sv" style="color:'+(s.status==='active'?'var(--green)':'var(--red)')+';">'+(s.status||'active')+'</div><div class="sc-sl">Status</div></div>'+
       '</div>'+
       '<div class="sc-actions">';
@@ -1394,19 +1395,17 @@ function renderSchools(){
   _fillLiveCounts();
 }
 
-// Students/Staff counters, counted live from each school's roster on
-// Firebase (schools/<id>/students, /staff — the nodes the migrate step
-// publishes). The record's studentsCount/staffCount stay untouched, and a
-// school whose roster was never migrated simply keeps showing 0.
+// Count the same valid roster records as the school admin portal. Read the
+// complete roster; numChildren also counts metadata and limitToFirst truncated it.
 function _fillLiveCounts(){
   var db=_fbDB();
-  if(!db) return;
   Array.prototype.forEach.call(document.querySelectorAll('[data-cnt]'),function(el){
     var sid=el.getAttribute('data-sid'), key=el.getAttribute('data-cnt');
-    if(!sid) return;
-    db.ref('schools/'+sid+'/'+key).limitToFirst(2000).once('value').then(function(snap){
-      el.textContent=snap.numChildren();
-    }).catch(function(){});
+    if(!sid || !db){el.textContent='—';el.title='Roster count unavailable';return;}
+    el.textContent='…'; el.title='Loading roster count';
+    db.ref('schools/'+sid+'/'+key).once('value').then(function(snap){
+      el.textContent=RSMSRoster.count(snap.val(),key); el.title='Counted from the school roster';
+    }).catch(function(){el.textContent='—';el.title='Could not load roster count';});
   });
 }
 
