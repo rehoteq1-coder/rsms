@@ -7,6 +7,7 @@
 <title>RSMS — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="rsms-school-detect.js"></script>
+<script src="rsms-roster.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
@@ -248,10 +249,16 @@ html,body{height:100%;font-family:var(--sans);background:var(--off);color:var(--
 <button class="ai-fab" onclick="window.open('rsms-voice-ai.html','_blank')">🤖</button>
 
 <script>
+function dashboardRoster(key,kind){
+  var school=JSON.parse(localStorage.getItem('rsms_school')||'{}');
+  var scoped=school.schoolId && localStorage.getItem('rsms_'+school.schoolId+'_'+key);
+  var raw=scoped || localStorage.getItem('rsms_'+key) || '[]';
+  try{return RSMSRoster.records(JSON.parse(raw),kind);}catch(e){return [];}
+}
 var DB = {
   school:   JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School","term":"First Term","session":"2025/2026"}'),
-  students: JSON.parse(localStorage.getItem('rsms_students')||'[]'),
-  staff:    JSON.parse(localStorage.getItem('rsms_staff')||'[]'),
+  students: dashboardRoster('students','students'),
+  staff:    dashboardRoster('staff','staff'),
   fees:     JSON.parse(localStorage.getItem('rsms_fees')||'[]'),
   attendance: JSON.parse(localStorage.getItem('rsms_attendance')||'{}')
 };
@@ -627,8 +634,8 @@ window.addEventListener('load',function(){
   // The cloud sync lands a moment after load: re-read and refresh the counters.
   setTimeout(function(){
     try{
-      DB.students=JSON.parse(localStorage.getItem('rsms_students')||'[]');
-      DB.staff=JSON.parse(localStorage.getItem('rsms_staff')||'[]');
+      DB.students=dashboardRoster('students','students');
+      DB.staff=dashboardRoster('staff','staff');
       DB.fees=JSON.parse(localStorage.getItem('rsms_fees')||'[]');
       buildStats(); buildActivity();
       var bc=document.getElementById('bc-stat-val');

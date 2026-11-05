@@ -1,10 +1,10 @@
 /*  ═══════════════════════════════════════════════════════
-    RSMS Service Worker  —  v3.1.0
+    RSMS Service Worker  —  v3.1.2
     Strategy: Network-first, cache-fallback
     Domain:   rsms.rehoteq.com (root paths, no prefix)
     ═══════════════════════════════════════════════════════ */
 
-var CACHE_NAME = 'rsms-v3.1.0';
+var CACHE_NAME = 'rsms-v3.1.2';
 
 var STATIC_ASSETS = [
   '/',
@@ -53,6 +53,8 @@ var STATIC_ASSETS = [
   '/rsms-notifications.js',
   '/rsms-plan-guard.js',
   '/rsms-subjects.js',
+  '/rsms-score-import.js',
+  '/rsms-roster.js',
   '/rsms-school-detect.js',
   '/rsms-assistant.js',
   '/rsms-brand.js',

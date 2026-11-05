@@ -489,6 +489,7 @@ textarea.fi{height:auto;min-height:90px;padding:13px 15px;resize:vertical;}
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="rsms-roster.js"></script>
 <script>
 // Password is checked as a SHA-256 hash so the plaintext never ships in the
 // public repo. To change the password, store the SHA-256 hex of the new one in
@@ -586,20 +587,21 @@ function genRehId(cb){
 // deployed school on Firebase (schools/<id>/students, /staff — the same
 // nodes the migrate step publishes), no more invented numbers.
 function _ctrlLiveTotals(ids,cb){
-  var out={students:0,staff:0},left=0;
+  var out={students:0,staff:0,unavailable:false},left=0;
   var db=_ctrlFB();
   var targets=(ids||[]).concat(DB.schools.map(function(s){return s.schoolID;}).filter(Boolean));
   var uniq={};
   targets.forEach(function(i){ if(i&&!uniq[i]) uniq[i]=1; });
   targets=Object.keys(uniq);
-  if(!db||!targets.length){ cb(out); return; }
+  if(!db){out.unavailable=true;cb(out);return;}
+  if(!targets.length){cb(out);return;}
   targets.forEach(function(sid){
     ['students','staff'].forEach(function(k){
       left++;
-      db.ref('schools/'+sid+'/'+k).limitToFirst(2000).once('value').then(function(snap){
-        out[k]+=snap.numChildren();
+      db.ref('schools/'+sid+'/'+k).once('value').then(function(snap){
+        out[k]+=RSMSRoster.count(snap.val(),k);
         if(--left===0) cb(out);
-      }).catch(function(){ if(--left===0) cb(out); });
+      }).catch(function(){ out.unavailable=true; if(--left===0) cb(out); });
     });
   });
   if(!left) cb(out);
@@ -716,7 +718,7 @@ function initApp(){
   _loadPubSchools(function(pub){
     var ids=pub?Object.keys(pub):[];
     countUp('k-schools',Math.max(ids.length,schools.length));
-    _ctrlLiveTotals(ids,function(t){ countUp('k-students',t.students); });
+    _ctrlLiveTotals(ids,function(t){ if(t.unavailable || !pub){document.getElementById('k-students').textContent='—';document.getElementById('k-students').title='Some roster counts could not be loaded';} else {countUp('k-students',t.students);} });
     renderHomeSchools();
   });
   countUp('k-queue',queue);

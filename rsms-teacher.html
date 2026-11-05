@@ -517,6 +517,8 @@ select.fi option { background: var(--card); color: var(--t1); }
 
 </style>
 <script src="rsms-firebase.js"></script>
+<script src="rsms-subjects.js"></script>
+<script src="rsms-score-import.js"></script>
 <script src="rsms-ai-units.js"></script>
 <script src="rsms-plan-guard.js"></script>
 <script>
@@ -547,6 +549,7 @@ var SUBJECTS_SS_ART = ["English Language","Mathematics","Literature in English",
 
 function getSubjects(cls){
   var c=(cls||'').toLowerCase();
+  if(/primary|nursery|creche|crèche|baby|\bkg\b/.test(c)) return NG_SUBJECTS.PRIMARY;
   if(c.includes('science'))    return SUBJECTS_SS_SCI;
   if(c.includes('commercial')) return SUBJECTS_SS_COM;
   if(c.includes('art'))        return SUBJECTS_SS_ART;
@@ -1090,7 +1093,7 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
   <div class="pg-hd">
     <div>
       <div class="pg-title">&#128221; Enter Scores</div>
-      <div class="pg-sub">Enter scores for subjects you teach</div>
+      <div class="pg-sub">Choose a subject, enter scores, then switch subjects. Save all when finished.</div>
     </div>
     <button class="btn btn-gold btn-sm" onclick="saveTeacherScores()">&#9989; Save Scores</button>
   </div>
@@ -1101,20 +1104,28 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
         <select class="fi" id="sc-class" onchange="onScoreClassChange()" style="height:46px;"><option value="">-- Select Class --</option><option>Creche</option><option>Baby Class</option><option>Nursery 1</option><option>Nursery 2</option><option>KG 1</option><option>KG 2</option><option>Primary 1</option><option>Primary 2</option><option>Primary 3</option><option>Primary 4</option><option>Primary 5</option><option>Primary 6</option><option>JSS 1</option><option>JSS 2</option><option>JSS 3</option><option>SS 1 Science</option><option>SS 1 Commercial</option><option>SS 1 Art</option><option>SS 2 Science</option><option>SS 2 Commercial</option><option>SS 2 Art</option><option>SS 3 Science</option><option>SS 3 Commercial</option><option>SS 3 Art</option></select>
       </div>
       <div class="fg"><label>Subject *</label>
-        <select class="fi" id="sc-subject" style="height:46px;"><option value="">-- Select Class First --</option></select>
+        <select class="fi" id="sc-subject" onchange="onScoreSubjectChange()" style="height:46px;"><option value="">-- Select Class First --</option></select>
       </div>
     </div>
     <div class="f2">
       <div class="fg"><label>Term</label>
-        <select class="fi" id="sc-term" style="height:46px;">
+        <select class="fi" id="sc-term" onchange="onScorePeriodChange()" style="height:46px;">
           <option>First Term</option><option>Second Term</option><option>Third Term</option>
         </select>
       </div>
       <div class="fg"><label>Session</label>
-        <input class="fi" id="sc-session" placeholder="2025/2026"/>
+        <input class="fi" id="sc-session" onchange="onScorePeriodChange()" placeholder="2025/2026"/>
       </div>
     </div>
     <button class="btn btn-teal btn-sm" onclick="loadScoreTable()">&#128203; Load Students</button>
+  </div>
+  <div class="card" style="margin-bottom:12px;">
+    <strong>Bulk scores (CSV / Excel)</strong>
+    <p style="font-size:.8rem;color:var(--t3);margin:8px 0;">Select class, term and session. Download the template, fill all three scores for each row you want to import, and save it as CSV. Empty rows are skipped. Review before adding to your drafts.</p>
+    <button class="btn btn-teal btn-sm" type="button" onclick="downloadScoreTemplate()">Download template</button>
+    <label class="btn btn-ghost btn-sm" style="display:inline-block;cursor:pointer;">Choose CSV<input id="score-csv-file" type="file" accept=".csv,text/csv" style="display:none;" onchange="previewScoreCSV(this)" /></label>
+    <div id="score-import-preview" role="status" style="white-space:pre-wrap;font-size:.8rem;margin-top:10px;"></div>
+    <button id="score-import-apply" class="btn btn-gold btn-sm" type="button" style="display:none;margin-top:8px;" onclick="applyScoreCSV()">Add to drafts</button>
   </div>
   <!-- Score table -->
   <div id="sc-table-wrap" style="display:none;">
@@ -1133,7 +1144,7 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
       </table>
     </div>
     <div style="margin-top:10px;font-size:.75rem;color:var(--t3);">
-      &#8505;&#65039; Scores auto-calculate total. Click Save Scores when done.
+      &#8505;&#65039; Scores auto-calculate. Switch subjects to continue; click Save Scores to save all changes. Unsaved changes remain on this page only.
     </div>
   </div>
 </div>
@@ -1868,6 +1879,8 @@ function initScorePage(){
 }
 
 function onScoreClassChange(){
+  clearScoreImport();
+  scoreActive=null;
   var cls=(document.getElementById('sc-class')||{}).value||'';
   // Populate all subjects for this class from getSubjects
   populateSelect('sc-subject',cls);
@@ -1890,7 +1903,7 @@ function onScoreClassChange(){
   var sel2=document.getElementById('sc-subject');
 
   // Filter to ONLY subjects this teacher teaches
-  if(sel && MY_SUBJECTS && MY_SUBJECTS.length){
+  if(sel && MY_SUBJECTS && MY_SUBJECTS.length && !(MY_CLASS && cls.toLowerCase()===MY_CLASS.toLowerCase())){
     var opts = Array.from(sel.querySelectorAll('option'));
     var hasVisible = false;
     opts.forEach(function(o){
@@ -1913,6 +1926,25 @@ function onScoreClassChange(){
   var wrap = document.getElementById('sc-table-wrap');
   if(wrap) wrap.style.display='none';
 }
+
+// Drafts are kept separately for each class, term, session and subject until saved.
+var scoreDrafts = {};
+var scoreActive = null;
+function scoreContextId(ctx){ return JSON.stringify([ctx.cls,ctx.term,ctx.sess,ctx.subj]); }
+function onScoreSubjectChange(){
+  scoreActive=null;
+  document.getElementById('sc-table-wrap').style.display='none';
+  if(document.getElementById('sc-subject').value) loadScoreTable();
+}
+function onScorePeriodChange(){
+  clearScoreImport();
+  scoreActive=null;
+  document.getElementById('sc-table-wrap').style.display='none';
+  if(document.getElementById('sc-subject').value) loadScoreTable();
+}
+window.addEventListener('beforeunload',function(e){
+  if(Object.keys(scoreDrafts).length){ e.preventDefault(); e.returnValue=''; }
+});
 
 // Populate score class dropdown — show only teacher's classes if known
 function populateScoreClasses(){
@@ -1942,32 +1974,37 @@ function loadScoreTable(){
   if(!students.length){toast('No students found for '+cls,'error');return;}
 
   var scoreKey = _scoreKey(cls,term,sess);
-  var saved = JSON.parse(localStorage.getItem(scoreKey)||'{}');
+  var saved = JSON.parse(localStorage.getItem(scoreKey)||localStorage.getItem('rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_'))||'{}');
+  scoreActive={cls:cls,term:term,sess:sess,subj:subj};
+  var draft=scoreDrafts[scoreContextId(scoreActive)];
 
   var tbody = document.getElementById('sc-tbody'); if(!tbody)return;
   tbody.innerHTML='';
   students.forEach(function(s){
     var name=(s.surname||'')+' '+(s.firstname||'');
     var key=s.id+'_'+subj.replace(/\s+/g,'_');
-    var ex = saved[key]||{ca1:'',ca2:'',exam:''};
+    var ex = (draft && draft.rows[s.id]) || saved[key]||{ca1:'',ca2:'',exam:''};
     var tr=document.createElement('tr');
     // Build cells safely with DOM
     var td0=document.createElement('td');
     td0.style.cssText='font-weight:700;font-size:.88rem;padding:8px 4px;min-width:120px;';
-    td0.innerHTML=name+'<div style="font-size:.65rem;color:var(--t3);">'+s.reg+'</div>';
+    td0.textContent=name;
+    var reg=document.createElement('div'); reg.style.cssText='font-size:.65rem;color:var(--t3);'; reg.textContent=s.reg||''; td0.appendChild(reg);
     tr.appendChild(td0);
-    var prevTotal=(ex.ca1&&ex.ca2&&ex.exam)?parseInt(ex.ca1||0)+parseInt(ex.ca2||0)+parseInt(ex.exam||0):0;
+    var hasScore=['ca1','ca2','exam'].some(function(f){return ex[f]!=='' && ex[f]!=null;});
+    var prevTotal=(parseInt(ex.ca1)||0)+(parseInt(ex.ca2)||0)+(parseInt(ex.exam)||0);
     ['ca1','ca2','exam'].forEach(function(field){
       var td=document.createElement('td');
       var inp=document.createElement('input');
       inp.type='number'; inp.className='fi score-inp';
       inp.style.cssText='height:44px;width:72px;font-size:1rem;font-weight:700;text-align:center;padding:0 6px;background:var(--card2,#1e2545);border:2px solid var(--gold,#d4a843);border-radius:8px;color:var(--t1,#f0f6ff);-webkit-appearance:none;-moz-appearance:textfield;outline:none;';
-      inp.id=field+'_'+s.id; inp.value=ex[field]||'';
+      inp.id=field+'_'+s.id; inp.value=ex[field]==null?'':ex[field];
       inp.min='0'; inp.max=field==='exam'?'60':'20';
       inp.setAttribute('data-sid',s.id);
       inp.oninput=function(){
         this.value=this.value.replace(/[^0-9]/g,'');
         calcRowTotal(this.getAttribute('data-sid'));
+        recordScoreDraft(s);
       };
       inp.onfocus=function(){ this.select(); };
       td.appendChild(inp); tr.appendChild(td);
@@ -1975,7 +2012,7 @@ function loadScoreTable(){
     var tdT=document.createElement('td');
     var spanT=document.createElement('span');
     spanT.id='tot_'+s.id; spanT.style.cssText='font-weight:900;color:var(--gold);font-size:1rem;';
-    spanT.textContent=prevTotal>0?prevTotal:'--';
+    spanT.textContent=hasScore?prevTotal:'--';
     tdT.appendChild(spanT); tr.appendChild(tdT);
     tbody.appendChild(tr);
   });
@@ -1990,47 +2027,128 @@ function calcRowTotal(stuId){
   var ca2=parseInt((document.getElementById('ca2_'+stuId)||{}).value||0)||0;
   var exam=parseInt((document.getElementById('exam_'+stuId)||{}).value||0)||0;
   var totEl=document.getElementById('tot_'+stuId);
-  if(totEl) totEl.textContent = ca1+ca2+exam>0 ? ca1+ca2+exam : '--';
+  var hasScore=['ca1','ca2','exam'].some(function(f){return (document.getElementById(f+'_'+stuId)||{}).value!=='';});
+  if(totEl) totEl.textContent = hasScore ? ca1+ca2+exam : '--';
 }
 
+function recordScoreDraft(student){
+  if(!scoreActive) return;
+  var id=scoreContextId(scoreActive);
+  if(!scoreDrafts[id]) scoreDrafts[id]={context:scoreActive,rows:{}};
+  scoreDrafts[id].rows[student.id]={
+    student:(student.surname||'')+' '+(student.firstname||''),
+    ca1:document.getElementById('ca1_'+student.id).value,
+    ca2:document.getElementById('ca2_'+student.id).value,
+    exam:document.getElementById('exam_'+student.id).value
+  };
+}
 function saveTeacherScores(){
-  var cls  = (document.getElementById('sc-class')||{}).value||'';
-  var subj = (document.getElementById('sc-subject')||{}).value||'';
-  var term = (document.getElementById('sc-term')||{}).value||'First Term';
-  var sess = (document.getElementById('sc-session')||{value:''}).value||'2025/2026';
-  if(!cls||!subj){toast('Select class and subject first','error');return;}
-
-  var _rawStu=_lsget('students'); var _parsedStu=JSON.parse(_rawStu||'[]');
-  var students=(Array.isArray(_parsedStu)?_parsedStu.filter(Boolean):Object.values(_parsedStu).filter(Boolean))
-                  .filter(function(s){return s.class===cls;});
-  if(!students.length){toast('Load students first','error');return;}
-
-  var scoreKey=_scoreKey(cls,term,sess);
-  var saved=JSON.parse(localStorage.getItem(scoreKey)||'{}');
-  var me=RSMS.user?RSMS.user():{};
-  var count=0;
-
-  students.forEach(function(s){
-    var key=s.id+'_'+subj.replace(/\s+/g,'_');
-    var ca1=(document.getElementById('ca1_'+s.id)||{}).value||'';
-    var ca2=(document.getElementById('ca2_'+s.id)||{}).value||'';
-    var exam=(document.getElementById('exam_'+s.id)||{}).value||'';
-    if(ca1||ca2||exam){
-      saved[key]={
-        stuId:s.id, student:(s.surname||'')+' '+(s.firstname||''),
-        class:cls, subject:subj, term:term, session:sess,
-        ca1:parseInt(ca1)||0, ca2:parseInt(ca2)||0, exam:parseInt(exam)||0,
-        total:(parseInt(ca1)||0)+(parseInt(ca2)||0)+(parseInt(exam)||0),
-        enteredBy:me.name||'Teacher', enteredById:me.id||'',
-        enteredByRole:'teacher',
-        savedAt:new Date().toISOString()
-      };
-      count++;
+  var ids=Object.keys(scoreDrafts);
+  if(!ids.length){toast('No unsaved score changes','info');return;}
+  var published=_get('published_results','{}');
+  for(var i=0;i<ids.length;i++){
+    var draft=scoreDrafts[ids[i]], ctx=draft.context;
+    if(published[ctx.cls] && published[ctx.cls][ctx.term]){
+      toast('Results for '+ctx.cls+' ('+ctx.term+') are published and locked.','error');return;
     }
+    var rows=Object.values(draft.rows);
+    for(var j=0;j<rows.length;j++){
+      var r=rows[j];
+      if(['ca1','ca2','exam'].some(function(f){return r[f]!=='' && (!/^\d+$/.test(r[f]) || Number(r[f])>(f==='exam'?60:20));})){
+        toast('Invalid score in '+ctx.subj+' for '+r.student+'. CA maximum is 20; exam maximum is 60.','error');return;
+      }
+    }
+  }
+  var groups={};
+  ids.forEach(function(id){
+    var draft=scoreDrafts[id], c=draft.context, key=_scoreKey(c.cls,c.term,c.sess);
+    if(!groups[key]){
+      var legacy='rsms_scores_'+c.cls.replace(/\s+/g,'_')+'_'+c.term.replace(/\s+/g,'_')+'_'+c.sess.replace('/','_');
+      groups[key]={context:c,data:JSON.parse(localStorage.getItem(key)||localStorage.getItem(legacy)||'{}')};
+    }
+    var data=groups[key].data, me=RSMS.user?RSMS.user():{};
+    Object.keys(draft.rows).forEach(function(stuId){
+      var r=draft.rows[stuId], entryKey=stuId+'_'+c.subj.replace(/\s+/g,'_');
+      if(r.ca1==='' && r.ca2==='' && r.exam===''){ delete data[entryKey]; return; }
+      var ca1=Number(r.ca1)||0, ca2=Number(r.ca2)||0, exam=Number(r.exam)||0;
+      data[entryKey]={stuId:stuId,student:r.student,class:c.cls,subject:c.subj,term:c.term,session:c.sess,
+        ca1:ca1,ca2:ca2,exam:exam,total:ca1+ca2+exam,enteredBy:me.name||'Teacher',enteredById:me.id||'',enteredByRole:'teacher',savedAt:new Date().toISOString()};
+    });
   });
+  try{
+    Object.keys(groups).forEach(function(key){
+      var group=groups[key], c=group.context;
+      if(typeof RSMS_FB!=='undefined' && RSMS_FB.saveScores) RSMS_FB.saveScores(c.cls,c.term,c.sess,group.data);
+      else {
+        var json=JSON.stringify(group.data);
+        localStorage.setItem(key,json);
+        localStorage.setItem('rsms_scores_'+c.cls.replace(/\s+/g,'_')+'_'+c.term.replace(/\s+/g,'_')+'_'+c.sess.replace('/','_'),json);
+      }
+    });
+  }catch(e){toast('Could not save scores. Please try again.','error');return;}
+  scoreDrafts={};
+  toast('Scores saved for '+ids.length+' subject selection(s).','success');
+}
 
-  localStorage.setItem(scoreKey,JSON.stringify(saved)); localStorage.setItem('rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_'),JSON.stringify(saved));
-  toast('\u2705 Saved scores for '+count+' students in '+subj,'success');
+var scoreImportPending=null;
+var scoreImportVersion=0;
+function clearScoreImport(){
+  scoreImportVersion++; scoreImportPending=null;
+  var preview=document.getElementById('score-import-preview'), button=document.getElementById('score-import-apply');
+  if(preview) preview.textContent=''; if(button) button.style.display='none';
+}
+function scoreImportContext(){
+  return {cls:document.getElementById('sc-class').value,term:document.getElementById('sc-term').value,sess:document.getElementById('sc-session').value.trim()};
+}
+function scoreImportStudents(cls){
+  var all=JSON.parse(_lsget('students')||'[]');
+  return (Array.isArray(all)?all:Object.values(all)).filter(function(s){return s && s.class===cls;});
+}
+function scoreImportSubjects(){
+  return Array.from(document.getElementById('sc-subject').options).filter(function(o){return o.value && o.style.display!=='none';}).map(function(o){return o.value;});
+}
+function downloadScoreTemplate(){
+  var c=scoreImportContext(), students=scoreImportStudents(c.cls), subjects=scoreImportSubjects();
+  if(!c.cls||!c.term||!c.sess||!students.length||!subjects.length){toast('Select a class with students, term and session first.','error');return;}
+  if(students.some(function(s){return !s.id;})){toast('Every student needs an ID before downloading the template.','error');return;}
+  var blob=new Blob([RSMSScoreImport.template(c,students,subjects)],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download='RSMS-score-template.csv'; a.click(); setTimeout(function(){URL.revokeObjectURL(url);},1000);
+}
+function previewScoreCSV(input){
+  clearScoreImport();
+  var file=input.files && input.files[0], c=scoreImportContext(), version=scoreImportVersion;
+  input.value='';
+  if(!file) return;
+  if(!c.cls||!c.term||!c.sess){toast('Select class, term and session first.','error');return;}
+  if(file.size>5*1024*1024){toast('CSV must be 5 MB or smaller.','error');return;}
+  var reader=new FileReader();
+  reader.onerror=function(){if(version===scoreImportVersion) document.getElementById('score-import-preview').textContent='Could not read the CSV file.';};
+  reader.onload=function(){
+    if(version!==scoreImportVersion) return;
+    var result;
+    try{result=RSMSScoreImport.validate(reader.result,c,scoreImportStudents(c.cls),scoreImportSubjects());}
+    catch(e){document.getElementById('score-import-preview').textContent='Invalid CSV: '+e.message;return;}
+    var preview=document.getElementById('score-import-preview');
+    if(result.errors.length){preview.textContent='Import blocked. Correct these errors:\n'+result.errors.slice(0,20).join('\n')+(result.errors.length>20?'\n...and '+(result.errors.length-20)+' more.':'');return;}
+    if(!result.items.length){preview.textContent='No complete scores found. Empty rows are skipped.';return;}
+    var samples=result.items.slice(0,8).map(function(r){return (r.student.surname||'')+' '+(r.student.firstname||'')+' — '+r.subject+': '+r.ca1+' + '+r.ca2+' + '+r.exam+' = '+r.total;});
+    preview.textContent=result.items.length+' score rows ready; '+result.blank+' empty rows skipped; '+result.missing+' students have no filled rows.\n'+samples.join('\n')+(result.items.length>8?'\n...and '+(result.items.length-8)+' more.':'')+'\nAdding these rows replaces existing or unsaved scores for the same student and subject. Review, then save all drafts.';
+    scoreImportPending={context:c,items:result.items};
+    document.getElementById('score-import-apply').style.display='inline-block';
+  };
+  reader.readAsText(file);
+}
+function applyScoreCSV(){
+  if(!scoreImportPending) return;
+  var pending=scoreImportPending;
+  pending.items.forEach(function(r){
+    var c={cls:pending.context.cls,term:pending.context.term,sess:pending.context.sess,subj:r.subject}, id=scoreContextId(c);
+    if(!scoreDrafts[id]) scoreDrafts[id]={context:c,rows:{}};
+    scoreDrafts[id].rows[r.student.id]={student:((r.student.surname||'')+' '+(r.student.firstname||'')).trim(),ca1:r.ca1,ca2:r.ca2,exam:r.exam};
+  });
+  clearScoreImport();
+  if(document.getElementById('sc-subject').value) loadScoreTable();
+  toast('Imported into drafts. Click Save Scores to save.','success');
 }
 
 </script>
