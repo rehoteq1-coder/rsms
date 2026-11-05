@@ -528,6 +528,9 @@ select.fi option { background: var(--card); color: var(--t1); }
 <script src="rsms-firebase.js"></script>
 <script src="rsms-plan-guard.js"></script>
 <script>
+if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
+</script>
+<script>
 /* rsms-core.js standalone */
 /* ═══════════════════════════════════════════════════════
    RSMS STANDALONE CORE — All globals, Android-safe
@@ -539,9 +542,9 @@ var RSMS = {
   school:   function(){ return JSON.parse(localStorage.getItem('rsms_school')||'{"name":"","term":"First Term","session":"2025/2026","plan":"Standard"}'); },
   user:     function(){ return JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"Admin","role":"admin"}'); },
   // Scoped reads — always use school ID prefix to isolate school data
-  students: function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_students'):null)||localStorage.getItem('rsms_students')||'[]'); },
-  staff:    function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_staff'):null)||localStorage.getItem('rsms_staff')||'[]'); },
-  fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||localStorage.getItem('rsms_fees')||'[]'); },
+  students: function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_students'):null)||rsmsCacheGetRaw('students')||'[]'); },
+  staff:    function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_staff'):null)||rsmsCacheGetRaw('staff')||'[]'); },
+  fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||rsmsCacheGetRaw('fees')||'[]'); },
   pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||''; },
   save:     function(key,data){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_'+key,JSON.stringify(data)); localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
   logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
@@ -555,7 +558,7 @@ var SUBJECTS_SS_ART = ["English Language","Mathematics","Literature in English",
 
 function getSubjects(cls){
   // First try staff subjects for THIS teacher's class
-  var staff=JSON.parse((typeof _lsget==='function'?_lsget('staff'):null)||localStorage.getItem('rsms_staff')||'[]');
+  var staff=JSON.parse((typeof _lsget==='function'?_lsget('staff'):null)||rsmsCacheGetRaw('staff')||'[]');
   var myUser=RSMS&&RSMS.user?RSMS.user():(JSON.parse(sessionStorage.getItem('rsms_user')||'{}')||{});
   var myName=((myUser.surname||'')+' '+(myUser.firstname||myUser.name||'')).trim().toLowerCase();
   // Collect all subjects from staff whose class matches
@@ -1618,7 +1621,7 @@ function renderMyWorkflow(){
 // ── ASSIGNMENTS ──
 function renderAssignments(){
   var el = document.getElementById('assign-list'); if(!el)return;
-  var assigns = JSON.parse(localStorage.getItem(_key('assignments'))||localStorage.getItem('rsms_assignments')||'[]');
+  var assigns = JSON.parse(localStorage.getItem(_key('assignments'))||rsmsCacheGetRaw('assignments')||'[]');
   var mine = assigns.filter(function(a){return a.by===ME.name||a.cls===MY_CLASS;});
   if(!mine.length){el.innerHTML='<div class="empty-state">No assignments created yet</div>';return;}
   el.innerHTML='';
@@ -1639,7 +1642,7 @@ function createAssignment(){
   var content = (document.getElementById('asgn-content').value||'').trim();
   var due = document.getElementById('asgn-due').value;
   if(!title||!subject||!content){toast('Fill title, subject and content','error');return;}
-  var assigns = JSON.parse(localStorage.getItem(_key('assignments'))||localStorage.getItem('rsms_assignments')||'[]');
+  var assigns = JSON.parse(localStorage.getItem(_key('assignments'))||rsmsCacheGetRaw('assignments')||'[]');
   assigns.push({
     id:'asgn'+Date.now(), title:title, subject:subject, content:content,
     cls:document.getElementById('asgn-class').value||MY_CLASS,
@@ -1899,7 +1902,7 @@ function ctAddStudent(){
   all.push({id:'s'+Date.now(),surname:sur,firstname:fn,class:cls,
     gender:document.getElementById('stu-gen').value,
     parentPhone:document.getElementById('stu-ph').value,reg:reg});
-  localStorage.setItem('rsms_students',JSON.stringify(all));
+  rsmsCacheSetRaw('students',JSON.stringify(all));
   closeModal('m-add-student');
   toast('✅ '+sur+' '+fn+' added','success');
   if(window.onPage_students) window.onPage_students();
@@ -2048,7 +2051,7 @@ function createAssignment(){
   if(!cls){toast('Select a class first','error');return;}
   if(!subject||!title){toast('Fill subject and title','error');return;}
   var me = RSMS.user ? RSMS.user() : {};
-  var all = JSON.parse(localStorage.getItem(_key('assignments'))||localStorage.getItem('rsms_assignments')||'[]');
+  var all = JSON.parse(localStorage.getItem(_key('assignments'))||rsmsCacheGetRaw('assignments')||'[]');
   all.push({
     id:'asgn'+Date.now(), cls:cls, subject:subject, title:title,
     description:desc, dueDate:due, by:me.name||'Teacher',
@@ -2094,13 +2097,13 @@ function openAddStudentModal(){
 window.onPage_remarks = initRemarksPage;
 
 function getCTRemarks(){
-  return JSON.parse(localStorage.getItem(_key('ct_remarks'))||localStorage.getItem('rsms_ct_remarks')||'{}');
+  return JSON.parse(localStorage.getItem(_key('ct_remarks'))||rsmsCacheGetRaw('ct_remarks')||'{}');
 }
 function saveCTRemarks(d){
   var id=_sid();
   var json=JSON.stringify(d);
   // Write ALL possible keys so results-print can find it
-  localStorage.setItem('rsms_ct_remarks',json);
+  rsmsCacheSetRaw('ct_remarks',json);
   if(id){
     localStorage.setItem('rsms_'+id+'_ct_remarks',json);
     // Sync to Firebase
@@ -2527,8 +2530,8 @@ function checkCTReadiness(cls,term){
   var scores=JSON.parse(localStorage.getItem(scoreKey)||localStorage.getItem(unscoped)||'{}');
   var scoreCount=Object.keys(scores).length;
   // Check CT remarks
-  var remarks=JSON.parse((typeof _lsget==='function'?_lsget('ct_remarks'):null)||localStorage.getItem('rsms_ct_remarks')||'{}');
-  var students=JSON.parse((typeof _lsget==='function'?_lsget('students'):null)||localStorage.getItem('rsms_students')||'[]')
+  var remarks=JSON.parse((typeof _lsget==='function'?_lsget('ct_remarks'):null)||rsmsCacheGetRaw('ct_remarks')||'{}');
+  var students=JSON.parse((typeof _lsget==='function'?_lsget('students'):null)||rsmsCacheGetRaw('students')||'[]')
     .filter(function(s){ return s.class===cls; });
   var remarkCount=students.filter(function(s){
     return Object.keys(remarks).some(function(k){ return k.indexOf(s.id)===0; });

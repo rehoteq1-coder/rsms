@@ -249,17 +249,13 @@ html,body{height:100%;font-family:var(--sans);background:var(--off);color:var(--
 <button class="ai-fab" onclick="window.open('rsms-voice-ai.html','_blank')">🤖</button>
 
 <script>
-function dashboardRoster(key,kind){
-  var school=JSON.parse(localStorage.getItem('rsms_school')||'{}');
-  var scoped=school.schoolId && localStorage.getItem('rsms_'+school.schoolId+'_'+key);
-  var raw=scoped || localStorage.getItem('rsms_'+key) || '[]';
-  try{return RSMSRoster.records(JSON.parse(raw),kind);}catch(e){return [];}
-}
+if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallback){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined)return fallback;try{return JSON.parse(raw);}catch(e){return fallback;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
+function dashboardRoster(key,kind){return RSMSRoster.records(rsmsCacheGet(key,[]),kind);}
 var DB = {
   school:   JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School","term":"First Term","session":"2025/2026"}'),
   students: dashboardRoster('students','students'),
   staff:    dashboardRoster('staff','staff'),
-  fees:     JSON.parse(localStorage.getItem('rsms_fees')||'[]'),
+  fees:     rsmsCacheGet('fees',[]),
   attendance: JSON.parse(localStorage.getItem('rsms_attendance')||'{}')
 };
 var user = JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"User","role":"admin"}');
@@ -636,7 +632,7 @@ window.addEventListener('load',function(){
     try{
       DB.students=dashboardRoster('students','students');
       DB.staff=dashboardRoster('staff','staff');
-      DB.fees=JSON.parse(localStorage.getItem('rsms_fees')||'[]');
+      DB.fees=rsmsCacheGet('fees',[]);
       buildStats(); buildActivity();
       var bc=document.getElementById('bc-stat-val');
       var cfg=(ROLES||{})[role]||{};

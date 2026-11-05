@@ -629,6 +629,9 @@ select.fi option{background:var(--card);color:var(--t1);}
 <script src="rsms-ai-units.js"></script>
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 <script>
+if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
+</script>
+<script>
 /* ── RSMS_DB → RSMS_FB BRIDGE + warmCache ──────────────── */
 window.RSMS_DB = {
   init: function(cb){
@@ -1585,9 +1588,9 @@ window.RSMS_DB = {
 var RSMS = {
   school:   function(){ return JSON.parse(localStorage.getItem('rsms_school')||'{"name":"","term":"First Term","session":"2025/2026","plan":"Standard"}'); },
   user:     function(){ return JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"Admin","role":"admin"}'); },
-  students: function(){ return JSON.parse(localStorage.getItem('rsms_students')||'[]'); },
-  staff:    function(){ return JSON.parse(localStorage.getItem('rsms_staff')||'[]'); },
-  fees:     function(){ return JSON.parse(localStorage.getItem('rsms_fees')||'[]'); },
+  students: function(){ return rsmsCacheGet('students','[]'); },
+  staff:    function(){ return rsmsCacheGet('staff','[]'); },
+  fees:     function(){ return rsmsCacheGet('fees','[]'); },
   pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||({admin:'admin123',bursar:'bursar123',teacher:'teacher123',classteacher:'ct123',hod:'hod123',vp:'vp123',student:'student123',parent:'parent123'}[role]||'pass123'); },
   save:     function(key,data){ localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
   logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
@@ -2813,8 +2816,8 @@ function exportStaffCSV(){
 }
 
 // ── BROADCAST / INTERNAL MESSAGING ─────────────────────
-function getBroadcasts(){return JSON.parse(localStorage.getItem('rsms_broadcasts')||'[]');}
-function saveBroadcasts(d){localStorage.setItem('rsms_broadcasts',JSON.stringify(d));}
+function getBroadcasts(){return rsmsCacheGet('broadcasts','[]');}
+function saveBroadcasts(d){rsmsCacheSetRaw('broadcasts',JSON.stringify(d));}
 
 function updateBroadcastBadge(){
   var all=getBroadcasts();
@@ -3418,7 +3421,7 @@ function saveSettings(){
 }
 
 function renderFeeSchedule(){
-  var sched=JSON.parse(localStorage.getItem(_key('fee_schedule'))||localStorage.getItem('rsms_fee_schedule')||'[]');
+  var sched=JSON.parse(localStorage.getItem(_key('fee_schedule'))||rsmsCacheGetRaw('fee_schedule')||'[]');
   var el2=document.getElementById('fee-schedule-list');if(!el2)return;
   if(!sched.length){el2.innerHTML='<div class="text-muted">No fee schedule set yet</div>';return;}
   el2.innerHTML='';
@@ -4229,10 +4232,10 @@ var BASE_CLASSES = [
 var STREAM_LABELS = ['A','B','C','D','E','F'];
 
 function getStreamConfig(){
-  return JSON.parse(localStorage.getItem('rsms_stream_config')||'{}');
+  return rsmsCacheGet('stream_config','{}');
 }
 function saveStreamConfig2(cfg){
-  localStorage.setItem('rsms_stream_config',JSON.stringify(cfg));
+  rsmsCacheSetRaw('stream_config',JSON.stringify(cfg));
 }
 
 // Returns full class list with streams applied
@@ -4384,21 +4387,21 @@ function _fbSync(key,data){
 }
 window.saveStudents=function(data){
   try{ if(typeof _set==='function') _set('students',data); }catch(e){}
-  try{ localStorage.setItem('rsms_students',JSON.stringify(data)); }catch(e){}
+  try{ rsmsCacheSetRaw('students',JSON.stringify(data)); }catch(e){}
   try{ var tk=(typeof _key==='function')?_key('students'):'rsms_students';localStorage.setItem(tk+'_ts',String(Date.now())); }catch(e){}
   data._syncTs=Date.now();
   _fbSync('students',data);
 };
 window.saveStaff=function(data){
   try{ if(typeof _set==='function') _set('staff',data); }catch(e){}
-  try{ localStorage.setItem('rsms_staff',JSON.stringify(data)); }catch(e){}
+  try{ rsmsCacheSetRaw('staff',JSON.stringify(data)); }catch(e){}
   try{ var tk=(typeof _key==='function')?_key('staff'):'rsms_staff';localStorage.setItem(tk+'_ts',String(Date.now())); }catch(e){}
   data._syncTs=Date.now();
   _fbSync('staff',data);
 };
 window.saveFees=function(data){
   try{ if(typeof _set==='function') _set('fees',data); }catch(e){}
-  try{ localStorage.setItem('rsms_fees',JSON.stringify(data)); }catch(e){}
+  try{ rsmsCacheSetRaw('fees',JSON.stringify(data)); }catch(e){}
   try{ var tk=(typeof _key==='function')?_key('fees'):'rsms_fees';localStorage.setItem(tk+'_ts',String(Date.now())); }catch(e){}
   data._syncTs=Date.now();
   _fbSync('fees',data);
@@ -4513,7 +4516,7 @@ function saveEmailConfig(){
   var replyTo=(document.getElementById('email-replyto')||{value:''}).value.trim();
   var fn=firebase.functions().httpsCallable('updateEmailConfig');
   // legacy PIN fallback: if no auth, include bursar PIN
-  var pins=JSON.parse(localStorage.getItem('rsms_'+sid+'_portal_pins')||localStorage.getItem('rsms_portal_pins')||'{}');
+  var pins=JSON.parse(localStorage.getItem('rsms_'+sid+'_portal_pins')||'{}');
   var payload={schoolId:sid, from:from, provider:provider, replyTo:replyTo};
   if(pins.bursar) payload.pin=pins.bursar;
   fn(payload).then(function(){ toast('Email settings saved','success'); loadEmailConfig(); }).catch(function(e){ toast('Save failed: '+(e.message||'error'),'error'); });
@@ -4524,7 +4527,7 @@ function saveEmailApiKey(){
   if(!key){ toast('Enter the provider API key','error'); return; }
   var provider=(document.getElementById('email-provider')||{value:'resend'}).value;
   var fn=firebase.functions().httpsCallable('storeEmailSecret');
-  var pins=JSON.parse(localStorage.getItem('rsms_'+sid+'_portal_pins')||localStorage.getItem('rsms_portal_pins')||'{}');
+  var pins=JSON.parse(localStorage.getItem('rsms_'+sid+'_portal_pins')||'{}');
   var payload={schoolId:sid, provider:provider, action:'set', apiKey:key};
   if(pins.bursar) payload.pin=pins.bursar;
   if(!confirm('Store this key in Secret Manager as rsms-email-'+sid+'? It will not be shown again.')) return;
@@ -4566,7 +4569,7 @@ function renderPinConfig(){
   var el=document.getElementById('pin-config-list'); if(!el)return;
   var sid=_sid();
   var pinsKey=sid?'rsms_'+sid+'_portal_pins':'rsms_portal_pins';
-  var pins=JSON.parse(localStorage.getItem(pinsKey)||localStorage.getItem('rsms_portal_pins')||'{}');
+  var pins=JSON.parse(localStorage.getItem(pinsKey)||'{}');
   el.innerHTML='';
   PORTAL_ROLES.forEach(function(role){
     var row=document.createElement('div');
@@ -4608,8 +4611,8 @@ function savePortalPins(){
   });
   var json=JSON.stringify(pins);
   // Save to BOTH scoped and unscoped keys
-  localStorage.setItem('rsms_portal_pins', json);
   if(sid) localStorage.setItem('rsms_'+sid+'_portal_pins', json);
+  else rsmsCacheSetRaw('portal_pins', json);
   // Sync to Firebase
   if(sid){
     try{ firebase.database().ref('schools/'+sid+'/portal_pins').set(pins); }catch(e){}

@@ -622,6 +622,9 @@ select.fi option{background:var(--card);color:var(--t1);}
 
 <div class="toast" id="rsms-toast"></div>
 <script>
+if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
+</script>
+<script>
 /* ═══════════════════════════════════════════════════════
    RSMS STANDALONE CORE — All globals, Android-safe
    No external dependencies, works offline
@@ -631,9 +634,9 @@ select.fi option{background:var(--card);color:var(--t1);}
 var RSMS = {
   school:   function(){ return JSON.parse(localStorage.getItem('rsms_school')||'{"name":"","term":"First Term","session":"2025/2026","plan":"Standard"}'); },
   user:     function(){ return JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"Admin","role":"admin"}'); },
-  students: function(){ return JSON.parse(localStorage.getItem('rsms_students')||'[]'); },
-  staff:    function(){ return JSON.parse(localStorage.getItem('rsms_staff')||'[]'); },
-  fees:     function(){ return JSON.parse(localStorage.getItem('rsms_fees')||'[]'); },
+  students: function(){ return rsmsCacheGet('students','[]'); },
+  staff:    function(){ return rsmsCacheGet('staff','[]'); },
+  fees:     function(){ return rsmsCacheGet('fees','[]'); },
   pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||({admin:'admin123',bursar:'bursar123',teacher:'teacher123',classteacher:'ct123',hod:'hod123',vp:'vp123',student:'student123',parent:'parent123'}[role]||'pass123'); },
   save:     function(key,data){ localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
   logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
@@ -832,7 +835,7 @@ var LESSON_AI={
     var session=school.session||'2025/2026';
     var key='gift_'+term.replace(/\s+/g,'_')+'_'+session.replace('/','_');
     var done=localStorage.getItem(key)==='done';
-    var staff=JSON.parse(localStorage.getItem('rsms_staff')||'[]');
+    var staff=rsmsCacheGet('staff','[]');
     var teachers=staff.filter(function(s){
       var r=(s.role||'').toLowerCase();
       return r.includes('teacher')||r.includes('hod')||r.includes('principal');

@@ -518,6 +518,9 @@ select.fi option { background: var(--card); color: var(--t1); }
 </style>
 <script src="rsms-firebase.js"></script>
 <script>
+if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
+</script>
+<script>
 /* ── RSMS_DB → RSMS_FB BRIDGE ── */
 window.RSMS_DB = {
   init: function(cb){
@@ -575,9 +578,9 @@ function _lsset(k,d){
 var RSMS = {
   school:   function(){ return JSON.parse(localStorage.getItem('rsms_school')||'{"name":"","term":"First Term","session":"2025/2026","plan":"Standard"}'); },
   user:     function(){ return JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"Admin","role":"admin"}'); },
-  students: function(){ var sid=_sid(); return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_students'):null)||localStorage.getItem('rsms_students')||'[]'); },
-  staff:    function(){ var sid=_sid(); return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_staff'):null)||localStorage.getItem('rsms_staff')||'[]'); },
-  fees:     function(){ var sid=_sid(); return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||localStorage.getItem('rsms_fees')||'[]'); },
+  students: function(){ var sid=_sid(); return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_students'):null)||rsmsCacheGetRaw('students')||'[]'); },
+  staff:    function(){ var sid=_sid(); return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_staff'):null)||rsmsCacheGetRaw('staff')||'[]'); },
+  fees:     function(){ var sid=_sid(); return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||rsmsCacheGetRaw('fees')||'[]'); },
   pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||({admin:'admin123',bursar:'bursar123',teacher:'teacher123',classteacher:'ct123',hod:'hod123',vp:'vp123',student:'student123',parent:'parent123'}[role]||'pass123'); },
   save:     function(key,data){ var sid=_sid(); var json=JSON.stringify(data); if(sid) localStorage.setItem('rsms_'+sid+'_'+key,json); localStorage.setItem('rsms_'+key,json); },
   logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
@@ -1272,7 +1275,7 @@ window.saveStaff = function(data){
 };
 var _origSaveFees = window.saveFees;
 window.saveFees = function(data){
-  localStorage.setItem('rsms_fees', JSON.stringify(data));
+  rsmsCacheSetRaw('fees', JSON.stringify(data));
   if(typeof RSMS_DB !== 'undefined' && RSMS_DB.isReady()) RSMS_DB.set('fees', data);
   // Notify student/parent portals of new payment
   localStorage.setItem('rsms_new_payment', Date.now().toString());

@@ -1303,6 +1303,9 @@ select.fi option{background:var(--card);color:var(--t1);}
 
 <div class="toast" id="rsms-toast"></div>
 <script>
+if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
+</script>
+<script>
 /* ═══════════════════════════════════════════════════════
    RSMS STANDALONE CORE — All globals, Android-safe
    No external dependencies, works offline
@@ -1312,9 +1315,9 @@ select.fi option{background:var(--card);color:var(--t1);}
 var RSMS = {
   school:   function(){ return JSON.parse(localStorage.getItem('rsms_school')||'{"name":"","term":"First Term","session":"2025/2026","plan":"Standard"}'); },
   user:     function(){ return JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"Admin","role":"admin"}'); },
-  students: function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_students'):null)||localStorage.getItem('rsms_students')||'[]'); },
-  staff:    function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_staff'):null)||localStorage.getItem('rsms_staff')||'[]'); },
-  fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||localStorage.getItem('rsms_fees')||'[]'); },
+  students: function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_students'):null)||rsmsCacheGetRaw('students')||'[]'); },
+  staff:    function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_staff'):null)||rsmsCacheGetRaw('staff')||'[]'); },
+  fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||rsmsCacheGetRaw('fees')||'[]'); },
   pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||''; },
   save:     function(key,data){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_'+key,JSON.stringify(data)); localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
   logout:   function(){
@@ -1516,7 +1519,7 @@ var LESSON_AI={
     var session=school.session||'2025/2026';
     var key='gift_'+term.replace(/\s+/g,'_')+'_'+session.replace('/','_');
     var done=localStorage.getItem(key)==='done';
-    var staff=JSON.parse((_lsget&&_lsget('staff'))||localStorage.getItem('rsms_staff')||'[]');
+    var staff=JSON.parse((_lsget&&_lsget('staff'))||rsmsCacheGetRaw('staff')||'[]');
     var teachers=staff.filter(function(s){
       var r=(s.role||'').toLowerCase();
       return r.includes('teacher')||r.includes('hod')||r.includes('principal');
@@ -1631,27 +1634,27 @@ function setVal(id,v){ var e=gEl(id);if(e)e.value=v||''; }
 function getStudents(){
   var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
   var raw=sid?localStorage.getItem('rsms_'+sid+'_students'):null;
-  if(!raw) raw=localStorage.getItem('rsms_students');
+  if(!raw) raw=rsmsCacheGetRaw('students');
   var d=JSON.parse(raw||'[]');
   return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean);
 }
 function getStaff(){
   var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
   var raw=sid?localStorage.getItem('rsms_'+sid+'_staff'):null;
-  if(!raw) raw=localStorage.getItem('rsms_staff');
+  if(!raw) raw=rsmsCacheGetRaw('staff');
   var d=JSON.parse(raw||'[]');
   return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean);
 }
 function getFees(){
   var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
   var raw=sid?localStorage.getItem('rsms_'+sid+'_fees'):null;
-  if(!raw) raw=localStorage.getItem('rsms_fees');
+  if(!raw) raw=rsmsCacheGetRaw('fees');
   var d=JSON.parse(raw||'[]');
   return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean);
 }
 function getSchool(){   return JSON.parse(localStorage.getItem('rsms_school')||'{"name":"","term":"First Term","session":"2025/2026"}'); }
-function saveFees(d){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_fees',JSON.stringify(d)); localStorage.setItem('rsms_fees',JSON.stringify(d)); try{if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady())RSMS_FB.saveFees(d);}catch(e){} }
-function getFeeSchedule(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var raw=sid?localStorage.getItem('rsms_'+sid+'_fee_schedule'):null; if(!raw) raw=localStorage.getItem('rsms_fee_schedule'); return JSON.parse(raw||'[]'); }
+function saveFees(d){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_fees',JSON.stringify(d)); rsmsCacheSetRaw('fees',JSON.stringify(d)); try{if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady())RSMS_FB.saveFees(d);}catch(e){} }
+function getFeeSchedule(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var raw=sid?localStorage.getItem('rsms_'+sid+'_fee_schedule'):null; if(!raw) raw=rsmsCacheGetRaw('fee_schedule'); return JSON.parse(raw||'[]'); }
 function getFlwConfig(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var raw=sid?localStorage.getItem('rsms_'+sid+'_flw_config'):null; if(!raw) raw=localStorage.getItem('rsms_flw_config'); return JSON.parse(raw||'{"publicKey":"","businessName":"","currency":"NGN"}'); }
 function saveFlwConfig(d){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_flw_config',JSON.stringify(d)); localStorage.setItem('rsms_flw_config',JSON.stringify(d)); try{if(typeof RSMS_FB!=='undefined'&&typeof RSMS_FB.saveFlwConfig==='function')RSMS_FB.saveFlwConfig(d);}catch(e){} }
 
@@ -1665,8 +1668,8 @@ function savePayroll(d){
 }
 
 // ── AUDIT LOG ─────────────────────────────────────────
-function getAuditLog(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var raw=sid?localStorage.getItem('rsms_'+sid+'_audit_log'):null; if(!raw) raw=localStorage.getItem('rsms_audit_log'); return JSON.parse(raw||'[]'); }
-function saveAuditLog(d){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_audit_log',JSON.stringify(d)); localStorage.setItem('rsms_audit_log',JSON.stringify(d)); try{if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady()&&typeof RSMS_FB.saveCollection==='function'){RSMS_FB.saveCollection('audit_log',d);}}catch(e){} }
+function getAuditLog(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var raw=sid?localStorage.getItem('rsms_'+sid+'_audit_log'):null; if(!raw) raw=rsmsCacheGetRaw('audit_log'); return JSON.parse(raw||'[]'); }
+function saveAuditLog(d){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_audit_log',JSON.stringify(d)); rsmsCacheSetRaw('audit_log',JSON.stringify(d)); try{if(typeof RSMS_FB!=='undefined'&&RSMS_FB.isReady()&&typeof RSMS_FB.saveCollection==='function'){RSMS_FB.saveCollection('audit_log',d);}}catch(e){} }
 function logAudit(action,type,details,before,after){
   var log=getAuditLog(); var stamp=new Date();
   var user=(RSMS.user&&RSMS.user())||{};
@@ -1683,7 +1686,7 @@ function getExpectedFee(cls){
   try{
     var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
     var raw=sid?localStorage.getItem('rsms_'+sid+'_fee_structures'):null;
-    if(!raw) raw=localStorage.getItem('rsms_fee_structures');
+    if(!raw) raw=rsmsCacheGetRaw('fee_structures');
     var structures=JSON.parse(raw||'[]');
     var school=getSchool();
     var term=school.term||'First Term', session=school.session||'';
@@ -2646,7 +2649,7 @@ window.addEventListener('load',function(){
               var newest=data[data.length-1];
               if(newest&&newest.channel==='parent_selfpay'){
                 var sid=_sc.schoolId;
-                localStorage.setItem('rsms_fees',JSON.stringify(data));
+                rsmsCacheSetRaw('fees',JSON.stringify(data));
                 if(sid) localStorage.setItem('rsms_'+sid+'_fees',JSON.stringify(data));
                 try{
                   var active=document.querySelector('.page.active');
@@ -3063,21 +3066,21 @@ var _origSaveStudents = window.saveStudents;
 function rsmsWriteBoth(k,v){
   var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
   var j=JSON.stringify(v);
-  try{localStorage.setItem('rsms_'+k,j);}catch(e){}
   if(sid){try{localStorage.setItem('rsms_'+sid+'_'+k,j);}catch(e){}}
+  else{try{localStorage.setItem('rsms_'+k,j);}catch(e){}}
 }
 window.saveStudents = function(data){
-  rsmsWriteBoth('students', data);
+  rsmsCacheSetRaw('students', JSON.stringify(data));
   if(typeof RSMS_FB !== 'undefined' && RSMS_FB.isReady()) RSMS_FB.saveStudents(data);
 };
 var _origSaveStaff = window.saveStaff;
 window.saveStaff = function(data){
-  rsmsWriteBoth('staff', data);
+  rsmsCacheSetRaw('staff', JSON.stringify(data));
   if(typeof RSMS_FB !== 'undefined' && RSMS_FB.isReady()) RSMS_FB.saveStaff(data);
 };
 var _origSaveFees = window.saveFees;
 window.saveFees = function(data){
-  localStorage.setItem('rsms_fees', JSON.stringify(data));
+  rsmsCacheSetRaw('fees', JSON.stringify(data));
   if(typeof RSMS_FB !== 'undefined' && RSMS_FB.isReady()) RSMS_FB.saveFees(data);
   // Notify student/parent portals of new payment
   localStorage.setItem('rsms_new_payment', Date.now().toString());
