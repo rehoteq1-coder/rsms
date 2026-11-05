@@ -387,6 +387,9 @@ body{
 <div class="toast" id="toast"></div>
 
 <script>
+if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
+</script>
+<script>
 /* rsms-core globals */
 /* ═══════════════════════════════════════════════════════
    RSMS STANDALONE CORE — All globals, Android-safe
@@ -397,9 +400,9 @@ body{
 var RSMS = {
   school:   function(){ return JSON.parse(localStorage.getItem('rsms_school')||'{"name":"","term":"First Term","session":"2025/2026","plan":"Standard"}'); },
   user:     function(){ return JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"Admin","role":"admin"}'); },
-  students: function(){ return JSON.parse(localStorage.getItem('rsms_students')||'[]'); },
-  staff:    function(){ return JSON.parse(localStorage.getItem('rsms_staff')||'[]'); },
-  fees:     function(){ return JSON.parse(localStorage.getItem('rsms_fees')||'[]'); },
+  students: function(){ return rsmsCacheGet('students','[]'); },
+  staff:    function(){ return rsmsCacheGet('staff','[]'); },
+  fees:     function(){ return rsmsCacheGet('fees','[]'); },
   pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||({admin:'admin123',bursar:'bursar123',teacher:'teacher123',classteacher:'ct123',hod:'hod123',vp:'vp123',student:'student123',parent:'parent123'}[role]||'pass123'); },
   save:     function(key,data){ localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
   logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
@@ -598,7 +601,7 @@ var LESSON_AI={
     var session=school.session||'2025/2026';
     var key='gift_'+term.replace(/\s+/g,'_')+'_'+session.replace('/','_');
     var done=localStorage.getItem(key)==='done';
-    var staff=JSON.parse(localStorage.getItem('rsms_staff')||'[]');
+    var staff=rsmsCacheGet('staff','[]');
     var teachers=staff.filter(function(s){
       var r=(s.role||'').toLowerCase();
       return r.includes('teacher')||r.includes('hod')||r.includes('principal');
@@ -692,7 +695,7 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
 // ══════════════════════════════════
 var DB = {
   school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School","clockInTime":"7:30","clockOutTime":"15:00"}'),
-  staff: JSON.parse(localStorage.getItem('rsms_staff')||'[]'),
+  staff: rsmsCacheGet('staff','[]'),
   clockLog: JSON.parse(localStorage.getItem('rsms_clock_log')||'{}')
 };
 function saveLog(){ localStorage.setItem('rsms_clock_log', JSON.stringify(DB.clockLog)); }
@@ -1144,17 +1147,17 @@ window.addEventListener('DOMContentLoaded', function(){
 /* Wrap save functions to also sync to Firebase */
 var _origSaveStudents = window.saveStudents;
 window.saveStudents = function(data){
-  localStorage.setItem('rsms_students', JSON.stringify(data));
+  rsmsCacheSetRaw('students', JSON.stringify(data));
   if(typeof RSMS_DB !== 'undefined' && RSMS_DB.isReady()) RSMS_DB.set('students', data);
 };
 var _origSaveStaff = window.saveStaff;
 window.saveStaff = function(data){
-  localStorage.setItem('rsms_staff', JSON.stringify(data));
+  rsmsCacheSetRaw('staff', JSON.stringify(data));
   if(typeof RSMS_DB !== 'undefined' && RSMS_DB.isReady()) RSMS_DB.set('staff', data);
 };
 var _origSaveFees = window.saveFees;
 window.saveFees = function(data){
-  localStorage.setItem('rsms_fees', JSON.stringify(data));
+  rsmsCacheSetRaw('fees', JSON.stringify(data));
   if(typeof RSMS_DB !== 'undefined' && RSMS_DB.isReady()) RSMS_DB.set('fees', data);
   // Notify student/parent portals of new payment
   localStorage.setItem('rsms_new_payment', Date.now().toString());

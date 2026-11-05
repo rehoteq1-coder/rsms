@@ -677,6 +677,9 @@ select.fi option { background: var(--card); color: var(--t1); }
 
 <div class="toast" id="rsms-toast"></div>
 <script>
+if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
+</script>
+<script>
 
 /* rsms-core standalone */
 /* ═══════════════════════════════════════════════════════
@@ -688,9 +691,9 @@ select.fi option { background: var(--card); color: var(--t1); }
 var RSMS = {
   school:   function(){ return JSON.parse(localStorage.getItem('rsms_school')||'{"name":"","term":"First Term","session":"2025/2026","plan":"Standard"}'); },
   user:     function(){ return JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"Admin","role":"admin"}'); },
-  students: function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_students'):null)||localStorage.getItem('rsms_students'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
-  staff:    function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_staff'):null)||localStorage.getItem('rsms_staff'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
-  fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||localStorage.getItem('rsms_fees'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
+  students: function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_students'):null)||rsmsCacheGetRaw('students'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
+  staff:    function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_staff'):null)||rsmsCacheGetRaw('staff'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
+  fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; var r=(sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||rsmsCacheGetRaw('fees'); var d=JSON.parse(r||'[]'); return Array.isArray(d)?d.filter(Boolean):Object.values(d).filter(Boolean); },
   pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||''; },
   save:     function(key,data){ localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
   logout:   function(){
@@ -892,7 +895,7 @@ var LESSON_AI={
     var session=school.session||'2025/2026';
     var key='gift_'+term.replace(/\s+/g,'_')+'_'+session.replace('/','_');
     var done=localStorage.getItem(key)==='done';
-    var staff=JSON.parse((_lsget&&_lsget('staff'))||localStorage.getItem('rsms_staff')||'[]');
+    var staff=JSON.parse((_lsget&&_lsget('staff'))||rsmsCacheGetRaw('staff')||'[]');
     var teachers=staff.filter(function(s){
       var r=(s.role||'').toLowerCase();
       return r.includes('teacher')||r.includes('hod')||r.includes('principal');
@@ -1067,7 +1070,7 @@ function childResults(){
   }
   // Fallback to old rsms_results
   if(!results.length){
-    results=JSON.parse(localStorage.getItem(_key('results'))||localStorage.getItem('rsms_results')||'[]')
+    results=JSON.parse(localStorage.getItem(_key('results'))||rsmsCacheGetRaw('results')||'[]')
       .filter(function(r){return r.stuId===CHILD_ID||r.student===CHILD_NAME;});
   }
   return results;
@@ -1109,7 +1112,7 @@ function renderDash(){
   // Unpaid alert
   var outstanding = document.getElementById('p-unpaid-alert');
   if(outstanding){
-    var schedule = JSON.parse(localStorage.getItem(_key('fee_schedule'))||localStorage.getItem('rsms_fee_schedule')||'[]');
+    var schedule = JSON.parse(localStorage.getItem(_key('fee_schedule'))||rsmsCacheGetRaw('fee_schedule')||'[]');
     var childClass = CHILD_CLASS||'';
     var classSchedule = schedule.filter(function(s){return s.class===childClass;});
     var expected = classSchedule.reduce(function(a,s){return a+parseFloat(s.amount||0);},0);
@@ -1189,7 +1192,7 @@ function renderChildResults(){
   });
 
   // Add Pay Outstanding Fees button
-  var schedule = JSON.parse(localStorage.getItem('rsms_fee_schedule')||'[]');
+  var schedule = rsmsCacheGet('fee_schedule','[]');
   var childClass = CHILD_CLASS||'';
   var classSchedule = schedule.filter(function(s){return s.class===childClass;});
   var totalExpected = classSchedule.reduce(function(a,s){return a+parseFloat(s.amount||0);},0);

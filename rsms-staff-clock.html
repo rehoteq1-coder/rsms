@@ -368,9 +368,12 @@ select.fi{cursor:pointer;}
 <div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
 <script>
+if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
+</script>
+<script>
 var DB={
   school:JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School"}'),
-  staff:JSON.parse(localStorage.getItem('rsms_staff')||'[]')
+  staff:rsmsCacheGet('staff','[]')
 };
 var todayKey='clock_'+new Date().toDateString();
 var clockRecords=JSON.parse(localStorage.getItem(todayKey)||'{}');
@@ -735,7 +738,7 @@ function addStaff(){
   var sid='SID-'+Date.now().toString().slice(-5);
   var staff={id:'st'+Date.now(),name:name,role:role,dept:document.getElementById('ns-dept').value,staffId:document.getElementById('ns-sid').value||sid,phone:document.getElementById('ns-phone').value,status:'Active'};
   DB.staff.push(staff);
-  localStorage.setItem('rsms_staff',JSON.stringify(DB.staff));
+  rsmsCacheSetRaw('staff',JSON.stringify(DB.staff));
   closeM('m-add-staff');
   ['ns-name','ns-dept','ns-sid','ns-phone'].forEach(function(id){document.getElementById(id).value='';});
   renderStaffList();

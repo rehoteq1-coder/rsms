@@ -180,6 +180,9 @@ select.fi option{background:var(--card);}
 
 <script src="rsms-firebase.js"></script>
 <script>
+if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
+</script>
+<script>
 // ── SCOPED HELPERS ────────────────────────────────────────────
 
 // ── READ SIGNATURES ──────────────────────────────────────
@@ -590,7 +593,7 @@ function showPreview(cls, term, sess){
 
 function getStudentPhoto(stuId){
   var p=localStorage.getItem('rsms_photo_'+stuId); if(p) return p;
-  var students=JSON.parse(localStorage.getItem('rsms_students')||'[]');
+  var students=rsmsCacheGet('students','[]');
   var stu=students.find(function(s){return s.id===stuId;});
   if(stu&&stu.passport) return stu.passport;
   if(stu&&stu.photo) return stu.photo;
@@ -667,7 +670,7 @@ function generateCards(){
   // Load CT remarks from ALL possible keys
   var ctRemarksAll = {};
   try{
-    var _r1=_lsget('ct_remarks'); var _r2=localStorage.getItem('rsms_ct_remarks');
+    var _r1=_lsget('ct_remarks'); var _r2=rsmsCacheGetRaw('ct_remarks');
     var _d1=JSON.parse(_r1||'{}'); var _d2=JSON.parse(_r2||'{}');
     // Merge both — scoped takes priority
     Object.assign(ctRemarksAll, _d2, _d1);

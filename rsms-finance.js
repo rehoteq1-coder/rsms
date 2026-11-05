@@ -1,3 +1,4 @@
+if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
 /* ═══════════════════════════════════════════════════════════════
    RSMS FINANCE ENGINE — FIND
    Finance records are local-first cached collections synchronized through
@@ -147,7 +148,7 @@
   function students(){
     var sid = schoolId();
     var raw = sid ? localStorage.getItem('rsms_'+sid+'_students') : null;
-    if(!raw) raw = localStorage.getItem('rsms_students');
+    if(!raw) raw = rsmsCacheGetRaw('students');
     return asArray(safeParse(raw, []));
   }
 

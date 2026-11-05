@@ -3,7 +3,7 @@
    Firebase is the SOURCE OF TRUTH.
    localStorage is CACHE ONLY.
    Every read = Firebase first, localStorage fallback.
-   Every write = Firebase + localStorage (BOTH scoped + unscoped).
+   Every write = Firebase + school-scoped localStorage cache.
 ═══════════════════════════════════════════════════════════════ */
 
 var RSMS_FB = (function(){
@@ -23,13 +23,16 @@ var RSMS_FB = (function(){
   var _listeningSid = ''; // school currently attached to RTDB live listeners
 
   // ── KEY HELPERS ─────────────────────────────────────────────
-  // Write to BOTH scoped (rsms_SCHOOLID_key) and unscoped (rsms_key)
-  // so ALL portals can read regardless of which key format they use
+  // School-scoped cache only. The unscoped rsms_<key> space is what let
+  // one school's cached lists bleed into another school's portal, so it is
+  // written only when no school context exists and purged whenever one does.
   function _lsSet(key, data){
     var json = JSON.stringify(data);
-    try{ localStorage.setItem('rsms_'+key, json); }catch(e){}
     if(_sid){
       try{ localStorage.setItem('rsms_'+_sid+'_'+key, json); }catch(e){}
+      try{ localStorage.removeItem('rsms_'+key); }catch(e){}
+    }else{
+      try{ localStorage.setItem('rsms_'+key, json); }catch(e){}
     }
   }
 
@@ -136,6 +139,7 @@ var RSMS_FB = (function(){
     }else saved.schoolId = schoolId;
     try { localStorage.setItem('rsms_school', JSON.stringify(saved)); }catch(e3){}
     _sid = schoolId;
+    if(_sid) _clearUnscopedSchoolCache();
     if(_ready) _setupListeners();
   }
 
@@ -349,6 +353,7 @@ var RSMS_FB = (function(){
       // Get school context before an auth callback can select a claim-scoped one.
       var sc = JSON.parse(localStorage.getItem('rsms_school')||'{}');
       _sid   = sc.schoolId||'';
+      if(_sid) _clearUnscopedSchoolCache();
       _initAuth();
 
       // Flush queued writes
@@ -658,9 +663,10 @@ var RSMS_FB = (function(){
 
   // ── READ FUNCTIONS ───────────────────────────────────────────
   function _lsGet(key){
-    // Try scoped first, fall back to unscoped
-    var v = _sid ? localStorage.getItem('rsms_'+_sid+'_'+key) : null;
-    return v || localStorage.getItem('rsms_'+key);
+    // Scoped only while a school is active: the old unscoped fallback is
+    // the cross-school bleed channel this change removes.
+    if(_sid) return localStorage.getItem('rsms_'+_sid+'_'+key);
+    return localStorage.getItem('rsms_'+key);
   }
 
   function getStudents(cb){
