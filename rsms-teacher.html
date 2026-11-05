@@ -520,6 +520,9 @@ select.fi option { background: var(--card); color: var(--t1); }
 <script src="rsms-ai-units.js"></script>
 <script src="rsms-plan-guard.js"></script>
 <script>
+if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
+</script>
+<script>
 /* rsms-core.js standalone */
 /* ═══════════════════════════════════════════════════════
    RSMS STANDALONE CORE — All globals, Android-safe
@@ -531,9 +534,9 @@ var RSMS = {
   school:   function(){ return JSON.parse(localStorage.getItem('rsms_school')||'{"name":"","term":"First Term","session":"2025/2026","plan":"Standard"}'); },
   user:     function(){ return JSON.parse(sessionStorage.getItem('rsms_user')||'{"name":"Admin","role":"admin"}'); },
   // Scoped reads — always use school ID prefix to isolate school data
-  students: function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_students'):null)||localStorage.getItem('rsms_students')||'[]'); },
-  staff:    function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_staff'):null)||localStorage.getItem('rsms_staff')||'[]'); },
-  fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||localStorage.getItem('rsms_fees')||'[]'); },
+  students: function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_students'):null)||rsmsCacheGetRaw('students')||'[]'); },
+  staff:    function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_staff'):null)||rsmsCacheGetRaw('staff')||'[]'); },
+  fees:     function(){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; return JSON.parse((sid?localStorage.getItem('rsms_'+sid+'_fees'):null)||rsmsCacheGetRaw('fees')||'[]'); },
   pw:       function(role){ return localStorage.getItem('rsms_'+role+'_pw')||''; },
   save:     function(key,data){ var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; if(sid) localStorage.setItem('rsms_'+sid+'_'+key,JSON.stringify(data)); localStorage.setItem('rsms_'+key,JSON.stringify(data)); },
   logout:   function(){ sessionStorage.clear(); location.href='rsms-login.html'; }
@@ -733,7 +736,7 @@ var LESSON_AI={
     var session=school.session||'2025/2026';
     var key='gift_'+term.replace(/\s+/g,'_')+'_'+session.replace('/','_');
     var done=localStorage.getItem(key)==='done';
-    var staff=JSON.parse((_lsget&&_lsget('staff'))||localStorage.getItem('rsms_staff')||'[]');
+    var staff=JSON.parse((_lsget&&_lsget('staff'))||rsmsCacheGetRaw('staff')||'[]');
     var teachers=staff.filter(function(s){
       var r=(s.role||'').toLowerCase();
       return r.includes('teacher')||r.includes('hod')||r.includes('principal');
@@ -1415,7 +1418,7 @@ function renderMyWorkflow(){
 // ── ASSIGNMENTS ──
 function renderAssignments(){
   var el = document.getElementById('assign-list'); if(!el)return;
-  var assigns = JSON.parse(localStorage.getItem(_key('assignments'))||localStorage.getItem('rsms_assignments')||'[]');
+  var assigns = JSON.parse(localStorage.getItem(_key('assignments'))||rsmsCacheGetRaw('assignments')||'[]');
   var mine = assigns.filter(function(a){return a.by===ME.name||a.cls===MY_CLASS;});
   if(!mine.length){el.innerHTML='<div class="empty-state">No assignments created yet</div>';return;}
   el.innerHTML='';
@@ -1436,7 +1439,7 @@ function createAssignment(){
   var content = (document.getElementById('asgn-content').value||'').trim();
   var due = document.getElementById('asgn-due').value;
   if(!title||!subject||!content){toast('Fill title, subject and content','error');return;}
-  var assigns = JSON.parse(localStorage.getItem(_key('assignments'))||localStorage.getItem('rsms_assignments')||'[]');
+  var assigns = JSON.parse(localStorage.getItem(_key('assignments'))||rsmsCacheGetRaw('assignments')||'[]');
   assigns.push({
     id:'asgn'+Date.now(), title:title, subject:subject, content:content,
     cls:document.getElementById('asgn-class').value||MY_CLASS,
@@ -1688,7 +1691,7 @@ function renderAttHistory(){
 // Pre-load teacher's assigned classes from staff record
 function getMyClasses(){
   var me = RSMS.user ? RSMS.user() : {};
-  var allStaff=JSON.parse((_lsget&&_lsget('staff'))||localStorage.getItem('rsms_staff')||'[]');
+  var allStaff=JSON.parse((_lsget&&_lsget('staff'))||rsmsCacheGetRaw('staff')||'[]');
   var me2 = allStaff.find(function(s){ return s.id===me.id||s.name===me.name; });
   if(me2 && me2.myClass){ return [me2.myClass]; }
   // Subject teacher may teach multiple - show all classes
@@ -1825,7 +1828,7 @@ function createAssignment(){
   if(!cls){toast('Select a class first','error');return;}
   if(!subject||!title){toast('Fill subject and title','error');return;}
   var me = RSMS.user ? RSMS.user() : {};
-  var all = JSON.parse(localStorage.getItem(_key('assignments'))||localStorage.getItem('rsms_assignments')||'[]');
+  var all = JSON.parse(localStorage.getItem(_key('assignments'))||rsmsCacheGetRaw('assignments')||'[]');
   all.push({
     id:'asgn'+Date.now(), cls:cls, subject:subject, title:title,
     description:desc, dueDate:due, by:me.name||'Teacher',
@@ -2086,7 +2089,7 @@ function _savePipe(p){
 }
 function showTeacherForwardModal(){
   var school=JSON.parse(localStorage.getItem('rsms_school')||'{}');
-  var _rS=(_lsget&&_lsget('students'))||localStorage.getItem('rsms_students')||'[]'; var students=JSON.parse(_rS); students=Array.isArray(students)?students.filter(Boolean):Object.values(students).filter(Boolean);
+  var _rS=(_lsget&&_lsget('students'))||rsmsCacheGetRaw('students')||'[]'; var students=JSON.parse(_rS); students=Array.isArray(students)?students.filter(Boolean):Object.values(students).filter(Boolean);
   var classes={};
   students.forEach(function(s){ if(s.class) classes[s.class]=1; });
   var sel=document.getElementById('tf-class'); if(!sel) return;

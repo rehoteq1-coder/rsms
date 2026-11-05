@@ -297,10 +297,13 @@ html,body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-heigh
 <div class="toast" id="toast"></div>
 
 <script>
+if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
+</script>
+<script>
 var DB = {
   school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School"}'),
-  students: JSON.parse(localStorage.getItem('rsms_students')||'[]'),
-  staff: JSON.parse(localStorage.getItem('rsms_staff')||'[]')
+  students: rsmsCacheGet('students','[]'),
+  staff: rsmsCacheGet('staff','[]')
 };
 var AI_EVENTS = JSON.parse(localStorage.getItem('rsms_ai_events')||'[]');
 var INTRUSION_LOG = JSON.parse(localStorage.getItem('rsms_intrusion_log')||'[]');
@@ -363,7 +366,7 @@ var ALERT_TEMPLATES = [
     return students.length?Math.floor(students.length*0.05)+' students have below 75% attendance this term':'Attendance data loading...';
   }},
   {type:'info',icon:'💰',title:'Fee Collection Update',desc:function(){
-    var fees=JSON.parse(localStorage.getItem('rsms_fees')||'[]');
+    var fees=rsmsCacheGet('fees','[]');
     return 'Total fee records: '+fees.length+'. Last updated: '+new Date().toLocaleDateString();
   }},
   {type:'success',icon:'🔧',title:'Auto-Fix Completed',desc:function(){return 'AI checked for orphaned records and data inconsistencies. System clean.';}},
@@ -449,10 +452,10 @@ function runSecurityScan(){
     function rsmsWriteBoth(k,v){
   var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
   var j=JSON.stringify(v);
-  try{localStorage.setItem('rsms_'+k,j);}catch(e){}
   if(sid){try{localStorage.setItem('rsms_'+sid+'_'+k,j);}catch(e){}}
+  else{try{localStorage.setItem('rsms_'+k,j);}catch(e){}}
 }
-var students=JSON.parse(localStorage.getItem('rsms_students')||'[]');
+    var students=rsmsCacheGet('students','[]');
     var orphaned=students.filter(function(s){return !s.reg||!s.class;});
     if(orphaned.length)findings.push({type:'data_anomaly',detail:orphaned.length+' students missing reg/class'});
     // 2. Check storage
@@ -490,11 +493,11 @@ function runAutoFix(){
   var fixes=[];
   setTimeout(function(){
     // Fix 1: Remove orphaned records
-    var students=JSON.parse(localStorage.getItem('rsms_students')||'[]');
+    var students=rsmsCacheGet('students','[]');
     var before=students.length;
     var cleaned=students.filter(function(s){return s.id&&s.surname;});
     if(cleaned.length<before){
-      rsmsWriteBoth('students',cleaned);
+      rsmsCacheSetRaw('students',JSON.stringify(cleaned));
       fixes.push({icon:'🗑',text:'Removed '+(before-cleaned.length)+' orphaned student record(s)',time:new Date().toLocaleTimeString()});
     }
     // Fix 2: Ensure school data has all required fields
