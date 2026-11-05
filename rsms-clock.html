@@ -1146,6 +1146,12 @@ window.addEventListener('DOMContentLoaded', function(){
 
 /* Wrap save functions to also sync to Firebase */
 var _origSaveStudents = window.saveStudents;
+function rsmsWriteBoth(k,v){
+  var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+  var j=JSON.stringify(v);
+  if(sid){try{localStorage.setItem('rsms_'+sid+'_'+k,j);}catch(e){}}
+  else{try{localStorage.setItem('rsms_'+k,j);}catch(e){}}
+}
 window.saveStudents = function(data){
   rsmsCacheSetRaw('students', JSON.stringify(data));
   if(typeof RSMS_DB !== 'undefined' && RSMS_DB.isReady()) RSMS_DB.set('students', data);

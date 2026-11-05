@@ -587,6 +587,82 @@ function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 
 
+
+// ── SIGNATURE PAD ENGINE (shared, mirrors Class Teacher portal) ──
+var SigPads = window.SigPads||{};
+function initSigCanvas(canvasId, opts){
+  opts = opts||{};
+  var c = document.getElementById(canvasId);
+  if(!c) return;
+  var ratio = window.devicePixelRatio||1;
+  var w = c.offsetWidth||300;
+  var h = c.offsetHeight||120;
+  c.width = w * ratio;
+  c.height = h * ratio;
+  c.style.width = w+'px';
+  c.style.height = h+'px';
+  var ctx = c.getContext('2d');
+  ctx.scale(ratio, ratio);
+  ctx.strokeStyle = opts.color||'#1a0a3e';
+  ctx.lineWidth = opts.lineWidth||2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  SigPads[canvasId] = {canvas:c, ctx:ctx, drawing:false, ratio:ratio};
+  var pad = SigPads[canvasId];
+  function getPos(e){
+    var r = c.getBoundingClientRect();
+    if(e.touches){ return {x:e.touches[0].clientX-r.left, y:e.touches[0].clientY-r.top}; }
+    return {x:e.clientX-r.left, y:e.clientY-r.top};
+  }
+  function start(e){ var p=getPos(e); pad.drawing=true; ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+  function move(e){ if(!pad.drawing) return; var p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+  function end(){ pad.drawing=false; }
+  c.addEventListener('mousedown', start);
+  c.addEventListener('mousemove', move);
+  c.addEventListener('mouseup', end);
+  c.addEventListener('mouseleave', end);
+  c.addEventListener('touchstart', function(e){ e.preventDefault(); start(e); }, {passive:false});
+  c.addEventListener('touchmove', function(e){ e.preventDefault(); move(e); }, {passive:false});
+  c.addEventListener('touchend', function(e){ e.preventDefault(); end(); }, {passive:false});
+}
+function clearSigCanvas(canvasId){
+  var pad=SigPads[canvasId]; if(!pad) return;
+  pad.ctx.clearRect(0,0,pad.canvas.width/pad.ratio,pad.canvas.height/pad.ratio);
+}
+function sigCanvasIsEmpty(canvasId){
+  var pad=SigPads[canvasId]; if(!pad) return true;
+  var data=pad.ctx.getImageData(0,0,pad.canvas.width,pad.canvas.height).data;
+  for(var i=3;i<data.length;i+=4){ if(data[i]>10) return false; }
+  return true;
+}
+function sigCanvasToDataURL(canvasId){
+  var pad=SigPads[canvasId]; if(!pad) return null;
+  if(sigCanvasIsEmpty(canvasId)) return null;
+  return pad.canvas.toDataURL('image/png');
+}
+function savePrincipalSig(isClass){
+  var nameEl=document.getElementById('sig-prin-name');
+  var name=nameEl?nameEl.value.trim():'';
+  var dateEl=document.getElementById('sig-prin-date');
+  var date=dateEl?dateEl.value:'';
+  if(!name){ toast('Enter your full name','error'); return; }
+  var img=sigCanvasToDataURL('sig-prin-canvas');
+  if(!img){ toast('Draw your signature in the pad first','error'); return; }
+  var cls=isClass?(document.getElementById('sig-prin-cls')||{}).value||'':'';
+  var term=isClass?(document.getElementById('sig-prin-term')||{}).value||'':'';
+  saveSig('principal',name,date,cls,term,img);
+  renderPrinSigPreview();
+}
+function renderPrinSigPreview(){
+  var el=document.getElementById('prin-sig-preview'); if(!el) return;
+  var sig=null;
+  try{ sig=getSignature('principal'); }catch(e){ sig=null; }
+  if(!sig){ el.innerHTML='<div style="color:var(--t4);font-size:.82rem;">No signature saved yet</div>'; return; }
+  var inner = sig.img ? '<img src="'+sig.img+'" style="max-height:70px;max-width:90%;"/>' 
+                      : '<div style="font-family:cursive;font-size:1.3rem;color:var(--t1);">'+String(sig.name||'')+'</div>';
+  el.innerHTML='<div style="text-align:center;">'+inner+
+    '<div style="font-size:.75rem;color:var(--t3);margin-top:4px;">'+String(sig.name||'')+(sig.date?' · '+sig.date:'')+'</div></div>';
+}
 // ── SIGNATURE HELPERS ─────────────────────────────────────
 function getSigKey(role,cls,term){
   if(cls&&term) return _key('sig_'+role+'_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_'));
@@ -597,8 +673,8 @@ function getSignature(role,cls,term){
   var global=localStorage.getItem(getSigKey(role));
   return JSON.parse(specific||global||'null');
 }
-function saveSig(role,nameVal,dateVal,cls,term){
-  var data={name:nameVal,date:dateVal,at:new Date().toISOString()};
+function saveSig(role,nameVal,dateVal,cls,term,imgData){
+  var data={name:nameVal,date:dateVal,img:imgData||'',at:new Date().toISOString()};
   var json=JSON.stringify(data);
   localStorage.setItem(getSigKey(role),json);
   var id=_sid();

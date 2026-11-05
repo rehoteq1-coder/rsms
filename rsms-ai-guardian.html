@@ -449,6 +449,12 @@ function runSecurityScan(){
     // Check for anomalies
     var findings=[];
     // 1. Check if students data is consistent
+    function rsmsWriteBoth(k,v){
+  var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+  var j=JSON.stringify(v);
+  if(sid){try{localStorage.setItem('rsms_'+sid+'_'+k,j);}catch(e){}}
+  else{try{localStorage.setItem('rsms_'+k,j);}catch(e){}}
+}
     var students=rsmsCacheGet('students','[]');
     var orphaned=students.filter(function(s){return !s.reg||!s.class;});
     if(orphaned.length)findings.push({type:'data_anomaly',detail:orphaned.length+' students missing reg/class'});

@@ -590,6 +590,7 @@ input[type=file]{display:none;}
   <div class="success-icon">🎉</div>
   <div class="success-title">Application Submitted!</div>
   <div class="success-sub">Your application has been successfully submitted. The school administration will review and contact you within 3-5 working days.</div>
+  <div id="apply-cloud-note" style="display:none;max-width:420px;margin:10px auto 0;padding:10px 14px;border:1px solid rgba(245,158,11,.4);border-radius:10px;color:#b45309;font-size:.85rem;">Your application was saved on this device only. Please also send it to the school office or share your reference number with them.</div>
 
   <div class="ref-card">
     <div class="ref-label">Application Reference Number</div>
@@ -741,7 +742,19 @@ document.getElementById('school-code').addEventListener('input',function(){
     document.getElementById('school-preview').style.display='block';
     document.getElementById('sp-name').textContent='School: '+code;
     document.getElementById('sp-addr').textContent='Searching...';
-    // TODO: Firebase lookup by school code
+    try{
+      if(typeof firebase!=='undefined'&&firebase.database&&code.length>=3){
+        firebase.database().ref('public_schools/'+code.toUpperCase()).once('value').then(function(snap){
+          var v=snap.val();
+          if(v&&v.name){
+            document.getElementById('sp-addr').textContent=(v.name||code)+(v.address?' · '+v.address:'')+(v.state?' · '+v.state:'');
+            formData.schoolId=code.toUpperCase(); formData.schoolName=v.name;
+          } else {
+            document.getElementById('sp-addr').textContent='School code not found. Check with the school office.';
+          }
+        }).catch(function(){ document.getElementById('sp-addr').textContent='Could not verify the school code right now.'; });
+      }
+    }catch(e){}
   }
 });
 
@@ -757,8 +770,13 @@ function submitApplication(){
   formData.submittedAt=new Date().toISOString();
   formData.status='pending';
 
-  // TODO: Save to Firebase when project is connected
-  // firebase.database().ref('applications/'+ref).set(formData);
+  try{
+    if(typeof firebase!=='undefined'&&firebase.database&&formData.schoolId){
+      firebase.database().ref('applications/'+formData.schoolId+'/'+ref).set(formData);
+      formData._cloudSaved=true;
+    }
+  }catch(e){}
+
 
   // Save locally for now
   localStorage.setItem('rsms_application_'+ref, JSON.stringify(formData));
@@ -766,11 +784,15 @@ function submitApplication(){
   // Show success
   document.getElementById('step-5').style.display='none';
   document.getElementById('success-screen').style.display='block';
+  var cn=document.getElementById('apply-cloud-note'); if(cn) cn.style.display=formData._cloudSaved?'none':'block';
   updateProgress(6);
   window.scrollTo({top:0,behavior:'smooth'});
 
   toast('Application submitted! Ref: '+ref,'success');
 }
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="rsms-firebase.js"></script>
 </body>
 </html>

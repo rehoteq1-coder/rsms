@@ -453,6 +453,15 @@ var RSMS_FB = (function(){
   }
 
   function saveScores(cls, term, sess, data){
+
+    // RESULT SECURITY: no score edits once results for this class+term are published
+    var _pubRaw = null;
+    try{ _pubRaw = (_sid ? localStorage.getItem('rsms_'+_sid+'_published_results') : null) || localStorage.getItem('rsms_published_results'); }catch(e){}
+    var _pub = {}; try{ _pub = JSON.parse(_pubRaw||'{}'); }catch(e){}
+    if(_pub && _pub[cls] && _pub[cls][term]){
+      try{ if(typeof toast==='function') toast('Results for '+cls+' ('+term+') are already published. Scores are locked.','error'); }catch(e){}
+      return;
+    }
     // Write to both scoped and unscoped score localStorage keys
     var json = JSON.stringify(data);
     try{ localStorage.setItem(_scoreKey(cls,term,sess), json); }catch(e){}
@@ -669,6 +678,20 @@ var RSMS_FB = (function(){
     return localStorage.getItem('rsms_'+key);
   }
 
+  function dedupeById(arr){
+    var seen={},out=[];
+    arr.forEach(function(x){
+      if(!x||typeof x!=='object') return;          // drop junk values (booleans, strings)
+      if(!x.id) return;                            // every real record has an id
+      var nm=String(x.surname||'')+String(x.firstname||'')+String(x.name||'');
+      if(!nm.trim()) return;                       // drop nameless entries
+      var k=String(x.id);
+      if(seen[k]) return;
+      seen[k]=1;
+      out.push(x);
+    });
+    return out;
+  }
   function getStudents(cb){
     var cached = JSON.parse(_lsGet('students')||'[]');
     if(cb) cb(cached);
@@ -676,7 +699,7 @@ var RSMS_FB = (function(){
       _db.ref('schools/'+_sid+'/students').once('value').then(function(snap){
         var val=snap.val();
         if(val){
-          var data=Array.isArray(val)?val.filter(Boolean):Object.values(val).filter(Boolean);
+          var data=dedupeById(Array.isArray(val)?val.filter(Boolean):Object.values(val).filter(Boolean));
           _lsSet('students',data);
           if(cb) cb(data);
         }
@@ -692,7 +715,7 @@ var RSMS_FB = (function(){
       _db.ref('schools/'+_sid+'/staff').once('value').then(function(snap){
         var val=snap.val();
         if(val){
-          var data=Array.isArray(val)?val.filter(Boolean):Object.values(val).filter(Boolean);
+          var data=dedupeById(Array.isArray(val)?val.filter(Boolean):Object.values(val).filter(Boolean));
           _lsSet('staff',data);
           if(cb) cb(data);
         }

@@ -1,152 +1,160 @@
 {
-  "rules": {
-    "config": {
-      "auth_enforced": {
-        ".read": true,
-        "$schoolId": {
-          ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true"
-        }
-      },
-      "assistant_kb": {
-        ".read": true,
-        ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true"
-      },
-      ".read": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true",
-      ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true"
-    },
-    "users": {
-      "$uid": {
-        ".read": "auth != null && ($uid === auth.uid || (auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true))",
-        ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true"
-      }
-    },
-    "public_schools": {
-      ".read": true,
-      "$schoolId": {
-        ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true"
-      }
-    },
-    "public_schools_by_subdomain": {
-      ".read": true,
-      "$subdomain": {
-        ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true"
-      }
-    },
-    "assistant_questions": {
-      ".read": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true",
-      "$qid": {
-        ".write": "(!data.exists() && newData.hasChildren(['text','createdAt'])) || (auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true)",
-        ".validate": "newData.hasChildren(['text','createdAt']) && newData.child('text').isString() && newData.child('text').val().length <= 300 && newData.child('createdAt').isString() && newData.child('createdAt').val().length <= 40 && (!newData.child('page').exists() || (newData.child('page').isString() && newData.child('page').val().length <= 80))"
-      }
-    },
-    "schools": {
-      "$schoolId": {
-        ".read": "auth != null && ((auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true))",
-        "payments": {
-          ".write": "auth != null && ((auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true || auth.token.roleMap.bursar === true) && (root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
-        },
-        "wallet": {
-          ".write": "auth != null && ((auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true || auth.token.roleMap.bursar === true) && (root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true) || (auth.token.roleMap.parent === true && root.child('users').child(auth.uid).child('roleMap').child('parent').val() === true && (auth.token.childIds != null || root.child('users').child(auth.uid).child('childIds').exists()))))"
-        },
-        "fees": {
-          ".write": "auth != null && ((auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true || auth.token.roleMap.bursar === true) && (root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true) || (auth.token.roleMap.parent === true && root.child('users').child(auth.uid).child('roleMap').child('parent').val() === true && (auth.token.childIds != null || root.child('users').child(auth.uid).child('childIds').exists()))))"
-        },
-        "audit_log": {
-          ".write": "auth != null && ((auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true))"
-        },
-        "flw_config": {
-          ".write": "auth != null && ((auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true || auth.token.roleMap.bursar === true) && (root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
-        },
-        "students": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.classteacher === true && root.child('users').child(auth.uid).child('roleMap').child('classteacher').val() === true) || (auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true) || (auth.token.roleMap.principal === true && root.child('users').child(auth.uid).child('roleMap').child('principal').val() === true)))"
-        },
-        "staff": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.principal === true && root.child('users').child(auth.uid).child('roleMap').child('principal').val() === true)))"
-        },
-        "fee_structures": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
-        },
-        "student_fees": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
-        },
-        "recurring": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
-        },
-        "recurring_schedule": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
-        },
-        "expenses": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
-        },
-        "score_entries": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.teacher === true && root.child('users').child(auth.uid).child('roleMap').child('teacher').val() === true) || (auth.token.roleMap.classteacher === true && root.child('users').child(auth.uid).child('roleMap').child('classteacher').val() === true) || (auth.token.roleMap.hod === true && root.child('users').child(auth.uid).child('roleMap').child('hod').val() === true) || (auth.token.roleMap.vp === true && root.child('users').child(auth.uid).child('roleMap').child('vp').val() === true) || (auth.token.roleMap.principal === true && root.child('users').child(auth.uid).child('roleMap').child('principal').val() === true)))"
-        },
-        "attendance": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.teacher === true && root.child('users').child(auth.uid).child('roleMap').child('teacher').val() === true) || (auth.token.roleMap.classteacher === true && root.child('users').child(auth.uid).child('roleMap').child('classteacher').val() === true)))"
-        },
-        "ai_units": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true))",
-          "staff": {
-            "$staffId": {
-              ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.teacher === true && root.child('users').child(auth.uid).child('roleMap').child('teacher').val() === true) || (auth.token.roleMap.classteacher === true && root.child('users').child(auth.uid).child('roleMap').child('classteacher').val() === true) || (auth.token.roleMap.hod === true && root.child('users').child(auth.uid).child('roleMap').child('hod').val() === true) || (auth.token.roleMap.vp === true && root.child('users').child(auth.uid).child('roleMap').child('vp').val() === true) || (auth.token.roleMap.principal === true && root.child('users').child(auth.uid).child('roleMap').child('principal').val() === true) || (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true)))"
-            }
-          }
-        },
-        "portal_pins": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true))"
-        },
-        "info": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true))"
-        },
-        "logo": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true))"
-        },
-        "stream_config": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true))"
-        },
-        "fee_schedule": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true))"
-        },
-        "ct_remarks": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.classteacher === true && root.child('users').child(auth.uid).child('roleMap').child('classteacher').val() === true || auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || auth.token.roleMap.principal === true && root.child('users').child(auth.uid).child('roleMap').child('principal').val() === true))"
-        },
-        "broadcasts": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || auth.token.roleMap.principal === true && root.child('users').child(auth.uid).child('roleMap').child('principal').val() === true))"
-        },
-        "assignments": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.teacher === true && root.child('users').child(auth.uid).child('roleMap').child('teacher').val() === true || auth.token.roleMap.classteacher === true && root.child('users').child(auth.uid).child('roleMap').child('classteacher').val() === true || auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true))"
-        },
-        "clock_logs": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true)"
-        },
-        "notifications": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true) || (!data.exists() && newData.hasChildren(['event','createdAt']))",
-          ".validate": "newData.hasChildren(['event','createdAt']) && newData.child('event').isString() && newData.child('event').val().length <= 60 && newData.child('createdAt').isString() && newData.child('createdAt').val().length <= 40"
-        },
-        "payment_alerts": {
-          ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true) || (data.exists() && newData.child('seen').val() == true) || (!data.exists() && newData.hasChildren(['student','amount']))",
-          ".validate": "newData.child('student').isString() && newData.child('student').val().length <= 120 && (newData.child('amount').isNumber() || newData.child('amount').isString()) && (!newData.child('seen').exists() || newData.child('seen').isBoolean())"
-        },
-        ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true",
-        "mail_queue": {
-          ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superadmin' || root.child('schools').child($schoolId).child('staff').child(auth.uid).child('role').val() === 'admin' || root.child('staff_logins').child(auth.uid).child('role').val() === 'admin')",
-          ".write": "auth != null",
-          "$pushId": {
-            ".validate": "newData.hasChildren(['to','subject']) && newData.child('to').isString() && newData.child('to').val().matches(/^[^@]+@[^@]+\\.[^@]+$/)"
-          }
-        },
-        "email_config": {
-          ".read": "auth != null",
-          ".write": "auth != null"
-        },
-        "email_log": {
-          ".read": "auth != null",
-          ".write": "auth != null",
-          "$pushId": {
-            ".validate": "newData.hasChildren(['to','subject'])"
-          }
-        }
-      }
+ "rules": {
+  "config": {
+   "auth_enforced": {
+    ".read": true,
+    "$schoolId": {
+     ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true"
     }
+   },
+   "assistant_kb": {
+    ".read": true,
+    ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true"
+   },
+   ".read": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true",
+   ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true"
+  },
+  "users": {
+   "$uid": {
+    ".read": "auth != null && ($uid === auth.uid || (auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true))",
+    ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true"
+   }
+  },
+  "public_schools": {
+   ".read": true,
+   "$schoolId": {
+    ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true"
+   }
+  },
+  "public_schools_by_subdomain": {
+   ".read": true,
+   "$subdomain": {
+    ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true"
+   }
+  },
+  "assistant_questions": {
+   ".read": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true",
+   "$qid": {
+    ".write": "(!data.exists() && newData.hasChildren(['text','createdAt'])) || (auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true)",
+    ".validate": "newData.hasChildren(['text','createdAt']) && newData.child('text').isString() && newData.child('text').val().length <= 300 && newData.child('createdAt').isString() && newData.child('createdAt').val().length <= 40 && (!newData.child('page').exists() || (newData.child('page').isString() && newData.child('page').val().length <= 80))"
+   }
+  },
+  "schools": {
+   "$schoolId": {
+    ".read": "auth != null && ((auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true))",
+    "payments": {
+     ".write": "auth != null && ((auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true || auth.token.roleMap.bursar === true) && (root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
+    },
+    "wallet": {
+     ".write": "auth != null && ((auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true || auth.token.roleMap.bursar === true) && (root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true) || (auth.token.roleMap.parent === true && root.child('users').child(auth.uid).child('roleMap').child('parent').val() === true && (auth.token.childIds != null || root.child('users').child(auth.uid).child('childIds').exists()))))"
+    },
+    "fees": {
+     ".write": "auth != null && ((auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true || auth.token.roleMap.bursar === true) && (root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true) || (auth.token.roleMap.parent === true && root.child('users').child(auth.uid).child('roleMap').child('parent').val() === true && (auth.token.childIds != null || root.child('users').child(auth.uid).child('childIds').exists()))))"
+    },
+    "audit_log": {
+     ".write": "auth != null && ((auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true))"
+    },
+    "flw_config": {
+     ".write": "auth != null && ((auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true || auth.token.roleMap.bursar === true) && (root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
+    },
+    "students": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.classteacher === true && root.child('users').child(auth.uid).child('roleMap').child('classteacher').val() === true) || (auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true) || (auth.token.roleMap.principal === true && root.child('users').child(auth.uid).child('roleMap').child('principal').val() === true)))"
+    },
+    "staff": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.principal === true && root.child('users').child(auth.uid).child('roleMap').child('principal').val() === true)))"
+    },
+    "fee_structures": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
+    },
+    "student_fees": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
+    },
+    "recurring": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
+    },
+    "recurring_schedule": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
+    },
+    "expenses": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true)))"
+    },
+    "score_entries": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.teacher === true && root.child('users').child(auth.uid).child('roleMap').child('teacher').val() === true) || (auth.token.roleMap.classteacher === true && root.child('users').child(auth.uid).child('roleMap').child('classteacher').val() === true) || (auth.token.roleMap.hod === true && root.child('users').child(auth.uid).child('roleMap').child('hod').val() === true) || (auth.token.roleMap.vp === true && root.child('users').child(auth.uid).child('roleMap').child('vp').val() === true) || (auth.token.roleMap.principal === true && root.child('users').child(auth.uid).child('roleMap').child('principal').val() === true)))"
+    },
+    "attendance": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true) || (auth.token.roleMap.teacher === true && root.child('users').child(auth.uid).child('roleMap').child('teacher').val() === true) || (auth.token.roleMap.classteacher === true && root.child('users').child(auth.uid).child('roleMap').child('classteacher').val() === true)))"
+    },
+    "ai_units": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true))",
+     "staff": {
+      "$staffId": {
+       ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && ((auth.token.roleMap.teacher === true && root.child('users').child(auth.uid).child('roleMap').child('teacher').val() === true) || (auth.token.roleMap.classteacher === true && root.child('users').child(auth.uid).child('roleMap').child('classteacher').val() === true) || (auth.token.roleMap.hod === true && root.child('users').child(auth.uid).child('roleMap').child('hod').val() === true) || (auth.token.roleMap.vp === true && root.child('users').child(auth.uid).child('roleMap').child('vp').val() === true) || (auth.token.roleMap.principal === true && root.child('users').child(auth.uid).child('roleMap').child('principal').val() === true) || (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true)))"
+      }
+     }
+    },
+    "portal_pins": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true))"
+    },
+    "info": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true))"
+    },
+    "logo": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true))"
+    },
+    "stream_config": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true))"
+    },
+    "fee_schedule": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || auth.token.roleMap.bursar === true && root.child('users').child(auth.uid).child('roleMap').child('bursar').val() === true))"
+    },
+    "ct_remarks": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.classteacher === true && root.child('users').child(auth.uid).child('roleMap').child('classteacher').val() === true || auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || auth.token.roleMap.principal === true && root.child('users').child(auth.uid).child('roleMap').child('principal').val() === true))"
+    },
+    "broadcasts": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true || auth.token.roleMap.principal === true && root.child('users').child(auth.uid).child('roleMap').child('principal').val() === true))"
+    },
+    "assignments": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true && auth.token.roleMap != null && (auth.token.roleMap.teacher === true && root.child('users').child(auth.uid).child('roleMap').child('teacher').val() === true || auth.token.roleMap.classteacher === true && root.child('users').child(auth.uid).child('roleMap').child('classteacher').val() === true || auth.token.roleMap.admin === true && root.child('users').child(auth.uid).child('roleMap').child('admin').val() === true))"
+    },
+    "clock_logs": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true)"
+    },
+    "notifications": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true) || (!data.exists() && newData.hasChildren(['event','createdAt']))",
+     ".validate": "newData.hasChildren(['event','createdAt']) && newData.child('event').isString() && newData.child('event').val().length <= 60 && newData.child('createdAt').isString() && newData.child('createdAt').val().length <= 40"
+    },
+    "payment_alerts": {
+     ".write": "(auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth != null && auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true) || (data.exists() && newData.child('seen').val() == true) || (!data.exists() && newData.hasChildren(['student','amount']))",
+     ".validate": "newData.child('student').isString() && newData.child('student').val().length <= 120 && (newData.child('amount').isNumber() || newData.child('amount').isString()) && (!newData.child('seen').exists() || newData.child('seen').isBoolean())"
+    },
+    ".write": "auth != null && auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true",
+    "mail_queue": {
+     ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superadmin' || root.child('schools').child($schoolId).child('staff').child(auth.uid).child('role').val() === 'admin' || root.child('staff_logins').child(auth.uid).child('role').val() === 'admin')",
+     ".write": "auth != null",
+     "$pushId": {
+      ".validate": "newData.hasChildren(['to','subject']) && newData.child('to').isString() && newData.child('to').val().matches(/^[^@]+@[^@]+\\.[^@]+$/)"
+     }
+    },
+    "email_config": {
+     ".read": "auth != null",
+     ".write": "auth != null"
+    },
+    "email_log": {
+     ".read": "auth != null",
+     ".write": "auth != null",
+     "$pushId": {
+      ".validate": "newData.hasChildren(['to','subject'])"
+     }
+    }
+   }
+  },
+  "applications": {
+   "$schoolId": {
+    ".read": "auth != null && ((auth.token.roleMap != null && auth.token.roleMap.superadmin === true && root.child('users').child(auth.uid).child('roleMap').child('superadmin').val() === true) || (auth.token.schoolIds != null && auth.token.schoolIds[$schoolId] === true && root.child('users').child(auth.uid).child('schoolIds').child($schoolId).val() === true))",
+    "$appId": {
+     ".write": "!data.exists() && newData.exists()"
+    }
+   }
   }
+ }
 }

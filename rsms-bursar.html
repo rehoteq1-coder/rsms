@@ -853,6 +853,9 @@ select.fi option{background:var(--card);color:var(--t1);}
       <option value="">All Status</option><option value="paid">Fully Paid</option>
       <option value="partial">Partial</option><option value="unpaid">Unpaid</option>
     </select>
+    <select class="fi" id="acct-term" onchange="renderStudentAccounts()" style="flex:1;height:40px;font-size:.82rem;min-width:150px;">
+      <option value="">All terms</option>
+    </select>
   </div>
   <div id="acct-list"></div>
 </div>
@@ -903,6 +906,11 @@ select.fi option{background:var(--card);color:var(--t1);}
     </div>
   </div>
   <div class="print-header" id="report-print-hd"><h2 id="rpt-school-name"></h2><p id="rpt-term-info"></p></div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <select class="fi" id="rep-term" onchange="renderReports()" style="height:40px;font-size:.82rem;min-width:170px;">
+      <option value="">All terms</option>
+    </select>
+  </div>
   <div class="stat-grid" id="report-stats" style="margin-bottom:16px;"></div>
 
   <div class="report-section card">
@@ -1671,13 +1679,47 @@ function logAudit(action,type,details,before,after){
 
 // ── EXPECTED FEE HELPER ──────────────────────────────
 function getExpectedFee(cls){
-  var sched=getFeeSchedule();
-  var match=sched.find(function(f){return f.class===cls;});
-  if(match) return parseFloat(match.amount||0);
-  // Sum all fee types for this class if schedule has per-type entries
-  var total=sched.filter(function(f){return f.class===cls;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
-  return total||0;
+  // Sum EVERY fee row for this class (multi-item schedules used to take only the first row).
+  var rows=getFeeSchedule().filter(function(f){return f.class===cls;});
+  if(rows.length) return rows.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  // Fall back to the finance engine's fee structure for this class.
+  try{
+    var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+    var raw=sid?localStorage.getItem('rsms_'+sid+'_fee_structures'):null;
+    if(!raw) raw=rsmsCacheGetRaw('fee_structures');
+    var structures=JSON.parse(raw||'[]');
+    var school=getSchool();
+    var term=school.term||'First Term', session=school.session||'';
+    var exact=structures.filter(function(r){return r.class===cls&&r.term===term&&session&&r.session===session;});
+    var any=structures.filter(function(r){return r.class===cls&&Array.isArray(r.items)&&r.items.length;});
+    var pick=exact.length?exact:any;
+    if(pick.length){
+      var latest=pick[pick.length-1];
+      return (latest.items||[]).reduce(function(a,it){return a+parseFloat(it.amount||0);},0);
+    }
+  }catch(e){}
+  return 0;
 }
+function feeInContext(f,termSel){
+  if(!termSel) return true;
+  var sess=String((getSchool()||{}).session||'');
+  var ft=String(f.term||''), fs=String(f.session||'');
+  if(!ft&&!fs) return true; /* undated legacy payments always count */
+  if(ft&&fs) return ft===termSel&&fs===sess;
+  if(ft) return ft===termSel;
+  return fs===sess;
+}
+function populateTermSelect(elId){
+  var el=gEl(elId); if(!el||el.options.length>1) return;
+  ['First Term','Second Term','Third Term'].forEach(function(t){
+    var o=document.createElement('option');o.value=t;o.textContent=t+' \u00b7 '+(getSchool().session||'');el.appendChild(o);
+  });
+  el.value=getSchool().term||'First Term';
+}
+/* Only settled money counts toward "paid": gateway payments still Pending
+   (or Failed/Reversed) must not inflate collected totals or hide balances. */
+function feePaid(f){ var st=String((f&&f.status)||'Paid'); return st==='Paid'||st==='Partially Paid'||st==='Confirmed'; }
+function sumSettled(list){ return list.filter(feePaid).reduce(function(a,f){return a+parseFloat(f.amount||0);},0); }
 
 // ── PAGE HOOKS ──────────────────────────────────────
 window.onPage_home     = renderDash;
@@ -1728,17 +1770,22 @@ function renderRecentFees(){
 function renderTopDefaulters(){
   var el=gEl('b-defaulters'); if(!el)return;
   var fees=getFees(); var students=getStudents();
-  var paidIds=uniqueArr(fees.map(function(f){return f.stuId;}));
-  var unpaid=students.filter(function(s){return paidIds.indexOf(s.id)<0;}).slice(0,5);
-  if(!unpaid.length){el.innerHTML='<div class="empty-state" style="color:var(--green);">&#127881; All students have paid!</div>';return;}
+  var debtors=students.map(function(s){
+    var expected=getExpectedFee(s.class);
+    var paid=sumSettled(fees.filter(function(f){return String(f.stuId)===String(s.id);}));
+    return {s:s, owed:Math.max(0,expected-paid)};
+  }).filter(function(r){return r.owed>0;})
+    .sort(function(a,b){return b.owed-a.owed;})
+    .slice(0,5);
+  if(!debtors.length){el.innerHTML='<div class="empty-state" style="color:var(--green);">&#127881; All school fees settled!</div>';return;}
   el.innerHTML='';
-  unpaid.forEach(function(s){
-    var name=(s.surname||'')+' '+(s.firstname||'');
+  debtors.forEach(function(r){
+    var s=r.s, name=(s.surname||'')+' '+(s.firstname||'');
     var d=document.createElement('div');d.className='act-item';
     d.innerHTML='<div class="act-ico c-red">&#9201;</div>'+
       '<div class="act-info"><div class="act-title">'+name+'</div>'+
       '<div class="act-sub">'+(s.class||'--')+'</div></div>'+
-      '<div class="act-right"><div class="act-val" style="color:var(--red);">Unpaid</div></div>';
+      '<div class="act-right"><div class="act-val" style="color:var(--red);">'+naira(r.owed)+' due</div></div>';
     el.appendChild(d);
   });
 }
@@ -1776,7 +1823,7 @@ function onStudentSelect(){
   var name=(stu.surname||'')+' '+(stu.firstname||'');
   elTxt('psi-name',name);
   elTxt('psi-class',stu.class+' \u00b7 '+stu.reg);
-  var paid=getFees().filter(function(f){return f.stuId===stuId;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  var paid=sumSettled(getFees().filter(function(f){return f.stuId===stuId;}));
   elTxt('psi-paid','Paid so far: '+naira(paid));
   if(info)info.style.display='block';
   autoFillAmount();
@@ -1843,7 +1890,7 @@ function onSPStudentSelect(){
   var name=(stu.surname||'')+' '+(stu.firstname||'');
   elTxt('sp-sname',name);
   elTxt('sp-sclass',stu.class+' \u00b7 '+stu.reg);
-  var paid=getFees().filter(function(f){return f.stuId===stuId;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  var paid=sumSettled(getFees().filter(function(f){return f.stuId===stuId;}));
   elTxt('sp-spaid','Total paid: '+naira(paid));
   info.style.display='block';
   onSPFeeTypeSelect();
@@ -2028,6 +2075,8 @@ function renderStudentAccounts(){
   var q=(gEl('acct-search')||{value:''}).value.toLowerCase();
   var cls=(gEl('acct-cls')||{value:''}).value||'';
   var status=(gEl('acct-status')||{value:''}).value||'';
+  populateTermSelect('acct-term');
+  var termSel=(gEl('acct-term')||{value:''}).value||'';
 
   // Populate class filter dynamically
   var clsSel=gEl('acct-cls');
@@ -2040,7 +2089,7 @@ function renderStudentAccounts(){
   var totalExpected=0, totalPaid=0, paidCount=0, partialCount=0, unpaidCount=0;
   students.forEach(function(stu){
     var expected=getExpectedFee(stu.class);
-    var paid=fees.filter(function(f){return f.stuId===stu.id;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+    var paid=sumSettled(fees.filter(function(f){return f.stuId===stu.id&&feeInContext(f,termSel);}));
     totalExpected+=expected; totalPaid+=paid;
     if(expected>0 && paid>=expected) paidCount++;
     else if(paid>0) partialCount++;
@@ -2067,7 +2116,7 @@ function renderStudentAccounts(){
     if(cls && s.class!==cls) return false;
     if(status){
       var expected=getExpectedFee(s.class);
-      var paid=fees.filter(function(f){return f.stuId===s.id;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+      var paid=sumSettled(fees.filter(function(f){return f.stuId===s.id&&feeInContext(f,termSel);}));
       var isPaid=expected>0&&paid>=expected; var isPartial=paid>0&&!isPaid;
       if(status==='paid'&&!isPaid) return false;
       if(status==='partial'&&!isPartial) return false;
@@ -2093,8 +2142,8 @@ function renderStudentAccounts(){
     el.appendChild(hd);
 
     grp.forEach(function(stu){
-      var stuFees=fees.filter(function(f){return f.stuId===stu.id;});
-      var paid=stuFees.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+      var stuFees=fees.filter(function(f){return f.stuId===stu.id&&feeInContext(f,termSel);});
+      var paid=sumSettled(stuFees);
       var expected=getExpectedFee(stu.class);
       var isPaid=expected>0&&paid>=expected; var isPartial=paid>0&&!isPaid;
       var pct=expected>0?Math.min(Math.round(paid/expected*100),100):0;
@@ -2125,7 +2174,7 @@ function openStudentDetail(stuId){
 
   var name=(stu.surname||'')+' '+(stu.firstname||'');
   var stuFees=fees.filter(function(f){return f.stuId===stuId;}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
-  var paid=stuFees.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  var paid=sumSettled(stuFees);
   var expected=getExpectedFee(stu.class);
   var balance=expected-paid;
   var isPaid=expected>0&&paid>=expected;
@@ -2204,7 +2253,7 @@ function printStudentStatement(){
   if(!stu) return;
   var name=(stu.surname||'')+' '+(stu.firstname||'');
   var stuFees=fees.filter(function(f){return f.stuId===_currentStuId;});
-  var paid=stuFees.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  var paid=sumSettled(stuFees);
   var expected=getExpectedFee(stu.class);
 
   var w=window.open('','_blank','width=600,height=700');
@@ -2262,7 +2311,7 @@ function showDefaulters(){
   var defaulters=[];
   students.forEach(function(stu){
     var expected=getExpectedFee(stu.class);
-    var paid=fees.filter(function(f){return f.stuId===stu.id;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+    var paid=sumSettled(fees.filter(function(f){return f.stuId===stu.id&&feeInContext(f,termSel);}));
     var balance=expected-paid;
     if(balance>0) defaulters.push({stu:stu,paid:paid,expected:expected,balance:balance});
   });
@@ -2298,7 +2347,7 @@ function exportStudentAccounts(){
   students.forEach(function(s){
     var name=((s.surname||'')+' '+(s.firstname||'')).replace(/,/g,' ');
     var expected=getExpectedFee(s.class);
-    var paid=fees.filter(function(f){return f.stuId===s.id;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+    var paid=sumSettled(fees.filter(function(f){return f.stuId===s.id;}));
     var balance=expected-paid;
     var status=expected>0&&paid>=expected?'Fully Paid':paid>0?'Partial':'Unpaid';
     var count=fees.filter(function(f){return f.stuId===s.id;}).length;
@@ -2315,7 +2364,7 @@ function exportDefaulters(){
   var rows=['Name,Class,Expected (\u20a6),Paid (\u20a6),Balance (\u20a6),% Paid'];
   students.forEach(function(s){
     var expected=getExpectedFee(s.class);
-    var paid=fees.filter(function(f){return f.stuId===s.id;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+    var paid=sumSettled(fees.filter(function(f){return f.stuId===s.id;}));
     if(expected-paid>0){
       var name=((s.surname||'')+' '+(s.firstname||'')).replace(/,/g,' ');
       rows.push([name,s.class||'',expected,paid,expected-paid,expected>0?Math.round(paid/expected*100):0].join(','));
@@ -2330,11 +2379,12 @@ function exportDefaulters(){
 // ── CASHBOOK ────────────────────────────────────────
 function renderCashbook(){
   var fees=getFees();
+  var settled=fees.filter(feePaid);
   var stats=gEl('cashbook-stats'); var el=gEl('cashbook-list');
-  var total=fees.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
-  var cash=fees.filter(function(f){return (f.method||'').toLowerCase().includes('cash');})
+  var total=settled.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  var cash=settled.filter(function(f){return (f.method||'').toLowerCase().includes('cash');})
                .reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
-  var selfPay=fees.filter(function(f){return f.channel==='parent_selfpay';})
+  var selfPay=settled.filter(function(f){return f.channel==='parent_selfpay';})
                   .reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
   if(stats)stats.innerHTML=[
     {v:naira(total),l:'Total',cls:'s-green'},
@@ -2349,7 +2399,10 @@ function renderCashbook(){
     return '<tr><td>'+f.date+'</td><td style="font-weight:700;">'+f.student+'</td>'+
       '<td>'+f.type+'</td><td>'+f.method+'</td>'+
       '<td>'+ch+'</td>'+
-      '<td style="font-weight:700;color:var(--green);">'+naira(f.amount)+'</td></tr>';
+      (feePaid(f)
+        ?'<td style="font-weight:700;color:var(--green);">'+naira(f.amount)+'</td>'
+        :'<td style="font-weight:700;color:var(--orange);">'+naira(f.amount)+' &middot; '+finEsc(f.status||'Pending')+'</td>')+
+      '</tr>';
   }).join('');
   el.innerHTML='<div class="tbl-wrap"><table class="tbl">'+
     '<thead><tr><th>Date</th><th>Student</th><th>Fee Type</th><th>Method</th><th>Via</th><th>Amount</th></tr></thead>'+
@@ -2371,10 +2424,13 @@ function exportCashbook(){
 // ── REPORTS ─────────────────────────────────────────
 function renderReports(){
   var fees=getFees(); var students=getStudents();
-  var total=fees.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
-  var paidIds=uniqueArr(fees.map(function(f){return f.stuId;}));
+  populateTermSelect('rep-term');
+  var termSel=(gEl('rep-term')||{value:''}).value||'';
+  var settled=fees.filter(function(f){return feePaid(f)&&feeInContext(f,termSel);});
+  var total=settled.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  var paidIds=uniqueArr(settled.map(function(f){return f.stuId;}));
   var rate=students.length?Math.round(paidIds.length/students.length*100):0;
-  var selfPayTotal=fees.filter(function(f){return f.channel==='parent_selfpay';}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+  var selfPayTotal=settled.filter(function(f){return f.channel==='parent_selfpay';}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
   var stats=gEl('report-stats');
   if(stats)stats.innerHTML=[
     {v:naira(total),l:'Total Collected',cls:'s-green'},
@@ -2387,8 +2443,8 @@ function renderReports(){
   var classes=uniqueArr(students.map(function(s){return s.class||'';}));
   classes.forEach(function(cls){
     var clsS=students.filter(function(s){return s.class===cls;});
-    var clsF=fees.filter(function(f){return f.class===cls;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
-    var paid=uniqueArr(fees.filter(function(f){return f.class===cls;}).map(function(f){return f.stuId;})).length;
+    var clsF=settled.filter(function(f){return f.class===cls;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+    var paid=uniqueArr(settled.filter(function(f){return f.class===cls;}).map(function(f){return f.stuId;})).length;
     var d=document.createElement('div');
     d.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:.85rem;';
     d.innerHTML='<div><div style="font-weight:700;color:var(--t1);">'+cls+'</div>'+
@@ -3007,6 +3063,12 @@ function runReconciliation(){
 }
 
 var _origSaveStudents = window.saveStudents;
+function rsmsWriteBoth(k,v){
+  var sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';
+  var j=JSON.stringify(v);
+  if(sid){try{localStorage.setItem('rsms_'+sid+'_'+k,j);}catch(e){}}
+  else{try{localStorage.setItem('rsms_'+k,j);}catch(e){}}
+}
 window.saveStudents = function(data){
   rsmsCacheSetRaw('students', JSON.stringify(data));
   if(typeof RSMS_FB !== 'undefined' && RSMS_FB.isReady()) RSMS_FB.saveStudents(data);
