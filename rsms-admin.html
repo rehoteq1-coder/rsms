@@ -624,6 +624,8 @@ select.fi option{background:var(--card);color:var(--t1);}
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="rsms-config.js"></script>
+<script src="rsms-config.js"></script>
+<script src="rsms-assessment.js"></script>
 <script src="rsms-firebase.js"></script>
 <script src="rsms-roster.js"></script>
 <script src="rsms-ai-units.js"></script>
@@ -759,6 +761,8 @@ window.RSMS_DB = {
 
   <div style="margin:10px 16px 0;">
     <button class="btn btn-light btn-xs" type="button" onclick="checkStudentRosterCounts()">Check student count</button>
+    <button class="btn btn-light btn-xs" type="button" onclick="downloadStudentRosterBackup()">Download read-only roster backup</button>
+    <div style="font-size:.68rem;color:var(--t4);margin-top:4px;">Diagnostics only read Firebase. The backup contains student data—keep it private. It is not an import/restore tool.</div>
     <div id="student-count-check" role="status" style="font-size:.75rem;color:var(--t3);margin-top:6px;white-space:pre-wrap;"></div>
   </div>
 
@@ -1171,7 +1175,27 @@ window.RSMS_DB = {
       <input type="checkbox" id="cfg-showphoto" style="width:17px;height:17px;accent-color:#d4a843;flex-shrink:0;"/>
       <span>Show student photo on report cards &amp; progress reports <span style="color:var(--t4);font-size:.72rem;">(off = cards are printed without the photo block)</span></span>
     </label>
-    <button class="btn btn-gold btn-full" onclick="saveSettings()" style="margin-top:4px;">&#9989; Save Settings</button>
+    <button id="cfg-save-settings" class="btn btn-gold btn-full" onclick="saveSettings()" style="margin-top:4px;">&#9989; Save Settings</button>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">Assessment Scheme</div>
+    <p style="font-size:.78rem;color:var(--t3);margin:0 0 12px;">Choose the components used for new score entry. Saved scores keep their original maximums; changing this setting never converts or deletes historical marks. Maximums are whole numbers from 1 to 1000 and need not add up to 100.</p>
+    <div class="fg"><label for="cfg-assessment-tests">Format</label>
+      <select class="fi" id="cfg-assessment-tests" onchange="updateAssessmentForm()" style="height:46px;">
+        <option value="2">T1 + T2 + Exam</option>
+        <option value="3">T1 + T2 + T3 + Exam</option>
+      </select>
+    </div>
+    <div class="f2">
+      <div class="fg"><label for="cfg-ca1-max">T1 / CA 1 maximum</label><input class="fi" id="cfg-ca1-max" type="number" min="1" max="1000" step="1" inputmode="numeric" oninput="updateAssessmentForm()"/></div>
+      <div class="fg"><label for="cfg-ca2-max">T2 / CA 2 maximum</label><input class="fi" id="cfg-ca2-max" type="number" min="1" max="1000" step="1" inputmode="numeric" oninput="updateAssessmentForm()"/></div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label for="cfg-ca3-max">T3 / CA 3 maximum</label><input class="fi" id="cfg-ca3-max" type="number" min="1" max="1000" step="1" inputmode="numeric" oninput="updateAssessmentForm()"/></div>
+      <div class="fg"><label for="cfg-exam-max">Exam maximum</label><input class="fi" id="cfg-exam-max" type="number" min="1" max="1000" step="1" inputmode="numeric" oninput="updateAssessmentForm()"/></div>
+    </div>
+    <div id="cfg-assessment-summary" role="status" style="font-size:.8rem;color:var(--t2);margin-top:6px;"></div>
   </div>
 
   <!-- Flutterwave Payment Gateway Config -->
@@ -1357,34 +1381,26 @@ window.RSMS_DB = {
         <select class="fi" id="asc-class" onchange="onAdminScoreClassChange()" style="height:46px;"><option value="">-- Select Class --</option><option>Creche</option><option>Baby Class</option><option>Nursery 1</option><option>Nursery 2</option><option>KG 1</option><option>KG 2</option><option>Primary 1</option><option>Primary 2</option><option>Primary 3</option><option>Primary 4</option><option>Primary 5</option><option>Primary 6</option><option>JSS 1</option><option>JSS 2</option><option>JSS 3</option><option>SS 1 Science</option><option>SS 1 Commercial</option><option>SS 1 Art</option><option>SS 2 Science</option><option>SS 2 Commercial</option><option>SS 2 Art</option><option>SS 3 Science</option><option>SS 3 Commercial</option><option>SS 3 Art</option></select>
       </div>
       <div class="fg"><label>Subject *</label>
-        <select class="fi" id="asc-subject" style="height:46px;"><option value="">-- Select Class First --</option></select>
+        <select class="fi" id="asc-subject" onchange="onAdminScoreContextChange()" style="height:46px;"><option value="">-- Select Class First --</option></select>
       </div>
     </div>
     <div class="f2">
       <div class="fg"><label>Term</label>
-        <select class="fi" id="asc-term" style="height:46px;">
+        <select class="fi" id="asc-term" onchange="onAdminScoreContextChange()" style="height:46px;">
           <option>First Term</option><option>Second Term</option><option>Third Term</option>
         </select>
       </div>
       <div class="fg"><label>Session</label>
-        <input class="fi" id="asc-session" placeholder="2025/2026"/>
+        <input class="fi" id="asc-session" onchange="onAdminScoreContextChange()" placeholder="2025/2026"/>
       </div>
     </div>
     <button class="btn btn-teal btn-sm" onclick="loadAdminScoreTable()">&#128203; Load Students</button>
   </div>
+  <div id="asc-scheme-note" role="status" style="font-size:.78rem;color:var(--t3);margin:8px 0;"></div>
   <div id="asc-table-wrap" style="display:none;">
     <div class="card" style="padding:0;overflow-x:auto;">
       <table class="tbl" id="asc-table">
-        <thead>
-          <tr>
-            <th style="min-width:140px;">Student</th>
-            <th>CA 1<br/><span style="font-weight:400;font-size:.65rem;">/20</span></th>
-            <th>CA 2<br/><span style="font-weight:400;font-size:.65rem;">/20</span></th>
-            <th>Exam<br/><span style="font-weight:400;font-size:.65rem;">/60</span></th>
-            <th>Total</th>
-            <th style="min-width:90px;">Entered By</th>
-          </tr>
-        </thead>
+        <thead id="asc-thead"></thead>
         <tbody id="asc-tbody"></tbody>
       </table>
     </div>
@@ -2223,30 +2239,48 @@ window.onFirebaseUpdate_staff=function(){
 };
 
 // Read-only diagnostic: never reconciles, imports, deletes, or uploads records.
-function checkStudentRosterCounts(){
-  var out=document.getElementById('student-count-check');
+function readStudentRosterForDiagnostic(){
   var sid=_sid();
-  if(!sid || typeof firebase==='undefined' || typeof RSMS_FB==='undefined' || !RSMS_FB.isReady()){
-    out.textContent='Database connection is not ready. Try again when online.';return;
-  }
-  var local=getStudents().length, finished=false;
-  out.textContent='Checking '+sid+'…';
+  if(!sid || typeof firebase==='undefined' || typeof RSMS_FB==='undefined' || !RSMS_FB.isReady())
+    return Promise.reject(new Error('Database connection is not ready. Try again when online.'));
+  var localRaw=_get('students','[]'),db=firebase.database();
+  return db.ref('.info/connected').once('value').then(function(connected){
+    if(!connected.val())throw new Error('Database is offline.');
+    return db.ref('schools/'+sid+'/students').once('value');
+  }).then(function(snapshot){
+    if(_sid()!==sid)throw new Error('School changed during the check; please try again.');
+    var databaseRaw=snapshot.val();
+    return {schoolId:sid,localRaw:localRaw,databaseRaw:databaseRaw,
+      localCacheKey:_key('students'),databasePath:'schools/'+sid+'/students',
+      diagnosis:RSMSRoster.diagnose(localRaw,databaseRaw,'students')};
+  });
+}
+function formatRosterDiagnosis(result){
+  var d=result.diagnosis;
+  return 'School: '+result.schoolId+'\nAdmin dashboard/cache: '+d.local.valid+' valid students ('+d.local.rawEntries+' raw entries; '+d.local.invalid+' invalid)\nDatabase: '+d.database.valid+' valid students ('+d.database.rawEntries+' raw entries; '+d.database.invalid+' invalid)\nUnique valid IDs — cache: '+d.local.uniqueValidIds+', database: '+d.database.uniqueValidIds+'\nDuplicate IDs — cache: '+d.local.duplicateIds.length+', database: '+d.database.duplicateIds.length+'\nDatabase IDs missing from cache: '+d.missingFromLocal.length+'; cache-only IDs: '+d.extraInLocal.length+'\nRead-only check; no data was changed.';
+}
+function checkStudentRosterCounts(){
+  var out=document.getElementById('student-count-check'),finished=false;
+  var local=RSMSRoster.count(_get('students','[]'),'students');
+  out.textContent='Checking '+_sid()+'…';
   var timeout=setTimeout(function(){if(!finished){finished=true;out.textContent='Database check timed out. Local count: '+local+'. No data was changed.';}},10000);
   function finish(message){if(finished)return;finished=true;clearTimeout(timeout);out.textContent=message;}
-  try{
-    var db=firebase.database();
-    db.ref('.info/connected').once('value').then(function(connected){
-      if(!connected.val()) throw new Error('offline');
-      return db.ref('schools/'+sid+'/students').once('value');
-    }).then(function(snapshot){
-      if(_sid()!==sid){finish('School changed during the check; please try again.');return;}
-      var value=snapshot.val();
-      var rows=Array.isArray(value)?value:(value && typeof value==='object'?Object.values(value):[]);
-      var objects=rows.filter(function(v){return v && typeof v==='object' && !Array.isArray(v);});
-      var valid=RSMSRoster.count(value,'students');
-      finish('School: '+sid+'\nAdmin roster: '+local+' students\nDatabase: '+valid+' valid students; '+(objects.length-valid)+' student-like records missing an ID or name.\nRead-only check; no data was changed.');
-    }).catch(function(){finish('Could not read the database roster. Local count: '+local+'. Check connection and permissions. No data was changed.');});
-  }catch(e){finish('Database check unavailable. No data was changed.');}
+  readStudentRosterForDiagnostic().then(function(result){finish(formatRosterDiagnosis(result));},
+    function(e){finish((e.message||'Could not read the database roster.')+' Local count: '+local+'. No data was changed.');});
+}
+function downloadStudentRosterBackup(){
+  var out=document.getElementById('student-count-check');out.textContent='Preparing read-only roster backup…';
+  readStudentRosterForDiagnostic().then(function(result){
+    var backup={format:'rsms-roster-backup-v1',readOnly:true,capturedAt:new Date().toISOString(),
+      schoolId:result.schoolId,localCacheKey:result.localCacheKey,databasePath:result.databasePath,
+      dashboardCount:result.diagnosis.local.valid,local:result.localRaw,database:result.databaseRaw,
+      diagnosis:result.diagnosis};
+    var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    var url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='RSMS-roster-backup-'+result.schoolId+'-'+Date.now()+'.json';a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+    out.textContent=formatRosterDiagnosis(result)+'\nBackup downloaded. No database writes were made.';
+  },function(e){out.textContent='Backup not created: '+(e.message||'read failed')+'. No data was changed.';});
 }
 
 // ── DASHBOARD ──────────────────────────────────────────
@@ -3360,6 +3394,12 @@ function loadSettings(){
   var spc=document.getElementById('cfg-showphoto');if(spc)spc.checked=s.showStudentPhoto!==false;
   var ts=document.getElementById('cfg-term');if(ts)ts.value=s.term||'First Term';
   var ps=document.getElementById('cfg-plan');if(ps)ps.value=s.plan||'Standard';
+  var scheme;
+  try{ scheme=RSMSAssessment.forSchool(s); }
+  catch(e){ scheme=RSMSAssessment.legacy(); var warn=document.getElementById('cfg-assessment-summary'); if(warn)warn.textContent=e.message+' Review and save a valid scheme.'; }
+  setVal('cfg-assessment-tests',String(scheme.tests));
+  ['ca1','ca2','ca3','exam'].forEach(function(f){setVal('cfg-'+f+'-max',String(scheme[f]));});
+  updateAssessmentForm();
 
   // Show School ID and plan prominently
   var sid = s.schoolId || (RSMS.user()&&RSMS.user().schoolId) || '--';
@@ -3384,9 +3424,25 @@ function loadSettings(){
   if(existingLogo){setVal('cfg-logo',existingLogo);try{updateLogoPreview(existingLogo);}catch(e){}}
 }
 
+function assessmentFormConfig(){
+  return RSMSAssessment.fromForm({tests:val('cfg-assessment-tests'),ca1:val('cfg-ca1-max'),
+    ca2:val('cfg-ca2-max'),ca3:val('cfg-ca3-max'),exam:val('cfg-exam-max')});
+}
+function updateAssessmentForm(){
+  var third=document.getElementById('cfg-ca3-max');
+  var two=val('cfg-assessment-tests')==='2';
+  if(third){third.disabled=two;if(two)third.value='0';}
+  var config=assessmentFormConfig(), errors=RSMSAssessment.validate(config);
+  var out=document.getElementById('cfg-assessment-summary');
+  if(out)out.textContent=errors.length?errors.join(' '):RSMSAssessment.describe(config);
+}
 function saveSettings(){
-  // FIX C1/C2: Merge form values into existing school object to preserve schoolId, state, lga, etc.
+  // Validate before any write. The assessment leaf is acknowledged separately
+  // so a connection failure cannot masquerade as a shared settings save.
   var school=getSchool();
+  var nextAssessment=assessmentFormConfig(), assessmentErrors=RSMSAssessment.validate(nextAssessment);
+  if(assessmentErrors.length){updateAssessmentForm();toast(assessmentErrors.join(' '),'error');return;}
+  // FIX C1/C2: Merge form values into existing school object to preserve schoolId, state, lga, etc.
   school.name=val('cfg-name');school.address=val('cfg-addr');school.phone=val('cfg-phone');
   school.email=val('cfg-email');school.session=val('cfg-session');school.principal=val('cfg-principal');
   school.regPrefix=val('cfg-regprefix')||'REG';
@@ -3397,9 +3453,7 @@ function saveSettings(){
   var logo=val('cfg-logo')||val('cfg-logo-url');
   if(logo){localStorage.setItem('rsms_school_logo',logo);school.logo=logo;try{updateLogoPreview(logo);}catch(e){}}
   localStorage.setItem('rsms_school',JSON.stringify(school));
-  RSMS.school=school;
   el('hd-school-name',school.name||'School');
-  toast('\u2705 Settings saved','success');
 
   // Sync updated settings back to superadmin schools list
   try{
@@ -3418,6 +3472,26 @@ function saveSettings(){
       localStorage.setItem('rsms_sa_schools', JSON.stringify(schools));
     }
   }catch(e){}
+  var button=document.getElementById('cfg-save-settings');
+  var summary=document.getElementById('cfg-assessment-summary');
+  if(typeof RSMS_FB!=='undefined' && typeof RSMS_FB.saveAssessment==='function'){
+    if(button)button.disabled=true;
+    if(summary)summary.textContent='Saving assessment scheme to the school…';
+    RSMS_FB.saveAssessment(nextAssessment).then(function(){
+      if(button)button.disabled=false;
+      updateAssessmentForm();
+      toast('Settings and assessment scheme saved','success');
+    },function(e){
+      if(button)button.disabled=false;
+      if(summary)summary.textContent='School information saved on this device, but the assessment scheme was not saved: '+(e.message||'connection failed');
+      toast('Assessment scheme not saved. Reconnect and try again.','error');
+    });
+  }else{
+    school.assessment=nextAssessment;
+    localStorage.setItem('rsms_school',JSON.stringify(school));
+    updateAssessmentForm();
+    toast('Settings saved on this device only; Firebase is unavailable.','info');
+  }
 }
 
 function renderFeeSchedule(){
@@ -4121,6 +4195,24 @@ function onAdminScoreClassChange(){
   if(wrap) wrap.style.display='none';
 }
 
+var adminScoreRows={}, adminScoreActive=null;
+function adminScoreKey(cls,term,sess){
+  return _key('scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_'));
+}
+function onAdminScoreContextChange(){
+  adminScoreRows={};adminScoreActive=null;
+  var wrap=document.getElementById('asc-table-wrap');if(wrap)wrap.style.display='none';
+}
+function adminScoreValues(id){
+  var row=adminScoreRows[id], values={};
+  if(row){RSMSAssessment.fields(row.scheme).forEach(function(f){var el=document.getElementById('asc_'+f+'_'+id);values[f]=el?el.value:'';});values.assessment=RSMSAssessment.copy(row.scheme);}
+  return values;
+}
+function calcAdminRowTotal(id){
+  var row=adminScoreRows[id], out=document.getElementById('asc_tot_'+id);if(!row||!out)return;
+  var view=RSMSAssessment.viewRecord(adminScoreValues(id));
+  out.textContent=view.error?'Invalid':(view.total===null?'--':view.total+(view.complete?'':'*'));
+}
 function loadAdminScoreTable(){
   var cls=(document.getElementById('asc-class')||{}).value||'';
   var subj=(document.getElementById('asc-subject')||{}).value||'';
@@ -4128,93 +4220,86 @@ function loadAdminScoreTable(){
   var sess=(document.getElementById('asc-session')||{value:''}).value||'2025/2026';
   if(!cls){toast('Select a class','error');return;}
   if(!subj){toast('Select a subject','error');return;}
+  var currentScheme;
+  try{currentScheme=RSMSAssessment.forSchool(getSchool());}catch(e){toast(e.message,'error');return;}
   var students=(getStudents()||[]).filter(function(s){return s.class===cls;});
   if(!students.length){toast('No students in '+cls,'error');return;}
-  var scoreKey='rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
-  var saved=JSON.parse(localStorage.getItem(scoreKey)||'{}');
-  var tbody=document.getElementById('asc-tbody');if(!tbody)return;
-  tbody.innerHTML='';
+  var scoreKey=adminScoreKey(cls,term,sess);
+  var legacy='rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
+  var saved=JSON.parse(localStorage.getItem(scoreKey)||localStorage.getItem(legacy)||'{}');
+  adminScoreRows={};adminScoreActive={cls:cls,subj:subj,term:term,sess:sess};
+  var schemes=[currentScheme];
   students.forEach(function(s){
-    var name=(s.surname||'')+' '+(s.firstname||'');
     var key=s.id+'_'+subj.replace(/\s+/g,'_');
-    var ex=saved[key]||{ca1:'',ca2:'',exam:'',enteredBy:'--'};
-    var tr=document.createElement('tr');
-    var td0=document.createElement('td');
+    var record=saved[key]||Object.values(saved).find(function(e){return e&&e.stuId===s.id&&e.subject===subj;})||null;
+    var scheme;
+    try{scheme=record?RSMSAssessment.forRecord(record):RSMSAssessment.copy(currentScheme);}catch(e){toast(e.message,'error');return;}
+    adminScoreRows[s.id]={key:key,record:record,scheme:scheme,student:s};schemes.push(scheme);
+  });
+  var fields=RSMSAssessment.unionFields(schemes);
+  var thead=document.getElementById('asc-thead');
+  thead.innerHTML='<tr><th style="min-width:140px;">Student</th>'+fields.map(function(f){
+    var maxima=schemes.map(function(c){return c[f]||0;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;});
+    return '<th>'+({ca1:'T1 / CA 1',ca2:'T2 / CA 2',ca3:'T3 / CA 3',exam:'Exam'}[f])+'<br><span style="font-weight:400;font-size:.65rem;">'+(maxima.length===1?'max '+maxima[0]:'max per row')+'</span></th>';
+  }).join('')+'<th>Total</th><th style="min-width:90px;">Entered By</th></tr>';
+  var tbody=document.getElementById('asc-tbody');tbody.innerHTML='';
+  students.forEach(function(s){
+    var row=adminScoreRows[s.id];if(!row)return;
+    var ex=row.record||{};
+    var tr=document.createElement('tr'),td0=document.createElement('td');
     td0.style.cssText='font-weight:600;font-size:.82rem;';
-    td0.innerHTML=name+'<div style="font-size:.65rem;color:var(--t3);">'+s.reg+'</div>';
-    tr.appendChild(td0);
-    ['ca1','ca2','exam'].forEach(function(field){
-      var td=document.createElement('td');
-      var inp=document.createElement('input');
-      inp.type='number';inp.className='fi score-inp';
-      inp.style.cssText='height:34px;width:60px;font-size:.82rem;text-align:center;padding:0 3px;';
-      inp.id='asc_'+field+'_'+s.id;inp.value=ex[field]||'';
-      inp.min='0';inp.max=field==='exam'?'60':'20';
-      inp.setAttribute('data-sid',s.id);
-      inp.oninput=function(){
-        var sid=this.getAttribute('data-sid');
-        var c1=parseInt((document.getElementById('asc_ca1_'+sid)||{}).value||0)||0;
-        var c2=parseInt((document.getElementById('asc_ca2_'+sid)||{}).value||0)||0;
-        var ex2=parseInt((document.getElementById('asc_exam_'+sid)||{}).value||0)||0;
-        var tot=document.getElementById('asc_tot_'+sid);
-        if(tot) tot.textContent=c1+c2+ex2>0?c1+c2+ex2:'--';
-      };
+    td0.textContent=((s.surname||'')+' '+(s.firstname||'')).trim();
+    var reg=document.createElement('div');reg.style.cssText='font-size:.65rem;color:var(--t3);';reg.textContent=s.reg||'';td0.appendChild(reg);tr.appendChild(td0);
+    fields.forEach(function(field){
+      var td=document.createElement('td'),inp=document.createElement('input');
+      inp.type='number';inp.className='fi score-inp';inp.id='asc_'+field+'_'+s.id;
+      inp.style.cssText='height:34px;width:70px;font-size:.82rem;text-align:center;padding:0 3px;';
+      if(RSMSAssessment.fields(row.scheme).indexOf(field)<0){inp.disabled=true;inp.placeholder='—';}
+      else{
+        inp.min='0';inp.max=String(row.scheme[field]);inp.step='1';inp.value=ex[field]==null?'':ex[field];
+        inp.placeholder='0–'+row.scheme[field];inp.title=RSMSAssessment.describe(row.scheme);
+        inp.setAttribute('aria-label',inp.title+' '+field);inp.setAttribute('data-sid',s.id);
+        inp.oninput=function(){calcAdminRowTotal(this.getAttribute('data-sid'));};
+      }
       td.appendChild(inp);tr.appendChild(td);
     });
-    var tdT=document.createElement('td');
-    var spanT=document.createElement('span');
-    spanT.id='asc_tot_'+s.id;spanT.style.cssText='font-weight:800;color:var(--gold);';
-    var prevTot=ex.ca1&&ex.ca2&&ex.exam?(parseInt(ex.ca1)||0)+(parseInt(ex.ca2)||0)+(parseInt(ex.exam)||0):0;
-    spanT.textContent=prevTot>0?prevTot:'--';
-    tdT.appendChild(spanT);tr.appendChild(tdT);
-    var tdBy=document.createElement('td');
-    tdBy.style.cssText='font-size:.68rem;color:var(--t3);';
-    tdBy.textContent=ex.enteredBy||'--';
-    tr.appendChild(tdBy);
-    tbody.appendChild(tr);
+    var tdT=document.createElement('td'),spanT=document.createElement('span');spanT.id='asc_tot_'+s.id;
+    spanT.style.cssText='font-weight:800;color:var(--gold);';tdT.appendChild(spanT);tr.appendChild(tdT);
+    var tdBy=document.createElement('td');tdBy.style.cssText='font-size:.68rem;color:var(--t3);';tdBy.textContent=ex.enteredBy||'--';tr.appendChild(tdBy);
+    tbody.appendChild(tr);calcAdminRowTotal(s.id);
   });
-  var wrap=document.getElementById('asc-table-wrap');if(wrap)wrap.style.display='block';
+  document.getElementById('asc-scheme-note').textContent='New rows: '+RSMSAssessment.describe(currentScheme)+'. Existing rows retain their saved scheme. * = incomplete; blank rows are left unchanged.';
+  document.getElementById('asc-table-wrap').style.display='block';
   toast('Loaded '+students.length+' students','success');
 }
-
 function saveAdminScores(){
-  var cls=(document.getElementById('asc-class')||{}).value||'';
-  var subj=(document.getElementById('asc-subject')||{}).value||'';
-  var term=(document.getElementById('asc-term')||{}).value||'First Term';
-  var sess=(document.getElementById('asc-session')||{value:''}).value||'2025/2026';
-  if(!cls||!subj){toast('Select class and subject','error');return;}
-  var students=(getStudents()||[]).filter(function(s){return s.class===cls;});
-  var scoreKey='rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
-  var saved=JSON.parse(localStorage.getItem(scoreKey)||'{}');
-  var count=0;
-  students.forEach(function(s){
-    var key=s.id+'_'+subj.replace(/\s+/g,'_');
-    var ca1=(document.getElementById('asc_ca1_'+s.id)||{}).value||'';
-    var ca2=(document.getElementById('asc_ca2_'+s.id)||{}).value||'';
-    var exam=(document.getElementById('asc_exam_'+s.id)||{}).value||'';
-    if(ca1||ca2||exam){
-      saved[key]={
-        stuId:s.id,student:(s.surname||'')+' '+(s.firstname||''),
-        class:cls,subject:subj,term:term,session:sess,
-        ca1:parseInt(ca1)||0,ca2:parseInt(ca2)||0,exam:parseInt(exam)||0,
-        total:(parseInt(ca1)||0)+(parseInt(ca2)||0)+(parseInt(exam)||0),
-        enteredBy:'Admin (Override)',enteredByRole:'admin',
-        savedAt:new Date().toISOString()
-      };
-      count++;
-    }
-  });
-  saved._syncTs=Date.now();
-  localStorage.setItem(scoreKey,JSON.stringify(saved));
-  localStorage.setItem(scoreKey+'_ts',String(Date.now()));
-  // FIX C4: sync scores to Firebase
-  try{
-    var fbKey=scoreKey.replace('rsms_','');
-    _fbSync(fbKey,saved);
-  }catch(e){}
-  toast('\u2705 Admin override: saved '+count+' scores for '+subj,'success');
+  if(!adminScoreActive){toast('Load students first','error');return;}
+  var c=adminScoreActive;
+  if(c.cls!==val('asc-class')||c.subj!==val('asc-subject')||c.term!==val('asc-term')||c.sess!==val('asc-session')){toast('Selection changed. Load students again.','error');return;}
+  var scoreKey=adminScoreKey(c.cls,c.term,c.sess),legacy='rsms_scores_'+c.cls.replace(/\s+/g,'_')+'_'+c.term.replace(/\s+/g,'_')+'_'+c.sess.replace('/','_');
+  var saved=JSON.parse(localStorage.getItem(scoreKey)||localStorage.getItem(legacy)||'{}'),updates={},count=0;
+  var ids=Object.keys(adminScoreRows);
+  for(var i=0;i<ids.length;i++){
+    var id=ids[i],row=adminScoreRows[id],values=adminScoreValues(id);
+    if(!RSMSAssessment.hasScores(values,row.scheme))continue;
+    if(row.record&&RSMSAssessment.fields(row.scheme).every(function(f){return String(values[f]==null?'':values[f])===String(row.record[f]==null?'':row.record[f]);}))continue;
+    var errors=RSMSAssessment.validateScores(values,row.scheme,true);
+    if(errors.length){toast((row.student.surname||id)+': '+errors.join(' '),'error');return;}
+    var record;
+    try{record=row.record?RSMSAssessment.updateRecord(row.record,values):RSMSAssessment.createRecord({stuId:id,student:((row.student.surname||'')+' '+(row.student.firstname||'')).trim(),class:c.cls,subject:c.subj,term:c.term,session:c.sess},values,row.scheme);}
+    catch(e){toast(e.message,'error');return;}
+    record.enteredBy='Admin (Override)';record.enteredByRole='admin';record.savedAt=new Date().toISOString();
+    updates[row.key]=record;count++;
+  }
+  if(!count){toast('No complete score rows to save','info');return;}
+  Object.keys(updates).forEach(function(k){saved[k]=updates[k];});
+  var ok=true;
+  if(typeof RSMS_FB!=='undefined'&&typeof RSMS_FB.saveScores==='function')ok=RSMS_FB.saveScores(c.cls,c.term,c.sess,saved)!==false;
+  else{var json=JSON.stringify(saved);localStorage.setItem(scoreKey,json);localStorage.setItem(legacy,json);}
+  if(!ok){toast('Scores are locked or could not be saved','error');return;}
+  Object.keys(updates).forEach(function(k){var row=adminScoreRows[updates[k].stuId];if(row)row.record=updates[k];});
+  toast('Admin override: saved '+count+' scores for '+c.subj,'success');
 }
-
 
 // ── CLASS STREAMS / ARMS ─────────────────────────────────────────────────
 

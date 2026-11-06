@@ -521,6 +521,8 @@ select.fi option { background: var(--card); color: var(--t1); }
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="rsms-config.js"></script>
+<script src="rsms-config.js"></script>
+<script src="rsms-assessment.js"></script>
 <script src="rsms-firebase.js"></script>
 <script src="rsms-finance.js"></script>
 <script src="rsms-plan-guard.js"></script>
@@ -1055,10 +1057,8 @@ function childResults(){
                   class:CHILD_CLASS});
               } else if(typeof entry[subj]==='object'){
                 var sc=entry[subj];
-                results.push({subject:subj,ca1:sc.ca1||0,ca2:sc.ca2||0,exam:sc.exam||0,
-                  total:sc.total||(parseInt(sc.ca1||0)+parseInt(sc.ca2||0)+parseInt(sc.exam||0)),
-                  stuId:CHILD_ID,student:CHILD_NAME,
-                  term:sc.term||'First Term',session:sc.session||'2025/2026',class:CHILD_CLASS});
+                results.push(Object.assign({},sc,{subject:subj,stuId:CHILD_ID,student:CHILD_NAME,
+                  term:sc.term||'First Term',session:sc.session||'2025/2026',class:CHILD_CLASS}));
               }
             });
           } else if(entry.subject){
@@ -1147,8 +1147,8 @@ function renderChildResults(){
   Object.keys(groups).forEach(function(key){
     var g=groups[key];
     var subjects=g.subjects;
-    var totalScore=subjects.reduce(function(a,s){return a+(parseInt(s.total||0)||parseInt(s.ca1||0)+parseInt(s.ca2||0)+parseInt(s.exam||0));},0);
-    var avgScore=subjects.length?Math.round(totalScore/subjects.length):0;
+    var summary=RSMSAssessment.summarize(subjects);
+    var avgScore=summary.percent===null?null:Math.round(summary.percent);
     var div=document.createElement('div'); div.className='card'; div.style.marginBottom='14px';
     // Term header
     var hdr=document.createElement('div');
@@ -1159,23 +1159,23 @@ function renderChildResults(){
         '<div style="font-size:.72rem;color:var(--t3);">'+g.class+' · '+subjects.length+' subjects</div>'+
       '</div>'+
       '<div style="text-align:right;">'+
-        '<div style="font-size:1.3rem;font-weight:900;color:var(--gold);">'+avgScore+'%</div>'+
+        '<div style="font-size:1.3rem;font-weight:900;color:var(--gold);">'+RSMSAssessment.formatPercent(summary.percent)+'</div>'+
         '<div style="font-size:.65rem;color:var(--t3);">Average</div>'+
       '</div>';
     div.appendChild(hdr);
     // Subject rows
     subjects.forEach(function(s){
-      var total=parseInt(s.total||0)||(parseInt(s.ca1||0)+parseInt(s.ca2||0)+parseInt(s.exam||0));
-      var g2=gradeResult(total);
+      var view=RSMSAssessment.viewRecord(s),total=view.total;
+      var g2=view.percent===null?'—':gradeResult(view.percent);
       var row=document.createElement('div');
       row.style.cssText='display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);';
       row.innerHTML=
         '<div>'+
           '<div style="font-size:.85rem;font-weight:600;color:var(--t1);">'+s.subject+'</div>'+
-          '<div style="font-size:.68rem;color:var(--t3);">CA1: '+(s.ca1||0)+' · CA2: '+(s.ca2||0)+' · Exam: '+(s.exam||0)+'</div>'+
+          '<div style="font-size:.68rem;color:var(--t3);">'+(view.error||view.fields.map(function(f){return {ca1:'T1',ca2:'T2',ca3:'T3',exam:'Exam'}[f]+': '+(view.values[f]===null?'—':view.values[f]+' / '+view.scheme[f]);}).join(' · '))+'</div>'+
         '</div>'+
-        '<div style="font-weight:800;color:var(--t1);font-size:.9rem;">'+total+'</div>'+
-        '<div style="font-size:.72rem;font-weight:800;color:'+(total>=50?'var(--green)':'var(--red)')+';">'+g2+'</div>';
+        '<div style="font-weight:800;color:var(--t1);font-size:.9rem;">'+(total===null?'—':total+' / '+view.totalMax)+'</div>'+
+        '<div style="font-size:.72rem;font-weight:800;color:'+(view.percent!==null&&view.percent>=50?'var(--green)':'var(--red)')+';">'+g2+'</div>';
       div.appendChild(row);
     });
     // Print button for this term

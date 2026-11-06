@@ -525,6 +525,8 @@ select.fi option { background: var(--card); color: var(--t1); }
 
 </style>
 <script src="rsms-ai-units.js"></script>
+<script src="rsms-config.js"></script>
+<script src="rsms-assessment.js"></script>
 <script src="rsms-firebase.js"></script>
 <script src="rsms-plan-guard.js"></script>
 <script>
@@ -1189,33 +1191,26 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
         <select class="fi" id="sc-class" onchange="onScoreClassChange()" style="height:46px;"><option value="">-- Select Class --</option><option>Creche</option><option>Baby Class</option><option>Nursery 1</option><option>Nursery 2</option><option>KG 1</option><option>KG 2</option><option>Primary 1</option><option>Primary 2</option><option>Primary 3</option><option>Primary 4</option><option>Primary 5</option><option>Primary 6</option><option>JSS 1</option><option>JSS 2</option><option>JSS 3</option><option>SS 1 Science</option><option>SS 1 Commercial</option><option>SS 1 Art</option><option>SS 2 Science</option><option>SS 2 Commercial</option><option>SS 2 Art</option><option>SS 3 Science</option><option>SS 3 Commercial</option><option>SS 3 Art</option></select>
       </div>
       <div class="fg"><label>Subject *</label>
-        <select class="fi" id="sc-subject" style="height:46px;"><option value="">-- Select Class First --</option></select>
+        <select class="fi" id="sc-subject" onchange="onClassTeacherScoreContextChange()" style="height:46px;"><option value="">-- Select Class First --</option></select>
       </div>
     </div>
     <div class="f2">
       <div class="fg"><label>Term</label>
-        <select class="fi" id="sc-term" style="height:46px;">
+        <select class="fi" id="sc-term" onchange="onClassTeacherScoreContextChange()" style="height:46px;">
           <option>First Term</option><option>Second Term</option><option>Third Term</option>
         </select>
       </div>
       <div class="fg"><label>Session</label>
-        <input class="fi" id="sc-session" placeholder="2025/2026"/>
+        <input class="fi" id="sc-session" onchange="onClassTeacherScoreContextChange()" placeholder="2025/2026"/>
       </div>
     </div>
     <button class="btn btn-teal btn-sm" onclick="loadScoreTable()">&#128203; Load Students</button>
   </div>
+  <div id="sc-scheme-note" role="status" style="font-size:.78rem;color:var(--t3);margin:8px 0;"></div>
   <div id="sc-table-wrap" style="display:none;">
     <div class="card" style="padding:0;overflow-x:auto;">
       <table class="tbl" id="sc-table">
-        <thead>
-          <tr>
-            <th style="min-width:140px;">Student</th>
-            <th>CA 1<br/><span style="font-weight:400;font-size:.65rem;">/20</span></th>
-            <th>CA 2<br/><span style="font-weight:400;font-size:.65rem;">/20</span></th>
-            <th>Exam<br/><span style="font-weight:400;font-size:.65rem;">/60</span></th>
-            <th>Total</th>
-          </tr>
-        </thead>
+        <thead id="sc-thead"></thead>
         <tbody id="sc-tbody"></tbody>
       </table>
     </div>
@@ -2292,6 +2287,16 @@ function populateScoreClasses(){
   }
 }
 
+var ctScoreRows={},ctScoreActive=null;
+function onClassTeacherScoreContextChange(){
+  ctScoreRows={};ctScoreActive=null;
+  var wrap=document.getElementById('sc-table-wrap');if(wrap)wrap.style.display='none';
+}
+function ctScoreValues(id){
+  var row=ctScoreRows[id],values={};
+  if(row){RSMSAssessment.fields(row.scheme).forEach(function(f){var el=document.getElementById(f+'_'+id);values[f]=el?el.value:'';});values.assessment=RSMSAssessment.copy(row.scheme);}
+  return values;
+}
 function loadScoreTable(){
   var cls   = (document.getElementById('sc-class')||{}).value||'';
   var subj  = (document.getElementById('sc-subject')||{}).value||'';
@@ -2299,103 +2304,90 @@ function loadScoreTable(){
   var sess  = (document.getElementById('sc-session')||{value:''}).value||'2025/2026';
   if(!cls){toast('Select a class first','error');return;}
   if(!subj){toast('Select a subject','error');return;}
-
-  var students = JSON.parse(_lsget('students')||'[]')
-                  .filter(function(s){return s.class===cls;});
+  var currentScheme;
+  try{currentScheme=RSMSAssessment.forSchool(JSON.parse(localStorage.getItem('rsms_school')||'{}'));}catch(e){toast(e.message,'error');return;}
+  var parsed=JSON.parse(_lsget('students')||'[]');
+  var students=(Array.isArray(parsed)?parsed.filter(Boolean):Object.values(parsed).filter(Boolean)).filter(function(s){return s.class===cls;});
   if(!students.length){toast('No students found for '+cls,'error');return;}
-
-  var scoreKey = _scoreKey(cls,term,sess);
-  var saved = JSON.parse(localStorage.getItem(scoreKey)||'{}');
-
-  var tbody = document.getElementById('sc-tbody'); if(!tbody)return;
-  tbody.innerHTML='';
+  var scoreKey=_scoreKey(cls,term,sess);
+  var legacy='rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
+  var saved=JSON.parse(localStorage.getItem(scoreKey)||localStorage.getItem(legacy)||'{}');
+  ctScoreRows={};ctScoreActive={cls:cls,subj:subj,term:term,sess:sess};
+  var schemes=[currentScheme];
   students.forEach(function(s){
-    var name=(s.surname||'')+' '+(s.firstname||'');
     var key=s.id+'_'+subj.replace(/\s+/g,'_');
-    var ex = saved[key]||{ca1:'',ca2:'',exam:''};
-    var tr=document.createElement('tr');
-    // Build cells safely with DOM
-    var td0=document.createElement('td');
-    td0.style.cssText='font-weight:700;font-size:.88rem;padding:8px 4px;min-width:120px;';
-    td0.innerHTML=name+'<div style="font-size:.65rem;color:var(--t3);">'+s.reg+'</div>';
-    tr.appendChild(td0);
-    var prevTotal=(ex.ca1&&ex.ca2&&ex.exam)?parseInt(ex.ca1||0)+parseInt(ex.ca2||0)+parseInt(ex.exam||0):0;
-    ['ca1','ca2','exam'].forEach(function(field){
-      var td=document.createElement('td');
-      var inp=document.createElement('input');
-      inp.type='number'; inp.className='fi score-inp';
-      inp.style.cssText='height:44px;width:72px;font-size:1rem;font-weight:700;text-align:center;padding:0 6px;background:var(--card2,#1e2545);border:2px solid var(--gold,#d4a843);border-radius:8px;color:var(--t1,#f0f6ff);-webkit-appearance:none;-moz-appearance:textfield;outline:none;';
-      inp.id=field+'_'+s.id; inp.value=ex[field]||'';
-      inp.min='0'; inp.max=field==='exam'?'60':'20';
-      inp.setAttribute('data-sid',s.id);
-      inp.setAttribute('inputmode','numeric');
-      inp.setAttribute('pattern','[0-9]*');
-      inp.setAttribute('autocomplete','off');
-      inp.oninput=function(){
-        this.value=this.value.replace(/[^0-9]/g,'');
-        calcRowTotal(this.getAttribute('data-sid'));
-      };
-      inp.onfocus=function(){ this.select(); };
-      td.appendChild(inp); tr.appendChild(td);
-    });
-    var tdT=document.createElement('td');
-    var spanT=document.createElement('span');
-    spanT.id='tot_'+s.id; spanT.style.cssText='font-weight:900;color:var(--gold);font-size:1rem;';
-    spanT.textContent=prevTotal>0?prevTotal:'--';
-    tdT.appendChild(spanT); tr.appendChild(tdT);
-    tbody.appendChild(tr);
+    var record=saved[key]||Object.values(saved).find(function(e){return e&&e.stuId===s.id&&e.subject===subj;})||null;
+    var scheme;
+    try{scheme=record?RSMSAssessment.forRecord(record):RSMSAssessment.copy(currentScheme);}catch(e){toast(e.message,'error');return;}
+    ctScoreRows[s.id]={key:key,record:record,scheme:scheme,student:s};schemes.push(scheme);
   });
-
-  var wrap = document.getElementById('sc-table-wrap');
-  if(wrap) wrap.style.display='block';
+  var fields=RSMSAssessment.unionFields(schemes);
+  document.getElementById('sc-thead').innerHTML='<tr><th style="min-width:140px;">Student</th>'+fields.map(function(f){
+    var maxima=schemes.map(function(c){return c[f]||0;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;});
+    return '<th>'+({ca1:'T1 / CA 1',ca2:'T2 / CA 2',ca3:'T3 / CA 3',exam:'Exam'}[f])+'<br><span style="font-weight:400;font-size:.65rem;">'+(maxima.length===1?'max '+maxima[0]:'max per row')+'</span></th>';
+  }).join('')+'<th>Total</th></tr>';
+  var tbody=document.getElementById('sc-tbody');tbody.innerHTML='';
+  students.forEach(function(s){
+    var row=ctScoreRows[s.id];if(!row)return;
+    var ex=row.record||{},tr=document.createElement('tr'),td0=document.createElement('td');
+    td0.style.cssText='font-weight:700;font-size:.88rem;padding:8px 4px;min-width:120px;';
+    td0.textContent=((s.surname||'')+' '+(s.firstname||'')).trim();
+    var reg=document.createElement('div');reg.style.cssText='font-size:.65rem;color:var(--t3);';reg.textContent=s.reg||'';td0.appendChild(reg);tr.appendChild(td0);
+    fields.forEach(function(field){
+      var td=document.createElement('td'),inp=document.createElement('input');
+      inp.type='number';inp.className='fi score-inp';inp.id=field+'_'+s.id;
+      inp.style.cssText='height:44px;width:72px;font-size:1rem;font-weight:700;text-align:center;padding:0 6px;background:var(--card2,#1e2545);border:2px solid var(--gold,#d4a843);border-radius:8px;color:var(--t1,#f0f6ff);-webkit-appearance:none;-moz-appearance:textfield;outline:none;';
+      if(RSMSAssessment.fields(row.scheme).indexOf(field)<0){inp.disabled=true;inp.placeholder='—';}
+      else{
+        inp.value=ex[field]==null?'':ex[field];inp.min='0';inp.max=String(row.scheme[field]);inp.step='1';
+        inp.placeholder='0–'+row.scheme[field];inp.title=RSMSAssessment.describe(row.scheme);inp.setAttribute('aria-label',inp.title+' '+field);
+        inp.setAttribute('data-sid',s.id);inp.setAttribute('inputmode','numeric');inp.setAttribute('autocomplete','off');
+        inp.oninput=function(){calcRowTotal(this.getAttribute('data-sid'));};inp.onfocus=function(){this.select();};
+      }
+      td.appendChild(inp);tr.appendChild(td);
+    });
+    var tdT=document.createElement('td'),spanT=document.createElement('span');spanT.id='tot_'+s.id;
+    spanT.style.cssText='font-weight:900;color:var(--gold);font-size:1rem;';tdT.appendChild(spanT);tr.appendChild(tdT);
+    tbody.appendChild(tr);calcRowTotal(s.id);
+  });
+  document.getElementById('sc-scheme-note').textContent='New rows: '+RSMSAssessment.describe(currentScheme)+'. Existing rows retain their saved scheme. * = incomplete; blank rows are left unchanged.';
+  document.getElementById('sc-table-wrap').style.display='block';
   toast('Loaded '+students.length+' students for '+subj,'success');
 }
-
 function calcRowTotal(stuId){
-  var ca1=parseInt((document.getElementById('ca1_'+stuId)||{}).value||0)||0;
-  var ca2=parseInt((document.getElementById('ca2_'+stuId)||{}).value||0)||0;
-  var exam=parseInt((document.getElementById('exam_'+stuId)||{}).value||0)||0;
-  var totEl=document.getElementById('tot_'+stuId);
-  if(totEl) totEl.textContent = ca1+ca2+exam>0 ? ca1+ca2+exam : '--';
+  var out=document.getElementById('tot_'+stuId);if(!out)return;
+  var view=RSMSAssessment.viewRecord(ctScoreValues(stuId));
+  out.textContent=view.error?'Invalid':(view.total===null?'--':view.total+(view.complete?'':'*'));
 }
-
 function saveTeacherScores(){
-  var cls  = (document.getElementById('sc-class')||{}).value||'';
-  var subj = (document.getElementById('sc-subject')||{}).value||'';
-  var term = (document.getElementById('sc-term')||{}).value||'First Term';
-  var sess = (document.getElementById('sc-session')||{value:''}).value||'2025/2026';
-  if(!cls||!subj){toast('Select class and subject first','error');return;}
-
-  var students = JSON.parse(_lsget('students')||'[]')
-                  .filter(function(s){return s.class===cls;});
-  if(!students.length){toast('Load students first','error');return;}
-
-  var scoreKey=_scoreKey(cls,term,sess);
-  var saved=JSON.parse(localStorage.getItem(scoreKey)||'{}');
-  var me=RSMS.user?RSMS.user():{};
-  var count=0;
-
-  students.forEach(function(s){
-    var key=s.id+'_'+subj.replace(/\s+/g,'_');
-    var ca1=(document.getElementById('ca1_'+s.id)||{}).value||'';
-    var ca2=(document.getElementById('ca2_'+s.id)||{}).value||'';
-    var exam=(document.getElementById('exam_'+s.id)||{}).value||'';
-    if(ca1||ca2||exam){
-      saved[key]={
-        stuId:s.id, student:(s.surname||'')+' '+(s.firstname||''),
-        class:cls, subject:subj, term:term, session:sess,
-        ca1:parseInt(ca1)||0, ca2:parseInt(ca2)||0, exam:parseInt(exam)||0,
-        total:(parseInt(ca1)||0)+(parseInt(ca2)||0)+(parseInt(exam)||0),
-        enteredBy:me.name||'Teacher', enteredById:me.id||'',
-        enteredByRole:'teacher',
-        savedAt:new Date().toISOString()
-      };
-      count++;
-    }
-  });
-
-  localStorage.setItem(scoreKey,JSON.stringify(saved)); localStorage.setItem('rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_'),JSON.stringify(saved));
-  toast('\u2705 Saved scores for '+count+' students in '+subj,'success');
+  if(!ctScoreActive){toast('Load students first','error');return;}
+  var c=ctScoreActive;
+  if(c.cls!==(document.getElementById('sc-class')||{}).value||c.subj!==(document.getElementById('sc-subject')||{}).value||c.term!==(document.getElementById('sc-term')||{}).value||c.sess!==(document.getElementById('sc-session')||{}).value){toast('Selection changed. Load students again.','error');return;}
+  var published=_get('published_results','{}');
+  if(published[c.cls]&&published[c.cls][c.term]){toast('Published results are locked.','error');return;}
+  var scoreKey=_scoreKey(c.cls,c.term,c.sess),legacy='rsms_scores_'+c.cls.replace(/\s+/g,'_')+'_'+c.term.replace(/\s+/g,'_')+'_'+c.sess.replace('/','_');
+  var saved=JSON.parse(localStorage.getItem(scoreKey)||localStorage.getItem(legacy)||'{}'),updates={},count=0;
+  var me=RSMS.user?RSMS.user():{},ids=Object.keys(ctScoreRows);
+  for(var i=0;i<ids.length;i++){
+    var id=ids[i],row=ctScoreRows[id],values=ctScoreValues(id);
+    if(!RSMSAssessment.hasScores(values,row.scheme))continue;
+    if(row.record&&RSMSAssessment.fields(row.scheme).every(function(f){return String(values[f]==null?'':values[f])===String(row.record[f]==null?'':row.record[f]);}))continue;
+    var errors=RSMSAssessment.validateScores(values,row.scheme,true);
+    if(errors.length){toast((row.student.surname||id)+': '+errors.join(' '),'error');return;}
+    var record;
+    try{record=row.record?RSMSAssessment.updateRecord(row.record,values):RSMSAssessment.createRecord({stuId:id,student:((row.student.surname||'')+' '+(row.student.firstname||'')).trim(),class:c.cls,subject:c.subj,term:c.term,session:c.sess},values,row.scheme);}
+    catch(e){toast(e.message,'error');return;}
+    record.enteredBy=me.name||'Class Teacher';record.enteredById=me.id||'';record.enteredByRole='teacher';record.savedAt=new Date().toISOString();
+    updates[row.key]=record;count++;
+  }
+  if(!count){toast('No complete score rows to save','info');return;}
+  Object.keys(updates).forEach(function(k){saved[k]=updates[k];});
+  var ok=true;
+  if(typeof RSMS_FB!=='undefined'&&typeof RSMS_FB.saveScores==='function')ok=RSMS_FB.saveScores(c.cls,c.term,c.sess,saved)!==false;
+  else{var json=JSON.stringify(saved);localStorage.setItem(scoreKey,json);localStorage.setItem(legacy,json);}
+  if(!ok){toast('Scores are locked or could not be saved','error');return;}
+  Object.keys(updates).forEach(function(k){var row=ctScoreRows[updates[k].stuId];if(row)row.record=updates[k];});
+  toast('Saved scores for '+count+' students in '+c.subj,'success');
 }
 
 

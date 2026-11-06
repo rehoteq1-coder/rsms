@@ -254,6 +254,7 @@ html,body{min-height:100%;font-family:var(--sans);background:var(--bg);color:var
 
 </div>
 
+<script src="rsms-assessment.js"></script>
 <script>
 // ── HELPERS ──────────────────────────────────────────────
 function _sid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
@@ -491,33 +492,34 @@ function renderScoresTab(){
 
   // Gather scores from all classes or selected class
   var targetClasses=cls?[cls]:Object.keys(classes);
-  var subjectTotals={};
-  var subjectCounts={};
-  var studentScores={};
-
+  var subjectRecords={},studentRecords={},allRecords=[],studentScores={};
   targetClasses.forEach(function(c){
-    var scoreKey='rsms_scores_'+c.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
-    var saved=JSON.parse(localStorage.getItem(scoreKey)||'{}');
-    // saved = {studentId: {subject: score}}
-    Object.keys(saved).forEach(function(stuId){
-      var scores=saved[stuId];
-      var total=0; var count=0;
-      Object.keys(scores).forEach(function(subj){
-        var sc=parseFloat(scores[subj]||0);
-        subjectTotals[subj]=(subjectTotals[subj]||0)+sc;
-        subjectCounts[subj]=(subjectCounts[subj]||0)+1;
-        total+=sc; count++;
-      });
-      if(count>0){
-        var stu=students.find(function(s){ return s.id===stuId; });
-        if(stu) studentScores[stuId]={name:(stu.surname||'')+' '+(stu.firstname||''),cls:stu.class,avg:total/count,total:total,count:count};
+    var suffix=c.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
+    var scoped=_sid()?'rsms_'+_sid()+'_scores_'+suffix:null;
+    var saved=JSON.parse((scoped&&localStorage.getItem(scoped))||localStorage.getItem('rsms_scores_'+suffix)||'{}');
+    Object.keys(saved).forEach(function(key){
+      var entry=saved[key],records=[];
+      if(entry&&entry.subject&&entry.stuId)records.push(entry);
+      else if(entry&&typeof entry==='object'){
+        // Legacy flattened {studentId: {subject: total}} records.
+        Object.keys(entry).forEach(function(subj){if(typeof entry[subj]==='number'||typeof entry[subj]==='string')records.push({stuId:key,subject:subj,total:entry[subj]});});
       }
+      records.forEach(function(record){
+        var view=RSMSAssessment.viewRecord(record);if(view.error||view.percent===null)return;
+        (subjectRecords[record.subject]=subjectRecords[record.subject]||[]).push(record);
+        (studentRecords[record.stuId]=studentRecords[record.stuId]||[]).push(record);
+        allRecords.push(record);
+      });
     });
   });
-
-  var subjKeys=Object.keys(subjectTotals);
-  var avgScores=subjKeys.map(function(s){ return Math.round(subjectTotals[s]/subjectCounts[s]); });
-  var overallAvg=avgScores.length?Math.round(avgScores.reduce(function(a,b){return a+b;},0)/avgScores.length):0;
+  Object.keys(studentRecords).forEach(function(stuId){
+    var stu=students.find(function(s){return s.id===stuId;}),summary=RSMSAssessment.summarize(studentRecords[stuId]);
+    if(stu&&summary.percent!==null)studentScores[stuId]={name:(stu.surname||'')+' '+(stu.firstname||''),cls:stu.class,avg:summary.percent,total:summary.total,count:summary.count};
+  });
+  var subjKeys=Object.keys(subjectRecords);
+  var avgScores=subjKeys.map(function(s){var p=RSMSAssessment.summarize(subjectRecords[s]).percent;return p===null?0:Math.round(p);});
+  var overall=RSMSAssessment.summarize(allRecords).percent;
+  var overallAvg=overall===null?0:Math.round(overall);
   var stuArr=Object.values(studentScores).sort(function(a,b){ return b.avg-a.avg; });
   var top10=stuArr.slice(0,10);
   var low=stuArr.filter(function(s){ return s.avg<40; });
@@ -531,7 +533,7 @@ function renderScoresTab(){
   // Subject averages chart
   if(subjKeys.length){
     makeChart('chart-subjects',{type:'bar',data:{labels:subjKeys,
-      datasets:[{label:'Avg Score',data:avgScores,
+      datasets:[{label:'Avg %',data:avgScores,
       backgroundColor:avgScores.map(function(s){ return s>=50?'#22c55e':s>=40?'#d4a843':'#f43f5e'; }),borderRadius:6}]},
       options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100,ticks:{callback:function(v){ return v+'%'; }}}}}});
   }
