@@ -1870,9 +1870,14 @@ function initScorePage(){
   if(el && !el.value) el.value = school.session||'2025/2026';
   var termEl = document.getElementById('sc-term');
   if(termEl && school.term) termEl.value = school.term;
-  // Pre-select teacher's class if set
+  // Pre-select teacher's class if set — class teachers are locked to their own class
   var clsSel = document.getElementById('sc-class');
-  if(clsSel && MY_CLASS) clsSel.value = MY_CLASS;
+  if(clsSel && MY_CLASS){
+    var _has=false;
+    for(var _i=0;_i<clsSel.options.length;_i++){ if(clsSel.options[_i].value===MY_CLASS){_has=true;break;} }
+    if(!_has){ var _o=document.createElement('option'); _o.value=MY_CLASS; _o.textContent=MY_CLASS; clsSel.appendChild(_o); }
+    clsSel.value=MY_CLASS; clsSel.disabled=true; clsSel.title='Locked to your class';
+  }
   onScoreClassChange();
 }
 

@@ -1925,6 +1925,14 @@ function preSelectClass(selId){
   }
 }
 
+function lockMyClassSelect(selId){
+  var sel=document.getElementById(selId); if(!sel||!MY_CLASS)return;
+  var has=false;
+  for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===MY_CLASS){has=true;break;} }
+  if(!has){ var o=document.createElement('option'); o.value=MY_CLASS; o.textContent=MY_CLASS; sel.appendChild(o); }
+  sel.value=MY_CLASS; sel.disabled=true; sel.title='Locked to your class';
+}
+
 // LP
 function onLPClassChange(){
   var cls = (document.getElementById('lp-class')||{}).value||'';
@@ -1932,6 +1940,7 @@ function onLPClassChange(){
 }
 function initLessonPlanPage(){
   preSelectClass('lp-class');
+  lockMyClassSelect('lp-class');
   var cls = (document.getElementById('lp-class')||{}).value || MY_CLASS || '';
   populateSelect('lp-subject', cls);
 }
@@ -1943,6 +1952,7 @@ function onLNClassChange(){
 }
 function initLessonNotePage(){
   preSelectClass('ln-class');
+  lockMyClassSelect('ln-class');
   var cls = (document.getElementById('ln-class')||{}).value || MY_CLASS || '';
   populateSelect('ln-subject', cls);
 }
@@ -1954,6 +1964,7 @@ function onEQClassChange(){
 }
 function initExamPage(){
   preSelectClass('eq-class');
+  lockMyClassSelect('eq-class');
   var cls = (document.getElementById('eq-class')||{}).value || MY_CLASS || '';
   populateSelect('eq-subject', cls);
 }
