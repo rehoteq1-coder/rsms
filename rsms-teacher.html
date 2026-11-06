@@ -1123,6 +1123,7 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
       </div>
     </div>
     <button class="btn btn-teal btn-sm" onclick="loadScoreTable()">&#128203; Load Students</button>
+    <div id="sc-subject-progress" role="status" style="font-size:.78rem;color:var(--t3);margin-top:10px;"></div>
   </div>
   <div class="card" style="margin-bottom:12px;">
     <strong>Bulk scores (CSV / Excel)</strong>
@@ -1881,6 +1882,38 @@ function initScorePage(){
   onScoreClassChange();
 }
 
+
+function updateScoreSubjectProgress(){
+  var prog=document.getElementById('sc-subject-progress');if(!prog)return;
+  var cls=(document.getElementById('sc-class')||{}).value||'';
+  var sel=document.getElementById('sc-subject');
+  var opts=sel?Array.from(sel.options).filter(function(o){return o.value&&o.style.display!=='none';}):[];
+  if(!cls||!opts.length){prog.textContent='';return;}
+  var term=(document.getElementById('sc-term')||{}).value||'First Term';
+  var sess=((document.getElementById('sc-session')||{}).value||'2025/2026').trim();
+  var saved={};
+  try{saved=JSON.parse(localStorage.getItem(_scoreKey(cls,term,sess))||localStorage.getItem('rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_'))||'{}');}catch(e){}
+  var filled=[];
+  Object.keys(scoreDrafts).forEach(function(id){
+    var d=scoreDrafts[id],c=d&&d.context;
+    if(c&&c.cls===cls&&c.term===term&&c.sess===sess&&d.rows&&Object.keys(d.rows).length&&filled.indexOf(c.subj)<0)filled.push(c.subj);
+  });
+  opts.forEach(function(o){
+    var subj=o.value;
+    var has=Object.keys(saved).some(function(k){
+      var r=saved[k];
+      if(!r||typeof r!=='object')return false;
+      if(r.subject!==subj&&k.indexOf('_'+subj.replace(/\s+/g,'_'))<0)return false;
+      return ['ca1','ca2','ca3','exam'].some(function(f){return r[f]!=null&&r[f]!=='';});
+    });
+    if(has)filled.push(subj);
+    o.textContent=subj+(has?' \u2713':'');
+  });
+  var total=opts.length;
+  prog.textContent=filled.length
+    ? filled.length+' of '+total+' subjects filled: '+filled.join(', ')+(filled.length<total?'. Switch subjects to continue.':' \u2014 all subjects covered.')
+    : 'No subject has scores yet for '+term+', '+sess+'. Pick a subject above, enter scores for its students, then switch to the next.';
+}
 function onScoreClassChange(){
   clearScoreImport();
   scoreActive=null;
@@ -1928,6 +1961,7 @@ function onScoreClassChange(){
   // Hide score table until Load is clicked
   var wrap = document.getElementById('sc-table-wrap');
   if(wrap) wrap.style.display='none';
+  updateScoreSubjectProgress();
 }
 
 // Drafts are kept separately for each class, term, session and subject until saved.
@@ -1944,6 +1978,7 @@ function onScorePeriodChange(){
   clearScoreImport();
   scoreActive=null;
   document.getElementById('sc-table-wrap').style.display='none';
+  updateScoreSubjectProgress();
   if(document.getElementById('sc-subject').value) loadScoreTable();
 }
 window.addEventListener('beforeunload',function(e){
@@ -2097,6 +2132,7 @@ function saveTeacherScores(){
   }catch(e){toast('Could not save scores. '+(e.message||'Please try again.'),'error');return;}
   scoreDrafts={};
   toast('Scores saved for '+ids.length+' subject selection(s).','success');
+  updateScoreSubjectProgress();
 }
 
 var scoreImportPending=null;
