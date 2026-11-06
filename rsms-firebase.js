@@ -99,6 +99,69 @@ var RSMS_FB = (function(){
     return out;
   }
 
+  var STAFF_ROLE_RULES = [
+    {test:/^admin(\s*staff)?$/i,              roles:['admin']},
+    {test:/^principal$/i,                      roles:['admin','principal']},
+    {test:/^vice\s*principal/i,                roles:['vp']},
+    {test:/^head\s*of\s*department|^hod\b/i, roles:['hod']},
+    {test:/^bursar/i,                          roles:['bursar']},
+    {test:/^class\s*teacher/i,                 roles:['classteacher','teacher']},
+    {test:/^(subject\s*)?teacher$/i,           roles:['teacher']},
+    {test:/^head\s*(mistress|master|teacher)/i, roles:['principal']}
+  ];
+
+  function _staffRolesForTitle(title){
+    var text = _cleanText(title);
+    var out = [];
+    STAFF_ROLE_RULES.forEach(function(rule){
+      if(rule.test.test(text)) rule.roles.forEach(function(role){
+        if(out.indexOf(role) === -1) out.push(role);
+      });
+    });
+    return out;
+  }
+
+  // A verified account whose Firebase claims carry no usable role falls back to
+  // the staff records of the school it is working in: the same source the legacy
+  // PIN flow trusts. Roles are derived from the matching staff record's title.
+  function _deriveStaffRoles(schoolId, email){
+    var wanted = _cleanText(email).toLowerCase();
+    if(!schoolId || !wanted || !_db) return Promise.resolve([]);
+    return _db.ref('schools/'+schoolId+'/staff').once('value').then(function(snap){
+      var rows = snap.val() || {};
+      var roles = [];
+      Object.keys(rows).forEach(function(key){
+        var rec = rows[key];
+        if(!rec || typeof rec !== 'object') return;
+        if(_cleanText(rec.email).toLowerCase() !== wanted) return;
+        _staffRolesForTitle(rec.role).forEach(function(role){
+          if(roles.indexOf(role) === -1) roles.push(role);
+        });
+      });
+      return roles;
+    }).catch(function(){ return []; });
+  }
+
+  function _applyStaffRoles(schoolId, email){
+    return _deriveStaffRoles(schoolId, email).then(function(derived){
+      if(derived.length){
+        var session = _session();
+        var merged = _claimList((session.roles||[]).concat(derived), true);
+        if(merged.length){
+          session.roles = merged;
+          session.roleMap = merged;
+          session.role = merged[0] || session.role || '';
+          try { sessionStorage.setItem('rsms_user', JSON.stringify(session)); }catch(e){}
+          _fireAuthChanged(session);
+          _scheduleAuthGuard();
+        }
+      }
+      return derived;
+    });
+  }
+
+  var _staffFallbackTried = false;
+
   function _session(){
     return _safeJson(sessionStorage.getItem('rsms_user'), {}) || {};
   }
@@ -170,11 +233,14 @@ var RSMS_FB = (function(){
       sessionStorage.setItem('rsms_real_auth', 'true');
     }catch(e){}
     _ensureAuthSchool(selectedSchool);
+    _staffFallbackTried = false;
+    if(!roles.length && selectedSchool && user.email) _applyStaffRoles(selectedSchool, user.email);
     _fireAuthChanged(session);
     _scheduleAuthGuard();
   }
 
   function _clearAuthSession(force){
+    _staffFallbackTried = false;
     var wasReal = false;
     try { wasReal = force || sessionStorage.getItem('rsms_real_auth') === 'true'; }catch(e){}
     _authClaims = {};
@@ -325,7 +391,17 @@ var RSMS_FB = (function(){
         _removeAuthBlock();
         return true;
       }
-      _showAuthBlock('Access denied', 'This verified account does not have the '+_titleCase(requiredRole)+' role required for this portal.');
+      var staffSchool = session.schoolId || _sid;
+      if(!_staffFallbackTried && session.email && staffSchool){
+        _staffFallbackTried = true;
+        _applyStaffRoles(staffSchool, session.email).then(function(derived){
+          if(derived.indexOf(requiredRole) === -1 && derived.indexOf('superadmin') === -1){
+            _showAuthBlock('Access denied', 'This verified account does not have the '+_titleCase(requiredRole)+' role required for this portal.');
+          }
+        });
+      }else{
+        _showAuthBlock('Access denied', 'This verified account does not have the '+_titleCase(requiredRole)+' role required for this portal.');
+      }
       return false;
     }
     if(sessionStorage.getItem('rsms_auth') === 'true' && FINANCE_ROLES.indexOf(requiredRole) > -1 && authEnforced(session.schoolId || _sid)){
