@@ -382,8 +382,22 @@ var RSMS_FB = (function(){
       });
       var oldScores = _db.ref('schools/'+previousSid+'/score_entries');
       if(oldScores && typeof oldScores.off === 'function') oldScores.off('value');
+      var oldAssessment = _db.ref('schools/'+previousSid+'/info/assessment');
+      if(oldAssessment && typeof oldAssessment.off === 'function') oldAssessment.off('value');
     }
     _listeningSid = listenSid;
+    // School settings are shared, but only the assessment leaf is cached here;
+    // never replace unrelated local school/session fields from this listener.
+    _db.ref('schools/'+listenSid+'/info/assessment').on('value', function(snap){
+      if(_sid !== listenSid) return;
+      var val=snap.val(); if(val===null) return;
+      try{
+        var scheme=RSMSAssessment.forSchool({assessment:val});
+        _cacheAssessment(listenSid,scheme);
+        var handler=window.onFirebaseUpdate_assessment;
+        if(typeof handler==='function') handler(scheme);
+      }catch(e){ console.warn('RSMS ignored invalid assessment settings:',e.message); }
+    }, function(err){ });
     keys.forEach(function(key){
       _db.ref('schools/'+listenSid+'/'+key).on('value', function(snap){
         if(_sid !== listenSid) return;
@@ -452,6 +466,34 @@ var RSMS_FB = (function(){
     if(_sid) _write('schools/'+_sid+'/'+key, data);
   }
 
+  function _cacheAssessment(schoolId,scheme){
+    try{
+      var school=JSON.parse(localStorage.getItem('rsms_school')||'{}')||{};
+      if(!school.schoolId || school.schoolId===schoolId){
+        school.assessment=RSMSAssessment.copy(scheme);
+        localStorage.setItem('rsms_school',JSON.stringify(school));
+      }
+      var scoped=JSON.parse(localStorage.getItem('rsms_'+schoolId+'_school')||'{}')||{};
+      scoped.assessment=RSMSAssessment.copy(scheme);
+      localStorage.setItem('rsms_'+schoolId+'_school',JSON.stringify(scoped));
+    }catch(e){}
+  }
+  /* Change only future entry settings. This writes one leaf and returns the
+     Firebase acknowledgement; it never rewrites score_entries or students. */
+  function saveAssessment(config){
+    var errors=RSMSAssessment.validate(config);
+    if(errors.length) return Promise.reject(new Error(errors.join(' ')));
+    if(!_sid) return Promise.reject(new Error('Select a school before saving its assessment scheme.'));
+    if(typeof window!=='undefined' && window.RSMS_LOCAL && window.RSMS_LOCAL.mode==='lan')
+      return Promise.reject(new Error('The offline appliance does not sync assessment schemes yet. Save this scheme from the cloud admin portal.'));
+    if(!_ready||!_db) return Promise.reject(new Error('Assessment settings need a Firebase connection. Other settings were saved on this device; reconnect and save the scheme again.'));
+    var schoolId=_sid, scheme=RSMSAssessment.copy(config);
+    return _db.ref('schools/'+schoolId+'/info/assessment').set(scheme).then(function(){
+      _cacheAssessment(schoolId,scheme);
+      return scheme;
+    });
+  }
+
   function saveScores(cls, term, sess, data){
 
     // RESULT SECURITY: no score edits once results for this class+term are published
@@ -460,7 +502,7 @@ var RSMS_FB = (function(){
     var _pub = {}; try{ _pub = JSON.parse(_pubRaw||'{}'); }catch(e){}
     if(_pub && _pub[cls] && _pub[cls][term]){
       try{ if(typeof toast==='function') toast('Results for '+cls+' ('+term+') are already published. Scores are locked.','error'); }catch(e){}
-      return;
+      return false;
     }
     // Write to both scoped and unscoped score localStorage keys
     var json = JSON.stringify(data);
@@ -469,6 +511,7 @@ var RSMS_FB = (function(){
     // Write to Firebase under score_entries
     var fbKey = _fbScoreKey(cls,term,sess);
     if(_sid) _write('schools/'+_sid+'/score_entries/'+fbKey, data);
+    return true; // accepted locally (and sent/queued); callers must not discard drafts on a lock refusal
   }
 
   function saveCTRemarks(data){
@@ -768,6 +811,7 @@ var RSMS_FB = (function(){
     saveFees:         saveFees,
     saveCollection:   saveCollection,
     saveScores:       saveScores,
+    saveAssessment:   saveAssessment,
     saveCTRemarks:    saveCTRemarks,
     saveFeeSchedule:  saveFeeSchedule,
     saveStreamConfig: saveStreamConfig,

@@ -373,3 +373,27 @@ rules, fix provisioning, and re-run the checklist.
 - `docs/offline-design.md` is design-only and not part of this deployment.
 - `rsms-config.js` is committed and contains only public Firebase web-client
   identifiers (API key, project id, database URL) — no secrets.
+
+## Assessment-scheme rollout (static portals)
+
+The configurable T1/T2/T3 + Exam feature is a **static portal + service-worker**
+change, not a Cloud Functions or RTDB-rules change. See `docs/assessment.md` for
+the data contract, tests, and the read-only `REH-2J8KQ2XF` roster-backup procedure.
+
+Before deploying, run from the repo root:
+
+```bash
+npm ci
+npm test
+npm run test:workflow
+npm run test:dom-checks
+npm run check:syntax
+npm ci --prefix offline
+npm test --prefix offline
+```
+
+Deploy the changed root `rsms-*.html`/`rsms-*.js` files and `sw.js` with the normal
+static-site process. The cache name is `rsms-v3.2.0-assessment`. Do not migrate or
+rewrite `score_entries`; historical records keep their legacy/saved scheme.
+The offline LAN appliance does **not** yet sync `info/assessment`; the admin portal
+now refuses that write in LAN mode instead of silently bypassing the adapter.

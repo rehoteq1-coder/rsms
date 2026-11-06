@@ -2,13 +2,15 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
+require('../rsms-assessment.js');
+const A=globalThis.RSMSAssessment;
 const html = fs.readFileSync('rsms-teacher.html', 'utf8');
 function setup() {
   const elements = {};
   const data = {};
   const localStorage = {getItem:k=>data[k] || null, setItem:(k,v)=>{data[k]=v;}};
   const ctx = { document:{getElementById:id=>elements[id]}, window:{addEventListener(){}}, localStorage,
-    RSMS:{user:()=>({name:'Teacher'})}, toast:()=>{}, _scoreKey:(c,t,s)=>`scoped_${c}_${t}_${s}`,
+    RSMSAssessment:A, RSMS:{user:()=>({name:'Teacher'})}, toast:()=>{}, _scoreKey:(c,t,s)=>`scoped_${c}_${t}_${s}`,
     _get:()=>({}), JSON, Object, Number, Date };
   vm.createContext(ctx);
   const start=html.indexOf('var scoreDrafts = {}');
@@ -19,7 +21,7 @@ function setup() {
 test('switching subjects retains drafts and saves them together without removing other scores',()=>{
   const {ctx,elements,data}=setup();
   data.scoped_Primary = '';
-  const first={cls:'Primary 1',term:'First Term',sess:'2025/2026',subj:'Mathematics'};
+  const first={cls:'Primary 1',term:'First Term',sess:'2025/2026',subj:'Mathematics',scheme:A.legacy()};
   const key=ctx._scoreKey(first.cls,first.term,first.sess);
   data[key]=JSON.stringify({'old_English':{subject:'English',total:50}});
   elements.ca1_1={value:'0'}; elements.ca2_1={value:'15'}; elements.exam_1={value:'50'};
@@ -35,7 +37,7 @@ test('switching subjects retains drafts and saves them together without removing
 });
 test('invalid or published scores are not saved and drafts remain',()=>{
   const {ctx,elements,data}=setup();
-  ctx.scoreActive={cls:'Primary 1',term:'First Term',sess:'2025/2026',subj:'Math'};
+  ctx.scoreActive={cls:'Primary 1',term:'First Term',sess:'2025/2026',subj:'Math',scheme:A.legacy()};
   elements.ca1_1={value:'21'}; elements.ca2_1={value:'0'}; elements.exam_1={value:'0'};
   ctx.recordScoreDraft({id:'1'}); ctx.saveTeacherScores();
   assert.equal(Object.keys(data).length,0); assert.equal(Object.keys(ctx.scoreDrafts).length,1);

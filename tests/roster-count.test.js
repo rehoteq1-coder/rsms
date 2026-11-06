@@ -34,3 +34,30 @@ test('admin startup does not write cached rosters to the database as a reconcili
  assert.doesNotMatch(startup,/unscopedLen\s*>\s*scopedLen/);
  assert.match(html,/function checkStudentRosterCounts\(\)/);
 });
+test('diagnoses the reported 2-vs-18 mismatch without changing either roster',()=>{
+ const local=[{id:'a',surname:'Ada'},{id:'b',surname:'Ben'}];
+ const remote=Array.from({length:18},(_,i)=>({id:'s'+i,surname:'Student'}));
+ remote.push({id:'s0',surname:'Duplicate'},{id:'no-name',surname:' '});
+ const beforeLocal=JSON.stringify(local),beforeRemote=JSON.stringify(remote);
+ const d=R.diagnose(local,remote,'students');
+ assert.equal(d.local.valid,2);assert.equal(d.database.valid,19);
+ assert.equal(d.database.duplicateIds.length,1);assert.equal(d.database.invalid,1);
+ assert.equal(d.missingFromLocal.length,18);assert.equal(d.extraInLocal.length,2);
+ assert.equal(JSON.stringify(local),beforeLocal);assert.equal(JSON.stringify(remote),beforeRemote);
+});
+test('offline backup checker recomputes counts and never rewrites the backup',()=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),cp=require('node:child_process');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'rsms-roster-'));
+ const file=path.join(dir,'backup.json');
+ const backup={format:'rsms-roster-backup-v1',readOnly:true,schoolId:'REH-2J8KQ2XF',capturedAt:'2026-11-06T00:00:00Z',
+   databasePath:'schools/REH-2J8KQ2XF/students',dashboardCount:2,
+   local:[{id:'a',surname:'A'},{id:'b',surname:'B'}],
+   database:Object.fromEntries(Array.from({length:18},(_,i)=>['s'+i,{id:'s'+i,surname:'S'}]))};
+ fs.writeFileSync(file,JSON.stringify(backup));const before=fs.readFileSync(file,'utf8');
+ const run=cp.spawnSync(process.execPath,[path.join(__dirname,'..','tools','roster-backup-check.js'),file,'--json'],{encoding:'utf8'});
+ assert.equal(run.status,1);const report=JSON.parse(run.stdout);
+ assert.equal(report.diagnosis.local.valid,2);assert.equal(report.diagnosis.database.valid,18);
+ assert.equal(report.diagnosis.missingFromLocal.length,18);assert.equal(report.matches,false);
+ assert.equal(fs.readFileSync(file,'utf8'),before);
+ fs.rmSync(dir,{recursive:true,force:true});
+});

@@ -4,7 +4,7 @@
     Domain:   rsms.rehoteq.com (root paths, no prefix)
     ═══════════════════════════════════════════════════════ */
 
-var CACHE_NAME = 'rsms-v3.1.2';
+var CACHE_NAME = 'rsms-v3.2.0-assessment';
 
 var STATIC_ASSETS = [
   '/',
@@ -53,6 +53,7 @@ var STATIC_ASSETS = [
   '/rsms-notifications.js',
   '/rsms-plan-guard.js',
   '/rsms-subjects.js',
+  '/rsms-assessment.js',
   '/rsms-score-import.js',
   '/rsms-roster.js',
   '/rsms-school-detect.js',

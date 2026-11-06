@@ -387,7 +387,7 @@ var LESSON_AI = {
     return LESSON_AI.URL+'?rsms_gift='+token+'&units='+LESSON_AI.UNITS_PER_TERM+'&teacher='+email;
   },
   giftAll: function(){
-    var school=RSMS.school;
+    var school=typeof RSMS.school==='function'?RSMS.school():(RSMS.school||{});
     var term=school.term||'First Term';
     var session=school.session||'2025/2026';
     var key='gift_'+term.replace(/\s+/g,'_')+'_'+session.replace('/','_');

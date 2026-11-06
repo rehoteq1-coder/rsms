@@ -404,6 +404,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5;}
             <button class="btn btn-gold btn-full" onclick="loadOverrideScores()">Load</button>
           </div>
         </div>
+        <div class="fg" style="margin-top:12px;"><label for="override-bulk-reason">Reason for Save All Changes</label><textarea class="fi" id="override-bulk-reason" placeholder="Required audit reason for every row saved in this batch"></textarea></div>
         <div id="override-content"></div>
       </div>
     </div>
@@ -551,14 +552,11 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5;}
 
 <div class="toast-wrap"><div class="toast" id="toast"></div></div>
 
+<script src="rsms-config.js"></script>
+<script src="rsms-assessment.js"></script>
 <script>
 /* ── FIREBASE ── */
-var FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyDKkmeHjIJm1vTg9A-o_AZnhIp1f3jmG2M',
-  authDomain: 'rsms-a84ff.firebaseapp.com',
-  databaseURL: 'https://rsms-a84ff-default-rtdb.europe-west1.firebasedatabase.app',
-  projectId: 'rsms-a84ff'
-};
+var FIREBASE_CONFIG = (window.RSMS_CONFIG && window.RSMS_CONFIG.firebase) || {};
 
 /* ── HELPERS ── */
 function _sid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
@@ -1040,8 +1038,7 @@ function loadResults(){
   Object.values(scores).forEach(function(e){
     if(!e||!e.stuId) return;
     if(!stuScores[e.stuId]) stuScores[e.stuId]={};
-    var total=parseInt(e.ca1||0)+parseInt(e.ca2||0)+parseInt(e.exam||0);
-    stuScores[e.stuId][e.subject]={ca1:e.ca1,ca2:e.ca2,exam:e.exam,total:total};
+    stuScores[e.stuId][e.subject]=e;
   });
 
   var html='<div style="overflow-x:auto;"><table class="score-table">'+
@@ -1049,25 +1046,25 @@ function loadResults(){
     subjList.map(function(s){ return '<th>'+s+'</th>'; }).join('')+
     '<th>Total</th><th>Avg%</th><th>CT Remark</th></tr></thead><tbody>';
 
+  function summaryFor(id){return RSMSAssessment.summarize(Object.values(stuScores[id]||{}));}
   students.sort(function(a,b){
-    var aT=Object.values(stuScores[a.id]||{}).reduce(function(x,v){ return x+v.total; },0);
-    var bT=Object.values(stuScores[b.id]||{}).reduce(function(x,v){ return x+v.total; },0);
-    return bT-aT;
+    var aP=summaryFor(a.id).percent,bP=summaryFor(b.id).percent;
+    return (bP===null?-1:bP)-(aP===null?-1:aP);
   }).forEach(function(s,i){
-    var sScores=stuScores[s.id]||{};
-    var total=Object.values(sScores).reduce(function(a,v){ return a+v.total; },0);
-    var avg=subjList.length?Math.round(total/subjList.length):0;
+    var sScores=stuScores[s.id]||{},summary=summaryFor(s.id);
+    var total=summary.total,avg=summary.percent===null?null:Math.round(summary.percent);
     var name=(s.surname||'')+' '+(s.firstname||'');
-    var avgColor=avg>=70?'var(--green)':avg>=50?'var(--gold)':'var(--red)';
+    var avgColor=avg!==null&&avg>=70?'var(--green)':avg!==null&&avg>=50?'var(--gold)':'var(--red)';
     html+='<tr>'+
       '<td style="color:var(--t4);">'+(i+1)+'</td>'+
       '<td style="font-weight:700;">'+name+'</td>'+
       subjList.map(function(subj){
-        var sc=sScores[subj];
-        return '<td style="color:'+(sc&&sc.total>=50?'var(--t1)':'var(--red)')+';">'+(sc?sc.total:'—')+'</td>';
+        var sc=sScores[subj],v=sc?RSMSAssessment.viewRecord(sc):null;
+        var cell=!v?'—':v.error?'Invalid':v.total===null?'—':v.total+' / '+v.totalMax+(v.complete?'':'*');
+        return '<td title="'+(v&&v.scheme?RSMSAssessment.describe(v.scheme):'')+'" style="color:'+(v&&v.percent!==null&&v.percent>=50?'var(--t1)':'var(--red)')+';">'+cell+'</td>';
       }).join('')+
-      '<td style="font-weight:700;">'+total+'</td>'+
-      '<td style="font-weight:700;color:'+avgColor+';">'+avg+'%</td>'+
+      '<td style="font-weight:700;">'+total+' / '+summary.totalMax+'</td>'+
+      '<td style="font-weight:700;color:'+avgColor+';">'+RSMSAssessment.formatPercent(summary.percent)+'</td>'+
       '<td style="font-size:.72rem;color:var(--t3);">'+(ctRemarks[s.id]||'—')+'</td>'+
       '</tr>';
   });
@@ -1125,12 +1122,19 @@ function saveAllRemarks(){
 }
 
 /* ── SCORE OVERRIDE ── */
-var _pendingOverride=null;
+var _pendingOverride=null,overrideRows={};
 function loadOverridePage(){ renderOverridePage(); }
 function renderOverridePage(){
   var cls=document.getElementById('ov-class').value;
   if(!cls){ document.getElementById('override-content').innerHTML='<div class="empty"><div class="empty-ico">🔧</div><div class="empty-txt">Select a class to override scores</div></div>'; return; }
   loadOverrideScores();
+}
+function overrideValues(row){
+  var values={assessment:RSMSAssessment.copy(row.scheme)};RSMSAssessment.fields(row.scheme).forEach(function(f){values[f]=row.inputs[f]?row.inputs[f].value:'';});return values;
+}
+function overrideTotal(row){
+  var v=RSMSAssessment.viewRecord(overrideValues(row));
+  row.totalEl.textContent=v.error?'Invalid':v.total===null?'—':v.total+' / '+v.totalMax+(v.complete?'':'*');
 }
 function loadOverrideScores(){
   var cls=document.getElementById('ov-class').value; if(!cls) return;
@@ -1140,114 +1144,89 @@ function loadOverrideScores(){
   var sess=school.session||'2025/2026';
   var students=getStudents().filter(function(s){ return s.class===cls; });
   var scores=getScores(cls,term,sess);
-
-  // Build student score map
-  var stuScores={};
+  var entries=[];
   Object.keys(scores).forEach(function(k){
-    var e=scores[k]; if(!e||!e.stuId) return;
-    if(!stuScores[e.stuId]) stuScores[e.stuId]={};
-    stuScores[e.stuId][e.subject]={key:k,ca1:e.ca1||0,ca2:e.ca2||0,exam:e.exam||0};
+    var e=scores[k];if(!e||!e.stuId||!e.subject)return;
+    if(subj&&e.subject!==subj)return;
+    var student=students.find(function(s){return s.id===e.stuId;});if(!student)return;
+    var scheme;try{scheme=RSMSAssessment.forRecord(e);}catch(err){toast(err.message,'error');return;}
+    entries.push({key:k,record:e,scheme:scheme,student:student,subject:e.subject,cls:cls,term:term,sess:sess});
   });
-
-  var subjects=subj?[subj]:getSubjects().filter(function(s){
-    return Object.values(stuScores).some(function(ss){ return ss[s]; });
-  });
-
-  if(!subjects.length){ document.getElementById('override-content').innerHTML='<div class="empty"><div class="empty-ico">📊</div><div class="empty-txt">No scores found for this class</div></div>'; return; }
-
-  var html='<div style="overflow-x:auto;"><table class="score-table">'+
-    '<thead><tr><th>Student</th><th>Subject</th><th>CA1</th><th>CA2</th><th>Exam</th><th>Total</th><th>Action</th></tr></thead><tbody>';
-
-  students.forEach(function(s){
-    var sScores=stuScores[s.id]||{};
-    var name=(s.surname||'')+' '+(s.firstname||'');
-    subjects.forEach(function(subj2){
-      var sc=sScores[subj2]; if(!sc) return;
-      var total=parseInt(sc.ca1||0)+parseInt(sc.ca2||0)+parseInt(sc.exam||0);
-      html+='<tr>'+
-        '<td style="font-weight:600;">'+name+'</td>'+
-        '<td style="color:var(--gold);">'+subj2+'</td>'+
-        '<td><input type="number" min="0" max="30" value="'+sc.ca1+'" id="ov-'+s.id+'-'+subj2+'-ca1" class="score-table input"/></td>'+
-        '<td><input type="number" min="0" max="30" value="'+sc.ca2+'" id="ov-'+s.id+'-'+subj2+'-ca2" class="score-table input"/></td>'+
-        '<td><input type="number" min="0" max="70" value="'+sc.exam+'" id="ov-'+s.id+'-'+subj2+'-exam" class="score-table input"/></td>'+
-        '<td style="font-weight:700;color:'+(total>=50?'var(--green)':'var(--red)')+';">'+total+'</td>'+
-        '<td><button class="btn btn-red btn-sm" onclick="promptOverride(\''+s.id+'\',\''+name+'\',\''+subj2+'\',\''+cls+'\',\''+term+'\',\''+sess+'\')">✏️</button></td>'+
-        '</tr>';
+  var content=document.getElementById('override-content');content.innerHTML='';overrideRows={};
+  if(!entries.length){content.innerHTML='<div class="empty"><div class="empty-ico">📊</div><div class="empty-txt">No scores found for this class</div></div>';return;}
+  var fields=RSMSAssessment.unionFields(entries.map(function(r){return r.scheme;}));
+  var wrap=document.createElement('div');wrap.style.overflowX='auto';
+  var table=document.createElement('table');table.className='score-table';
+  var thead=document.createElement('thead'),hr=document.createElement('tr');
+  ['Student','Subject'].concat(fields.map(function(f){return {ca1:'T1 / CA 1',ca2:'T2 / CA 2',ca3:'T3 / CA 3',exam:'Exam'}[f];}),['Total','Action']).forEach(function(label){var th=document.createElement('th');th.textContent=label;hr.appendChild(th);});
+  thead.appendChild(hr);table.appendChild(thead);var tbody=document.createElement('tbody');
+  entries.forEach(function(row){
+    var rowId=row.student.id+'|'+row.subject;overrideRows[rowId]=row;row.inputs={};
+    var tr=document.createElement('tr');
+    var tdName=document.createElement('td');tdName.style.fontWeight='600';tdName.textContent=((row.student.surname||'')+' '+(row.student.firstname||'')).trim();tr.appendChild(tdName);
+    var tdSub=document.createElement('td');tdSub.style.color='var(--gold)';tdSub.textContent=row.subject;tr.appendChild(tdSub);
+    fields.forEach(function(f){
+      var td=document.createElement('td'),inp=document.createElement('input');row.inputs[f]=inp;
+      inp.type='number';inp.className='score-table input';inp.id='ov-'+row.student.id+'-'+row.subject+'-'+f;
+      if(RSMSAssessment.fields(row.scheme).indexOf(f)<0){inp.disabled=true;inp.placeholder='—';}
+      else{inp.min='0';inp.max=String(row.scheme[f]);inp.step='1';inp.value=row.record[f]==null?'':row.record[f];inp.placeholder='0–'+row.scheme[f];inp.title=RSMSAssessment.describe(row.scheme);inp.setAttribute('aria-label',inp.title+' '+f);inp.oninput=function(){overrideTotal(row);};}
+      td.appendChild(inp);tr.appendChild(td);
     });
+    var tdT=document.createElement('td');tdT.style.fontWeight='700';row.totalEl=tdT;tr.appendChild(tdT);overrideTotal(row);
+    var tdA=document.createElement('td'),btn=document.createElement('button');btn.className='btn btn-red btn-sm';btn.textContent='✏️';btn.onclick=function(){promptOverride(rowId);};tdA.appendChild(btn);tr.appendChild(tdA);
+    tbody.appendChild(tr);
   });
-  html+='</tbody></table></div>'+
-    '<button class="btn btn-red" style="margin-top:12px;" onclick="saveAllOverrides(\''+cls+'\',\''+term+'\',\''+sess+'\')">💾 Save All Changes</button>';
-  document.getElementById('override-content').innerHTML=html;
+  table.appendChild(tbody);wrap.appendChild(table);content.appendChild(wrap);
+  var note=document.createElement('p');note.style.cssText='font-size:.78rem;color:var(--t3);margin:8px 0;';note.textContent='Each row keeps its saved marking scheme. * = incomplete. Save All requires an audit reason.';content.appendChild(note);
+  var save=document.createElement('button');save.className='btn btn-red';save.style.marginTop='12px';save.textContent='💾 Save All Changes';save.onclick=function(){saveAllOverrides(cls,term,sess);};content.appendChild(save);
 }
-
-function promptOverride(stuId,name,subj,cls,term,sess){
-  var ca1=document.getElementById('ov-'+stuId+'-'+subj+'-ca1').value;
-  var ca2=document.getElementById('ov-'+stuId+'-'+subj+'-ca2').value;
-  var exam=document.getElementById('ov-'+stuId+'-'+subj+'-exam').value;
-  _pendingOverride={stuId:stuId,name:name,subj:subj,cls:cls,term:term,sess:sess,ca1:ca1,ca2:ca2,exam:exam};
-  document.getElementById('override-summary').innerHTML=
-    '<b>Student:</b> '+name+'<br><b>Subject:</b> '+subj+
-    '<br><b>New scores:</b> CA1='+ca1+' CA2='+ca2+' Exam='+exam+
-    '<br><b>New Total:</b> '+(parseInt(ca1)+parseInt(ca2)+parseInt(exam));
+function promptOverride(rowId){
+  var row=overrideRows[rowId];if(!row)return;
+  var values=overrideValues(row),errors=RSMSAssessment.validateScores(values,row.scheme,true);
+  if(errors.length){toast(errors.join(' '),'error');return;}
+  _pendingOverride={rowId:rowId,values:values};
+  var v=RSMSAssessment.viewRecord(values);
+  document.getElementById('override-summary').textContent='Student: '+((row.student.surname||'')+' '+(row.student.firstname||'')).trim()+
+    '\nSubject: '+row.subject+'\nScheme: '+RSMSAssessment.describe(row.scheme)+
+    '\nNew scores: '+RSMSAssessment.fields(row.scheme).map(function(f){return f+'='+values[f];}).join(', ')+
+    '\nNew total: '+v.total+' / '+v.totalMax;
   document.getElementById('override-reason').value='';
   openModal('m-override-confirm');
 }
-
 function confirmOverride(){
   if(!_pendingOverride) return;
   var reason=document.getElementById('override-reason').value.trim();
   if(!reason){ toast('Please state a reason','error'); return; }
-  var o=_pendingOverride;
-  var scores=getScores(o.cls,o.term,o.sess);
-  // Find and update
-  var found=false;
-  Object.keys(scores).forEach(function(k){
-    var e=scores[k];
-    if(e&&e.stuId===o.stuId&&e.subject===o.subj){
-      scores[k].ca1=o.ca1; scores[k].ca2=o.ca2; scores[k].exam=o.exam;
-      scores[k].total=parseInt(o.ca1)+parseInt(o.ca2)+parseInt(o.exam);
-      scores[k].overrideBy='Principal'; scores[k].overrideReason=reason;
-      scores[k].overrideTime=new Date().toLocaleString();
-      found=true;
-    }
-  });
-  if(!found){
-    var newKey=o.stuId+'_'+o.subj.replace(/\s+/g,'_');
-    scores[newKey]={stuId:o.stuId,student:o.name,subject:o.subj,ca1:o.ca1,ca2:o.ca2,exam:o.exam,
-      total:parseInt(o.ca1)+parseInt(o.ca2)+parseInt(o.exam),
-      overrideBy:'Principal',overrideReason:reason,overrideTime:new Date().toLocaleString()};
-  }
-  saveScores(o.cls,o.term,o.sess,scores);
-  logActivity('🔧','Score override: '+o.name+' '+o.subj+' → '+o.ca1+'/'+o.ca2+'/'+o.exam+' ('+reason+')');
-  closeModal('m-override-confirm');
-  toast('Score overridden ✅','success');
-  loadOverrideScores();
+  var pending=_pendingOverride,row=overrideRows[pending.rowId];if(!row)return;
+  var scores=getScores(row.cls,row.term,row.sess);
+  var key=Object.keys(scores).find(function(k){var e=scores[k];return e&&e.stuId===row.student.id&&e.subject===row.subject;})||row.key;
+  var current=scores[key]||row.record,record;
+  try{record=RSMSAssessment.updateRecord(current,pending.values);}catch(e){toast(e.message,'error');return;}
+  record.overrideBy='Principal';record.overrideReason=reason;record.overrideTime=new Date().toLocaleString();
+  scores[key]=record;saveScores(row.cls,row.term,row.sess,scores);
+  logActivity('🔧','Score override: '+row.student.id+' '+row.subject+' → '+record.total+' / '+RSMSAssessment.totalMax(RSMSAssessment.forRecord(record))+' ('+reason+')');
+  closeModal('m-override-confirm');toast('Score overridden ✅','success');loadOverrideScores();
 }
-
 function saveAllOverrides(cls,term,sess){
-  var students=getStudents().filter(function(s){ return s.class===cls; });
+  var reason=(document.getElementById('override-bulk-reason')||{value:''}).value.trim();
+  if(!reason){toast('State a reason for the batch override','error');return;}
+  var rows=Object.values(overrideRows).filter(function(r){return r.cls===cls&&r.term===term&&r.sess===sess;});
+  var updates=[];
+  for(var i=0;i<rows.length;i++){
+    var row=rows[i],values=overrideValues(row),errors=RSMSAssessment.validateScores(values,row.scheme,true);
+    if(errors.length){toast(row.subject+' / '+row.student.id+': '+errors.join(' '),'error');return;}
+    updates.push({row:row,values:values});
+  }
+  if(!updates.length){toast('No rendered rows to save','info');return;}
   var scores=getScores(cls,term,sess);
-  var changed=0;
-  students.forEach(function(s){
-    var subjects=getSubjects();
-    subjects.forEach(function(subj){
-      var ca1El=document.getElementById('ov-'+s.id+'-'+subj+'-ca1');
-      var ca2El=document.getElementById('ov-'+s.id+'-'+subj+'-ca2');
-      var examEl=document.getElementById('ov-'+s.id+'-'+subj+'-exam');
-      if(!ca1El) return;
-      var key=s.id+'_'+subj.replace(/\s+/g,'_');
-      var existing=Object.keys(scores).find(function(k){ return scores[k].stuId===s.id&&scores[k].subject===subj; });
-      if(existing){
-        scores[existing].ca1=ca1El.value; scores[existing].ca2=ca2El.value; scores[existing].exam=examEl.value;
-        scores[existing].total=parseInt(ca1El.value)+parseInt(ca2El.value)+parseInt(examEl.value);
-        scores[existing].overrideBy='Principal'; scores[existing].overrideTime=new Date().toLocaleString();
-        changed++;
-      }
-    });
+  updates.forEach(function(u){
+    var row=u.row,key=Object.keys(scores).find(function(k){var e=scores[k];return e&&e.stuId===row.student.id&&e.subject===row.subject;})||row.key;
+    var record=RSMSAssessment.updateRecord(scores[key]||row.record,u.values);
+    record.overrideBy='Principal';record.overrideReason=reason;record.overrideTime=new Date().toLocaleString();scores[key]=record;
   });
   saveScores(cls,term,sess,scores);
-  logActivity('🔧','Bulk score override for '+cls+' — '+changed+' scores updated');
-  toast(changed+' scores saved ✅','success');
+  logActivity('🔧','Bulk score override for '+cls+' — '+updates.length+' scores updated ('+reason+')');
+  toast(updates.length+' scores saved ✅','success');loadOverrideScores();
 }
 
 /* ── PUBLISH ── */
@@ -1379,11 +1358,11 @@ function renderAnalytics(){
     Object.values(scores).forEach(function(e){
       if(!e||!e.stuId) return;
       if(!stuScores[e.stuId]) stuScores[e.stuId]=[];
-      stuScores[e.stuId].push(parseInt(e.ca1||0)+parseInt(e.ca2||0)+parseInt(e.exam||0));
+      stuScores[e.stuId].push(e);
     });
     var avgs=classStu.map(function(s){
       var sc=stuScores[s.id]||[];
-      return sc.length?sc.reduce(function(a,b){return a+b;},0)/sc.length:null;
+      return RSMSAssessment.summarize(sc).percent;
     }).filter(function(v){ return v!==null; });
     var clsAvg=avgs.length?Math.round(avgs.reduce(function(a,b){return a+b;},0)/avgs.length):0;
     var color=clsAvg>=70?'var(--green)':clsAvg>=50?'var(--gold)':'var(--red)';

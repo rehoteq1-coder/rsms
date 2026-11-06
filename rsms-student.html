@@ -516,6 +516,8 @@ select.fi option { background: var(--card); color: var(--t1); }
 .tbl-wrap { border-color: var(--line); }
 
 </style>
+<script src="rsms-config.js"></script>
+<script src="rsms-assessment.js"></script>
 <script src="rsms-firebase.js"></script>
 <script src="rsms-plan-guard.js"></script>
 <script>
@@ -968,7 +970,7 @@ function _get(k,fb){ try{ var v=JSON.parse(localStorage.getItem(_key(k))||localS
 var ME = {}, MY_NAME = '', MY_CLASS = '', MY_ID = '';
 
 function initPortal(){
-  ME = RSMS.user||{};
+  ME = RSMS.user ? RSMS.user() : (JSON.parse(sessionStorage.getItem('rsms_user')||'{}')||{});
   MY_NAME = (ME.name||((ME.surname||'')+' '+(ME.firstname||'')).trim()||'Student').trim();
   MY_CLASS = ME.class||ME.myClass||'';
   MY_ID = ME.id||ME.stuId||'';
@@ -982,7 +984,7 @@ window.onPage_home        = function(){ renderDash(); };
 window.onPage_assignments = renderAssignments;
 window.onPage_results     = renderResults;
 window.onPage_fees        = renderFees;
-window.onPage_attendance  = renderStudentAttendance;
+window.onPage_attendance  = function(){ if(typeof renderStudentAttendance==='function') renderStudentAttendance(); };
 
 function myAssignments(){
   return rsmsCacheGet('assignments','[]')
@@ -1011,10 +1013,8 @@ function myResults(){
             Object.keys(entry).forEach(function(subj){
               if(typeof entry[subj]==='object'&&entry[subj]!==null){
                 var sc=entry[subj];
-                results.push({subject:subj,ca1:sc.ca1||0,ca2:sc.ca2||0,exam:sc.exam||0,
-                  total:sc.total||(parseInt(sc.ca1||0)+parseInt(sc.ca2||0)+parseInt(sc.exam||0)),
-                  stuId:MY_ID,student:MY_NAME,term:sc.term||'First Term',
-                  session:sc.session||'2025/2026',class:MY_CLASS});
+                results.push(Object.assign({},sc,{subject:subj,stuId:MY_ID,student:MY_NAME,
+                  term:sc.term||'First Term',session:sc.session||'2025/2026',class:MY_CLASS}));
               }
             });
           }
@@ -1108,7 +1108,7 @@ function renderAssignments(){
 }
 
 function renderResults(){
-  var el=document.getElementById('p-results-list')||document.getElementById('results-list');
+  var el=document.getElementById('s-results-list')||document.getElementById('p-results-list')||document.getElementById('results-list');
   if(!el)return;
   var results=myResults();
   if(!results.length){
@@ -1126,8 +1126,9 @@ function renderResults(){
   Object.keys(bySubject).forEach(function(subj){
     var entries=bySubject[subj];
     var latest=entries[entries.length-1];
-    var total=latest.total||(parseInt(latest.ca1||0)+parseInt(latest.ca2||0)+parseInt(latest.exam||0));
-    var g=grade(total); var gc=gradeColor(g);
+    var view=RSMSAssessment.viewRecord(latest);
+    var total=view.total,percent=view.percent;
+    var g=percent===null?'—':grade(percent); var gc=gradeColor(percent===null?0:percent);
     var d=document.createElement('div');d.className='card';d.style.marginBottom='9px';
     d.innerHTML=
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'+
@@ -1137,23 +1138,15 @@ function renderResults(){
         '</div>'+
         '<div style="text-align:right;">'+
           '<div style="font-size:1.4rem;font-weight:900;color:'+gc+';">'+g+'</div>'+
-          '<div style="font-size:.72rem;color:var(--t3);">'+total+'/100</div>'+
+          '<div style="font-size:.72rem;color:var(--t3);">'+(total===null?'—':total+' / '+view.totalMax)+'</div>'+
         '</div>'+
       '</div>'+
-      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">'+
-        '<div style="background:var(--card2);border-radius:8px;padding:7px;text-align:center;">'+
-          '<div style="font-size:.65rem;color:var(--t4);">CA 1</div>'+
-          '<div style="font-weight:700;color:var(--t1);">'+(latest.ca1||'--')+'/20</div>'+
-        '</div>'+
-        '<div style="background:var(--card2);border-radius:8px;padding:7px;text-align:center;">'+
-          '<div style="font-size:.65rem;color:var(--t4);">CA 2</div>'+
-          '<div style="font-weight:700;color:var(--t1);">'+(latest.ca2||'--')+'/20</div>'+
-        '</div>'+
-        '<div style="background:var(--card2);border-radius:8px;padding:7px;text-align:center;">'+
-          '<div style="font-size:.65rem;color:var(--t4);">Exam</div>'+
-          '<div style="font-weight:700;color:var(--t1);">'+(latest.exam||'--')+'/60</div>'+
-        '</div>'+
-      '</div>';
+      (view.error?'<div style="color:var(--red);font-size:.78rem;">'+view.error+'</div>':
+      '<div style="display:grid;grid-template-columns:repeat('+view.fields.length+',1fr);gap:6px;">'+
+        view.fields.map(function(f){return '<div style="background:var(--card2);border-radius:8px;padding:7px;text-align:center;">'+
+          '<div style="font-size:.65rem;color:var(--t4);">'+({ca1:'T1 / CA 1',ca2:'T2 / CA 2',ca3:'T3 / CA 3',exam:'Exam'}[f])+'</div>'+
+          '<div style="font-weight:700;color:var(--t1);">'+(view.values[f]===null?'--':view.values[f])+' / '+view.scheme[f]+'</div></div>';}).join('')+
+      '</div>'+(!view.complete&&!view.legacyTotal?'<div style="font-size:.72rem;color:var(--gold);margin-top:6px;">Incomplete historical score</div>':''));
     el.appendChild(d);
   });
 }
@@ -1163,7 +1156,8 @@ function grade(s){
   if(s>=45)return 'D7'; if(s>=40)return 'E8'; return 'F9';
 }
 function gradeColor(s){
-  if(s>=50)return 'green'; if(s>=45)return 'gold'; return 'red';
+  if(s===null)return 'var(--t3)';
+  if(s>=50)return 'var(--green)'; if(s>=45)return 'var(--gold)'; return 'var(--red)';
 }
 
 function renderFees(){
@@ -1176,7 +1170,7 @@ function renderFees(){
   hero.style.cssText='background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:var(--r);padding:16px;margin-bottom:12px;';
   hero.innerHTML='<div style="color:rgba(255,255,255,.55);font-size:.72rem;margin-bottom:4px;">Total Paid This Term</div>'+
     '<div style="font-family:var(--serif);font-size:1.8rem;font-weight:900;color:#fff;">\u20a6'+total.toLocaleString()+'</div>'+
-    '<div style="font-size:.75rem;color:rgba(255,255,255,.4);margin-top:4px;">'+(RSMS.school.term||'First Term')+'</div>';
+    '<div style="font-size:.75rem;color:rgba(255,255,255,.4);margin-top:4px;">'+((typeof RSMS.school==='function'?RSMS.school():RSMS.school||{}).term||'First Term')+'</div>';
   el.appendChild(hero);
   fees.slice().reverse().forEach(function(f){
     var div=document.createElement('div'); div.className='card'; div.style.marginBottom='8px';

@@ -2,11 +2,15 @@
   "name": "rsms-offline-foundation-tests",
   "private": true,
   "version": "1.0.0",
-  "description": "No-build tests for the RSMS offline-sync foundation",
+  "description": "No-build tests for RSMS portals, assessment workflow and offline-sync foundation",
   "scripts": {
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "test:workflow": "node --test tests/assessment-workflow.test.js tests/assessment-regressions.test.js",
+    "test:dom-checks": "node tests/assistant-dom.check.js && node tests/ai-gifting.check.js",
+    "check:syntax": "node tools/check-inline-scripts.js"
   },
   "devDependencies": {
-    "fake-indexeddb": "6.2.5"
+    "fake-indexeddb": "6.2.5",
+    "jsdom": "26.1.0"
   }
 }

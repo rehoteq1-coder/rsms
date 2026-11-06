@@ -1,5 +1,6 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
+require('../rsms-assessment.js');
 require('../rsms-score-import.js');
 const csv=globalThis.RSMSScoreImport;
 const context={cls:'Primary 1',term:'First Term',sess:'2025/2026'};
@@ -27,4 +28,16 @@ test('rejects malformed CSV and protects spreadsheet text from formulas',()=>{
  assert.throws(()=>csv.parseCSV('"unterminated'));
  const result=csv.template(context,[{id:'a',surname:'=HYPERLINK("bad")'}],['Math']);
  assert.match(result,/"'=HYPERLINK/);
+});
+test('three-test templates and imports carry the configured maximums',()=>{
+ const A=globalThis.RSMSAssessment, scheme={tests:3,ca1:10,ca2:15,ca3:20,exam:55};
+ const text=csv.template(context,students,subjects,scheme);
+ assert.deepEqual(csv.parseCSV(text)[0],csv.headersFor(scheme));
+ function filled(id,subject,a,b,c,d){return [context.cls,context.term,context.sess,'id:'+id,'','',subject,a,b,c,d].join(',');}
+ const doc=csv.headersFor(scheme).join(',')+'\n'+filled('a1','Math',0,15,20,55);
+ const result=csv.validate(doc,context,students,subjects,scheme);
+ assert.deepEqual(result.errors,[]); assert.equal(result.items[0].total,90); assert.deepEqual(result.items[0].assessment,scheme);
+ const bad=csv.headersFor(scheme).join(',')+'\n'+filled('a1','Math',11,15,20,55);
+ assert.match(csv.validate(bad,context,students,subjects,scheme).errors[0],/0 to 10/);
+ assert.match(csv.validate(document(row('a1','Math',1,2,3)),context,students,subjects,scheme).errors[0],/3 tests/);
 });
