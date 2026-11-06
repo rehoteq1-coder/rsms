@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="rsms-school-detect.js"></script>
 <script src="rsms-roster.js"></script>
+<script src="rsms-config.js"></script>
+<script src="rsms-firebase.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
@@ -633,13 +635,34 @@ window.addEventListener('load',function(){
       DB.students=dashboardRoster('students','students');
       DB.staff=dashboardRoster('staff','staff');
       DB.fees=rsmsCacheGet('fees',[]);
-      buildStats(); buildActivity();
-      var bc=document.getElementById('bc-stat-val');
-      var cfg=(ROLES||{})[role]||{};
-      if(bc&&typeof cfg.statVal==='function') bc.textContent=cfg.statVal();
+      refreshDashboardData();
     }catch(e){}
   },1800);
+  // Live database read: the cached counters can lag the real records when the
+  // last sync happened on another page or device, so ask the database directly.
+  try{
+    if(typeof RSMS_FB!=='undefined'){
+      if(typeof RSMS_FB.getStudents==='function') RSMS_FB.getStudents(function(data){ refreshDashboardData(data); });
+      if(typeof RSMS_FB.getStaff==='function')    RSMS_FB.getStaff(function(data){ refreshDashboardData(null,data); });
+      if(typeof RSMS_FB.getFees==='function')     RSMS_FB.getFees(function(data){ refreshDashboardData(null,null,data); });
+    }
+  }catch(e){}
 });
+function refreshDashboardData(students,staff,fees){
+  if(students) DB.students=RSMSRoster.records(students,'students');
+  if(staff)    DB.staff=RSMSRoster.records(staff,'staff');
+  if(fees)     DB.fees=fees;
+  try{ buildStats(); }catch(e){}
+  try{ buildActivity(); }catch(e){}
+  var bc=document.getElementById('bc-stat-val');
+  var cfg=(ROLES||{})[role]||{};
+  if(bc&&typeof cfg.statVal==='function') bc.textContent=cfg.statVal();
+}
+// Every Firebase push for these lists re-renders the counters, so the
+// dashboard follows the database instead of the last cached snapshot.
+window.onFirebaseUpdate_students=function(data){ try{refreshDashboardData(data);}catch(e){} };
+window.onFirebaseUpdate_staff=function(data){ try{refreshDashboardData(null,data);}catch(e){} };
+window.onFirebaseUpdate_fees=function(data){ try{refreshDashboardData(null,null,data);}catch(e){} };
 </script>
 </body>
 </html>
