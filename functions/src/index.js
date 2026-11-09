@@ -828,3 +828,251 @@ exports._private = {
   offlineSync:offlineSync,
   email:email
 };
+
+/* ── Staff email logins (optional layer) ─────────────────────────
+   The primary sign-in for every school remains school ID + generated
+   code. These callables back the OPTIONAL staff email/password layer
+   a school may enable in settings. Roles are stamped into claims at
+   creation from the staff record's title, mirroring the client-side
+   staff-title mapping in rsms-firebase.js. */
+
+var STAFF_TITLE_ROLES = [
+  [/^admin(\s*staff)?$/i, ['admin']],
+  [/^principal$/i, ['admin', 'principal']],
+  [/^vice\s*principal/i, ['vp']],
+  [/^head\s*of\s*department|^hod\b/i, ['hod']],
+  [/^bursar/i, ['bursar']],
+  [/^class\s*teacher/i, ['classteacher', 'teacher']],
+  [/^(subject\s*)?teacher$/i, ['teacher']],
+  [/^head\s*(mistress|master|teacher)/i, ['principal']]
+];
+
+function staffRolesForTitle(title){
+  var t = cleanText(title, 80);
+  var out = [];
+  STAFF_TITLE_ROLES.forEach(function(rule){
+    if(rule[0].test(t)) rule[1].forEach(function(r){ if(out.indexOf(r) < 0) out.push(r); });
+  });
+  return out;
+}
+
+var LOGIN_EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+function validLoginPassword(pw){
+  return typeof pw === 'string' && pw.length >= 10 && /[a-zA-Z]/.test(pw) && /[0-9]/.test(pw);
+}
+
+/* Dual gate for staff-login management: claims path accepts admin (or
+   superadmin) cross-checked against the users registry; the legacy PIN
+   path accepts the school's admin, principal or bursar PIN. */
+function gateStaffAccess(request, data, schoolId){
+  var auth = request && request.auth;
+  if(auth && auth.uid){
+    var token = auth.token || {};
+    var roleMap = token.roleMap || {};
+    var schoolMap = token.schoolIds || {};
+    var ok = roleMap.superadmin === true ||
+      (roleMap.admin === true && schoolMap[schoolId] === true);
+    if(!ok){
+      throw new https.HttpsError('permission-denied', 'permission-denied');
+    }
+    return database().ref('users/' + auth.uid).once('value').then(function(snapshot){
+      var reg = snapshot.val() || {};
+      var regRoles = reg.roleMap || {};
+      var regSchools = reg.schoolIds || {};
+      var regOk = regRoles.superadmin === true ||
+        (regRoles.admin === true && regSchools[schoolId] === true);
+      if(!regOk){
+        throw new https.HttpsError('permission-denied', 'permission-denied');
+      }
+      return 'claims';
+    });
+  }
+  var pin = cleanText(data && data.pin, 64);
+  if(!pin){
+    throw new https.HttpsError('permission-denied', 'permission-denied');
+  }
+  return database().ref('schools/' + schoolId + '/portal_pins').once('value').then(function(snapshot){
+    var pins = snapshot.val() || {};
+    var okPin = ['admin', 'principal', 'bursar'].some(function(k){
+      var expected = String(pins[k] || '');
+      return expected && timingSafeTextEqual(expected, pin);
+    });
+    if(!okPin){
+      throw new https.HttpsError('permission-denied', 'permission-denied');
+    }
+    return 'pin';
+  });
+}
+
+function staffLoginEnabled(schoolId){
+  return database().ref('schools/' + schoolId + '/settings/staffEmailLogins').once('value')
+    .then(function(snapshot){
+      if(snapshot.val() !== true){
+        throw new https.HttpsError('failed-precondition',
+          'Staff email logins are not enabled for this school.');
+      }
+      return true;
+    });
+}
+
+function findStaffByEmail(schoolId, email){
+  return database().ref('schools/' + schoolId + '/staff').once('value').then(function(snapshot){
+    var rows = snapshot.val() || [];
+    var target = null, targetKey = null;
+    Object.keys(rows).forEach(function(key){
+      var row = rows[key];
+      if(!row || typeof row !== 'object') return;
+      var login = cleanText(row.loginEmail || row.email, 200).toLowerCase();
+      var bare = cleanText(row.email, 200).toLowerCase();
+      if(login === email || bare === email){
+        if(target){
+          throw new https.HttpsError('invalid-argument',
+            'More than one staff record carries this address.');
+        }
+        target = row; targetKey = key;
+      }
+    });
+    if(!target){
+      throw new https.HttpsError('not-found', 'No staff record carries this address.');
+    }
+    return { staff: target, key: targetKey };
+  });
+}
+
+function stampStaffClaims(uid, roles, schoolId){
+  var roleMap = {};
+  roles.forEach(function(r){ roleMap[r] = true; });
+  var schoolMap = {};
+  schoolMap[schoolId] = true;
+  return admin.auth().setCustomUserClaims(uid, {
+    roles: roles, roleMap: roleMap, schoolIds: schoolMap
+  });
+}
+
+function auditStaffLogin(schoolId, action, mode, detail){
+  try{
+    database().ref('schools/' + schoolId + '/audit_log').push({
+      action: action, by: mode, at: new Date().toISOString(), detail: detail || ''
+    });
+  }catch(e){}
+}
+
+exports.createStaffAccount = https.onCall({maxInstances: 10}, function(request){
+  var data = callableData(request);
+  var schoolId = cleanText(data.schoolId, 160);
+  var email = cleanText(data.email, 320).toLowerCase();
+  var password = typeof data.password === 'string' ? data.password : '';
+  var name = cleanText(data.name, 160);
+  if(!schoolId || !email || !LOGIN_EMAIL_RE.test(email) || !name){
+    throw new https.HttpsError('invalid-argument',
+      'schoolId, a valid email and the staff name are required.');
+  }
+  if(!validLoginPassword(password)){
+    throw new https.HttpsError('invalid-argument',
+      'Password must be at least 10 characters with letters and numbers.');
+  }
+  return gateStaffAccess(request, data, schoolId).then(function(mode){
+    return staffLoginEnabled(schoolId).then(function(){
+      return findStaffByEmail(schoolId, email);
+    }).then(function(found){
+      var roles = staffRolesForTitle(found.staff.role);
+      if(!roles.length){
+        throw new https.HttpsError('failed-precondition',
+          'This staff title does not carry a portal login.');
+      }
+      return admin.auth().getUserByEmail(email).then(function(){
+        throw new https.HttpsError('already-exists',
+          'A login with this address already exists.');
+      }).catch(function(err){
+        if(err && err.code === 'auth/user-not-found') return found;
+        if(err instanceof https.HttpsError) throw err;
+        throw err;
+      });
+    }).then(function(found){
+      return admin.auth().createUser({
+        email: email, password: password, displayName: name, emailVerified: false
+      }).then(function(user){
+        return stampStaffClaims(user.uid, staffRolesForTitle(found.staff.role), schoolId)
+          .then(function(){
+            var at = new Date().toISOString();
+            var updates = {};
+            updates['schools/' + schoolId + '/staff/' + found.key + '/loginEmail'] = email;
+            updates['schools/' + schoolId + '/staff/' + found.key + '/authUid'] = user.uid;
+            updates['schools/' + schoolId + '/staff/' + found.key + '/loginActive'] = true;
+            updates['schools/' + schoolId + '/staff/' + found.key + '/loginCreatedAt'] = at;
+            return database().ref().update(updates).then(function(){
+              auditStaffLogin(schoolId, 'staff_login_created', mode, email);
+              return { ok: true, uid: user.uid };
+            });
+          });
+      }).catch(function(err){
+        if(err instanceof https.HttpsError) throw err;
+        if(err && err.code === 'auth/email-already-exists'){
+          throw new https.HttpsError('already-exists',
+            'A login with this address already exists.');
+        }
+        throw new https.HttpsError('internal', 'Account creation failed.');
+      });
+    });
+  }).catch(function(error){
+    if(error instanceof https.HttpsError) throw error;
+    throw new https.HttpsError('internal', 'Staff login could not be created.');
+  });
+});
+
+exports.resetStaffPassword = https.onCall({maxInstances: 10}, function(request){
+  var data = callableData(request);
+  var schoolId = cleanText(data.schoolId, 160);
+  var email = cleanText(data.email, 320).toLowerCase();
+  var password = typeof data.password === 'string' ? data.password : '';
+  if(!schoolId || !email || !validLoginPassword(password)){
+    throw new https.HttpsError('invalid-argument',
+      'schoolId, email and a valid password are required.');
+  }
+  return gateStaffAccess(request, data, schoolId).then(function(mode){
+    return staffLoginEnabled(schoolId).then(function(){
+      return findStaffByEmail(schoolId, email);
+    }).then(function(found){
+      var uid = cleanText(found.staff.authUid, 128);
+      if(!uid){
+        throw new https.HttpsError('not-found', 'This staff record has no portal login yet.');
+      }
+      return admin.auth().updateUser(uid, { password: password }).then(function(){
+        auditStaffLogin(schoolId, 'staff_login_reset', mode, email);
+        return { ok: true };
+      });
+    });
+  }).catch(function(error){
+    if(error instanceof https.HttpsError) throw error;
+    throw new https.HttpsError('internal', 'Password reset could not be completed.');
+  });
+});
+
+exports.deactivateStaffLogin = https.onCall({maxInstances: 10}, function(request){
+  var data = callableData(request);
+  var schoolId = cleanText(data.schoolId, 160);
+  var email = cleanText(data.email, 320).toLowerCase();
+  var disable = data.disable === undefined ? true : !!data.disable;
+  if(!schoolId || !email){
+    throw new https.HttpsError('invalid-argument', 'schoolId and email are required.');
+  }
+  return gateStaffAccess(request, data, schoolId).then(function(mode){
+    return findStaffByEmail(schoolId, email).then(function(found){
+      var uid = cleanText(found.staff.authUid, 128);
+      if(!uid){
+        throw new https.HttpsError('not-found', 'This staff record has no portal login yet.');
+      }
+      return admin.auth().updateUser(uid, { disabled: disable }).then(function(){
+        return database().ref('schools/' + schoolId + '/staff/' + found.key + '/loginActive')
+          .set(!disable).then(function(){
+            auditStaffLogin(schoolId, disable ? 'staff_login_disabled' : 'staff_login_enabled', mode, email);
+            return { ok: true };
+          });
+      });
+    });
+  }).catch(function(error){
+    if(error instanceof https.HttpsError) throw error;
+    throw new https.HttpsError('internal', 'Login change could not be completed.');
+  });
+});
