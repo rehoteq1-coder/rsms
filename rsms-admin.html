@@ -1175,6 +1175,10 @@ window.RSMS_DB = {
       <input type="checkbox" id="cfg-showphoto" style="width:17px;height:17px;accent-color:#d4a843;flex-shrink:0;"/>
       <span>Show student photo on report cards &amp; progress reports <span style="color:var(--t4);font-size:.72rem;">(off = cards are printed without the photo block)</span></span>
     </label>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.25);border-radius:var(--r2);font-size:.82rem;color:var(--t2);margin-top:10px;">
+      <input type="checkbox" id="cfg-stafflogins" style="width:17px;height:17px;accent-color:#d4a843;flex-shrink:0;"/>
+      <span>Staff email logins <span style="color:var(--t4);font-size:.72rem;">(optional: staff sign in with a generated email + password; school ID and codes stay the main door)</span></span>
+    </label>
     <button id="cfg-save-settings" class="btn btn-gold btn-full" onclick="saveSettings()" style="margin-top:4px;">&#9989; Save Settings</button>
   </div>
 
@@ -1485,7 +1489,7 @@ window.RSMS_DB = {
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title" id="m-staff-title">Add Staff</div>
-    <div class="fg"><label>Full Name *</label><input class="fi" id="stf-name" placeholder="Full name"/></div>
+    <div class="fg"><label>Full Name *</label><input class="fi" id="stf-name" placeholder="Full name" oninput="if(!editStaffId){var le=document.getElementById('stf-login-email');if(le&&!le.value)le.value=suggestStaffLoginEmail(this.value);}"/></div>
     <div class="f2">
       <div class="fg"><label>Role *</label>
         <select class="fi" id="stf-role" onchange="onStaffRoleChange()" style="height:46px;"><option>Class Teacher</option><option>Subject Teacher</option><option>HOD</option><option>Vice Principal Academic</option><option>Vice Principal Admin</option><option>Principal</option><option>Head Mistress</option><option>Bursar</option><option>Admin Staff</option><option>Security</option><option>Librarian</option><option>Lab Technician</option></select></div>
@@ -1504,6 +1508,15 @@ window.RSMS_DB = {
     <div class="f2">
       <div class="fg"><label>Phone</label><input class="fi" id="stf-phone" placeholder="08012345678" type="tel"/></div>
       <div class="fg"><label>Email</label><input class="fi" id="stf-email" placeholder="email@school.com"/></div>
+    </div>
+    <div class="fg" style="border-top:1px solid var(--line);padding-top:10px;margin-top:4px;">
+      <label>Portal login (optional)</label>
+      <input class="fi" id="stf-login-email" placeholder="a.okefor@school.rsms"/>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <input class="fi" id="stf-login-pw" placeholder="Password (shown once)" readonly style="flex:2;"/>
+        <button class="btn btn-ghost" onclick="genStaffLoginPw()" style="flex:1;">&#9889; Generate</button>
+      </div>
+      <div style="font-size:.72rem;color:var(--t3);margin-top:4px;">Fill both to create a login. The password is shown once on the printable slip.</div>
     </div>
     <div class="btn-row">
       <button class="btn btn-ghost" onclick="editStaffId=null;closeModal('m-add-staff')" style="flex:1;">Cancel</button>
@@ -2769,6 +2782,7 @@ function renderStaff(){
         '<div class="staff-name">'+s.name+'</div>'+
         '<div class="staff-role">'+s.role+(s.myClass?' \u00b7 '+s.myClass:s.dept?' \u00b7 '+s.dept:'')+'</div>'+
         (s.subjects?'<div class="staff-sub">&#128218; '+s.subjects+'</div>':'')+
+        (s.loginEmail&&s.loginActive!==false?'<div style="font-size:.68rem;color:#059669;">&#9679; portal login</div>':'')+
       '</div>'+
       '<div class="staff-actions">';
     var eBtn=document.createElement('button');eBtn.className='icon-btn';eBtn.title='Edit';eBtn.innerHTML='&#9999;&#65039;';
@@ -2780,6 +2794,8 @@ function renderStaff(){
     var dBtn=document.createElement('button');dBtn.className='icon-btn red';dBtn.title='Delete';dBtn.innerHTML='&#128465;';
     dBtn.onclick=(function(id,nm){return function(){
       confirmAction('Remove '+nm+'?',function(){
+        var victim=getStaff().find(function(s){return s.id===id;});
+        if(victim&&victim.authUid){deactivateStaffLoginQuiet(victim);}
         saveStaff(getStaff().filter(function(s){return s.id!==id;}));
         renderStaff();toast('Staff removed','info');
       });
@@ -2799,13 +2815,75 @@ function openEditStaff(sf){
   var dept=document.getElementById('stf-dept');if(dept)dept.value=sf.dept||'';
   var cls=document.getElementById('stf-class');if(cls)cls.value=sf.myClass||'';
   setVal('stf-subjects',sf.subjects);setVal('stf-phone',sf.phone);setVal('stf-email',sf.email);
+  var sle=document.getElementById('stf-login-email');if(sle)sle.value=sf.loginEmail||suggestStaffLoginEmail(sf.name);
+  var slp=document.getElementById('stf-login-pw');if(slp)slp.value='';
   onStaffRoleChange();
   var t=document.getElementById('m-staff-title');if(t)t.textContent='Edit Staff';
   openModal('m-add-staff');
 }
 
+function genStaffLoginPw(){
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789',syms='!@#$%&*';
+  var arr=[];
+  for(var i=0;i<9;i++)arr.push(chars.charAt(Math.floor(Math.random()*chars.length)));
+  arr.push(syms.charAt(Math.floor(Math.random()*syms.length)));
+  arr.push('7X'.charAt(Math.floor(Math.random()*2)));
+  arr.sort(function(){return Math.random()-0.5;});
+  var pw=arr.join('');
+  var el=document.getElementById('stf-login-pw');if(el)el.value=pw;
+}
+function suggestStaffLoginEmail(name){
+  var s=getSchool()||{};
+  var slug=String(s.name||'school').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,14)||'school';
+  var parts=String(name||'').trim().split(/\s+/);
+  var first=parts[0]||'',last=parts.length>1?parts[parts.length-1]:'';
+  var local=(first.charAt(0)+'.'+last).toLowerCase().replace(/[^a-z0-9.]/g,'')||'staff';
+  return local+'@'+slug+'.rsms';
+}
+function createStaffLogin(name,role,email,pw){
+  var sid=(getSchool()||{}).schoolId;
+  if(!sid){toast('No school context','error');return;}
+  if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast('Enter a valid login email','error');return;}
+  if(!pw||pw.length<10||!/[a-zA-Z]/.test(pw)||!/[0-9]/.test(pw)){toast('Generate a password first','error');return;}
+  var pins={};try{pins=JSON.parse(localStorage.getItem('rsms_'+sid+'_portal_pins')||'{}');}catch(e){}
+  var fn=firebase.functions().httpsCallable('createStaffAccount');
+  var payload={schoolId:sid,email:email.toLowerCase(),password:pw,name:name,pin:pins.admin||pins.principal||pins.bursar||''};
+  var attempt=function(n){
+    fn(payload).then(function(res){
+      if(res&&res.data&&res.data.ok){printStaffLoginSlip(name,role,email,pw,sid);}
+      else{toast('Login not created','error');}
+    }).catch(function(e){
+      var msg=(e&&e.message)||'error';
+      if(/not-found/i.test(msg)&&n<2){setTimeout(function(){attempt(n+1);},1500);return;}
+      toast('Login failed: '+msg,'error');
+    });
+  };
+  attempt(0);
+}
+function printStaffLoginSlip(name,role,email,pw,sid){
+  var s=getSchool()||{};
+  var w=window.open('','_blank','width=480,height=680');
+  if(!w){toast('Allow pop-ups to print the slip','error');return;}
+  var h='<html><head><title>Staff login slip</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#111;}h1{font-size:18px;margin:0 0 2px;}p{margin:4px 0;font-size:13px;}.box{border:1.5px solid #222;border-radius:10px;padding:16px 18px;margin:14px 0;}.lbl{font-size:10px;text-transform:uppercase;color:#555;letter-spacing:1px;}.val{font-size:15px;font-weight:bold;word-break:break-all;}</style></head><body>'
+    +'<h1>'+String(s.name||'School').replace(/</g,'&lt;')+'</h1><p>Staff portal login slip &middot; School ID: '+sid+'</p>'
+    +'<div class="box"><p><span class="lbl">Name</span></p><p class="val">'+name+'</p><p><span class="lbl">Role</span></p><p class="val">'+role+'</p><p><span class="lbl">Login email</span></p><p class="val">'+email+'</p><p><span class="lbl">Password</span></p><p class="val">'+pw+'</p></div>'
+    +'<p>Sign in at https://rsms.rehoteq.com, choose your school ('+sid+'), then Staff email login. Keep this slip safe; the password is not stored by the school.</p>'
+    +'<script>window.onload=function(){window.print();};</'+'script></body></html>';
+  w.document.write(h);w.document.close();
+}
+function deactivateStaffLoginQuiet(stf){
+  try{
+    var sid=(getSchool()||{}).schoolId;if(!sid)return;
+    var email=String(stf.loginEmail||stf.email||'').toLowerCase();if(!email)return;
+    var pins={};try{pins=JSON.parse(localStorage.getItem('rsms_'+sid+'_portal_pins')||'{}');}catch(e){}
+    firebase.functions().httpsCallable('deactivateStaffLogin')({schoolId:sid,email:email,disable:true,pin:pins.admin||pins.principal||pins.bursar||''})
+      .catch(function(e){toast('Login account not disabled: '+(e.message||'error'),'error');});
+  }catch(e){}
+}
 function saveStaff2(){
   var name=val('stf-name'),role=document.getElementById('stf-role').value;
+  var loginEmail=(document.getElementById('stf-login-email')||{value:''}).value.trim();
+  var loginPw=(document.getElementById('stf-login-pw')||{value:''}).value;
   if(!name||!role){toast('Fill name and role','error');return;}
   var all=getStaff();
   if(editStaffId){
@@ -2828,7 +2906,8 @@ function saveStaff2(){
     toast('\u2705 '+name+' added','success');
   }
   saveStaff(all);editStaffId=null;closeModal('m-add-staff');renderStaff();
-  ['stf-name','stf-subjects','stf-phone','stf-email'].forEach(function(id){setVal(id,'');});
+  if(loginEmail&&loginPw)createStaffLogin(name,role,loginEmail,loginPw);
+  ['stf-name','stf-subjects','stf-phone','stf-email','stf-login-email','stf-login-pw'].forEach(function(id){setVal(id,'');});
   var t=document.getElementById('m-staff-title');if(t)t.textContent='Add Staff';
 }
 
@@ -3392,6 +3471,7 @@ function loadSettings(){
   setVal('cfg-email',s.email);setVal('cfg-session',s.session);setVal('cfg-principal',s.principal);
   setVal('cfg-regprefix',s.regPrefix);setVal('cfg-logo',localStorage.getItem('rsms_school_logo')||'');
   var spc=document.getElementById('cfg-showphoto');if(spc)spc.checked=s.showStudentPhoto!==false;
+  var sll=document.getElementById('cfg-stafflogins');if(sll)sll.checked=s.staffEmailLogins===true;
   var ts=document.getElementById('cfg-term');if(ts)ts.value=s.term||'First Term';
   var ps=document.getElementById('cfg-plan');if(ps)ps.value=s.plan||'Standard';
   var scheme;
@@ -3448,6 +3528,8 @@ function saveSettings(){
   school.regPrefix=val('cfg-regprefix')||'REG';
   school.term=document.getElementById('cfg-term').value;
   school.plan=document.getElementById('cfg-plan').value;
+  var sll=document.getElementById('cfg-stafflogins');
+  if(sll){school.staffEmailLogins=sll.checked;try{if(school.schoolId)firebase.database().ref('schools/'+school.schoolId+'/settings/staffEmailLogins').set(!!sll.checked);}catch(e){}}
   var spEl=document.getElementById('cfg-showphoto');if(spEl)school.showStudentPhoto=spEl.checked;
   school.lastModified=Date.now();
   var logo=val('cfg-logo')||val('cfg-logo-url');
