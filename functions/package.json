@@ -5,7 +5,7 @@
   "description": "Verified payment and user-provisioning functions for RSMS",
   "main": "src/index.js",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "scripts": {
     "test": "node --test test/*.test.js",
