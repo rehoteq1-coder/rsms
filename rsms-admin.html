@@ -2840,14 +2840,14 @@ function suggestStaffLoginEmail(name){
   var local=(first.charAt(0)+'.'+last).toLowerCase().replace(/[^a-z0-9.]/g,'')||'staff';
   return local+'@'+slug+'.rsms';
 }
-function createStaffLogin(name,role,email,pw){
+function createStaffLogin(name,role,email,pw,staffKey){
   var sid=(getSchool()||{}).schoolId;
   if(!sid){toast('No school context','error');return;}
   if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast('Enter a valid login email','error');return;}
   if(!pw||pw.length<10||!/[a-zA-Z]/.test(pw)||!/[0-9]/.test(pw)){toast('Generate a password first','error');return;}
   var pins={};try{pins=JSON.parse(localStorage.getItem('rsms_'+sid+'_portal_pins')||'{}');}catch(e){}
   var fn=firebase.functions().httpsCallable('createStaffAccount');
-  var payload={schoolId:sid,email:email.toLowerCase(),password:pw,name:name,pin:pins.admin||pins.principal||pins.bursar||''};
+  var payload={schoolId:sid,email:email.toLowerCase(),password:pw,name:name,pin:pins.admin||pins.principal||pins.bursar||'',staffKey:(staffKey===undefined||staffKey===null)?'':String(staffKey)};
   var attempt=function(n){
     fn(payload).then(function(res){
       if(res&&res.data&&res.data.ok){printStaffLoginSlip(name,role,email,pw,sid);}
@@ -2886,8 +2886,10 @@ function saveStaff2(){
   var loginPw=(document.getElementById('stf-login-pw')||{value:''}).value;
   if(!name||!role){toast('Fill name and role','error');return;}
   var all=getStaff();
+  var staffKey='';
   if(editStaffId){
     var idx=all.findIndex(function(s){return s.id===editStaffId;});
+    staffKey=idx>-1?String(idx):'';
     if(idx>-1){
       all[idx].name=name;all[idx].role=role;
       all[idx].dept=document.getElementById('stf-dept').value;
@@ -2898,6 +2900,7 @@ function saveStaff2(){
   } else {
     var dupS=all.find(function(s){return String(s.name||'').toLowerCase()===name.toLowerCase();});
     if(dupS){toast('Staff with this name already exists','error');return;}
+    staffKey=String(all.length);
     all.push({id:'t'+Date.now(),name:name,role:role,
       dept:document.getElementById('stf-dept').value,
       myClass:document.getElementById('stf-class').value,
@@ -2906,7 +2909,7 @@ function saveStaff2(){
     toast('\u2705 '+name+' added','success');
   }
   saveStaff(all);editStaffId=null;closeModal('m-add-staff');renderStaff();
-  if(loginEmail&&loginPw)createStaffLogin(name,role,loginEmail,loginPw);
+  if(loginEmail&&loginPw)createStaffLogin(name,role,loginEmail,loginPw,staffKey);
   ['stf-name','stf-subjects','stf-phone','stf-email','stf-login-email','stf-login-pw'].forEach(function(id){setVal(id,'');});
   var t=document.getElementById('m-staff-title');if(t)t.textContent='Add Staff';
 }
