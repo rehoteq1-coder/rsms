@@ -940,6 +940,37 @@ function findStaffByEmail(schoolId, email){
   });
 }
 
+function resolveStaffTarget(schoolId, email, name, staffKey){
+  return database().ref('schools/' + schoolId + '/staff').once('value').then(function(snapshot){
+    var rows = snapshot.val() || [];
+    var wantedName = cleanText(name, 160).toLowerCase();
+    if(staffKey !== undefined && staffKey !== null && String(staffKey).length){
+      var keyed = rows[String(staffKey)];
+      if(keyed && typeof keyed === 'object' && (!wantedName || cleanText(keyed.name, 160).toLowerCase() === wantedName)){
+        return { staff: keyed, key: String(staffKey) };
+      }
+    }
+    var target = null, targetKey = null;
+    Object.keys(rows).forEach(function(key){
+      var row = rows[key];
+      if(!row || typeof row !== 'object') return;
+      var login = cleanText(row.loginEmail || row.email, 200).toLowerCase();
+      var bare = cleanText(row.email, 200).toLowerCase();
+      if(login === email || bare === email){
+        if(target){
+          throw new https.HttpsError('invalid-argument',
+            'More than one staff record carries this address.');
+        }
+        target = row; targetKey = key;
+      }
+    });
+    if(!target){
+      throw new https.HttpsError('not-found', 'No staff record carries this address.');
+    }
+    return { staff: target, key: targetKey };
+  });
+}
+
 function stampStaffClaims(uid, roles, schoolId){
   var roleMap = {};
   roles.forEach(function(r){ roleMap[r] = true; });
@@ -974,7 +1005,7 @@ exports.createStaffAccount = https.onCall({maxInstances: 10}, function(request){
   }
   return gateStaffAccess(request, data, schoolId).then(function(mode){
     return staffLoginEnabled(schoolId).then(function(){
-      return findStaffByEmail(schoolId, email);
+      return resolveStaffTarget(schoolId, email, name, data.staffKey);
     }).then(function(found){
       var roles = staffRolesForTitle(found.staff.role);
       if(!roles.length){
