@@ -1336,13 +1336,20 @@ function _attKey(cls,date){ return _key('att_'+cls+'_'+date); }
 // ─────────────────────────────────────────────────────────
 var ME = {};
 var MY_CLASS = '';
+
+// Tolerant class-name match: students and staff records often spell the same class differently (JSS1 vs JSS 1, Pry 3 vs Primary 3)
+function sameClass(a,b){
+  var n=function(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase();};
+  return !!n(a)&&n(a)===n(b);
+}
+
 var MY_SUBJECTS = [];
 
 
 // Get students — optionally filtered by class
 function getStudents(filterClass){
   var all=JSON.parse(_lsget('students')||'[]');
-  if(filterClass) return all.filter(function(s){return s.class===filterClass;});
+  if(filterClass) return all.filter(function(s){return sameClass(s.class,filterClass);});
   return all;
 }
 
@@ -1436,7 +1443,7 @@ function renderDash(){
   ME = RSMS.user ? RSMS.user() : (JSON.parse(sessionStorage.getItem('rsms_user')||'{}')||{});
   MY_CLASS = ME.myClass || ME.class || ME.myclass || '';
   var students = RSMS.students();
-  var myStudents = MY_CLASS ? students.filter(function(s){return s.class===MY_CLASS;}) : [];
+  var myStudents = MY_CLASS ? students.filter(function(s){return sameClass(s.class,MY_CLASS);}) : [];
   var plans = WF.getAll('plans').filter(function(d){return d.by===ME.name;});
   var notes = WF.getAll('notes').filter(function(d){return d.by===ME.name;});
   var exams = WF.getAll('exams').filter(function(d){return d.by===ME.name;});
@@ -1468,11 +1475,12 @@ function renderMyStudents(){
   MY_CLASS = ME.myClass || ME.class || ME.myclass || '';
   var el = document.getElementById('my-students-list');
   if(!el)return;
-  var students = MY_CLASS ? RSMS.students().filter(function(s){return s.class===MY_CLASS;}) : RSMS.students();
+  var students = MY_CLASS ? RSMS.students().filter(function(s){return sameClass(s.class,MY_CLASS);}) : RSMS.students();
   var cls = document.getElementById('t-cls-filter');
-  if(cls && cls.value) students = RSMS.students().filter(function(s){return s.class===cls.value;});
+  if(cls && cls.value) students = RSMS.students().filter(function(s){return sameClass(s.class,cls.value);});
   var lbl = document.getElementById('t-stu-count');
-  if(lbl) lbl.textContent = students.length+' students'+(MY_CLASS?' in '+MY_CLASS:'');
+  if(lbl) lbl.textContent = students.length+' students'+(MY_CLASS?' in '+MY_CLASS:'')
+    +(!students.length&&MY_CLASS?' \u2014 check that the class name on the staff record matches how students were uploaded (e.g. JSS1 vs JSS 1)':'');
   if(!students.length){el.innerHTML='<div class="empty-state">No students in your class yet</div>';return;}
   el.innerHTML='';
   students.forEach(function(s,i){
@@ -1873,7 +1881,7 @@ function renderAttHistory(){
     var data = JSON.parse(localStorage.getItem(k)||'{}');
     var present = Object.values(data).filter(function(s){return s.status==='present';}).length;
     var absent  = Object.values(data).filter(function(s){return s.status==='absent';}).length;
-    var total = RSMS.students().filter(function(s){return s.class===MY_CLASS;}).length;
+    var total = RSMS.students().filter(function(s){return sameClass(s.class,MY_CLASS);}).length;
     var rate = total?Math.round(present/total*100):0;
     var div=document.createElement('div');
     div.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:.85rem;';
@@ -1892,7 +1900,7 @@ function ctAddStudent(){
   if(!sur||!fn||!cls){toast('Fill surname, firstname and class','error');return;}
   var all=JSON.parse(_lsget('students')||'[]');
   var school=JSON.parse(localStorage.getItem('rsms_school')||'{}');
-  var dup=all.find(function(s){return s.surname.toLowerCase()===sur.toLowerCase()&&s.firstname.toLowerCase()===fn.toLowerCase()&&s.class===cls;});
+  var dup=all.find(function(s){return s.surname.toLowerCase()===sur.toLowerCase()&&s.firstname.toLowerCase()===fn.toLowerCase()&&sameClass(s.class,cls);});
   if(dup){toast('Student already exists in this class','error');return;}
   var reg=(document.getElementById('stu-reg').value||'').trim()||((school.regPrefix||'REG')+'/'+new Date().getFullYear()+'/'+String(all.length+1).padStart(3,'0'));
   all.push({id:'s'+Date.now(),surname:sur,firstname:fn,class:cls,
@@ -2134,7 +2142,7 @@ function renderRemarksList(){
   var term=(document.getElementById('rm-term')||{}).value||'First Term';
   var sess=(document.getElementById('rm-session')||{value:''}).value||'2025/2026';
   var students=JSON.parse(_lsget('students')||'[]')
-                .filter(function(s){return !MY_CLASS||s.class===MY_CLASS;});
+                .filter(function(s){return !MY_CLASS||sameClass(s.class,MY_CLASS);});
   if(!students.length){
     el.innerHTML='<div class="empty-state">No students in your class.<br/>Set your class first in Attendance page.</div>';
     return;
@@ -2349,7 +2357,7 @@ function loadScoreTable(){
   var currentScheme;
   try{currentScheme=RSMSAssessment.forSchool(JSON.parse(localStorage.getItem('rsms_school')||'{}'));}catch(e){toast(e.message,'error');return;}
   var parsed=JSON.parse(_lsget('students')||'[]');
-  var students=(Array.isArray(parsed)?parsed.filter(Boolean):Object.values(parsed).filter(Boolean)).filter(function(s){return s.class===cls;});
+  var students=(Array.isArray(parsed)?parsed.filter(Boolean):Object.values(parsed).filter(Boolean)).filter(function(s){return sameClass(s.class,cls);});
   if(!students.length){toast('No students found for '+cls,'error');return;}
   var scoreKey=_scoreKey(cls,term,sess);
   var legacy='rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
@@ -2567,7 +2575,7 @@ function checkCTReadiness(cls,term){
   // Check CT remarks
   var remarks=JSON.parse((typeof _lsget==='function'?_lsget('ct_remarks'):null)||rsmsCacheGetRaw('ct_remarks')||'{}');
   var students=JSON.parse((typeof _lsget==='function'?_lsget('students'):null)||rsmsCacheGetRaw('students')||'[]')
-    .filter(function(s){ return s.class===cls; });
+    .filter(function(s){ return sameClass(s.class,cls); });
   var remarkCount=students.filter(function(s){
     return Object.keys(remarks).some(function(k){ return k.indexOf(s.id)===0; });
   }).length;

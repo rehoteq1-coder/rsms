@@ -473,8 +473,13 @@ function populateSelect(selId, cls, selected){
     }).join('');
 }
 // alias used in some portals
+function sameClass(a,b){
+  var n=function(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase();};
+  return !!n(a)&&n(a)===n(b);
+}
+
 function getStudents(cls){
   var all=RSMS.students();
   if(!cls)return all;
-  return all.filter(function(s){return (s.class||'')===cls;});
+  return all.filter(function(s){return sameClass(s.class,cls);});
 }
