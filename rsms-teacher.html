@@ -1218,6 +1218,13 @@ function _attKey(cls,date){ return _key('att_'+cls+'_'+date); }
 // ─────────────────────────────────────────────────────────
 var ME = {};
 var MY_CLASS = '';
+
+// Tolerant class-name match: students and staff records often spell the same class differently (JSS1 vs JSS 1, Pry 3 vs Primary 3)
+function sameClass(a,b){
+  var n=function(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase();};
+  return !!n(a)&&n(a)===n(b);
+}
+
 var MY_SUBJECTS = [];
 
 function initPortal(){
@@ -1244,7 +1251,7 @@ function renderDash(){
   ME = RSMS.user() || {};
   MY_CLASS = ME.myClass || ME.class || ME.myclass || '';
   var students = RSMS.students();
-  var myStudents = MY_CLASS ? students.filter(function(s){return s.class===MY_CLASS;}) : [];
+  var myStudents = MY_CLASS ? students.filter(function(s){return sameClass(s.class,MY_CLASS);}) : [];
   var plans = WF.getAll('plans').filter(function(d){return d.by===ME.name;});
   var notes = WF.getAll('notes').filter(function(d){return d.by===ME.name;});
   var exams = WF.getAll('exams').filter(function(d){return d.by===ME.name;});
@@ -1276,11 +1283,12 @@ function renderMyStudents(){
   MY_CLASS = ME.myClass || ME.class || ME.myclass || '';
   var el = document.getElementById('my-students-list');
   if(!el)return;
-  var students = MY_CLASS ? RSMS.students().filter(function(s){return s.class===MY_CLASS;}) : RSMS.students();
+  var students = MY_CLASS ? RSMS.students().filter(function(s){return sameClass(s.class,MY_CLASS);}) : RSMS.students();
   var cls = document.getElementById('t-cls-filter');
-  if(cls && cls.value) students = RSMS.students().filter(function(s){return s.class===cls.value;});
+  if(cls && cls.value) students = RSMS.students().filter(function(s){return sameClass(s.class,cls.value);});
   var lbl = document.getElementById('t-stu-count');
-  if(lbl) lbl.textContent = students.length+' students'+(MY_CLASS?' in '+MY_CLASS:'');
+  if(lbl) lbl.textContent = students.length+' students'+(MY_CLASS?' in '+MY_CLASS:'')
+    +(!students.length&&MY_CLASS?' \u2014 check that the class name on the staff record matches how students were uploaded (e.g. JSS1 vs JSS 1)':'');
   if(!students.length){el.innerHTML='<div class="empty-state">No students in your class yet</div>';return;}
   el.innerHTML='';
   students.forEach(function(s,i){
@@ -1681,7 +1689,7 @@ function renderAttHistory(){
     var data = JSON.parse(localStorage.getItem(k)||'{}');
     var present = Object.values(data).filter(function(s){return s.status==='present';}).length;
     var absent  = Object.values(data).filter(function(s){return s.status==='absent';}).length;
-    var total = RSMS.students().filter(function(s){return s.class===MY_CLASS;}).length;
+    var total = RSMS.students().filter(function(s){return sameClass(s.class,MY_CLASS);}).length;
     var rate = total?Math.round(present/total*100):0;
     var div=document.createElement('div');
     div.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:.85rem;';
@@ -2010,7 +2018,7 @@ function loadScoreTable(){
   try{currentScheme=RSMSAssessment.forSchool(JSON.parse(localStorage.getItem('rsms_school')||'{}'));}catch(e){toast(e.message,'error');return;}
   var _rawStu=_lsget('students'); var _parsedStu=JSON.parse(_rawStu||'[]');
   var students=(Array.isArray(_parsedStu)?_parsedStu.filter(Boolean):Object.values(_parsedStu).filter(Boolean))
-                  .filter(function(s){return s.class===cls;});
+                  .filter(function(s){return sameClass(s.class,cls);});
   if(!students.length){toast('No students found for '+cls,'error');return;}
   var scoreKey = _scoreKey(cls,term,sess);
   var saved = JSON.parse(localStorage.getItem(scoreKey)||localStorage.getItem('rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_'))||'{}');
@@ -2147,7 +2155,7 @@ function scoreImportContext(){
 }
 function scoreImportStudents(cls){
   var all=JSON.parse(_lsget('students')||'[]');
-  return (Array.isArray(all)?all:Object.values(all)).filter(function(s){return s && s.class===cls;});
+  return (Array.isArray(all)?all:Object.values(all)).filter(function(s){return s && sameClass(s.class,cls);});
 }
 function scoreImportSubjects(){
   return Array.from(document.getElementById('sc-subject').options).filter(function(o){return o.value && o.style.display!=='none';}).map(function(o){return o.value;});

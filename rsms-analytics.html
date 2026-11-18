@@ -256,6 +256,12 @@ html,body{min-height:100%;font-family:var(--sans);background:var(--bg);color:var
 
 <script src="rsms-assessment.js"></script>
 <script>
+// Tolerant class-name match: records often spell the same class differently (KG1 vs KG 1, Creche vs Creche)
+function sameClass(a,b){
+  var n=function(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase();};
+  return !!n(a)&&n(a)===n(b);
+}
+
 // ── HELPERS ──────────────────────────────────────────────
 function _sid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
 function _key(k){ var id=_sid(); return id?'rsms_'+id+'_'+k:'rsms_'+k; }
@@ -412,7 +418,7 @@ function renderFeesTab(){
   if(Object.keys(defByClass).length){
     Object.keys(defByClass).sort(function(a,b){ return defByClass[b]-defByClass[a]; }).forEach(function(cls){
       var cnt=defByClass[cls];
-      var total_in_class=students.filter(function(s){ return s.class===cls; }).length;
+      var total_in_class=students.filter(function(s){ return sameClass(s.class,cls); }).length;
       var p=pct(cnt,total_in_class);
       dHtml+='<div class="prog-row"><div class="prog-label"><span class="prog-lbl-name">'+cls+'</span><span class="prog-lbl-val" style="color:var(--red);">'+cnt+' / '+total_in_class+' ('+p+'%)</span></div>';
       dHtml+='<div class="prog-bar"><div class="prog-fill" style="width:'+p+'%;background:var(--red);"></div></div></div>';

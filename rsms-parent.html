@@ -679,6 +679,12 @@ select.fi option { background: var(--card); color: var(--t1); }
 
 <div class="toast" id="rsms-toast"></div>
 <script>
+// Tolerant class-name match: records often spell the same class differently (KG1 vs KG 1, Creche vs Creche)
+function sameClass(a,b){
+  var n=function(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase();};
+  return !!n(a)&&n(a)===n(b);
+}
+
 if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
 </script>
 <script>
@@ -1114,7 +1120,7 @@ function renderDash(){
   if(outstanding){
     var schedule = JSON.parse(localStorage.getItem(_key('fee_schedule'))||rsmsCacheGetRaw('fee_schedule')||'[]');
     var childClass = CHILD_CLASS||'';
-    var classSchedule = schedule.filter(function(s){return s.class===childClass;});
+    var classSchedule = schedule.filter(function(s){return sameClass(s.class,childClass);});
     var expected = classSchedule.reduce(function(a,s){return a+parseFloat(s.amount||0);},0);
     if(expected > 0){
       outstanding.style.display = totalPaid < expected ? 'block' : 'none';
@@ -1194,7 +1200,7 @@ function renderChildResults(){
   // Add Pay Outstanding Fees button
   var schedule = rsmsCacheGet('fee_schedule','[]');
   var childClass = CHILD_CLASS||'';
-  var classSchedule = schedule.filter(function(s){return s.class===childClass;});
+  var classSchedule = schedule.filter(function(s){return sameClass(s.class,childClass);});
   var totalExpected = classSchedule.reduce(function(a,s){return a+parseFloat(s.amount||0);},0);
   var totalPaid = paidFees().reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
   var outstanding = Math.max(0, totalExpected - totalPaid);
@@ -1659,7 +1665,7 @@ function parentFeePayable(){
     if(payable>0) return payable;
   }
   var schedule=_get('fee_schedule','[]');
-  return schedule.filter(function(item){return item.class===CHILD_CLASS;}).reduce(function(total,item){return total+parentMoney(item.amount);},0);
+  return schedule.filter(function(item){return sameClass(item.class,CHILD_CLASS);}).reduce(function(total,item){return total+parentMoney(item.amount);},0);
 }
 function parentFeeOutstanding(){
   return Math.max(0,parentMoney(parentFeePayable()-paidFees().reduce(function(total,payment){return total+parentMoney(payment.amount);},0)));
