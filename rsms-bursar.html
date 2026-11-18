@@ -1303,6 +1303,12 @@ select.fi option{background:var(--card);color:var(--t1);}
 
 <div class="toast" id="rsms-toast"></div>
 <script>
+// Tolerant class-name match: records often spell the same class differently (KG1 vs KG 1, Creche vs Creche)
+function sameClass(a,b){
+  var n=function(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase();};
+  return !!n(a)&&n(a)===n(b);
+}
+
 if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
 </script>
 <script>
@@ -1680,7 +1686,7 @@ function logAudit(action,type,details,before,after){
 // ── EXPECTED FEE HELPER ──────────────────────────────
 function getExpectedFee(cls){
   // Sum EVERY fee row for this class (multi-item schedules used to take only the first row).
-  var rows=getFeeSchedule().filter(function(f){return f.class===cls;});
+  var rows=getFeeSchedule().filter(function(f){return sameClass(f.class,cls);});
   if(rows.length) return rows.reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
   // Fall back to the finance engine's fee structure for this class.
   try{
@@ -1690,8 +1696,8 @@ function getExpectedFee(cls){
     var structures=JSON.parse(raw||'[]');
     var school=getSchool();
     var term=school.term||'First Term', session=school.session||'';
-    var exact=structures.filter(function(r){return r.class===cls&&r.term===term&&session&&r.session===session;});
-    var any=structures.filter(function(r){return r.class===cls&&Array.isArray(r.items)&&r.items.length;});
+    var exact=structures.filter(function(r){return sameClass(r.class,cls)&&r.term===term&&session&&r.session===session;});
+    var any=structures.filter(function(r){return sameClass(r.class,cls)&&Array.isArray(r.items)&&r.items.length;});
     var pick=exact.length?exact:any;
     if(pick.length){
       var latest=pick[pick.length-1];
@@ -1802,7 +1808,7 @@ function populateClassFilters(){
 
 function populatePayStudents(){
   var cls=getVal('pay-cls-filter');
-  var students=getStudents().filter(function(s){return !cls||s.class===cls;});
+  var students=getStudents().filter(function(s){return !cls||sameClass(s.class,cls);});
   var sel=gEl('pay-stu-sel'); if(!sel)return;
   sel.innerHTML='<option value="">-- Select Student --</option>';
   students.forEach(function(s){
@@ -1836,7 +1842,7 @@ function autoFillAmount(){
   var sched=getFeeSchedule();
   if(!stu||!type)return;
   var stuObj=getStudents().find(function(s){return s.id===stu;});
-  var match=sched.find(function(f){return f.type===type&&stuObj&&f.class===stuObj.class;});
+  var match=sched.find(function(f){return f.type===type&&stuObj&&sameClass(f.class,stuObj.class);});
   if(!match)match=sched.find(function(f){return f.type===type;});
   if(match)setVal('pay-amount',match.amount);
 }
@@ -1902,7 +1908,7 @@ function onSPFeeTypeSelect(){
   if(!stuId||!type)return;
   var stu=getStudents().find(function(s){return s.id===stuId;});
   var sched=getFeeSchedule();
-  var match=sched.find(function(f){return f.type===type&&stu&&f.class===stu.class;});
+  var match=sched.find(function(f){return f.type===type&&stu&&sameClass(f.class,stu.class);});
   if(!match)match=sched.find(function(f){return f.type===type;});
   if(match)setVal('sp-amount',match.amount);
 }
@@ -2042,7 +2048,7 @@ function renderReceipts(){
   var q=(gEl('rcpt-search')||{value:''}).value.toLowerCase();
   var cls=(gEl('rcpt-cls')||{value:''}).value||'';
   var fees=getFees().filter(function(f){
-    return (!cls||f.class===cls)&&(!q||f.student.toLowerCase().includes(q)||(f.receiptNo||'').toLowerCase().includes(q));
+    return (!cls||sameClass(f.class,cls))&&(!q||f.student.toLowerCase().includes(q)||(f.receiptNo||'').toLowerCase().includes(q));
   }).slice().reverse();
   if(!fees.length){el.innerHTML='<div class="empty-state">No receipts found</div>';return;}
   el.innerHTML='';
@@ -2113,7 +2119,7 @@ function renderStudentAccounts(){
     var name=((s.surname||'')+' '+(s.firstname||'')).toLowerCase();
     var reg=(s.reg||s.registrationNumber||'').toLowerCase();
     if(q && !name.includes(q) && !reg.includes(q)) return false;
-    if(cls && s.class!==cls) return false;
+    if(cls && !sameClass(s.class,cls)) return false;
     if(status){
       var expected=getExpectedFee(s.class);
       var paid=sumSettled(fees.filter(function(f){return f.stuId===s.id&&feeInContext(f,termSel);}));
@@ -2442,9 +2448,9 @@ function renderReports(){
   cc.innerHTML='';
   var classes=uniqueArr(students.map(function(s){return s.class||'';}));
   classes.forEach(function(cls){
-    var clsS=students.filter(function(s){return s.class===cls;});
-    var clsF=settled.filter(function(f){return f.class===cls;}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
-    var paid=uniqueArr(settled.filter(function(f){return f.class===cls;}).map(function(f){return f.stuId;})).length;
+    var clsS=students.filter(function(s){return sameClass(s.class,cls);});
+    var clsF=settled.filter(function(f){return sameClass(f.class,cls);}).reduce(function(a,f){return a+parseFloat(f.amount||0);},0);
+    var paid=uniqueArr(settled.filter(function(f){return sameClass(f.class,cls);}).map(function(f){return f.stuId;})).length;
     var d=document.createElement('div');
     d.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:.85rem;';
     d.innerHTML='<div><div style="font-weight:700;color:var(--t1);">'+cls+'</div>'+

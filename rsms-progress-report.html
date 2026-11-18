@@ -290,6 +290,12 @@ select.fi{cursor:pointer;}
 <div class="toast" id="toast"></div>
 
 <script>
+// Tolerant class-name match: records often spell the same class differently (KG1 vs KG 1, Creche vs Creche)
+function sameClass(a,b){
+  var n=function(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase();};
+  return !!n(a)&&n(a)===n(b);
+}
+
 // ── SCOPED HELPERS ────────────────────────────────────────────
 function _sid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }
 function _key(k){ var id=_sid(); return id?'rsms_'+id+'_'+k:'rsms_'+k; }
@@ -385,7 +391,7 @@ function generateReports(){
   var teacher  = document.getElementById('sel-teacher').value||DB.school.principal||'Class Teacher';
   var principal= document.getElementById('sel-principal').value||DB.school.principal||'Principal';
 
-  var students = cls ? DB.students.filter(function(s){return (s.class||'')=== cls;}) : DB.students;
+  var students = cls ? DB.students.filter(function(s){return sameClass(s.class,cls);}) : DB.students;
   if(cls && !_isEarlyYears(cls)){
     toast('Progress reports are only for KG, pre-nursery, creche and playgroup classes. '+cls+' uses the terminal report card on the Results page.','error');
     document.getElementById('reports-output').innerHTML='';
@@ -643,7 +649,7 @@ window.addEventListener('load',function(){
   // Show student count when class selected
   sel.onchange = function(){
     var cls=sel.value;
-    var count=students.filter(function(s){return !cls||(s.class||'')===cls;}).length;
+    var count=students.filter(function(s){return !cls||sameClass(s.class,cls);}).length;
     var countEl=document.getElementById('class-student-count');
     if(countEl)countEl.textContent=count+' student'+(count!==1?'s':'')+' in this class';
   };

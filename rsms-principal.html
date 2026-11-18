@@ -555,6 +555,12 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5;}
 <script src="rsms-config.js"></script>
 <script src="rsms-assessment.js"></script>
 <script>
+// Tolerant class-name match: records often spell the same class differently (KG1 vs KG 1, Creche vs Creche)
+function sameClass(a,b){
+  var n=function(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase();};
+  return !!n(a)&&n(a)===n(b);
+}
+
 /* ── FIREBASE ── */
 var FIREBASE_CONFIG = (window.RSMS_CONFIG && window.RSMS_CONFIG.firebase) || {};
 
@@ -1023,7 +1029,7 @@ function loadResults(){
   var school=getSchool();
   var sess=school.session||'2025/2026';
   if(!cls){ document.getElementById('results-content').innerHTML='<div class="empty"><div class="empty-ico">📊</div><div class="empty-txt">Select a class to view results</div></div>'; return; }
-  var students=getStudents().filter(function(s){ return s.class===cls; });
+  var students=getStudents().filter(function(s){ return sameClass(s.class,cls); });
   var scores=getScores(cls,term,sess);
   var ctRemarks=JSON.parse(_lsget('ct_remarks')||'{}');
   if(!students.length){ document.getElementById('results-content').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-txt">No students in this class</div></div>'; return; }
@@ -1086,7 +1092,7 @@ function renderRemarksPage(){
 }
 function loadRemarksPage(){
   var cls=document.getElementById('rem-class').value; if(!cls) return;
-  var students=getStudents().filter(function(s){ return s.class===cls; });
+  var students=getStudents().filter(function(s){ return sameClass(s.class,cls); });
   var remarks=JSON.parse(_lsget('principal_remarks')||'{}');
   var html='';
   students.forEach(function(s){
@@ -1110,7 +1116,7 @@ function applyTemplate(inputId){
 }
 function saveAllRemarks(){
   var cls=document.getElementById('rem-class').value; if(!cls){ toast('Select a class first','error'); return; }
-  var students=getStudents().filter(function(s){ return s.class===cls; });
+  var students=getStudents().filter(function(s){ return sameClass(s.class,cls); });
   var remarks=JSON.parse(_lsget('principal_remarks')||'{}');
   students.forEach(function(s){
     var inp=document.getElementById('rem-'+s.id);
@@ -1142,7 +1148,7 @@ function loadOverrideScores(){
   var school=getSchool();
   var term=(document.getElementById('res-term')||{value:'First Term'}).value||school.term||'First Term';
   var sess=school.session||'2025/2026';
-  var students=getStudents().filter(function(s){ return s.class===cls; });
+  var students=getStudents().filter(function(s){ return sameClass(s.class,cls); });
   var scores=getScores(cls,term,sess);
   var entries=[];
   Object.keys(scores).forEach(function(k){
@@ -1352,7 +1358,7 @@ function renderAnalytics(){
 
   var html='';
   classes.forEach(function(cls){
-    var classStu=students.filter(function(s){ return s.class===cls; });
+    var classStu=students.filter(function(s){ return sameClass(s.class,cls); });
     var scores=getScores(cls,term,sess);
     var stuScores={};
     Object.values(scores).forEach(function(e){

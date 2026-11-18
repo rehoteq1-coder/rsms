@@ -631,6 +631,12 @@ select.fi option{background:var(--card);color:var(--t1);}
 <script src="rsms-ai-units.js"></script>
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 <script>
+// Tolerant class-name match: records often spell the same class differently (KG1 vs KG 1, Creche vs Creche)
+function sameClass(a,b){
+  var n=function(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase();};
+  return !!n(a)&&n(a)===n(b);
+}
+
 if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
 </script>
 <script>
@@ -2375,7 +2381,7 @@ function renderStudents(){
 
   var list=all.filter(function(s){
     var name=((s.surname||'')+(s.firstname||'')).toLowerCase();
-    return (!filterCls||s.class===filterCls)&&(!q||name.includes(q)||(s.reg||'').toLowerCase().includes(q));
+    return (!filterCls||sameClass(s.class,filterCls))&&(!q||name.includes(q)||(s.reg||'').toLowerCase().includes(q));
   });
 
   el('stu-count-lbl', list.length+' of '+all.length+' students');
@@ -2590,7 +2596,7 @@ function saveStudent(){
     all.forEach(function(s){if(s.reg&&s.reg.indexOf(prefix)===0){var n=parseInt(s.reg.substring(prefix.length))||0;if(n>=nextNum)nextNum=n+1;}});
     var reg=val('stu-reg')||(prefix+String(nextNum).padStart(3,'0'));
     // Duplicate check
-    var dup=all.find(function(s){return s.surname.toLowerCase()===sur.toLowerCase()&&s.firstname.toLowerCase()===fn.toLowerCase()&&s.class===cls;});
+    var dup=all.find(function(s){return s.surname.toLowerCase()===sur.toLowerCase()&&s.firstname.toLowerCase()===fn.toLowerCase()&&sameClass(s.class,cls);});
     if(dup){toast('Student already exists in this class!','error');return;}
     var photoData=val('stu-photo-data')||'';
     all.push({id:'s'+Date.now(),surname:sur,firstname:fn,class:cls,
@@ -2706,7 +2712,7 @@ function emailClassResults(){
   var all=getStudents();
   var list=all.filter(function(s){
     var name=((s.surname||'')+(s.firstname||'')).toLowerCase();
-    return (!cls||s.class===cls) && (!q||name.includes(q)||(s.reg||'').toLowerCase().includes(q));
+    return (!cls||sameClass(s.class,cls)) && (!q||name.includes(q)||(s.reg||'').toLowerCase().includes(q));
   });
   var withEmail=list.filter(function(s){return s.parentEmail && _validEmail(s.parentEmail);});
   var without=list.filter(function(s){return !s.parentEmail || !_validEmail(s.parentEmail);});
@@ -3230,7 +3236,7 @@ function renderStaffLinks(){
 function renderStudentLinks(){
   var el2=document.getElementById('student-links-list');if(!el2)return;
   var cls=(document.getElementById('link-cls-filter')||{}).value||'';
-  var students=getStudents().filter(function(s){return !cls||s.class===cls;});
+  var students=getStudents().filter(function(s){return !cls||sameClass(s.class,cls);});
   if(!students.length){el2.innerHTML='<div class="empty-state">No students found</div>';return;}
   el2.innerHTML='';
   students.forEach(function(s){
@@ -3635,7 +3641,7 @@ window.onPage_promotion=function(){
   while(to.options.length>1) to.remove(1);
   classes.forEach(function(c){
     var o=document.createElement('option');o.value=c;
-    o.textContent=c+' ('+students.filter(function(s){return s.class===c;}).length+')';
+    o.textContent=c+' ('+students.filter(function(s){return sameClass(s.class,c);}).length+')';
     from.appendChild(o);
   });
   var allClasses=['Creche','Baby Class','Nursery 1','Nursery 2','KG 1','KG 2','Primary 1','Primary 2','Primary 3','Primary 4','Primary 5','Primary 6','JSS 1','JSS 2','JSS 3','SS 1 Science','SS 1 Commercial','SS 1 Art','SS 2 Science','SS 2 Commercial','SS 2 Art','SS 3 Science','SS 3 Commercial','SS 3 Art','Graduated'];
@@ -3649,7 +3655,7 @@ function loadPromoStudents(){
   if(fromCls&&PROMO_MAP[fromCls]&&toSel){toSel.value=PROMO_MAP[fromCls];}
   var el2=document.getElementById('promo-student-list');if(!el2)return;
   if(!fromCls){el2.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:.85rem;">Select a source class to load students</div>';return;}
-  var students=(getStudents()||[]).filter(function(s){return s.class===fromCls;});
+  var students=(getStudents()||[]).filter(function(s){return sameClass(s.class,fromCls);});
   if(!students.length){el2.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);">No students in '+fromCls+'</div>';return;}
   el2.innerHTML='';
   students.forEach(function(s){
@@ -3870,7 +3876,7 @@ function confirmBulkImport(){
     var dup=existing.find(function(e){
       return e.surname.toLowerCase()===s.surname.toLowerCase()&&
              e.firstname.toLowerCase()===s.firstname.toLowerCase()&&
-             e.class===s.class;
+             sameClass(e.class,s.class);
     });
     if(dup){skipped++;return;}
     var reg=(school.regPrefix||'REG')+'/'+new Date().getFullYear()+'/'+String(existing.length+added+1).padStart(3,'0');
@@ -3987,7 +3993,7 @@ function switchQRTab(tab){
 function renderStudentQRs(){
   var el = document.getElementById('qr-students-list'); if(!el)return;
   var cls = (document.getElementById('qr-stu-cls')||{}).value||'';
-  var students = getStudents().filter(function(s){return !cls||s.class===cls;});
+  var students = getStudents().filter(function(s){return !cls||sameClass(s.class,cls);});
 
   // Populate class filter
   var cf = document.getElementById('qr-stu-cls');
@@ -4307,7 +4313,7 @@ function loadAdminScoreTable(){
   if(!subj){toast('Select a subject','error');return;}
   var currentScheme;
   try{currentScheme=RSMSAssessment.forSchool(getSchool());}catch(e){toast(e.message,'error');return;}
-  var students=(getStudents()||[]).filter(function(s){return s.class===cls;});
+  var students=(getStudents()||[]).filter(function(s){return sameClass(s.class,cls);});
   if(!students.length){toast('No students in '+cls,'error');return;}
   var scoreKey=adminScoreKey(cls,term,sess);
   var legacy='rsms_scores_'+cls.replace(/\s+/g,'_')+'_'+term.replace(/\s+/g,'_')+'_'+sess.replace('/','_');
