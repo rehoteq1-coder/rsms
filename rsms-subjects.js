@@ -10,39 +10,74 @@ if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{
 // RSMS SHARED SUBJECTS MAP — used in ALL portals
 // ════════════════════════════════════════════
 var NG_SUBJECTS = {
-  "JSS": [
-    "English Language","Mathematics","Basic Science & Technology","Social Studies",
-    "Civic Education","Cultural & Creative Arts","Physical & Health Education",
-    "Computer Studies/ICT","Agricultural Science","Home Economics","Business Studies",
-    "French Language","Yoruba Language","Arabic Language",
-    "Christian Religious Studies","Islamic Religious Studies",
-    "Security Education","Pre-Vocational Studies","Basic Technology"
-  ],
-  "SS_SCIENCE": [
-    "English Language","Mathematics","Physics","Chemistry","Biology",
-    "Agricultural Science","Computer Studies","Further Mathematics",
-    "Technical Drawing","Food & Nutrition",
-    "Christian Religious Studies","Islamic Religious Studies",
-    "Civic Education","Physical & Health Education","Yoruba Language"
-  ],
-  "SS_COMMERCIAL": [
-    "English Language","Mathematics","Economics","Commerce","Accounting",
-    "Business Studies","Office Practice","Computer Studies","Salesmanship",
-    "Christian Religious Studies","Islamic Religious Studies",
-    "Civic Education","Physical & Health Education","Yoruba Language","Literature in English"
-  ],
-  "SS_ARTS": [
-    "English Language","Mathematics","Literature in English","Government","History",
-    "Christian Religious Studies","Islamic Religious Studies","Yoruba Language",
-    "French Language","Fine Arts","Music","Geography","Economics",
-    "Civic Education","Physical & Health Education"
+  /* Subject lists updated to the NERDC-approved national curriculum
+     (approved Sept 2025, implementation from 2025/26, phased: P1, P4,
+     JSS1, SS1 first). Each list carries the legacy/WAEC subject names
+     still in use by schools running the old scheme, so both schemes can
+     be entered side by side. Trade subjects are the approved 2025 list. */
+  "PRIMARY_LOW": [
+    "English Studies","Mathematics","Nigerian Language","Basic Science",
+    "Physical & Health Education","Christian Religious Studies","Islamic Religious Studies",
+    "Nigerian History","Social and Citizenship Studies","Cultural & Creative Arts",
+    "Arabic Language",
+    "English Language","Social Studies","Civic Education","Computer Studies",
+    "Agricultural Science","Home Economics","Yoruba Language",
+    "Verbal Reasoning","Quantitative Reasoning","Literacy","Numeracy",
+    "Rhymes","Writing","Handwriting","Social Habits","Health Habits"
   ],
   "PRIMARY": [
-    "English Language","Mathematics","Basic Science","Social Studies",
-    "Civic Education","Cultural & Creative Arts","Physical & Health Education",
+    "English Studies","Mathematics","Nigerian Language","Basic Science & Technology",
+    "Physical & Health Education","Basic Digital Literacy","Christian Religious Studies",
+    "Islamic Religious Studies","Nigerian History","Social and Citizenship Studies",
+    "Cultural & Creative Arts","Pre-Vocational Studies","French","Arabic Language",
+    "English Language","Basic Science","Social Studies","Civic Education",
     "Computer Studies","Agricultural Science","Home Economics","Yoruba Language",
-    "Christian Religious Studies","Islamic Religious Studies",
     "Verbal Reasoning","Quantitative Reasoning"
+  ],
+  "JSS": [
+    "English Studies","Mathematics","Nigerian Language","Intermediate Science",
+    "Physical & Health Education","Digital Technologies","Christian Religious Studies",
+    "Islamic Religious Studies","Nigerian History","Social and Citizenship Studies",
+    "Cultural & Creative Arts","Business Studies","French","Arabic Language",
+    "Solar Photovoltaic Installation & Maintenance","Fashion Design & Garment Making",
+    "Livestock Farming","Beauty & Cosmetology","Computer Hardware & GSM Repairs",
+    "Horticulture & Crop Production",
+    "English Language","Basic Science & Technology","Social Studies","Civic Education",
+    "Computer Studies/ICT","Agricultural Science","Home Economics","Security Education",
+    "Basic Technology","Yoruba Language"
+  ],
+  "SS_SCIENCE": [
+    "English Language","General Mathematics","Digital Technologies",
+    "Citizenship & Heritage Studies","Biology","Chemistry","Physics","Agriculture",
+    "Further Mathematics","Physical Education","Health Education","Foods & Nutrition",
+    "Geography","Technical Drawing","Christian Religious Studies","Islamic Religious Studies",
+    "Nigerian History","Nigerian Language","French",
+    "Solar Photovoltaic Installation & Maintenance","Fashion Design & Garment Making",
+    "Livestock Farming","Beauty & Cosmetology","Computer Hardware & GSM Repairs",
+    "Horticulture & Crop Production",
+    "Mathematics","Agricultural Science","Computer Studies","Economics","Yoruba Language"
+  ],
+  "SS_COMMERCIAL": [
+    "English Language","General Mathematics","Accounting","Commerce","Marketing","Economics",
+    "Digital Technologies","Citizenship & Heritage Studies","Business Studies",
+    "Office Practice","Salesmanship","Christian Religious Studies","Islamic Religious Studies",
+    "Nigerian History",
+    "Solar Photovoltaic Installation & Maintenance","Fashion Design & Garment Making",
+    "Livestock Farming","Beauty & Cosmetology","Computer Hardware & GSM Repairs",
+    "Horticulture & Crop Production",
+    "Mathematics","Literature in English","Computer Studies","Physical & Health Education",
+    "Yoruba Language"
+  ],
+  "SS_ARTS": [
+    "English Language","General Mathematics","Nigerian History","Government",
+    "Christian Religious Studies","Islamic Religious Studies","Nigerian Language",
+    "French","Arabic","Visual Arts","Music","Literature in English","Home Management",
+    "Catering Craft","Digital Technologies","Citizenship & Heritage Studies",
+    "Economics","Geography",
+    "Solar Photovoltaic Installation & Maintenance","Fashion Design & Garment Making",
+    "Livestock Farming","Beauty & Cosmetology","Computer Hardware & GSM Repairs",
+    "Horticulture & Crop Production",
+    "Mathematics","Fine Arts","History","Yoruba Language","Physical & Health Education"
   ]
 };
 

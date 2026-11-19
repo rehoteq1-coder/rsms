@@ -1043,6 +1043,10 @@ exports.createStaffAccount = https.onCall({maxInstances: 10}, function(request){
           throw new https.HttpsError('already-exists',
             'A login with this address already exists.');
         }
+        if(err && err.code === 'auth/invalid-email'){
+          throw new https.HttpsError('invalid-argument',
+            'The login email was rejected as badly formatted: ' + email + '. Use a plain name form like j.doe@school.rsms.');
+        }
         throw new https.HttpsError('internal', 'Account creation failed.');
       });
     });

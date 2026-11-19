@@ -74,13 +74,23 @@
   }
   /* New entry: caller supplies the scheme captured when the form/CSV loaded. */
   function createRecord(base,scores,scheme){
-    var errors=validateScores(scores,scheme,true);
+    /* Partial saves allowed: a teacher may enter CA scores now and add the
+       exam later when the examination records are ready. Any value present
+       must be valid; missing fields stay blank and the record is flagged
+       incomplete until the exam is added. */
+    var errors=validateScores(scores,scheme,false);
     if(errors.length) throw new Error(errors.join(' '));
     var record=Object.assign({},base);
-    fields(scheme).forEach(function(f){record[f]=Number(scores[f]);});
-    if(scheme.tests===2) record.ca3=0;
+    var complete=true;
+    fields(scheme).forEach(function(f){
+      if(scheme.tests===2&&f==='ca3'){record[f]=0;return;}
+      var value=scores?scores[f]:undefined;
+      if(missing(value)){complete=false;record[f]=null;return;}
+      record[f]=Number(value);
+    });
     record.assessment=copy(scheme);
-    record.total=total(scores,scheme);
+    record.total=fields(scheme).reduce(function(sum,f){return sum+Number(record[f]||0);},0);
+    record.incomplete=!complete;
     return record;
   }
   /* An override keeps the record's original snapshot, never today's settings. */
@@ -118,6 +128,7 @@
       var v=viewRecord(record);
       if(v.error){invalid++;return;}
       if(v.total===null){incomplete++;return;}
+      if(!v.complete&&!v.legacyTotal){incomplete++;return;} /* partial (exam not yet entered) stays out of the average */
       sum+=v.total;max+=v.totalMax;count++;
       if(v.percent!==null){percentSum+=v.percent;percentCount++;}else incomplete++;
     });

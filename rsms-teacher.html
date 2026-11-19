@@ -2105,7 +2105,7 @@ function saveTeacherScores(){
     for(var j=0;j<stuIds.length;j++){
       var r=draft.rows[stuIds[j]],scheme=r.assessment||ctx.scheme;
       if(!RSMSAssessment.hasScores(r,scheme))continue;
-      var errors=RSMSAssessment.validateScores(r,scheme,true);
+      var errors=RSMSAssessment.validateScores(r,scheme,false); /* exam may come later */
       if(errors.length){toast('Invalid score in '+ctx.subj+' for '+r.student+': '+errors.join(' '),'error');return;}
     }
   }
