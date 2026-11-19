@@ -527,6 +527,7 @@ select.fi option { background: var(--card); color: var(--t1); }
 <script src="rsms-ai-units.js"></script>
 <script src="rsms-config.js"></script>
 <script src="rsms-assessment.js"></script>
+<script src="rsms-subjects.js"></script>
 <script src="rsms-firebase.js"></script>
 <script src="rsms-plan-guard.js"></script>
 <script>
@@ -572,7 +573,9 @@ function getSubjects(cls){
     }
   });
   if(staffSubjects.length) return staffSubjects.sort();
-  // Fallback to hardcoded lists
+  // Fallback to the current NERDC curriculum lists from rsms-subjects.js
+  if(typeof getSubjectsForClass==='function') return getSubjectsForClass(cls);
+  // Safety net only: legacy lists if rsms-subjects.js failed to load
   var c=(cls||'').toLowerCase();
   if(c.includes('science'))    return SUBJECTS_SS_SCI;
   if(c.includes('commercial')) return SUBJECTS_SS_COM;
