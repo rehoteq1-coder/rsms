@@ -1127,6 +1127,8 @@ function waitForStaffSession(attempt){
 }
 
 function emailLogin(){
+  // A fresh email sign-in must not be blocked by a previous PIN session marker.
+  try{ sessionStorage.removeItem('rsms_user'); sessionStorage.removeItem('rsms_real_auth'); }catch(ePin){ }
   var email=(document.getElementById('staff-email')||{value:''}).value.replace(/^\s+|\s+$/g,'');
   var password=(document.getElementById('staff-password')||{value:''}).value;
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
@@ -1758,6 +1760,11 @@ function doLogin(){
   if(!STATE.school){toast('No school selected','error');return;}
   if(!STATE.role){toast('No role selected','error');return;}
 
+  // A still signed-in verified account must never hijack a PIN session:
+  // sign it out and clear its real-auth flag before the PIN session is written.
+  try{ sessionStorage.removeItem('rsms_real_auth'); }catch(eAuth){ }
+  if(window.RSMS_FB && typeof RSMS_FB.logout === 'function'){ RSMS_FB.logout(); }
+
   // For identity roles, must have selected person
   if(NEEDS_IDENTITY.indexOf(STATE.role)>=0 && !STATE.person){
     toast('Please select yourself from the list','error');return;
@@ -1786,6 +1793,9 @@ function doLogin(){
     // Branding
     brandColor: STATE.school.brandColor,
     logoUrl:    STATE.school.logoUrl,
+    // Marks a deliberate school-ID + PIN sign-in; auth helpers must not
+    // overwrite it with a stale verified account.
+    pinAuth:    true,
   };
 
   sessionStorage.setItem('rsms_user',JSON.stringify(session));
