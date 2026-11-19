@@ -2422,7 +2422,7 @@ function saveTeacherScores(){
     var id=ids[i],row=ctScoreRows[id],values=ctScoreValues(id);
     if(!RSMSAssessment.hasScores(values,row.scheme))continue;
     if(row.record&&RSMSAssessment.fields(row.scheme).every(function(f){return String(values[f]==null?'':values[f])===String(row.record[f]==null?'':row.record[f]);}))continue;
-    var errors=RSMSAssessment.validateScores(values,row.scheme,true);
+    var errors=RSMSAssessment.validateScores(values,row.scheme,false); /* exam may come later */
     if(errors.length){toast((row.student.surname||id)+': '+errors.join(' '),'error');return;}
     var record;
     try{record=row.record?RSMSAssessment.updateRecord(row.record,values):RSMSAssessment.createRecord({stuId:id,student:((row.student.surname||'')+' '+(row.student.firstname||'')).trim(),class:c.cls,subject:c.subj,term:c.term,session:c.sess},values,row.scheme);}

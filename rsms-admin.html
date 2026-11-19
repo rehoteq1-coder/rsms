@@ -2843,7 +2843,18 @@ function suggestStaffLoginEmail(name){
   var slug=String(s.name||'school').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,14)||'school';
   var parts=String(name||'').trim().split(/\s+/);
   var first=parts[0]||'',last=parts.length>1?parts[parts.length-1]:'';
-  var local=(first.charAt(0)+'.'+last).toLowerCase().replace(/[^a-z0-9.]/g,'')||'staff';
+  /* A single-word name must not leave a trailing dot in the local part:
+     "a.@school.rsms" is rejected by the account service as a badly
+     formatted email, which staff saw as "wrongfully generated mail". */
+  var local=(last?(first.charAt(0)+'.'+last):first).toLowerCase().replace(/[^a-z0-9.]/g,'');
+  local=local.replace(/\.{2,}/g,'.').replace(/^[.]+/,'').replace(/[.]+$/,'')||'staff';
+  /* Two staff sharing a first initial + surname would receive the same
+     suggestion, and the second one would collide on save; number repeats. */
+  try{
+    var used=(getStaff()||[]).map(function(x){return String(x.loginEmail||x.email||'').toLowerCase();});
+    var base=local,n=2;
+    while(used.indexOf(local+'@'+slug+'.rsms')>-1){local=base+n;n++;}
+  }catch(e){}
   return local+'@'+slug+'.rsms';
 }
 function createStaffLogin(name,role,email,pw,staffKey){
@@ -4374,7 +4385,7 @@ function saveAdminScores(){
     var id=ids[i],row=adminScoreRows[id],values=adminScoreValues(id);
     if(!RSMSAssessment.hasScores(values,row.scheme))continue;
     if(row.record&&RSMSAssessment.fields(row.scheme).every(function(f){return String(values[f]==null?'':values[f])===String(row.record[f]==null?'':row.record[f]);}))continue;
-    var errors=RSMSAssessment.validateScores(values,row.scheme,true);
+    var errors=RSMSAssessment.validateScores(values,row.scheme,false); /* exam may come later */
     if(errors.length){toast((row.student.surname||id)+': '+errors.join(' '),'error');return;}
     var record;
     try{record=row.record?RSMSAssessment.updateRecord(row.record,values):RSMSAssessment.createRecord({stuId:id,student:((row.student.surname||'')+' '+(row.student.firstname||'')).trim(),class:c.cls,subject:c.subj,term:c.term,session:c.sess},values,row.scheme);}

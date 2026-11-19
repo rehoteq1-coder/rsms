@@ -77,7 +77,7 @@
       if(seen[pair]){errors.push('Row '+line+': duplicate student and subject.');return;}
       seen[pair]=true;
       var scores={}; scoreFields.forEach(function(f,i){scores[f]=vals[i];});
-      var scoreErrors=A.validateScores(scores,config,true);
+      var scoreErrors=A.validateScores(scores,config,false); /* exam may come later */
       if(scoreErrors.length){errors.push('Row '+line+': '+scoreErrors.join(' '));return;}
       used[id]=true;
       items.push({student:student,subject:r[6],ca1:Number(vals[0]),ca2:Number(vals[1]),
