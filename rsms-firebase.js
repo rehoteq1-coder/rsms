@@ -208,6 +208,20 @@ var RSMS_FB = (function(){
 
   function _applyAuthSession(user, claims){
     var previous = _session();
+    if(previous && previous.pinAuth === true){
+      // The user signed in deliberately with school ID + PIN. A still
+      // signed-in verified account is stale: sign it out and keep the
+      // PIN session instead of overwriting it.
+      try{
+        sessionStorage.removeItem('rsms_real_auth');
+        if(_initAuth() && _auth && typeof _auth.signOut === 'function'){
+          _auth.signOut().catch(function(){ });
+        }
+      }catch(ePin){ }
+      _staffFallbackTried = false;
+      _scheduleAuthGuard();
+      return;
+    }
     var roles = _claimList(claims && claims.roles, true);
     if(!roles.length) roles = _claimList(claims && (claims.roleMap || claims.role), true);
     var schoolIds = _claimList(claims && claims.schoolIds, false);
