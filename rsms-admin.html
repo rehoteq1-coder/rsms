@@ -2872,6 +2872,16 @@ function createStaffLogin(name,role,email,pw,staffKey){
     }).catch(function(e){
       var msg=(e&&e.message)||'error';
       if(/not-found/i.test(msg)&&n<2){setTimeout(function(){attempt(n+1);},1500);return;}
+      if(/already-exists/i.test(msg)){
+        confirmAction('A login already exists for '+email+'. Reset its password to the new one and print a fresh slip?',function(){
+          var rf=firebase.functions().httpsCallable('resetStaffPassword');
+          rf({schoolId:sid,email:email.toLowerCase(),password:pw,pin:pins.admin||pins.principal||pins.bursar||''}).then(function(res){
+            if(res&&res.data&&res.data.ok){printStaffLoginSlip(name,role,email,pw,sid);toast('Password reset. Print the slip for the staff.','success');}
+            else{toast('Password not reset','error');}
+          }).catch(function(e2){toast('Reset failed: '+((e2&&e2.message)||'error'),'error');});
+        });
+        return;
+      }
       toast('Login failed: '+msg,'error');
     });
   };
