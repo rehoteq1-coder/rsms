@@ -1012,42 +1012,49 @@ exports.createStaffAccount = https.onCall({maxInstances: 10}, function(request){
         throw new https.HttpsError('failed-precondition',
           'This staff title does not carry a portal login.');
       }
-      return admin.auth().getUserByEmail(email).then(function(){
-        throw new https.HttpsError('already-exists',
-          'A login with this address already exists.');
-      }).catch(function(err){
-        if(err && err.code === 'auth/user-not-found') return found;
-        if(err instanceof https.HttpsError) throw err;
-        throw err;
-      });
-    }).then(function(found){
-      return admin.auth().createUser({
-        email: email, password: password, displayName: name, emailVerified: false
-      }).then(function(user){
-        return stampStaffClaims(user.uid, staffRolesForTitle(found.staff.role), schoolId)
-          .then(function(){
-            var at = new Date().toISOString();
-            var updates = {};
-            updates['schools/' + schoolId + '/staff/' + found.key + '/loginEmail'] = email;
-            updates['schools/' + schoolId + '/staff/' + found.key + '/authUid'] = user.uid;
-            updates['schools/' + schoolId + '/staff/' + found.key + '/loginActive'] = true;
-            updates['schools/' + schoolId + '/staff/' + found.key + '/loginCreatedAt'] = at;
-            return database().ref().update(updates).then(function(){
-              auditStaffLogin(schoolId, 'staff_login_created', mode, email);
-              return { ok: true, uid: user.uid };
-            });
+      var finishLogin = function(uid, created){
+        return stampStaffClaims(uid, roles, schoolId).then(function(){
+          var at = new Date().toISOString();
+          var updates = {};
+          updates['schools/' + schoolId + '/staff/' + found.key + '/loginEmail'] = email;
+          updates['schools/' + schoolId + '/staff/' + found.key + '/authUid'] = uid;
+          updates['schools/' + schoolId + '/staff/' + found.key + '/loginActive'] = true;
+          updates['schools/' + schoolId + '/staff/' + found.key + '/loginCreatedAt'] = at;
+          return database().ref().update(updates).then(function(){
+            auditStaffLogin(schoolId, created ? 'staff_login_created' : 'staff_login_reset', mode, email);
+            return { ok: true, uid: uid };
           });
+        });
+      };
+      return admin.auth().getUserByEmail(email).then(function(existing){
+        var claims = existing.customClaims || {};
+        if(claims.schoolId && claims.schoolId !== schoolId){
+          throw new https.HttpsError('already-exists',
+            'A login with this address already exists for another school.');
+        }
+        return admin.auth().updateUser(existing.uid, { password: password, displayName: name })
+          .then(function(){ return finishLogin(existing.uid, false); });
       }).catch(function(err){
         if(err instanceof https.HttpsError) throw err;
-        if(err && err.code === 'auth/email-already-exists'){
-          throw new https.HttpsError('already-exists',
-            'A login with this address already exists.');
+        if(err && err.code === 'auth/user-not-found'){
+          return admin.auth().createUser({
+            email: email, password: password, displayName: name, emailVerified: false
+          }).then(function(user){
+            return finishLogin(user.uid, true);
+          }).catch(function(err2){
+            if(err2 instanceof https.HttpsError) throw err2;
+            if(err2 && err2.code === 'auth/email-already-exists'){
+              throw new https.HttpsError('already-exists',
+                'A login with this address already exists.');
+            }
+            if(err2 && err2.code === 'auth/invalid-email'){
+              throw new https.HttpsError('invalid-argument',
+                'The login email was rejected as badly formatted: ' + email + '. Use a plain name form like j.doe@school.rsms.');
+            }
+            throw new https.HttpsError('internal', 'Account creation failed.');
+          });
         }
-        if(err && err.code === 'auth/invalid-email'){
-          throw new https.HttpsError('invalid-argument',
-            'The login email was rejected as badly formatted: ' + email + '. Use a plain name form like j.doe@school.rsms.');
-        }
-        throw new https.HttpsError('internal', 'Account creation failed.');
+        throw err;
       });
     });
   }).catch(function(error){
@@ -1070,12 +1077,36 @@ exports.resetStaffPassword = https.onCall({maxInstances: 10}, function(request){
       return findStaffByEmail(schoolId, email);
     }).then(function(found){
       var uid = cleanText(found.staff.authUid, 128);
-      if(!uid){
-        throw new https.HttpsError('not-found', 'This staff record has no portal login yet.');
+      if(uid){
+        return admin.auth().updateUser(uid, { password: password }).then(function(){
+          auditStaffLogin(schoolId, 'staff_login_reset', mode, email);
+          return { ok: true };
+        });
       }
-      return admin.auth().updateUser(uid, { password: password }).then(function(){
-        auditStaffLogin(schoolId, 'staff_login_reset', mode, email);
-        return { ok: true };
+      return admin.auth().getUserByEmail(email).then(function(existing){
+        var claims = existing.customClaims || {};
+        if(claims.schoolId && claims.schoolId !== schoolId){
+          throw new https.HttpsError('failed-precondition',
+            'This address belongs to a login of another school.');
+        }
+        return admin.auth().updateUser(existing.uid, { password: password })
+          .then(function(){ return stampStaffClaims(existing.uid, staffRolesForTitle(found.staff.role), schoolId); })
+          .then(function(){
+            var updates = {};
+            updates['schools/' + schoolId + '/staff/' + found.key + '/authUid'] = existing.uid;
+            updates['schools/' + schoolId + '/staff/' + found.key + '/loginActive'] = true;
+            return database().ref().update(updates);
+          })
+          .then(function(){
+            auditStaffLogin(schoolId, 'staff_login_reset', mode, email);
+            return { ok: true };
+          });
+      }).catch(function(err){
+        if(err instanceof https.HttpsError) throw err;
+        if(err && err.code === 'auth/user-not-found'){
+          throw new https.HttpsError('not-found', 'This staff record has no portal login yet.');
+        }
+        throw err;
       });
     });
   }).catch(function(error){
