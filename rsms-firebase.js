@@ -126,31 +126,40 @@ var RSMS_FB = (function(){
   // PIN flow trusts. Roles are derived from the matching staff record's title.
   function _deriveStaffRoles(schoolId, email){
     var wanted = _cleanText(email).toLowerCase();
-    if(!schoolId || !wanted || !_db) return Promise.resolve([]);
+    if(!schoolId || !wanted || !_db) return Promise.resolve({roles:[], myClass:'', subjects:''});
     return _db.ref('schools/'+schoolId+'/staff').once('value').then(function(snap){
       var rows = snap.val() || {};
       var roles = [];
+      var derived = {roles:roles, myClass:'', subjects:''};
       Object.keys(rows).forEach(function(key){
         var rec = rows[key];
         if(!rec || typeof rec !== 'object') return;
-        if(_cleanText(rec.email).toLowerCase() !== wanted) return;
+        var recEmail = _cleanText(rec.email).toLowerCase();
+        var recLogin = _cleanText(rec.loginEmail).toLowerCase();
+        if(recEmail !== wanted && recLogin !== wanted) return;
         _staffRolesForTitle(rec.role).forEach(function(role){
           if(roles.indexOf(role) === -1) roles.push(role);
         });
+        // Carry the class attachment and taught subjects into the session so
+        // the class-teacher portal can scope students without a second lookup.
+        if(!derived.myClass && (rec.myClass || rec.class)) derived.myClass = rec.myClass || rec.class;
+        if(!derived.subjects && (rec.subjects || rec.subject)) derived.subjects = rec.subjects || rec.subject;
       });
-      return roles;
-    }).catch(function(){ return []; });
+      return derived;
+    }).catch(function(){ return {roles:[], myClass:'', subjects:''}; });
   }
 
   function _applyStaffRoles(schoolId, email){
     return _deriveStaffRoles(schoolId, email).then(function(derived){
-      if(derived.length){
+      if(derived && derived.roles && derived.roles.length){
         var session = _session();
-        var merged = _claimList((session.roles||[]).concat(derived), true);
+        var merged = _claimList((session.roles||[]).concat(derived.roles), true);
         if(merged.length){
           session.roles = merged;
           session.roleMap = merged;
           session.role = merged[0] || session.role || '';
+          if(derived.myClass && !session.myClass) session.myClass = derived.myClass;
+          if(derived.subjects && !session.subjects) session.subjects = derived.subjects;
           try { sessionStorage.setItem('rsms_user', JSON.stringify(session)); }catch(e){}
           _fireAuthChanged(session);
           _scheduleAuthGuard();
@@ -424,7 +433,7 @@ var RSMS_FB = (function(){
       if(!_staffFallbackTried && session.email && staffSchool){
         _staffFallbackTried = true;
         _applyStaffRoles(staffSchool, session.email).then(function(derived){
-          if(derived.indexOf(requiredRole) === -1 && derived.indexOf('superadmin') === -1){
+          if(derived.roles.indexOf(requiredRole) === -1 && derived.roles.indexOf('superadmin') === -1){
             _showAuthBlock('Access denied', 'This verified account does not have the '+_titleCase(requiredRole)+' role required for this portal.');
           }
         });
