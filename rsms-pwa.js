@@ -37,16 +37,105 @@
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-      navigator.serviceWorker.register('sw.js', { scope: './' })
+      navigator.serviceWorker.register('sw.js', { scope: './', updateViaCache: 'none' })
         .then(function(reg) {
           console.log('[RSMS-PWA] Service worker registered, scope:', reg.scope);
           // Check for updates every hour
           setInterval(function() { reg.update(); }, 3600000);
+          // A freshly installed worker means new files are on the server:
+          // surface the update prompt once it is ready to take over.
+          reg.addEventListener('updatefound', function() {
+            var next = reg.installing;
+            if (!next) return;
+            next.addEventListener('statechange', function() {
+              if (next.state === 'installed' && navigator.serviceWorker.controller) {
+                showUpdateBanner();
+              }
+            });
+          });
         })
         .catch(function(err) {
           console.warn('[RSMS-PWA] Service worker registration failed:', err);
         });
     });
+  }
+
+  /* ── 3b. App version check + update prompt ──────────── */
+
+  var UPDATE_KEY = 'rsms_app_version';
+  var checkedOnce = false;
+
+  // A small banner at the bottom of the screen. Tapping "Update now"
+  // clears every cached copy of the app and reloads from the server, so
+  // the very next screen the user sees is the latest release.
+  function showUpdateBanner() {
+    if (document.getElementById('rsms-update-banner')) return;
+    if (!document.body) { window.addEventListener('DOMContentLoaded', showUpdateBanner); return; }
+    var el = document.createElement('div');
+    el.id = 'rsms-update-banner';
+    el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:99999;' +
+      'background:#0b0b10;color:#f0f2ff;border:1px solid rgba(212,168,43,.35);border-radius:12px;' +
+      'padding:12px 16px;font-family:Outfit,system-ui,sans-serif;font-size:.9rem;' +
+      'box-shadow:0 8px 30px rgba(0,0,0,.5);display:flex;align-items:center;gap:12px;max-width:92vw;';
+    var label = document.createElement('span');
+    label.textContent = 'RSMS has a new version.';
+    label.style.cssText = 'color:rgba(240,242,255,.8);white-space:nowrap;';
+    var btn = document.createElement('button');
+    btn.id = 'rsms-update-btn';
+    btn.textContent = 'Update now';
+    btn.style.cssText = 'background:#d4a843;color:#030305;border:none;border-radius:8px;' +
+      'padding:8px 16px;font-weight:700;font-size:.85rem;cursor:pointer;white-space:nowrap;';
+    btn.addEventListener('click', applyAppUpdate);
+    el.appendChild(label);
+    el.appendChild(btn);
+    document.body.appendChild(el);
+  }
+
+  function applyAppUpdate() {
+    var btn = document.getElementById('rsms-update-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Updating...'; }
+    function finish() { window.location.reload(); }
+    var mark = fetch('version.json?r=' + Date.now(), { cache: 'no-store' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(v) {
+        if (v && v.version) {
+          try { localStorage.setItem(UPDATE_KEY, v.version); } catch (e) {}
+        }
+      })
+      .catch(function() {});
+    var clear = ('caches' in window)
+      ? caches.keys().then(function(names) {
+          return Promise.all(names.map(function(n) { return caches.delete(n); }));
+        }).catch(function() {})
+      : Promise.resolve();
+    Promise.all([mark, clear]).then(finish, finish);
+  }
+
+  // Compare the release the device last ran against the one now on the
+  // server. A different (or unreadable) stored version means the app is
+  // stale, so prompt instead of silently running old code.
+  function checkAppVersion() {
+    if (checkedOnce || !window.fetch) return;
+    checkedOnce = true;
+    fetch('version.json?r=' + Date.now(), { cache: 'no-store' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(v) {
+        if (!v || !v.version) return;
+        var seen = null;
+        try { seen = localStorage.getItem(UPDATE_KEY); } catch (e) {}
+        if (!seen) {
+          try { localStorage.setItem(UPDATE_KEY, v.version); } catch (e) {}
+          return;
+        }
+        if (seen !== v.version) showUpdateBanner();
+      })
+      .catch(function() { /* offline: keep running the cached copy */ });
+  }
+
+  if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', checkAppVersion);
+  } else {
+    checkAppVersion();
   }
 
   /* ── 4. Initialize the optional offline foundation safely ─ */

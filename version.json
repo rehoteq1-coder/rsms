@@ -1,0 +1,5 @@
+{
+  "version": "3.3.0",
+  "built": "2026-11-21T16:30:00+01:00",
+  "note": "Bump this version string with every release. Portals compare it against the copy they last ran and prompt the user to update."
+}

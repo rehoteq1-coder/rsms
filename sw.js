@@ -1,10 +1,10 @@
 /*  ═══════════════════════════════════════════════════════
-    RSMS Service Worker  —  v3.1.2
+    RSMS Service Worker  —  v3.3.0 (update prompt)
     Strategy: Network-first, cache-fallback
     Domain:   rsms.rehoteq.com (root paths, no prefix)
     ═══════════════════════════════════════════════════════ */
 
-var CACHE_NAME = 'rsms-v3.2.0-assessment';
+var CACHE_NAME = 'rsms-v3.3.0-updateprompt';
 
 var STATIC_ASSETS = [
   '/',
