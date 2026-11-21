@@ -1763,7 +1763,10 @@ function doLogin(){
   // A still signed-in verified account must never hijack a PIN session:
   // sign it out and clear its real-auth flag before the PIN session is written.
   try{ sessionStorage.removeItem('rsms_real_auth'); }catch(eAuth){ }
-  if(window.RSMS_FB && typeof RSMS_FB.logout === 'function'){ RSMS_FB.logout(); }
+  // Sign out of any verified account WITHOUT the redirect that logout()
+  // fires after sign-out, which used to cancel the portal navigation below
+  // and bounce the user back to this page.
+  if(window.RSMS_FB && typeof RSMS_FB.signOutSilent === 'function'){ RSMS_FB.signOutSilent(); }
 
   // For identity roles, must have selected person
   if(NEEDS_IDENTITY.indexOf(STATE.role)>=0 && !STATE.person){

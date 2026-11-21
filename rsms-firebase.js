@@ -328,6 +328,21 @@ var RSMS_FB = (function(){
     return Promise.resolve();
   }
 
+  // Sign out of Firebase WITHOUT navigating and WITHOUT wiping a freshly
+  // written PIN session. Used by the sign-in pages right before they enter a
+  // portal: logout() redirects to rsms-login.html a moment later, which used
+  // to cancel the portal navigation and bounce the user back to the school
+  // search screen (force=false keeps rsms_user/rsms_auth untouched unless a
+  // real verified-account session is still flagged).
+  function signOutSilent(){
+    function finish(){ _clearAuthSession(false); }
+    if(_initAuth() && _auth && typeof _auth.signOut === 'function'){
+      return _auth.signOut().catch(function(){}).then(function(){ finish(); });
+    }
+    finish();
+    return Promise.resolve();
+  }
+
   function currentUser(){
     return _auth && _auth.currentUser ? _auth.currentUser : null;
   }
@@ -889,6 +904,7 @@ var RSMS_FB = (function(){
     setSchoolId:      setSchoolId,
     login:            login,
     logout:           logout,
+    signOutSilent:    signOutSilent,
     currentUser:      currentUser,
     claims:           claims,
     authEnforced:     authEnforced,
