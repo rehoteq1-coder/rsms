@@ -124,7 +124,16 @@
         var seen = null;
         try { seen = localStorage.getItem(UPDATE_KEY); } catch (e) {}
         if (!seen) {
-          try { localStorage.setItem(UPDATE_KEY, v.version); } catch (e) {}
+          // No stored version means this copy of the app predates the update
+          // system. If a service worker already controls the page the device
+          // is an installed app running older files, so prompt it too;
+          // otherwise it is a brand-new visitor and we just take note.
+          var hadWorker = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+          if (hadWorker) {
+            showUpdateBanner();
+          } else {
+            try { localStorage.setItem(UPDATE_KEY, v.version); } catch (e) {}
+          }
           return;
         }
         if (seen !== v.version) showUpdateBanner();
