@@ -10,6 +10,13 @@ if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{
 // RSMS SHARED SUBJECTS MAP — used in ALL portals
 // ════════════════════════════════════════════
 var NG_SUBJECTS = {
+  /* Early years (Creche, Playgroup, Pre-Nursery, KG, Nursery 1/2): play-based
+     foundation areas used by Nigerian early-childhood classrooms. */
+  "EARLY_YEARS": [
+    "Letter Work","Number Work","Rhymes","Pre-Writing","Handwriting","Colouring",
+    "Social Habits","Health Habits","Science Exploration","Creative Arts",
+    "Music & Rhymes","Moral Instruction","Physical Development"
+  ],
   /* Subject lists updated to the NERDC-approved national curriculum
      (approved Sept 2025, implementation from 2025/26, phased: P1, P4,
      JSS1, SS1 first). Each list carries the legacy/WAEC subject names
@@ -84,6 +91,7 @@ var NG_SUBJECTS = {
 function getSubjectsForClass(cls) {
   if(!cls) return NG_SUBJECTS.JSS;
   var c = cls.toLowerCase();
+  if(c.includes('creche')||c.includes('playgroup')||c.includes('pre-nursery')||c.includes('pre nursery')||c.includes('kg')||c.includes('nursery')) return NG_SUBJECTS.EARLY_YEARS;
   if(c.includes('science'))  return NG_SUBJECTS.SS_SCIENCE;
   if(c.includes('commercial')||c.includes('commerce')) return NG_SUBJECTS.SS_COMMERCIAL;
   if(c.includes('art'))      return NG_SUBJECTS.SS_ARTS;
