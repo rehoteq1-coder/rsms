@@ -65,5 +65,9 @@ function rolesFor(t){ const s=String(t||'').trim(); const o=[]; TABLE.forEach(fu
   upd['schools/'+SCHOOL+'/staff/'+key+'/loginCreatedAt'] = at;
   await db.ref().update(upd);
   await db.ref('schools/'+SCHOOL+'/audit_log').push({ action: 'staff_login_created', by: 'manual_repair', at: at, detail: EMAIL });
+  const after = (await db.ref('schools/'+SCHOOL+'/staff/'+key).once('value')).val() || {};
+  console.log('VERIFY DB:', JSON.stringify({loginEmail: after.loginEmail, authUid: after.authUid, loginActive: after.loginActive}));
+  const u2 = await admin.auth().getUser(uid);
+  console.log('VERIFY AUTH:', u2.email, 'claims=', JSON.stringify(u2.customClaims));
   console.log('DONE uid=' + uid);
 })().catch(function(e){ console.log('FATAL:', e.code || '', e.message); process.exit(1); });
