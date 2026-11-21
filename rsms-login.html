@@ -1840,6 +1840,11 @@ function doLogin(){
   if(STATE.role==='admin'&&STATE.school&&STATE.school.adminToken){
     portal='rsms-admin.html?token='+STATE.school.adminToken;
   }
+  // Carry the built portal (with the admin's access token) into enterPortal().
+  // index.html assigns this same value; rsms-login.html had dropped the line,
+  // so sign-ins from the installed app (which opens rsms-app.html ->
+  // rsms-login.html) reached the portal without ?token= and bounced back.
+  STATE._pendingPortal=portal;
   // ── Check PIN ── use scoped keys for school isolation
   var sid=STATE.school.schoolId||'';
   // Read staff from scoped key
