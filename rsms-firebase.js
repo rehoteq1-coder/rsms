@@ -442,6 +442,19 @@ var RSMS_FB = (function(){
       }
       return false;
     }
+    // No session at all: this visit never signed in. Token links materialize
+    // their session in the page's own DOMContentLoaded handler (checkToken),
+    // which runs after this guard, so give that one synchronous chance before
+    // sending the visitor to the sign-in page. Without this, landing directly
+    // on a portal rendered the dashboard with the Admin fallback session
+    // ("Admin - Subject Teacher", every count zero).
+    if(sessionStorage.getItem('rsms_auth') !== 'true'){
+      if(typeof window.checkToken === 'function'){ try{ window.checkToken(); }catch(e){} }
+      if(sessionStorage.getItem('rsms_auth') !== 'true'){
+        try { window.location.replace('rsms-login.html'); }catch(e){}
+        return false;
+      }
+    }
     if(sessionStorage.getItem('rsms_auth') === 'true' && FINANCE_ROLES.indexOf(requiredRole) > -1 && authEnforced(session.schoolId || _sid)){
       _showAuthBlock('Email sign-in required', 'This school requires a verified staff email account before opening finance portals.');
       return false;
