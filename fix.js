@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-admin.initializeApp({ credential: admin.credential.applicationDefault() });
+admin.initializeApp({ credential: admin.credential.applicationDefault(), projectId: 'rsms-a84ff', databaseURL: 'https://rsms-a84ff-default-rtdb.europe-west1.firebasedatabase.app' });
 const db = admin.database();
 const SCHOOL = 'REH-2J8KQ2XF';
 const EMAIL = 'a.adebayo@adetolagroupof.rsms';
