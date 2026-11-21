@@ -57,6 +57,7 @@ function rolesFor(t){ const s=String(t||'').trim(); const o=[]; TABLE.forEach(fu
   const roleMap = {}; roles.forEach(function(r){ roleMap[r] = true; });
   const schoolMap = {}; schoolMap[SCHOOL] = true;
   await admin.auth().setCustomUserClaims(uid, { roles: roles, roleMap: roleMap, schoolIds: schoolMap });
+  await db.ref('users/'+uid).set({ name: NAME, roles: roles, roleMap: roleMap, schoolIds: schoolMap, provisionedAt: new Date().toISOString() });
   const at = new Date().toISOString();
   const upd = {};
   upd['schools/'+SCHOOL+'/staff/'+key+'/loginEmail'] = EMAIL;
