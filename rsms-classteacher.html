@@ -947,6 +947,7 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
   </div>
   <div class="page-hd-row" style="margin-bottom:12px;">
     <div><div class="page-hd-title">My Students</div><div class="page-hd-sub" id="t-stu-count"></div></div>
+    <select class="fi" id="t-cls-filter" onchange="onStudentsClassChange()" style="height:40px;max-width:190px;font-size:.85rem;"><option value="">-- Select Class --</option></select>
   </div>
   <div id="my-students-list"></div>
 </div>
@@ -1479,15 +1480,30 @@ function renderDash(){
 
 function renderMyStudents(){
   ME = RSMS.user() || {};
-  MY_CLASS = ME.myClass || ME.class || ME.myclass || '';
+  MY_CLASS = ME.myClass || ME.class || ME.myclass || MY_CLASS || '';
   var el = document.getElementById('my-students-list');
   if(!el)return;
-  var students = MY_CLASS ? RSMS.students().filter(function(s){return sameClass(s.class,MY_CLASS);}) : RSMS.students();
+  var clsSel = document.getElementById('t-cls-filter');
+  if(clsSel && !clsSel.options.length){
+    var attSel = document.getElementById('att-class-sel');
+    if(attSel) clsSel.innerHTML = attSel.innerHTML;
+  }
+  if(clsSel){
+    if(MY_CLASS){ lockMyClassSelect('t-cls-filter'); }
+    else if(!clsSel.value && MY_CLASS){ clsSel.value = MY_CLASS; }
+  }
   var cls = document.getElementById('t-cls-filter');
-  if(cls && cls.value) students = RSMS.students().filter(function(s){return sameClass(s.class,cls.value);});
   var lbl = document.getElementById('t-stu-count');
-  if(lbl) lbl.textContent = students.length+' students'+(MY_CLASS?' in '+MY_CLASS:'')
-    +(!students.length&&MY_CLASS?' \u2014 check that the class name on the staff record matches how students were uploaded (e.g. JSS1 vs JSS 1)':'');
+  var chosen = MY_CLASS;
+  if(cls && cls.value) chosen = cls.value;
+  if(!chosen){
+    if(lbl) lbl.textContent = 'Choose a class to view its students';
+    el.innerHTML = '<div class="empty-state">Select a class above to view its students</div>';
+    return;
+  }
+  var students = RSMS.students().filter(function(s){return sameClass(s.class,chosen);});
+  if(lbl) lbl.textContent = students.length+' students in '+chosen
+    +(!students.length?' \u2014 check that the class name on the staff record matches how students were uploaded (e.g. JSS1 vs JSS 1)':'');
   if(!students.length){el.innerHTML='<div class="empty-state">No students in your class yet</div>';return;}
   el.innerHTML='';
   students.forEach(function(s,i){
@@ -1721,7 +1737,13 @@ function renderMarkRegister(){
   var el = document.getElementById('att-register-list'); if(!el)return;
   ME = RSMS.user()||{};
   MY_CLASS = ME.myClass||ME.class||MY_CLASS||'';
-  var students = MY_CLASS ? getStudents(MY_CLASS) : RSMS.students();
+  if(!MY_CLASS){
+    el.innerHTML = '<div class="empty-state">Select a class above to load the register</div>';
+    var sumEl0 = document.getElementById('att-summary');
+    if(sumEl0) sumEl0.textContent = 'Select class to start';
+    return;
+  }
+  var students = getStudents(MY_CLASS);
   var data = ATT.load(MY_CLASS);
   if(!students.length){el.innerHTML='<div class="empty-state">No students in your class</div>';return;}
   
@@ -2083,6 +2105,13 @@ function createAssignment(){
   toast('\u2705 Assignment posted to '+cls,'success');
   toggleForm('asgn-form');
   renderAssignments();
+}
+
+// My Students class change handler
+function onStudentsClassChange(){
+  var cls=(document.getElementById('t-cls-filter')||{}).value||'';
+  if(cls){ MY_CLASS=cls; localStorage.setItem('rsms_ct_class',cls); }
+  renderMyStudents();
 }
 
 // Attendance class change handler
