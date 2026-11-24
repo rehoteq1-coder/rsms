@@ -1864,7 +1864,9 @@ function doLogin(){
   var allPins=JSON.parse(localStorage.getItem(pinsKey)||rsmsCacheGetRaw('portal_pins')||'{}');
 
   // ── Check portal_pins FIRST for ALL roles ──
-  sPin = allPins[STATE.role]||null;
+  // The HM is the head of the primary section; until a school sets a
+  // dedicated HM pin, the head (principal) pin unlocks the HM portal.
+  sPin = allPins[STATE.role]||(STATE.role==='hm'?(allPins.principal||null):null)||null;
 
   // ── If no role PIN, check individual staff/student record ──
   if(!sPin && sRec && sRec.pin){ sPin=sRec.pin; }
