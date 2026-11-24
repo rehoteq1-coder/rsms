@@ -858,6 +858,7 @@ body{background:var(--bg);min-height:100vh;font-family:var(--sans);}
       <button class="role-btn" data-role="vp"           onclick="selectRole('vp')"><div class="role-ico">&#127891;</div><div class="role-lbl">VP Academic</div></button>
       <button class="role-btn" data-role="bursar"       onclick="selectRole('bursar')"><div class="role-ico">&#127968;</div><div class="role-lbl">Bursar</div></button>
       <button class="role-btn" data-role="principal"     onclick="selectRole('principal')"><div class="role-ico">&#128188;</div><div class="role-lbl">Principal</div></button>
+      <button class="role-btn" data-role="hm"          onclick="selectRole('hm')"><div class="role-ico">&#128188;</div><div class="role-lbl">Headmaster</div></button>
       <button class="role-btn" data-role="student"      onclick="selectRole('student')"><div class="role-ico">&#129489;</div><div class="role-lbl">Student</div></button>
       <button class="role-btn" data-role="parent"       onclick="selectRole('parent')"><div class="role-ico">&#128106;</div><div class="role-lbl">Parent</div></button>
     </div>
@@ -1135,7 +1136,7 @@ var LINKS={
     'Class Teacher':'rsms-classteacher.html','Subject Teacher':'rsms-teacher.html',
     'Teacher':'rsms-teacher.html','HOD':'rsms-hod.html',
     'Vice Principal Academic':'rsms-vp.html','Vice Principal Admin':'rsms-vp.html',
-    'Principal':'rsms-vp.html','Head Mistress':'rsms-vp.html',
+    'Principal':'rsms-principal.html','Head Mistress':'rsms-hm.html','Headmaster':'rsms-hm.html','Headmaster/Headmistress':'rsms-hm.html',
     'Bursar':'rsms-bursar.html','Admin Staff':'rsms-admin.html','Security':'rsms-clock.html'
   },
   _token:function(seed){return btoa(seed+'|'+Date.now()).replace(/[^a-zA-Z0-9]/g,'').slice(0,16);},
