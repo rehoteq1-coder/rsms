@@ -1184,7 +1184,7 @@ window.RSMS_DB = {
       <span>Show student photo on report cards &amp; progress reports <span style="color:var(--t4);font-size:.72rem;">(off = cards are printed without the photo block)</span></span>
     </label>
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.25);border-radius:var(--r2);font-size:.82rem;color:var(--t2);margin-top:10px;">
-      <input type="checkbox" id="cfg-stafflogins" style="width:17px;height:17px;accent-color:#d4a843;flex-shrink:0;"/>
+      <input type="checkbox" id="cfg-stafflogins" onchange="saveStaffLoginsToggle()" style="width:17px;height:17px;accent-color:#d4a843;flex-shrink:0;"/>
       <span>Staff email logins <span style="color:var(--t4);font-size:.72rem;">(optional: staff sign in with a generated email + password; school ID and codes stay the main door)</span></span>
     </label>
     <button id="cfg-save-settings" class="btn btn-gold btn-full" onclick="saveSettings()" style="margin-top:4px;">&#9989; Save Settings</button>
@@ -3503,6 +3503,25 @@ function newAiTerm(){
 }
 
 // ── SETTINGS ───────────────────────────────────────────
+/* The staff-email-logins switch lives at schools/<sid>/settings/staffEmailLogins
+   in Firebase. It used to be saved only through saveSettings(), and the
+   settings screen read the flag from the cached school record, which a fresh
+   school load from Firebase overwrites, so the switch silently reset to off.
+   The switch now saves the moment it is toggled, and loadSettings reconciles
+   the checkbox against the settings node itself. */
+function saveStaffLoginsToggle(){
+  var sll=document.getElementById('cfg-stafflogins');if(!sll)return;
+  var school=getSchool();
+  school.staffEmailLogins=!!sll.checked;
+  try{ localStorage.setItem('rsms_school',JSON.stringify(school)); }catch(e){}
+  try{
+    if(school.schoolId && typeof firebase!=='undefined' && firebase.database()){
+      firebase.database().ref('schools/'+school.schoolId+'/settings/staffEmailLogins').set(!!sll.checked);
+    }
+  }catch(e){}
+  toast(sll.checked?'Staff email logins enabled for this school':'Staff email logins disabled for this school','success');
+}
+
 function loadSettings(){
   var s=getSchool();
   setVal('cfg-name',s.name);setVal('cfg-addr',s.address);setVal('cfg-phone',s.phone);
@@ -3510,6 +3529,22 @@ function loadSettings(){
   setVal('cfg-regprefix',s.regPrefix);setVal('cfg-logo',localStorage.getItem('rsms_school_logo')||'');
   var spc=document.getElementById('cfg-showphoto');if(spc)spc.checked=s.showStudentPhoto!==false;
   var sll=document.getElementById('cfg-stafflogins');if(sll)sll.checked=s.staffEmailLogins===true;
+  if(sll){
+    try{
+      var sllSid=s.schoolId||'';
+      if(sllSid && typeof firebase!=='undefined' && firebase.database()){
+        firebase.database().ref('schools/'+sllSid+'/settings/staffEmailLogins').once('value').then(function(snap){
+          var v=snap.val()===true;
+          sll.checked=v;
+          if(v!==(s.staffEmailLogins===true)){
+            var cur=getSchool();
+            cur.staffEmailLogins=v;
+            try{ localStorage.setItem('rsms_school',JSON.stringify(cur)); }catch(e){}
+          }
+        }).catch(function(){});
+      }
+    }catch(e){}
+  }
   var ts=document.getElementById('cfg-term');if(ts)ts.value=s.term||'First Term';
   var ps=document.getElementById('cfg-plan');if(ps)ps.value=s.plan||'Standard';
   var scheme;

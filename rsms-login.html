@@ -1041,13 +1041,14 @@ var PORTAL_MAP = {
   teacher:'rsms-teacher.html', hod:'rsms-hod.html',
   vp:'rsms-vp.html', bursar:'rsms-bursar.html',
   principal:'rsms-principal.html',
+  hm:'rsms-hm.html',
   student:'rsms-student.html', parent:'rsms-parent.html',
 };
 
 // Roles that need identity step
 var NEEDS_IDENTITY = ['classteacher','teacher','student','parent'];
 // Roles that go straight through (only 1 per school)
-var DIRECT_ROLES = ['admin','hod','vp','bursar','principal'];
+var DIRECT_ROLES = ['admin','hod','vp','bursar','principal','hm'];
 
 // Firebase Auth is intentionally separate from the existing school/PIN flow.
 // Claim roles determine the destination; legacy PIN users still use doLogin().
@@ -1057,6 +1058,7 @@ var STAFF_PORTAL_MAP = {
   teacher:'rsms-teacher.html',
   classteacher:'rsms-classteacher.html',
   hod:'rsms-hod.html',
+  hm:'rsms-hm.html',
   vp:'rsms-vp.html',
   principal:'rsms-principal.html',
   parent:'rsms-parent.html',
@@ -1118,7 +1120,8 @@ function waitForStaffSession(attempt){
     window.location.href=portal;
     return;
   }
-  if(attempt>=24){
+  if(attempt===8){ setStaffLoginBusy(true,'Checking your account...'); }
+  if(attempt>=60){
     setStaffLoginBusy(false,'');
     toast('Your account signed in, but its portal role could not be confirmed. Contact your administrator.','error');
     return;
