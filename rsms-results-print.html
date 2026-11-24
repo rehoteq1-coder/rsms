@@ -638,7 +638,7 @@ function goBack(){
   var user=JSON.parse(sessionStorage.getItem('rsms_user')||'{}');
   var roleMap={admin:'rsms-admin.html',classteacher:'rsms-classteacher.html',
     teacher:'rsms-teacher.html',hod:'rsms-hod.html',vp:'rsms-vp.html',
-    principal:'rsms-principal.html',student:'rsms-student.html',parent:'rsms-parent.html'};
+    principal:'rsms-principal.html',hm:'rsms-hm.html',student:'rsms-student.html',parent:'rsms-parent.html'};
   var role=(user.role||'').toLowerCase();
   if(roleMap[role]){ location.href=roleMap[role]; return; }
   history.back();

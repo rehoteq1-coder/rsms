@@ -1214,13 +1214,14 @@ var PORTAL_MAP = {
   teacher:'rsms-teacher.html', hod:'rsms-hod.html',
   vp:'rsms-vp.html', bursar:'rsms-bursar.html',
   principal:'rsms-principal.html',
+  hm:'rsms-hm.html',
   student:'rsms-student.html', parent:'rsms-parent.html',
 };
 
 // Roles that need identity step
 var NEEDS_IDENTITY = ['classteacher','teacher','student','parent'];
 // Roles that go straight through (only 1 per school)
-var DIRECT_ROLES = ['admin','hod','vp','bursar','principal'];
+var DIRECT_ROLES = ['admin','hod','vp','bursar','principal','hm'];
 
 var STATE = {
   school: null,   // {schoolId, name, plan, brandColor, logoUrl, bgImages, adminToken, subdomain}

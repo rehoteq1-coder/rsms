@@ -65,6 +65,7 @@ var RSMS_FB = (function(){
     'rsms-classteacher.html':'classteacher',
     'rsms-hod.html':'hod',
     'rsms-principal.html':'principal',
+    'rsms-hm.html':'hm',
     'rsms-vp.html':'vp',
     'rsms-student.html':'student',
     'rsms-parent.html':'parent',
@@ -107,7 +108,7 @@ var RSMS_FB = (function(){
     {test:/^bursar/i,                          roles:['bursar']},
     {test:/^class\s*teacher/i,                 roles:['classteacher','teacher']},
     {test:/^(subject\s*)?teacher$/i,           roles:['teacher']},
-    {test:/^head\s*(mistress|master|teacher)/i, roles:['principal']}
+    {test:/^head\s*(mistress|master|teacher)/i, roles:['hm']}
   ];
 
   function _staffRolesForTitle(title){
@@ -180,6 +181,32 @@ var RSMS_FB = (function(){
     var selected = current.schoolId || '';
     if(selected && (!ids.length || ids.indexOf(selected) > -1)) return selected;
     return ids[0] || selected || '';
+  }
+
+  // Staff login emails are addressed to the school's own mail domain,
+  // generated from the school name (<slug of name, 14 chars>.rsms). A
+  // verified account that carries no role claim and no school context can
+  // still be mapped to its school through that domain, so its staff record
+  // (and portal role) can be resolved.
+  function _schoolIdFromLoginEmail(email){
+    var parts = String(email||'').toLowerCase().split('@');
+    if(parts.length !== 2 || !_db) return Promise.resolve('');
+    var domain = parts[1];
+    if(!/\.rsms$/.test(domain)) return Promise.resolve('');
+    var wanted = domain.replace(/\.rsms$/, '');
+    if(!wanted) return Promise.resolve('');
+    return _db.ref('public_schools').once('value').then(function(snap){
+      var rows = snap.val() || {};
+      var found = '';
+      Object.keys(rows).forEach(function(id){
+        var rec = rows[id];
+        if(!rec || typeof rec !== 'object') return;
+        var nameSlug = _cleanText(rec.name).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,14);
+        var sub = _cleanText(rec.subdomain).toLowerCase();
+        if(nameSlug === wanted || sub === wanted) found = rec.schoolId || id;
+      });
+      return found;
+    }).catch(function(){ return ''; });
   }
 
   function _fireAuthChanged(session){
@@ -257,7 +284,17 @@ var RSMS_FB = (function(){
     }catch(e){}
     _ensureAuthSchool(selectedSchool);
     _staffFallbackTried = false;
-    if(!roles.length && selectedSchool && user.email) _applyStaffRoles(selectedSchool, user.email);
+    if(!roles.length && user.email){
+      if(selectedSchool){
+        _applyStaffRoles(selectedSchool, user.email);
+      }else{
+        _schoolIdFromLoginEmail(user.email).then(function(sid){
+          if(!sid) return;
+          _ensureAuthSchool(sid);
+          _applyStaffRoles(sid, user.email);
+        });
+      }
+    }
     _fireAuthChanged(session);
     _scheduleAuthGuard();
   }

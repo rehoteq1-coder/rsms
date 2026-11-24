@@ -84,7 +84,8 @@ var NG_SUBJECTS = {
     "Solar Photovoltaic Installation & Maintenance","Fashion Design & Garment Making",
     "Livestock Farming","Beauty & Cosmetology","Computer Hardware & GSM Repairs",
     "Horticulture & Crop Production",
-    "Mathematics","Fine Arts","History","Yoruba Language","Physical & Health Education"
+    "Mathematics","Fine Arts","History","Yoruba Language","Physical & Health Education",
+    "Civic Education", "Social Studies", "Commerce", "Financial Accounting", "Marketing", "Home Economics", "Business Studies"
   ]
 };
 
