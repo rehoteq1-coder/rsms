@@ -30,7 +30,8 @@ var NG_SUBJECTS = {
     "English Language","Social Studies","Civic Education","Computer Studies",
     "Agricultural Science","Home Economics","Yoruba Language",
     "Verbal Reasoning","Quantitative Reasoning","Literacy","Numeracy",
-    "Rhymes","Writing","Handwriting","Social Habits","Health Habits"
+    "Rhymes","Writing","Handwriting","Social Habits","Health Habits",
+    "Security Education"
   ],
   "PRIMARY": [
     "English Studies","Mathematics","Nigerian Language","Basic Science & Technology",
@@ -39,7 +40,8 @@ var NG_SUBJECTS = {
     "Cultural & Creative Arts","Pre-Vocational Studies","French","Arabic Language",
     "English Language","Basic Science","Social Studies","Civic Education",
     "Computer Studies","Agricultural Science","Home Economics","Yoruba Language",
-    "Verbal Reasoning","Quantitative Reasoning"
+    "Verbal Reasoning","Quantitative Reasoning",
+    "Handwriting", "Security Education"
   ],
   "JSS": [
     "English Studies","Mathematics","Nigerian Language","Intermediate Science",
@@ -51,7 +53,8 @@ var NG_SUBJECTS = {
     "Horticulture & Crop Production",
     "English Language","Basic Science & Technology","Social Studies","Civic Education",
     "Computer Studies/ICT","Agricultural Science","Home Economics","Security Education",
-    "Basic Technology","Yoruba Language"
+    "Basic Technology","Yoruba Language",
+    "Basic Science", "Marketing"
   ],
   "SS_SCIENCE": [
     "English Language","General Mathematics","Digital Technologies",
@@ -63,7 +66,8 @@ var NG_SUBJECTS = {
     "Livestock Farming","Beauty & Cosmetology","Computer Hardware & GSM Repairs",
     "Horticulture & Crop Production",
     "Mathematics","Agricultural Science","Computer Studies","Economics","Yoruba Language",
-    "Social and Citizenship Studies"
+    "Social and Citizenship Studies",
+    "Civic Education", "Social Studies", "Literature in English", "Commerce", "Financial Accounting", "Marketing", "Home Economics", "Business Studies"
   ],
   "SS_COMMERCIAL": [
     "English Language","General Mathematics","Accounting","Commerce","Marketing","Economics",
@@ -75,7 +79,8 @@ var NG_SUBJECTS = {
     "Horticulture & Crop Production",
     "Mathematics","Literature in English","Computer Studies","Physical & Health Education",
     "Yoruba Language",
-    "Social and Citizenship Studies"
+    "Social and Citizenship Studies",
+    "Civic Education", "Social Studies", "Home Economics", "Financial Accounting"
   ],
   "SS_ARTS": [
     "English Language","General Mathematics","Nigerian History","Government",
