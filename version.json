@@ -1,5 +1,5 @@
 {
-  "version": "3.3.14",
-  "built": "2026-11-24T16:06:00+01:00",
-  "note": "Bump this version string with every release. Portals compare it against the copy they last ran and prompt the user to update."
+  "version": "3.3.15",
+  "built": "2026-11-24T16:20:00+01:00",
+  "note": "Shared cross-portal subject pool: Business Studies, Civic Education, Basic Technology, Intermediate Science, Basic Science, Commerce, Financial Accounting, Marketing, Cultural & Creative Arts, Social Studies, Home Economics, Literature in English, Security Education, Social and Citizenship Studies selectable in every portal that lists subjects."
 }

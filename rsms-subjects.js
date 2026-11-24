@@ -97,16 +97,31 @@ var NG_SUBJECTS = {
   ]
 };
 
+// Subjects a school may need in ANY portal regardless of class level. Every
+// class's list is topped up with whichever of these it does not already carry,
+// so whoever needs one can select it (user request, Nov 24 2026).
+var RSMS_SHARED_SUBJECTS = [
+  "Business Studies","Social and Citizenship Studies","Civic Education",
+  "Basic Technology","Intermediate Science","Basic Science","Commerce",
+  "Financial Accounting","Marketing","Cultural & Creative Arts","Social Studies",
+  "Home Economics","Literature in English","Security Education"
+];
+function rsmsMergeSharedSubjects(list){
+  var out=(list||[]).slice();
+  RSMS_SHARED_SUBJECTS.forEach(function(s){ if(out.indexOf(s)<0) out.push(s); });
+  return out;
+}
+
 function getSubjectsForClass(cls) {
-  if(!cls) return NG_SUBJECTS.JSS;
+  if(!cls) return rsmsMergeSharedSubjects(NG_SUBJECTS.JSS);
   var c = cls.toLowerCase();
-  if(c.includes('creche')||c.includes('playgroup')||c.includes('pre-nursery')||c.includes('pre nursery')||c.includes('kg')||c.includes('nursery')) return NG_SUBJECTS.EARLY_YEARS;
-  if(c.includes('science'))  return NG_SUBJECTS.SS_SCIENCE;
-  if(c.includes('commercial')||c.includes('commerce')) return NG_SUBJECTS.SS_COMMERCIAL;
-  if(c.includes('art'))      return NG_SUBJECTS.SS_ARTS;
-  if(c.includes('ss')||c.includes('senior')) return NG_SUBJECTS.SS_SCIENCE; // default SS
-  if(c.includes('primary'))  return NG_SUBJECTS.PRIMARY;
-  return NG_SUBJECTS.JSS; // JSS default
+  if(c.includes('creche')||c.includes('playgroup')||c.includes('pre-nursery')||c.includes('pre nursery')||c.includes('kg')||c.includes('nursery')) return rsmsMergeSharedSubjects(NG_SUBJECTS.EARLY_YEARS);
+  if(c.includes('science'))  return rsmsMergeSharedSubjects(NG_SUBJECTS.SS_SCIENCE);
+  if(c.includes('commercial')||c.includes('commerce')) return rsmsMergeSharedSubjects(NG_SUBJECTS.SS_COMMERCIAL);
+  if(c.includes('art'))      return rsmsMergeSharedSubjects(NG_SUBJECTS.SS_ARTS);
+  if(c.includes('ss')||c.includes('senior')) return rsmsMergeSharedSubjects(NG_SUBJECTS.SS_SCIENCE); // default SS
+  if(c.includes('primary'))  return rsmsMergeSharedSubjects(NG_SUBJECTS.PRIMARY);
+  return rsmsMergeSharedSubjects(NG_SUBJECTS.JSS); // JSS default
 }
 
 function getClassLevel(cls) {
