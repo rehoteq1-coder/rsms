@@ -552,7 +552,7 @@ var SUBJECTS_SS_SCI = ["English Language","Mathematics","Physics","Chemistry","B
 var SUBJECTS_SS_COM = ["English Language","Mathematics","Economics","Commerce","Financial Accounting","Business Studies","Office Practice","Computer Studies","Christian Religious Studies","Islamic Religious Studies","Civic Education","Physical & Health Education","Yoruba Language","Literature in English","Marketing"];
 var SUBJECTS_SS_ART = ["English Language","Mathematics","Literature in English","Government","History","Christian Religious Studies","Islamic Religious Studies","Yoruba Language","French Language","Fine Arts","Music","Geography","Economics","Civic Education","Physical & Health Education"];
 
-function getSubjects(cls){
+function _getSubjectsBase(cls){
   var c=(cls||'').toLowerCase();
   if(/primary|nursery|creche|crèche|baby|\bkg\b/.test(c)) return NG_SUBJECTS.PRIMARY;
   if(c.includes('science'))    return SUBJECTS_SS_SCI;
@@ -560,6 +560,12 @@ function getSubjects(cls){
   if(c.includes('art'))        return SUBJECTS_SS_ART;
   if(c.includes('ss')||c.includes('senior')) return SUBJECTS_SS_SCI;
   return SUBJECTS_JSS;
+}
+
+// Top up any list with the shared cross-portal subjects (Nov 24 2026 request)
+function getSubjects(cls){
+  var base=_getSubjectsBase(cls);
+  return (typeof rsmsMergeSharedSubjects==='function')?rsmsMergeSharedSubjects(base):base;
 }
 
 function populateSelect(selId,cls,selected){

@@ -732,6 +732,7 @@ body{background:var(--bg);min-height:100vh;font-family:var(--sans);}
 </div>
 
 <div class="toast" id="rsms-toast"></div>
+<script src="rsms-subjects.js"></script>
 <script>
 if(typeof rsmsCacheGet==='undefined'){function rsmsCacheKey(key){var sid='';try{sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||'';}catch(e){}return sid?('rsms_'+sid+'_'+key):('rsms_'+key);}function rsmsCacheGetRaw(key){try{return localStorage.getItem(rsmsCacheKey(key));}catch(e){return null;}}function rsmsCacheGet(key,fallbackRaw){var raw=rsmsCacheGetRaw(key);if(raw===null||raw===undefined){return (fallbackRaw===undefined?null:fallbackRaw);}try{return JSON.parse(raw);}catch(e){return fallbackRaw;}}function rsmsCacheSetRaw(key,jsonStr){try{localStorage.setItem(rsmsCacheKey(key),jsonStr);}catch(e){}}}
 </script>
@@ -760,6 +761,9 @@ var SUBJECTS_SS_COM = ["English Language","Mathematics","Economics","Commerce","
 var SUBJECTS_SS_ART = ["English Language","Mathematics","Literature in English","Government","History","Christian Religious Studies","Islamic Religious Studies","Yoruba Language","French Language","Fine Arts","Music","Geography","Economics","Civic Education","Physical & Health Education"];
 
 function getSubjects(cls){
+  if(window.getSubjectsForClass){
+    try{ var n=getSubjectsForClass(cls); if(n&&n.length) return n; }catch(e){}
+  }
   var c=(cls||'').toLowerCase();
   if(c.includes('science'))    return SUBJECTS_SS_SCI;
   if(c.includes('commercial')) return SUBJECTS_SS_COM;
