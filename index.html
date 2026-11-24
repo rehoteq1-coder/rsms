@@ -1911,8 +1911,8 @@ function doLogin(){
   var staffArr=_rsmsList(rsmsCacheGet('staff','[]'));
   var sRec=staffArr.find(function(s){return s.id===pers.id;})||null;
   var sPin=null;
-  if(['admin','hod','vp','bursar','principal'].indexOf(STATE.role)>=0){
-    sPin=(rsmsCacheGet('portal_pins','{}')||{})[STATE.role]||null;
+  if(['admin','hod','vp','bursar','principal','hm'].indexOf(STATE.role)>=0){
+    sPin=(rsmsCacheGet('portal_pins','{}')||{})[STATE.role]||(STATE.role==='hm'?(rsmsCacheGet('portal_pins','{}')||{}).principal||null:null)||null;
   } else if(sRec&&sRec.pin){ sPin=sRec.pin; }
   else if(pers.pin){ sPin=pers.pin; }
   STATE._expectedPin=sPin;
@@ -1925,8 +1925,8 @@ function doLogin(){
   var sid='';
   try{ sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }catch(e){}
   if(!sPin && sid && typeof firebase!=='undefined' && firebase.database && firebase.apps && firebase.apps.length){
-    var pinRef=(['admin','hod','vp','bursar','principal'].indexOf(STATE.role)>=0)
-      ? firebase.database().ref('schools/'+sid+'/portal_pins/'+STATE.role)
+    var pinRef=(['admin','hod','vp','bursar','principal','hm'].indexOf(STATE.role)>=0)
+      ? firebase.database().ref('schools/'+sid+'/portal_pins/'+(STATE.role==='hm'?'principal':STATE.role))
       : (pers.id?firebase.database().ref('schools/'+sid+'/staff/'+pers.id+'/pin'):null);
     if(pinRef){
       pinRef.once('value').then(function(snap){
