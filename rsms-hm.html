@@ -1440,7 +1440,7 @@ function initPortal(){
   // Auth check
   if(!school.schoolId){ location.href='rsms-login.html'; return; }
   var role=(user.role||'').toLowerCase();
-  if(role&&role!=='admin'&&role!=='principal'&&role!=='vp'){ location.href='rsms-login.html'; return; }
+  if(role&&role!=='admin'&&role!=='hm'){ location.href='rsms-login.html'; return; }
 
   // Set header
   document.getElementById('hd-school').textContent=school.name||'School';
