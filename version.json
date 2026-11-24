@@ -1,5 +1,5 @@
 {
-  "version": "3.3.7",
-  "built": "2026-11-24T15:05:00+01:00",
+  "version": "3.3.8",
+  "built": "2026-11-24T15:10:00+01:00",
   "note": "Bump this version string with every release. Portals compare it against the copy they last ran and prompt the user to update."
 }

@@ -62,7 +62,8 @@ var NG_SUBJECTS = {
     "Solar Photovoltaic Installation & Maintenance","Fashion Design & Garment Making",
     "Livestock Farming","Beauty & Cosmetology","Computer Hardware & GSM Repairs",
     "Horticulture & Crop Production",
-    "Mathematics","Agricultural Science","Computer Studies","Economics","Yoruba Language"
+    "Mathematics","Agricultural Science","Computer Studies","Economics","Yoruba Language",
+    "Social and Citizenship Studies"
   ],
   "SS_COMMERCIAL": [
     "English Language","General Mathematics","Accounting","Commerce","Marketing","Economics",
@@ -73,7 +74,8 @@ var NG_SUBJECTS = {
     "Livestock Farming","Beauty & Cosmetology","Computer Hardware & GSM Repairs",
     "Horticulture & Crop Production",
     "Mathematics","Literature in English","Computer Studies","Physical & Health Education",
-    "Yoruba Language"
+    "Yoruba Language",
+    "Social and Citizenship Studies"
   ],
   "SS_ARTS": [
     "English Language","General Mathematics","Nigerian History","Government",
@@ -85,7 +87,8 @@ var NG_SUBJECTS = {
     "Livestock Farming","Beauty & Cosmetology","Computer Hardware & GSM Repairs",
     "Horticulture & Crop Production",
     "Mathematics","Fine Arts","History","Yoruba Language","Physical & Health Education",
-    "Civic Education", "Social Studies", "Commerce", "Financial Accounting", "Marketing", "Home Economics", "Business Studies"
+    "Civic Education", "Social Studies", "Commerce", "Financial Accounting", "Marketing", "Home Economics", "Business Studies",
+    "Social and Citizenship Studies"
   ]
 };
 
