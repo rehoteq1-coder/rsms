@@ -885,7 +885,7 @@ window.RSMS_DB = {
     <div class="pg-btns">
       <button class="btn btn-ghost btn-sm" onclick="exportStaffCSV()" title="Export as CSV">&#8615; Export</button>
       <button class="btn btn-teal btn-sm" onclick="downloadStaffTemplate();openModal('m-bulk-staff')" title="Bulk import staff">&#128196; Bulk</button>
-      <button class="btn btn-gold btn-sm" onclick="editStaffId=null;document.getElementById('m-staff-title').textContent='Add Staff';openModal('m-add-staff')">+ Add</button>
+      <button class="btn btn-gold btn-sm" onclick="openAddStaffModal()">+ Add</button>
     </div>
   </div>
   <div class="search-bar" style="margin-bottom:12px;">
@@ -1184,6 +1184,7 @@ window.RSMS_DB = {
       <span>Show student photo on report cards &amp; progress reports <span style="color:var(--t4);font-size:.72rem;">(off = cards are printed without the photo block)</span></span>
     </label>
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.25);border-radius:var(--r2);font-size:.82rem;color:var(--t2);margin-top:10px;">
+      <div id="stf-login-hint" style="display:none;font-size:.72rem;color:#b45309;background:#fef3c7;border-radius:8px;padding:8px 10px;margin-top:6px;"></div>
       <input type="checkbox" id="cfg-stafflogins" onchange="saveStaffLoginsToggle()" style="width:17px;height:17px;accent-color:#d4a843;flex-shrink:0;"/>
       <span>Staff email logins <span style="color:var(--t4);font-size:.72rem;">(optional: staff sign in with a generated email + password; school ID and codes stay the main door)</span></span>
     </label>
@@ -1500,7 +1501,7 @@ window.RSMS_DB = {
     <div class="fg"><label>Full Name *</label><input class="fi" id="stf-name" placeholder="Full name" oninput="if(!editStaffId){var le=document.getElementById('stf-login-email');if(le&&!le.value)le.value=suggestStaffLoginEmail(this.value);}"/></div>
     <div class="f2">
       <div class="fg"><label>Role *</label>
-        <select class="fi" id="stf-role" onchange="onStaffRoleChange()" style="height:46px;"><option>Class Teacher</option><option>Subject Teacher</option><option>HOD</option><option>Vice Principal Academic</option><option>Vice Principal Admin</option><option>Principal</option><option>Head Mistress</option><option>Bursar</option><option>Admin Staff</option><option>Security</option><option>Librarian</option><option>Lab Technician</option></select></div>
+        <select class="fi" id="stf-role" onchange="onStaffRoleChange()" style="height:46px;"><option>Class Teacher</option><option>Subject Teacher</option><option>HOD</option><option>Vice Principal Academic</option><option>Vice Principal Admin</option><option>Principal</option><option>Head Mistress</option><option>Headmaster/Headmistress</option><option>Bursar</option><option>Admin Staff</option><option>Security</option><option>Librarian</option><option>Lab Technician</option></select></div>
       <div class="fg"><label>Department</label>
         <select class="fi" id="stf-dept" style="height:46px;">
           <option value="">-- Dept --</option><option>Sciences</option><option>Arts</option>
@@ -2783,7 +2784,7 @@ function renderStaff(){
       '<div style="font-size:3rem;margin-bottom:12px;">&#128104;&#8205;&#127979;</div>'+
       '<div style="font-weight:700;color:var(--t1);margin-bottom:6px;">No staff yet</div>'+
       '<div style="color:var(--t3);font-size:.85rem;margin-bottom:16px;">Add staff to generate their portal links</div>'+
-      '<button class="btn btn-gold btn-sm" onclick="openModal(\'m-add-staff\')">+ Add First Staff</button></div>';
+      '<button class="btn btn-gold btn-sm" onclick="openAddStaffModal()">+ Add First Staff</button></div>';
     return;
   }
   if(!staff.length){el2.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);">No staff match your filter</div>';return;}
@@ -2822,6 +2823,13 @@ function renderStaff(){
   populateClockStaffDropdowns();
 }
 
+function openAddStaffModal(){
+  editStaffId=null;
+  var t=document.getElementById('m-staff-title');if(t)t.textContent='Add Staff';
+  var hint=document.getElementById('stf-login-hint');if(hint)hint.style.display='none';
+  openModal('m-add-staff');
+}
+
 function openEditStaff(sf){
   editStaffId=sf.id;
   setVal('stf-name',sf.name);
@@ -2831,6 +2839,13 @@ function openEditStaff(sf){
   setVal('stf-subjects',sf.subjects);setVal('stf-phone',sf.phone);setVal('stf-email',sf.email);
   var sle=document.getElementById('stf-login-email');if(sle)sle.value=sf.loginEmail||suggestStaffLoginEmail(sf.name);
   var slp=document.getElementById('stf-login-pw');if(slp)slp.value='';
+  var hint=document.getElementById('stf-login-hint');
+  if(hint){
+    if(sf.loginEmail && sf.loginActive!==false){
+      hint.textContent='This staff already has a portal login ('+sf.loginEmail+'). Keep the email as it is and leave the password box empty; they sign in with the password on their slip. Fill a new password only to reset it.';
+      hint.style.display='block';
+    }else{ hint.style.display='none'; }
+  }
   onStaffRoleChange();
   var t=document.getElementById('m-staff-title');if(t)t.textContent='Edit Staff';
   openModal('m-add-staff');
@@ -2952,7 +2967,7 @@ function saveStaff2(){
 function onStaffRoleChange(){
   var r=document.getElementById('stf-role').value;
   var w=document.getElementById('stf-class-wrap');
-  if(w)w.style.display=(r==='Class Teacher'||r==='Principal'||r==='Head Mistress')?'block':'none';
+  if(w)w.style.display=(r==='Class Teacher'||r==='Principal'||r==='Head Mistress'||r==='Headmaster/Headmistress')?'block':'none';
 }
 
 function exportStaffCSV(){

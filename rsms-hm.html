@@ -941,7 +941,7 @@ function renderPipelineHome(){
   var classes=getClasses();
   var school=getSchool();
   var term=school.term||'First Term';
-  var steps=['CT Entered','HOD Reviewed','VP Approved','Principal Approved','Published'];
+  var steps=['CT Entered','HOD Reviewed','VP Approved','HM Approved','Published'];
   var icons=['📝','📚','🎓','🏛️','📢'];
 
   // Count how many classes at each stage
@@ -993,7 +993,7 @@ function renderPipeline(){
   var term=(document.getElementById('pipe-term-sel')||{value:'First Term'}).value||'First Term';
   var filterCls=(document.getElementById('pipe-class-sel')||{value:''}).value||'';
   var displayClasses=filterCls?[filterCls]:classes;
-  var stages=['CT Entered','HOD Reviewed','VP Approved','Principal ✅','Published 📢'];
+  var stages=['CT Entered','HOD Reviewed','VP Approved','HM ✅','Published 📢'];
   var stageColors=['var(--blue)','var(--purple)','var(--orange)','var(--gold)','var(--green)'];
 
   var html='';
