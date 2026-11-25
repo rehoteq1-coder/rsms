@@ -530,7 +530,7 @@ function loadScores(cls, term, sess){
 
 // ── PREVIEW ───────────────────────────────────────────────────
 function showPreview(cls, term, sess){
-  if(_isEarlyYears(cls)){ toast('KG, pre-nursery, creche and playgroup classes use the Progress Report card, not the terminal report.','error'); return; }
+  if(_isEarlyYears(cls)){ toast('Creche, Baby Class and pre-school classes use the Progress Report card, not the terminal report.','error'); return; }
   if(gateTeacherResults(cls,term)) return;
   var previewCard=document.getElementById('preview-card');
   var previewList=document.getElementById('preview-list');
@@ -646,14 +646,14 @@ function goBack(){
 
 // ── GENERATE CARDS ────────────────────────────────────────────
 function _isEarlyYears(cls){
-  return /\b(pre[\s\-]?nursery|prenursery|creche|cr\u00e8che|play\s?group|kg\b|k\.g\b|kindergarten)/i.test(String(cls||''));
+  return /\b(pre[\s\-]?nursery|prenursery|creche|cr\u00e8che|play\s?group|baby|pre[\s\-]?school|preschool)/i.test(String(cls||''));
 }
 function generateCards(){
   var cls     = document.getElementById('cls-sel').value;
   var term    = document.getElementById('term-sel').value;
   var sess    = document.getElementById('sess-in').value||'2025/2026';
   var nextTerm= document.getElementById('next-term').value||'To be announced';
-  if(_isEarlyYears(cls)){ toast('KG, pre-nursery, creche and playgroup classes use the Progress Report card, not the terminal report. Generate '+cls+' from the Progress Report page instead.','error'); return; }
+  if(_isEarlyYears(cls)){ toast('Creche, Baby Class and pre-school classes use the Progress Report card, not the terminal report. Generate '+cls+' from the Progress Report page instead.','error'); return; }
   var reportSchemes=[];
   Object.values(currentScores).forEach(function(bySubject){Object.values(bySubject).forEach(function(e){try{reportSchemes.push(RSMSAssessment.forRecord(e));}catch(err){/* invalid row is surfaced below */}});});
   if(!reportSchemes.length)reportSchemes.push(RSMSAssessment.forSchool(SCHOOL));
