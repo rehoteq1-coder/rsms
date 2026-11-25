@@ -554,7 +554,7 @@ var SUBJECTS_SS_ART = ["English Language","Mathematics","Literature in English",
 
 function _getSubjectsBase(cls){
   var c=(cls||'').toLowerCase();
-  if(/primary|nursery|creche|crèche|baby|\bkg\b/.test(c)) return NG_SUBJECTS.PRIMARY;
+  if(/primary|nursery|creche|crèche|baby|\bkg\b/.test(c)) return (typeof RSMS_BASIC_ALL!=="undefined")?RSMS_BASIC_ALL:NG_SUBJECTS.PRIMARY;
   if(c.includes('science'))    return SUBJECTS_SS_SCI;
   if(c.includes('commercial')) return SUBJECTS_SS_COM;
   if(c.includes('art'))        return SUBJECTS_SS_ART;

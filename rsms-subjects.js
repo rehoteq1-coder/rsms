@@ -97,6 +97,16 @@ var NG_SUBJECTS = {
   ]
 };
 
+// All primary-section subjects capped together (user request, Nov 25 2026):
+// some Nigerian schools teach the syllabus a class ahead (a Nursery 2 may run
+// the Primary 1 syllabus), so every pre-primary and primary class offers the
+// full basic-section list in its dropdown instead of only its own band.
+var RSMS_BASIC_ALL = (function(){
+  var out=[],seen={};
+  [].concat(NG_SUBJECTS.EARLY_YEARS,NG_SUBJECTS.PRIMARY_LOW,NG_SUBJECTS.PRIMARY)
+    .forEach(function(s){ if(s && !seen[s]){ seen[s]=1; out.push(s); } });
+  return out;
+})();
 // Subjects a school may need in ANY portal regardless of class level. Every
 // class's list is topped up with whichever of these it does not already carry,
 // so whoever needs one can select it (user request, Nov 24 2026).
@@ -115,12 +125,12 @@ function rsmsMergeSharedSubjects(list){
 function getSubjectsForClass(cls) {
   if(!cls) return rsmsMergeSharedSubjects(NG_SUBJECTS.JSS);
   var c = cls.toLowerCase();
-  if(c.includes('creche')||c.includes('playgroup')||c.includes('pre-nursery')||c.includes('pre nursery')||c.includes('kg')||c.includes('nursery')) return rsmsMergeSharedSubjects(NG_SUBJECTS.EARLY_YEARS);
+  if(c.includes('creche')||c.includes('playgroup')||c.includes('pre-nursery')||c.includes('pre nursery')||c.includes('kg')||c.includes('nursery')) return rsmsMergeSharedSubjects(RSMS_BASIC_ALL);
   if(c.includes('science'))  return rsmsMergeSharedSubjects(NG_SUBJECTS.SS_SCIENCE);
   if(c.includes('commercial')||c.includes('commerce')) return rsmsMergeSharedSubjects(NG_SUBJECTS.SS_COMMERCIAL);
   if(c.includes('art'))      return rsmsMergeSharedSubjects(NG_SUBJECTS.SS_ARTS);
   if(c.includes('ss')||c.includes('senior')) return rsmsMergeSharedSubjects(NG_SUBJECTS.SS_SCIENCE); // default SS
-  if(c.includes('primary'))  return rsmsMergeSharedSubjects(NG_SUBJECTS.PRIMARY);
+  if(c.includes('primary'))  return rsmsMergeSharedSubjects(RSMS_BASIC_ALL);
   return rsmsMergeSharedSubjects(NG_SUBJECTS.JSS); // JSS default
 }
 
