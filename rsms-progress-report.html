@@ -480,7 +480,7 @@ function buildProgressCard(stu,name,logo,photo,term,session,nextTerm,daysOpen,te
   DEV_AREAS.forEach(function(section){
     devRows += '<tr style="background:#e8e4f0;"><td colspan="6" style="padding:5px 8px;font-weight:700;font-size:8px;color:#1a0a3e;text-transform:uppercase;letter-spacing:.06em;">'+section.area+'</td></tr>';
     section.items.forEach(function(item){
-      var slug=_slug(section.area+'-'+item), sv=ratings[slug]||'';
+      var slug=_slug(section.area+'-'+item), sv=ratings[slug]||ratings[_slug(section.area)]||'';
       function dot(r){ return '<div class="rc '+r+'" data-r="'+r+'"'+(sv===r?' style="opacity:1;transform:scale(1.15);"':'')+'>'+r.toUpperCase()+'</div>'; }
       devRows += '<tr data-key="'+stu.id+'|'+slug+'">'+
         '<td style="padding:5px 8px;font-size:9.5px;font-weight:600;color:#1a0a3e;padding-left:14px;">'+item+'</td>'+
