@@ -1178,6 +1178,18 @@ window.RSMS_DB = {
         </button>
       </div>
     </div>
+
+    <!-- Brand colour picker, all plans -->
+    <div class="fg">
+      <label>School Brand Colour <span style="font-size:.7rem;color:var(--green);">(All Plans)</span></label>
+      <div style="display:flex;align-items:center;gap:12px;background:var(--card2);border:1px solid var(--line2);border-radius:var(--r);padding:14px;">
+        <input type="color" id="cfg-brandcolor" value="#d4a843" style="width:56px;height:44px;border-radius:10px;border:1px solid var(--line2);background:var(--card);cursor:pointer;padding:2px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;color:var(--t1);font-size:.88rem;margin-bottom:4px;">Accent colour</div>
+          <div style="font-size:.72rem;color:var(--t3);">Colours buttons, highlights and active menu items across every portal for this school.</div>
+        </div>
+      </div>
+    </div>
     <!-- Report card photo preference (per school) -->
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.25);border-radius:var(--r2);font-size:.82rem;color:var(--t2);margin-top:10px;">
       <input type="checkbox" id="cfg-showphoto" style="width:17px;height:17px;accent-color:#d4a843;flex-shrink:0;"/>
@@ -2171,9 +2183,41 @@ function setHeaderInfo(){
   s('sb-av',(user.name||'U').charAt(0).toUpperCase());
   s('sb-school',school.name||'School');
   s('hd-av',(user.name||'U').charAt(0).toUpperCase());
-  var logoEl=document.getElementById('sb-logo-img');
-  var logo=localStorage.getItem('rsms_school_logo')||'';
-  if(logoEl&&logo){logoEl.src=logo;logoEl.style.display='block';}
+  try{applySchoolBranding();}catch(e){}
+// ── School branding from the database ───────────────
+// Logo + brand colour live at schools/<id>/branding in the database,
+// set once from the admin portal, so EVERY device in the school shows
+// the school's own mark and colours, not only the admin's phone.
+// Applies the cached copy instantly, then refreshes from the database
+// when online and caches per school for offline and fresh loads.
+function applySchoolBranding(sid){
+  try{
+    if(!sid){ try{ sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }catch(e){ sid=''; } }
+    var apply=function(b){
+      b=b||{};
+      var logo=b.logoUrl||'';
+      var el=document.getElementById('sb-logo-img')||document.getElementById('sb-logo');
+      if(el&&logo){ el.src=logo; el.style.display='block'; }
+      if(b.brandColor&&/^#[0-9a-fA-F]{6}$/.test(b.brandColor)){
+        var r=document.documentElement.style,n=parseInt(b.brandColor.slice(1),16),
+            R=(n>>16)&255,G=(n>>8)&255,B=n&255;
+        r.setProperty('--gold',b.brandColor);
+        r.setProperty('--goldl','rgba('+R+','+G+','+B+',.12)');
+        r.setProperty('--goldb','rgba('+R+','+G+','+B+',.06)');
+      }
+      if(logo){ try{ localStorage.setItem('rsms_school_logo',logo); }catch(e){} }
+      try{ localStorage.setItem('rsms_school_branding_'+(sid||'x'),JSON.stringify({logoUrl:logo,brandColor:b.brandColor||''})); }catch(e){}
+    };
+    var cached=null;
+    try{ cached=JSON.parse(localStorage.getItem('rsms_school_branding_'+(sid||'x'))||'null'); }catch(e){}
+    if(cached&&(cached.logoUrl||cached.brandColor)) apply(cached);
+    if(sid&&typeof firebase!=='undefined'&&firebase.apps&&firebase.apps.length){
+      firebase.database().ref('schools/'+sid+'/branding').once('value').then(function(s){
+        var v=s.val(); if(v) apply(v);
+      }).catch(function(){});
+    }
+  }catch(e){}
+}
 }
 
 // ── COPY ───────────────────────────────────────────────
@@ -3590,6 +3634,8 @@ function loadSettings(){
   // Show existing logo in preview
   var existingLogo=localStorage.getItem('rsms_school_logo')||s.logo||'';
   if(existingLogo){setVal('cfg-logo',existingLogo);try{updateLogoPreview(existingLogo);}catch(e){}}
+  var bcc=document.getElementById('cfg-brandcolor');
+  if(bcc){ var bcVal=(s.branding&&s.branding.brandColor)||s.brandColor||''; if(/^#[0-9a-fA-F]{6}$/i.test(bcVal)) bcc.value=bcVal; }
 }
 
 function assessmentFormConfig(){
@@ -3622,6 +3668,20 @@ function saveSettings(){
   school.lastModified=Date.now();
   var logo=val('cfg-logo')||val('cfg-logo-url');
   if(logo){localStorage.setItem('rsms_school_logo',logo);school.logo=logo;try{updateLogoPreview(logo);}catch(e){}}
+  // Branding goes to the database so every device in the school picks it up.
+  var bcEl=document.getElementById('cfg-brandcolor');
+  var brandColor=(bcEl&&bcEl.value)||'';
+  if(brandColor&&/^#[0-9a-fA-F]{6}$/i.test(brandColor)) school.brandColor=brandColor;
+  var hadLogo=!!(school.logo||localStorage.getItem('rsms_school_logo'));
+  try{
+    if(school.schoolId&&typeof firebase!=='undefined'&&firebase.apps&&firebase.apps.length){
+      var bref=firebase.database().ref('schools/'+school.schoolId+'/branding');
+      var brandFail=function(e){ try{ toast('Branding may not have reached the database: '+((e&&e.message)||'connection failed'),'error'); }catch(e2){} };
+      if(logo){ bref.child('logoUrl').set(logo).catch(brandFail); }
+      else if(hadLogo){ bref.child('logoUrl').set(null).catch(brandFail); localStorage.removeItem('rsms_school_logo'); }
+      if(school.brandColor&&/^#[0-9a-fA-F]{6}$/i.test(school.brandColor)){ bref.child('brandColor').set(school.brandColor).catch(brandFail); }
+    }
+  }catch(eBr){ try{ toast('Branding may not have reached the database: '+(eBr&&eBr.message||'connection failed'),'error'); }catch(e){} }
   localStorage.setItem('rsms_school',JSON.stringify(school));
   el('hd-school-name',school.name||'School');
 
@@ -3637,8 +3697,11 @@ function saveSettings(){
       schools[idx].principal = school.principal;
       schools[idx].term      = school.term;
       schools[idx].session   = school.session;
-      if(school.logo) schools[idx].branding = schools[idx].branding||{};
-      if(school.logo) schools[idx].branding.logoUrl = school.logo;
+      if(school.logo||school.brandColor){
+        schools[idx].branding = schools[idx].branding||{};
+        if(school.logo) schools[idx].branding.logoUrl = school.logo;
+        if(school.brandColor) schools[idx].branding.brandColor = school.brandColor;
+      }
       localStorage.setItem('rsms_sa_schools', JSON.stringify(schools));
     }
   }catch(e){}
@@ -4671,9 +4734,31 @@ function previewLogoUpload(input){
   var reader = new FileReader();
   reader.onload = function(e){
     var data = e.target.result;
-    document.getElementById('cfg-logo').value = data;
-    updateLogoPreview(data);
-    toast('Logo loaded — tap Save Settings to apply','info');
+    // SVGs stay as-is; rasters are downscaled before they reach the
+    // database, because every user in the school downloads this logo.
+    if(file.type && file.type.indexOf('svg')>-1){
+      document.getElementById('cfg-logo').value = data;
+      updateLogoPreview(data);
+      toast('Logo loaded — tap Save Settings to apply','info');
+      return;
+    }
+    var finish=function(){ document.getElementById('cfg-logo').value = data; updateLogoPreview(data); toast('Logo loaded — tap Save Settings to apply','info'); };
+    var img = new Image();
+    img.onload = function(){
+      try{
+        var MAX=256, sc=Math.min(1, MAX/Math.max(img.width||MAX, img.height||MAX)),
+            w=Math.max(1,Math.round(img.width*sc)), h=Math.max(1,Math.round(img.height*sc)),
+            c=document.createElement('canvas'); c.width=w; c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        var out=''; try{ out=c.toDataURL('image/webp',0.9); }catch(err){}
+        if(!out||out.indexOf('data:image/webp')!==0) out=c.toDataURL('image/png');
+        if(out.length>data.length) out=data;
+        data=out;
+      }catch(err){}
+      finish();
+    };
+    img.onerror = finish;
+    img.src = data;
   };
   reader.readAsDataURL(file);
 }

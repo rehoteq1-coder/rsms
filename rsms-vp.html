@@ -917,9 +917,41 @@ function setHeaderInfo(){
   s('sb-av',(user.name||'U').charAt(0).toUpperCase());
   s('sb-school',school.name||'School');
   s('hd-av',(user.name||'U').charAt(0).toUpperCase());
-  var logoEl=document.getElementById('sb-logo-img');
-  var logo=localStorage.getItem('rsms_school_logo')||'';
-  if(logoEl&&logo){logoEl.src=logo;logoEl.style.display='block';}
+  try{applySchoolBranding();}catch(e){}
+// ── School branding from the database ───────────────
+// Logo + brand colour live at schools/<id>/branding in the database,
+// set once from the admin portal, so EVERY device in the school shows
+// the school's own mark and colours, not only the admin's phone.
+// Applies the cached copy instantly, then refreshes from the database
+// when online and caches per school for offline and fresh loads.
+function applySchoolBranding(sid){
+  try{
+    if(!sid){ try{ sid=(JSON.parse(localStorage.getItem('rsms_school')||'{}')||{}).schoolId||''; }catch(e){ sid=''; } }
+    var apply=function(b){
+      b=b||{};
+      var logo=b.logoUrl||'';
+      var el=document.getElementById('sb-logo-img')||document.getElementById('sb-logo');
+      if(el&&logo){ el.src=logo; el.style.display='block'; }
+      if(b.brandColor&&/^#[0-9a-fA-F]{6}$/.test(b.brandColor)){
+        var r=document.documentElement.style,n=parseInt(b.brandColor.slice(1),16),
+            R=(n>>16)&255,G=(n>>8)&255,B=n&255;
+        r.setProperty('--gold',b.brandColor);
+        r.setProperty('--goldl','rgba('+R+','+G+','+B+',.12)');
+        r.setProperty('--goldb','rgba('+R+','+G+','+B+',.06)');
+      }
+      if(logo){ try{ localStorage.setItem('rsms_school_logo',logo); }catch(e){} }
+      try{ localStorage.setItem('rsms_school_branding_'+(sid||'x'),JSON.stringify({logoUrl:logo,brandColor:b.brandColor||''})); }catch(e){}
+    };
+    var cached=null;
+    try{ cached=JSON.parse(localStorage.getItem('rsms_school_branding_'+(sid||'x'))||'null'); }catch(e){}
+    if(cached&&(cached.logoUrl||cached.brandColor)) apply(cached);
+    if(sid&&typeof firebase!=='undefined'&&firebase.apps&&firebase.apps.length){
+      firebase.database().ref('schools/'+sid+'/branding').once('value').then(function(s){
+        var v=s.val(); if(v) apply(v);
+      }).catch(function(){});
+    }
+  }catch(e){}
+}
 }
 
 // ── COPY ───────────────────────────────────────────────
