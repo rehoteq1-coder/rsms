@@ -1163,7 +1163,7 @@ function confirmAction(msg,fn){if(window.confirm(msg))fn();}
     <button class="btn btn-teal btn-sm" onclick="loadScoreTable()">&#128203; Load Students</button>
     <div id="sc-subject-progress" role="status" style="font-size:.78rem;color:var(--t3);margin-top:10px;"></div>
   </div>
-  <div class="card" style="margin-bottom:12px;">
+  <div class="card" style="margin-bottom:12px;" id="sc-bulk-card">
     <strong>Bulk scores (CSV / Excel)</strong>
     <p style="font-size:.8rem;color:var(--t3);margin:8px 0;">Select class, term and session. Download the template for the school’s current scheme, fill every score column for each row you want to import, and save it as CSV. Empty rows are skipped. Existing rows with a different saved scheme must be edited in the table to preserve their history. Review before adding to your drafts.</p>
     <button class="btn btn-teal btn-sm" type="button" onclick="downloadScoreTemplate()">Download template</button>
@@ -1960,10 +1960,12 @@ function updateScoreSubjectProgress(){
     ? filled.length+' of '+total+' subjects filled: '+filled.join(', ')+(filled.length<total?'. Switch subjects to continue.':' \u2014 all subjects covered.')
     : 'No subject has scores yet for '+term+', '+sess+'. Pick a subject above, enter scores for its students, then switch to the next.';
 }
+
 function onScoreClassChange(){
   clearScoreImport();
   scoreActive=null;
   var cls=(document.getElementById('sc-class')||{}).value||'';
+  if(_eyClass(cls)){ enterEyRatingsMode(true); return; } else { enterEyRatingsMode(false); }
   // Populate all subjects for this class from getSubjects
   populateSelect('sc-subject',cls);
   var sel=document.getElementById('sc-subject');
@@ -2012,6 +2014,101 @@ function onScoreClassChange(){
 
 // Drafts are kept separately for each class, term, session and subject until saved.
 var scoreDrafts = {};
+// ── Early-years developmental ratings (Creche / Baby Class / pre-school) ──
+// These classes are rated on the developmental rubric that feeds the progress
+// report card, not on subject score sheets.
+var DEV_AREAS_R = [
+  {area:'Cognitive Development', short:'Cognitive'},
+  {area:'Language & Communication', short:'Language'},
+  {area:'Early Literacy & Numeracy', short:'Literacy/Numeracy'},
+  {area:'Physical Development', short:'Physical'},
+  {area:'Social & Emotional', short:'Social'}
+];
+function _eyClass(cls){ return /\b(pre[\s\-]?nursery|prenursery|creche|crèche|play\s?group|baby|pre[\s\-]?school|preschool)\b/i.test(String(cls||'')); }
+function _devAreaSlug(a){ return (a||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
+function _eySchoolId(){ try{ var sc=JSON.parse(localStorage.getItem('rsms_school')||'{}'); return sc.schoolId||sc.id||''; }catch(e){ return ''; } }
+function eyRatingsRead(){
+  var sid=_eySchoolId();
+  try{ return JSON.parse(localStorage.getItem(sid?('rsms_'+sid+'_progress_ratings'):'rsms_progress_ratings')||localStorage.getItem('rsms_progress_ratings')||'{}'); }
+  catch(e){ return {}; }
+}
+function eyRatingsWrite(store){
+  try{
+    localStorage.setItem('rsms_progress_ratings',JSON.stringify(store));
+    var sid=_eySchoolId(); if(sid) localStorage.setItem('rsms_'+sid+'_progress_ratings',JSON.stringify(store));
+  }catch(e){}
+}
+var eyRatingsActive=null, eyRatingsDirty=false;
+function enterEyRatingsMode(on){
+  var sel=document.getElementById('sc-subject');
+  var fg=sel&&sel.closest?sel.closest('.fg'):null;
+  if(fg) fg.style.display=on?'none':'';
+  var bulk=document.getElementById('sc-bulk-card'); if(bulk) bulk.style.display=on?'none':'';
+  var wrap=document.getElementById('sc-table-wrap'); if(wrap) wrap.style.display='none';
+  var note=document.getElementById('sc-subject-progress');
+  if(on){
+    eyRatingsActive=null; eyRatingsDirty=false;
+    if(note) note.innerHTML='<span style="color:#0ea5e9;font-weight:600;">Developmental ratings for '+(_escHtml?_escHtml(String(document.getElementById('sc-class').value||'')):'this class')+': rate each area E = Excellent, G = Good, F = Fair, N = Needs Improvement, then tap Load Students.</span>';
+  }else{
+    if(note&&!note.innerHTML.indexOf('Developmental ratings')) note.textContent='';
+  }
+}
+function loadRatingsTable(){
+  var cls=(document.getElementById('sc-class')||{}).value||'';
+  var parsed=JSON.parse(_lsget('students')||'[]');
+  var students=(Array.isArray(parsed)?parsed.filter(Boolean):Object.values(parsed).filter(Boolean)).filter(function(s){return sameClass(s.class,cls);});
+  if(!students.length){toast('No students found for '+cls,'error');return;}
+  eyRatingsActive={cls:cls}; eyRatingsDirty=false;
+  var saved=eyRatingsRead();
+  document.getElementById('sc-thead').innerHTML='<tr><th style="min-width:140px;">Student</th>'+DEV_AREAS_R.map(function(a){ return '<th style="min-width:92px;" title="'+a.area+'">'+a.short+'</th>'; }).join('')+'</tr>';
+  var tbody=document.getElementById('sc-tbody'); if(!tbody)return;
+  tbody.innerHTML='';
+  students.forEach(function(s){
+    var tr=document.createElement('tr');
+    var td0=document.createElement('td');
+    td0.style.cssText='font-weight:700;font-size:.88rem;padding:8px 4px;min-width:120px;';
+    td0.textContent=(s.surname||'')+' '+(s.firstname||'');
+    var reg=document.createElement('div'); reg.style.cssText='font-size:.65rem;color:var(--t3);'; reg.textContent=s.reg||''; td0.appendChild(reg);
+    tr.appendChild(td0);
+    var row=saved[s.id]||{};
+    DEV_AREAS_R.forEach(function(a){
+      var slug=_devAreaSlug(a.area);
+      var td=document.createElement('td'),sel=document.createElement('select');
+      sel.className='fi'; sel.setAttribute('data-sid',s.id); sel.setAttribute('data-area',slug);
+      sel.style.cssText='height:44px;width:80px;font-size:1rem;font-weight:700;text-align:center;background:var(--card2,#1e2545);border:2px solid var(--teal,#0ea5e9);border-radius:8px;color:var(--t1,#f0f6ff);';
+      [['','—'],['E','E'],['G','G'],['F','F'],['N','N']].forEach(function(o){ var op=document.createElement('option'); op.value=o[0]; op.textContent=o[1]; sel.appendChild(op); });
+      var v=row[slug]||''; sel.value=v?String(v).toUpperCase():'';
+      sel.onchange=function(){ eyRatingsDirty=true; };
+      td.appendChild(sel); tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  document.getElementById('sc-table-wrap').style.display='block';
+  var note=document.getElementById('sc-scheme-note');
+  if(note) note.innerHTML='<strong>Developmental ratings — '+cls+'</strong> · Rate each area: E = Excellent, G = Good, F = Fair, N = Needs Improvement. Ratings flow into the progress report card for this child. Tap Save Scores to save.';
+  var prog=document.getElementById('sc-subject-progress'); if(prog) prog.textContent='';
+}
+function saveTeacherRatings(){
+  if(!eyRatingsActive){toast('Load students first','error');return;}
+  var cls=(document.getElementById('sc-class')||{}).value||'';
+  if(cls!==eyRatingsActive.cls){toast('Selection changed. Load students again.','error');return;}
+  var updates={},store=eyRatingsRead();
+  document.querySelectorAll('#sc-tbody select[data-sid]').forEach(function(sel){
+    var sid=sel.getAttribute('data-sid'),area=sel.getAttribute('data-area'),v=(sel.value||'').toLowerCase();
+    if(!sid||!area||!v) return;
+    updates[sid]=updates[sid]||{}; updates[sid][area]=v;
+  });
+  var n=Object.keys(updates).length;
+  if(!n){toast('No ratings entered yet','info');return;}
+  Object.keys(updates).forEach(function(sid){ store[sid]=Object.assign({},store[sid]||{},updates[sid]); });
+  eyRatingsWrite(store);
+  var fsid=_eySchoolId();
+  if(fsid&&typeof firebase!=='undefined'&&firebase.database()){
+    try{ Object.keys(updates).forEach(function(sid){ firebase.database().ref('schools/'+fsid+'/progress_ratings/'+sid).update(updates[sid]); }); }catch(e){}
+  }
+  eyRatingsDirty=false;
+  toast('Developmental ratings saved for '+n+' student'+(n===1?'':'s'),'success');
+}
 var scoreActive = null;
 var scoreRowSchemes = {};
 function scoreContextId(ctx){ return JSON.stringify([ctx.cls,ctx.term,ctx.sess,ctx.subj]); }
@@ -2050,6 +2147,7 @@ function loadScoreTable(){
   var subj  = (document.getElementById('sc-subject')||{}).value||'';
   var term  = (document.getElementById('sc-term')||{}).value||'First Term';
   var sess  = (document.getElementById('sc-session')||{value:''}).value||'2025/2026';
+  if(_eyClass(cls)){ loadRatingsTable(); return; }
   if(!cls){toast('Select a class first','error');return;}
   if(!subj){toast('Select a subject','error');return;}
   var currentScheme;
@@ -2131,6 +2229,7 @@ function recordScoreDraft(student){
   scoreDrafts[id].rows[student.id]=row;
 }
 function saveTeacherScores(){
+  if(eyRatingsActive){ saveTeacherRatings(); return; }
   var ids=Object.keys(scoreDrafts);
   if(!ids.length){toast('No unsaved score changes','info');return;}
   var published=_get('published_results','{}');
