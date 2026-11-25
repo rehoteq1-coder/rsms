@@ -1,5 +1,5 @@
 {
-  "version": "3.3.16",
-  "built": "2026-11-25T12:10:00+01:00",
-  "note": "Headmaster/Headmistress identity: HM portal fully retitled (signature, remarks, logs, override under hm); report cards sign basic classes (KG/nursery/primary) with the HM signature and HM comment, junior/senior secondary with the Principal; progress reports (KG/creche/playgroup) carry the HM signature and comment."
+  "version": "3.3.17",
+  "built": "2026-11-25T14:00:00+01:00",
+  "note": "Basic-section subjects capped together: every creche-to-Primary-6 class offers the full union of early-years, lower-primary and upper-primary subjects in its dropdown, for schools that teach the syllabus a class ahead (e.g. Nursery 2 on the Primary 1 syllabus). JSS/SS unchanged."
 }
