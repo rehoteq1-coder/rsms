@@ -352,7 +352,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5;}
     <!-- REMARKS PAGE -->
     <div class="page" id="pg-remarks">
       <div class="card">
-        <div class="card-title">✍️ Principal's Remarks
+        <div class="card-title">✍️ Headmaster's Remarks
           <button class="btn btn-gold btn-sm" onclick="saveAllRemarks()">💾 Save All</button>
         </div>
         <div class="row2" style="margin-bottom:12px;">
@@ -390,7 +390,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5;}
     <div class="page" id="pg-override">
       <div class="card">
         <div class="card-title">🔧 Score Override
-          <span class="badge badge-red">Principal Only</span>
+          <span class="badge badge-red">Headmaster Only</span>
         </div>
         <div style="background:var(--redl);border:1px solid rgba(244,63,94,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:.78rem;color:var(--t2);">
           ⚠️ Use responsibly. All overrides are logged with your name and timestamp.
@@ -452,11 +452,11 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5;}
 
     <!-- SIGNATURE PAGE -->
     <div class="page" id="pg-signature">
-      <div style="font-family:var(--serif);font-size:1.1rem;font-weight:900;color:var(--t1);margin-bottom:14px;">&#9999;&#65039; Principal&#39;s Signature</div>
+      <div style="font-family:var(--serif);font-size:1.1rem;font-weight:900;color:var(--t1);margin-bottom:14px;">&#9999;&#65039; Headmaster&#39;s Signature</div>
 
 <div class="card" style="margin-bottom:12px;">
-  <div class="sec-title">&#9999;&#65039; Principal Signature — Global</div>
-  <div class="fg"><label>Full Name</label><input class="fi" id="sig-prin-name" placeholder="e.g. Principal Full Name"/></div>
+  <div class="sec-title">&#9999;&#65039; Headmaster Signature — Global</div>
+  <div class="fg"><label>Full Name</label><input class="fi" id="sig-prin-name" placeholder="e.g. Headmaster Full Name"/></div>
   <div class="fg"><label>Date</label><input class="fi" id="sig-prin-date" type="date"/></div>
   <div class="fg"><label>Draw Signature (use finger/stylus/mouse)</label>
     <div class="sig-pad-wrap" style="height:120px;">
@@ -662,13 +662,13 @@ function savePrincipalSig(isClass){
   if(!img){ toast('Draw your signature in the pad first','error'); return; }
   var cls=isClass?(document.getElementById('sig-prin-cls')||{}).value||'':'';
   var term=isClass?(document.getElementById('sig-prin-term')||{}).value||'':'';
-  saveSig('principal',name,date,cls,term,img);
+  saveSig('hm',name,date,cls,term,img);
   renderPrinSigPreview();
 }
 function renderPrinSigPreview(){
   var el=document.getElementById('prin-sig-preview'); if(!el) return;
   var sig=null;
-  try{ sig=getSignature('principal'); }catch(e){ sig=null; }
+  try{ sig=getSignature('hm'); }catch(e){ sig=null; }
   if(!sig){ el.innerHTML='<div style="color:var(--t4);font-size:.82rem;">No signature saved yet</div>'; return; }
   var inner = sig.img ? '<img src="'+sig.img+'" style="max-height:70px;max-width:90%;"/>' 
                       : '<div style="font-family:cursive;font-size:1.3rem;color:var(--t1);">'+String(sig.name||'')+'</div>';
@@ -932,7 +932,7 @@ function renderHome(){
   renderPendingActions();
 
   // Recent activity
-  var log=JSON.parse(_lsget('principal_log')||'[]');
+  var log=JSON.parse(_lsget('hm_log')||'[]');
   var rHtml=log.length?log.slice(0,5).map(function(l){
     return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.8rem;">'+
       '<div style="font-size:1.1rem;">'+l.ico+'</div>'+
@@ -1101,7 +1101,7 @@ function renderRemarksPage(){
 function loadRemarksPage(){
   var cls=document.getElementById('rem-class').value; if(!cls) return;
   var students=getStudents().filter(function(s){ return sameClass(s.class,cls); });
-  var remarks=JSON.parse(_lsget('principal_remarks')||'{}');
+  var remarks=JSON.parse(_lsget('hm_remarks')||'{}');
   var html='';
   students.forEach(function(s){
     var name=(s.surname||'')+' '+(s.firstname||'');
@@ -1112,7 +1112,7 @@ function loadRemarksPage(){
         '<div class="stu-sub">'+s.class+'</div></div>'+
         '<button class="btn btn-navy btn-sm" onclick="applyTemplate(\'rem-'+s.id+'\')">📋</button>'+
       '</div>'+
-      '<textarea class="fi" id="rem-'+s.id+'" placeholder="Principal\'s remark..." style="min-height:60px;">'+
+      '<textarea class="fi" id="rem-'+s.id+'" placeholder="Headmaster\'s remark..." style="min-height:60px;">'+
       (remarks[s.id]||'')+'</textarea>'+
       '</div>';
   });
@@ -1125,13 +1125,13 @@ function applyTemplate(inputId){
 function saveAllRemarks(){
   var cls=document.getElementById('rem-class').value; if(!cls){ toast('Select a class first','error'); return; }
   var students=getStudents().filter(function(s){ return sameClass(s.class,cls); });
-  var remarks=JSON.parse(_lsget('principal_remarks')||'{}');
+  var remarks=JSON.parse(_lsget('hm_remarks')||'{}');
   students.forEach(function(s){
     var inp=document.getElementById('rem-'+s.id);
     if(inp) remarks[s.id]=inp.value.trim();
   });
-  _lsset('principal_remarks',remarks);
-  logActivity('✍️','Principal remarks saved for '+cls);
+  _lsset('hm_remarks',remarks);
+  logActivity('✍️','Headmaster remarks saved for '+cls);
   toast('Remarks saved ✅','success');
 }
 
@@ -1216,7 +1216,7 @@ function confirmOverride(){
   var key=Object.keys(scores).find(function(k){var e=scores[k];return e&&e.stuId===row.student.id&&e.subject===row.subject;})||row.key;
   var current=scores[key]||row.record,record;
   try{record=RSMSAssessment.updateRecord(current,pending.values);}catch(e){toast(e.message,'error');return;}
-  record.overrideBy='Principal';record.overrideReason=reason;record.overrideTime=new Date().toLocaleString();
+  record.overrideBy='Headmaster';record.overrideReason=reason;record.overrideTime=new Date().toLocaleString();
   scores[key]=record;saveScores(row.cls,row.term,row.sess,scores);
   logActivity('🔧','Score override: '+row.student.id+' '+row.subject+' → '+record.total+' / '+RSMSAssessment.totalMax(RSMSAssessment.forRecord(record))+' ('+reason+')');
   closeModal('m-override-confirm');toast('Score overridden ✅','success');loadOverrideScores();
@@ -1236,7 +1236,7 @@ function saveAllOverrides(cls,term,sess){
   updates.forEach(function(u){
     var row=u.row,key=Object.keys(scores).find(function(k){var e=scores[k];return e&&e.stuId===row.student.id&&e.subject===row.subject;})||row.key;
     var record=RSMSAssessment.updateRecord(scores[key]||row.record,u.values);
-    record.overrideBy='Principal';record.overrideReason=reason;record.overrideTime=new Date().toLocaleString();scores[key]=record;
+    record.overrideBy='Headmaster';record.overrideReason=reason;record.overrideTime=new Date().toLocaleString();scores[key]=record;
   });
   saveScores(cls,term,sess,scores);
   logActivity('🔧','Bulk score override for '+cls+' — '+updates.length+' scores updated ('+reason+')');
@@ -1401,7 +1401,7 @@ function renderPrintPage(){
 function openPrint(){
   var cls=document.getElementById('print-class').value;
   var url='rsms-results-print.html'+(cls?'?class='+encodeURIComponent(cls):'');
-  sessionStorage.setItem('rsms_result_from','rsms-principal.html');
+  sessionStorage.setItem('rsms_result_from','rsms-hm.html');
   window.open(url,'_blank');
 }
 function openProgressReport(){
@@ -1410,9 +1410,9 @@ function openProgressReport(){
 
 /* ── ACTIVITY LOG ── */
 function logActivity(ico,msg){
-  var log=JSON.parse(_lsget('principal_log')||'[]');
+  var log=JSON.parse(_lsget('hm_log')||'[]');
   log.unshift({ico:ico,msg:msg,time:new Date().toLocaleString()});
-  _lsset('principal_log',log.slice(0,50));
+  _lsset('hm_log',log.slice(0,50));
 }
 
 /* ── INIT ── */

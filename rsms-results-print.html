@@ -673,6 +673,12 @@ function generateCards(){
     Object.assign(ctRemarksAll, _d2, _d1);
   }catch(e){ ctRemarksAll={}; }
   var principalAll  = JSON.parse(_lsget('principal_remarks')||'{}');
+  var hmAll         = JSON.parse(_lsget('hm_remarks')||'{}');
+  // Basic classes (KG, nursery, primary) carry the Headmaster/Headmistress's
+  // signature and comment; junior and senior secondary carry the Principal's
+  // (user requirement, Nov 25 2026).
+  var _cl=(cls||'').toLowerCase();
+  var isHM=!(_cl.indexOf('jss')>-1||_cl.indexOf('senior')>-1||_cl.indexOf('secondary')>-1||/\bss\s*\d/.test(_cl)||/\bss\b/.test(_cl));
   var pubResults    = JSON.parse(_lsget('published_results')||'{}');
 
   // ── Calculate cumulative (auto) ──────────────────────────
@@ -741,7 +747,7 @@ function generateCards(){
     var ctActivities=ctData.activities||'';
     var ctAffective=ctData.affective||{};
     var ctPsychomotor=ctData.psychomotor||{};
-    var principalRemark=principalAll[stu.id]||'';
+    var principalRemark=(isHM?(hmAll[stu.id]||''):(principalAll[stu.id]||''));
 
     // Build subject rows with cumulative
     var subjectRows='';
@@ -952,7 +958,7 @@ function generateCards(){
           '<td colspan="3" style="padding:4px 8px;border:1px solid #ccc;">'+(ctComment||'&nbsp;')+'</td>'+
         '</tr>'+
         '<tr>'+
-          '<td style="padding:4px 8px;font-weight:700;background:#1a0a3e;color:#fff;border:1px solid #ccc;white-space:nowrap;">Principal</td>'+
+          '<td style="padding:4px 8px;font-weight:700;background:#1a0a3e;color:#fff;border:1px solid #ccc;white-space:nowrap;">'+(isHM?'Headmaster/Headmistress':'Principal')+'</td>'+
           '<td colspan="3" style="padding:4px 8px;border:1px solid #ccc;">'+(principalRemark||'&nbsp;')+'</td>'+
         '</tr>'+
       '</table>'+
@@ -967,7 +973,7 @@ function generateCards(){
       (function(){
         var ctSig=getSignature('ct',cls,term)||{};
         var hodSig=getSignature('hod',cls,term)||{};
-        var prinSig=getSignature('principal',cls,term)||{};
+        var prinSig=getSignature(isHM?'hm':'principal',cls,term)||{};
         return '<table style="width:100%;border-collapse:collapse;font-size:8pt;border:1px solid #ccc;">'+
           '<tr>'+
             '<td style="padding:4px 10px;border-right:1px solid #ccc;text-align:center;width:33%;">'+
@@ -988,7 +994,7 @@ function generateCards(){
               (prinSig&&prinSig.img?'<img src="'+prinSig.img+'" style="max-width:140px;max-height:45px;display:block;margin:0 auto 4px;"/>':
                prinSig&&prinSig.name?'<div style="font-weight:700;font-size:8pt;font-family:Georgia,serif;margin-bottom:4px;font-style:italic;">'+prinSig.name+'</div>':
                '<div style="height:45px;"></div>')+
-              '<div style="border-top:1px solid #999;padding-top:3px;font-size:7pt;">Principal&#39;s Signature &amp; Date</div>'+
+              '<div style="border-top:1px solid #999;padding-top:3px;font-size:7pt;">'+(isHM?'Headmaster/Headmistress Signature &amp; Date':'Principal&#39;s Signature &amp; Date')+'</div>'+
               (prinSig&&prinSig.date?'<div style="font-size:7pt;color:#555;">'+prinSig.date+'</div>':'')+
             '</td>'+
           '</tr>'+
