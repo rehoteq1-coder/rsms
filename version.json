@@ -1,5 +1,5 @@
 {
-  "version": "3.3.17",
-  "built": "2026-11-25T14:00:00+01:00",
-  "note": "Basic-section subjects capped together: every creche-to-Primary-6 class offers the full union of early-years, lower-primary and upper-primary subjects in its dropdown, for schools that teach the syllabus a class ahead (e.g. Nursery 2 on the Primary 1 syllabus). JSS/SS unchanged."
+  "version": "3.3.18",
+  "built": "2026-11-25T17:25:00+01:00",
+  "note": "School branding lives in the database: schools/<id>/branding stores the logo and accent colour set in the admin portal, and every portal (admin, teacher, class teacher, HOD, VP, principal, headmaster, bursar, student, parent and the school portal launcher) reads it on load, so every user in the school sees the school logo and brand colours on their own device. Uploaded logos are downscaled to 256px before storage. Headmaster and Principal portals gain the sidebar school logo they lacked."
 }
