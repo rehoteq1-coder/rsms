@@ -258,8 +258,8 @@ select.fi{cursor:pointer;}
       <div class="fg"><label>Teacher's Name</label>
         <input class="fi" id="sel-teacher" placeholder="Class teacher name"/>
       </div>
-      <div class="fg"><label>Principal/Head Teacher</label>
-        <input class="fi" id="sel-principal" placeholder="Principal's name"/>
+      <div class="fg"><label>Headmaster/Headmistress</label>
+        <input class="fi" id="sel-principal" placeholder="Headmaster/Headmistress's name"/>
       </div>
     </div>
     <button class="btn btn-gold" onclick="generateReports()" style="width:100%;">📄 Generate Progress Reports</button>
@@ -311,7 +311,7 @@ var DB = {
   school: JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School Name","principal":"","address":""}'),
   students: JSON.parse(_lsget('students')||'[]'),
   ctRemarks: JSON.parse(_lsget('ct_remarks')||'{}'),
-  principalRemarks: JSON.parse(_lsget('principal_remarks')||'{}'),
+  hmRemarks: JSON.parse(_lsget('hm_remarks')||'{}'),
   progressRatings: JSON.parse(_lsget('progress_ratings')||'{}')
 };
 var schoolLogo = localStorage.getItem('rsms_school_logo')||'';
@@ -380,7 +380,7 @@ function generateReports(){
   DB.students = JSON.parse(_lsget('students')||'[]');
   DB.school   = JSON.parse(localStorage.getItem('rsms_school')||'{"name":"School"}');
   DB.ctRemarks = JSON.parse(_lsget('ct_remarks')||'{}');
-  DB.principalRemarks = JSON.parse(_lsget('principal_remarks')||'{}');
+  DB.hmRemarks = JSON.parse(_lsget('hm_remarks')||'{}');
   DB.progressRatings = JSON.parse(_lsget('progress_ratings')||'{}');
 
   var cls      = document.getElementById('sel-class').value||'';
@@ -389,7 +389,7 @@ function generateReports(){
   var nextTerm = document.getElementById('sel-nextterm').value||'To be announced';
   var daysOpen = document.getElementById('sel-days-open').value||'90';
   var teacher  = document.getElementById('sel-teacher').value||DB.school.principal||'Class Teacher';
-  var principal= document.getElementById('sel-principal').value||DB.school.principal||'Principal';
+  var principal= document.getElementById('sel-principal').value||DB.school.principal||'';
 
   var students = cls ? DB.students.filter(function(s){return sameClass(s.class,cls);}) : DB.students;
   if(cls && !_isEarlyYears(cls)){
@@ -420,7 +420,7 @@ function generateReports(){
     var isNursery = stuCls.includes('nursery')||stuCls.includes('creche')||stuCls.includes('crèche')||stuCls.includes('pre-primary');
 
     var ctRemark = DB.ctRemarks[stu.id]||'';
-    var principalRemark = DB.principalRemarks[stu.id]||'';
+    var principalRemark = DB.hmRemarks[stu.id]||'';
     var ratings = DB.progressRatings[stu.id]||{};
     return buildProgressCard(stu,name,logo,photo,term,session,nextTerm,daysOpen,teacher,principal,isKG,isNursery,ctRemark,principalRemark,ratings);
   }).join('');
@@ -448,7 +448,16 @@ function buildRemark(label){
   '</div>';
 }
 
+// The Headmaster/Headmistress's saved signature, class+term first then global
+function getHMSig(cls,term){
+  if(cls&&term){
+    var sp=localStorage.getItem(_key('sig_hm_'+String(cls).replace(/\s+/g,'_')+'_'+String(term).replace(/\s+/g,'_')));
+    if(sp){ try{ return JSON.parse(sp); }catch(e){} }
+  }
+  try{ return JSON.parse(localStorage.getItem(_key('sig_hm'))||'null'); }catch(e){ return null; }
+}
 function buildProgressCard(stu,name,logo,photo,term,session,nextTerm,daysOpen,teacher,principal,isKG,isNursery,ctRemark,principalRemark,ratings){
+  var hmSig=getHMSig(stu.class,term)||{};
   var GRADE = [
     {min:85,grade:'E',remark:'Excellent',color:'#16a34a'},
     {min:70,grade:'G',remark:'Good',color:'#2563eb'},
@@ -556,7 +565,7 @@ function buildProgressCard(stu,name,logo,photo,term,session,nextTerm,daysOpen,te
         '<span style="flex:1;border-bottom:1px solid #ccc;font-size:9px;color:#333;">'+(ctRemark||'&nbsp;')+'</span>'+
       '</div>'+
       '<div style="display:flex;gap:6px;font-size:9.5px;">'+
-        '<span style="font-weight:700;color:#1a0a3e;min-width:180px;">Head Teacher Remark:</span>'+
+        '<span style="font-weight:700;color:#1a0a3e;min-width:180px;">Headmaster/Headmistress Remark:</span>'+
         '<span style="flex:1;border-bottom:1px solid #ccc;font-size:9px;color:#333;">'+(principalRemark||'&nbsp;')+'</span>'+
       '</div>'+
     '</div>'+
@@ -568,9 +577,9 @@ function buildProgressCard(stu,name,logo,photo,term,session,nextTerm,daysOpen,te
         '<div style="font-size:8px;color:#555;">Class Teacher</div>'+
       '</div>'+
       '<div style="padding:8px 14px;text-align:center;">'+
-        '<div style="border-bottom:1px solid #000;height:24px;margin-bottom:4px;"></div>'+
-        '<div style="font-size:9px;font-weight:700;color:#1a0a3e;">'+principal+'</div>'+
-        '<div style="font-size:8px;color:#555;">Head Teacher / Principal</div>'+
+        (hmSig&&hmSig.img?'<img src="'+hmSig.img+'" style="max-width:140px;max-height:40px;object-fit:contain;margin:0 auto 4px;"/>':'<div style="border-bottom:1px solid #000;height:24px;margin-bottom:4px;"></div>')+
+        '<div style="font-size:9px;font-weight:700;color:#1a0a3e;">'+(hmSig&&hmSig.name?hmSig.name:principal)+'</div>'+
+        '<div style="font-size:8px;color:#555;">Headmaster/Headmistress</div>'+
       '</div>'+
     '</div>'+
     // FOOTER
