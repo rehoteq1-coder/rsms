@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>RSMS — KG & Nursery Progress Report</title>
+<title>RSMS — Crèche & Pre-school Progress Report</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 :root{
@@ -216,14 +216,12 @@ select.fi{cursor:pointer;}
 
 <!-- SCREEN CONTROLS -->
 <div class="controls">
-  <div class="ctrl-title">🌱 KG & Nursery Progress Report</div>
+  <div class="ctrl-title">🌱 Crèche & Pre-school Progress Report</div>
   <div class="ctrl-right">
     <select class="fi" id="ctrl-class" style="height:38px;font-size:.82rem;max-width:160px;">
       <option value="">All Classes</option>
-      <option>Crèche A</option><option>Crèche B</option>
-      <option>Nursery 1</option><option>Nursery 2</option>
-      <option>KG 1</option><option>KG 2</option>
-      <option>Pre-Primary 1</option><option>Pre-Primary 2</option>
+      <option>Crèche</option><option>Baby Class</option>
+      <option>Pre-school</option><option>Playgroup</option>
     </select>
     <input class="fi" id="ctrl-term" type="text" value="First Term" style="height:38px;font-size:.82rem;max-width:120px;"/>
     <input class="fi" id="ctrl-session" type="text" value="2025/2026" style="height:38px;font-size:.82rem;max-width:110px;"/>
@@ -240,10 +238,8 @@ select.fi{cursor:pointer;}
       <div class="fg"><label>Class *</label>
         <select class="fi" id="sel-class">
           <option value="">— All Early Childhood Classes —</option>
-          <option>Crèche A</option><option>Crèche B</option>
-          <option>Nursery 1</option><option>Nursery 2</option>
-          <option>KG 1</option><option>KG 2</option>
-          <option>Pre-Primary 1</option><option>Pre-Primary 2</option>
+          <option>Crèche</option><option>Baby Class</option>
+      <option>Pre-school</option><option>Playgroup</option>
         </select>
         <div id="class-student-count" style="font-size:.72rem;color:var(--t3);margin-top:5px;"></div>
       </div>
@@ -301,7 +297,7 @@ function _sid(){ return (JSON.parse(localStorage.getItem('rsms_school')||'{}')||
 function _key(k){ var id=_sid(); return id?'rsms_'+id+'_'+k:'rsms_'+k; }
 function _lsget(k){ return localStorage.getItem(_key(k))||localStorage.getItem('rsms_'+k)||null; }
 function _isEarlyYears(cls){
-  return /\b(pre[\s\-]?nursery|prenursery|creche|cr\u00e8che|play\s?group|kg\b|k\.g\b|kindergarten)/i.test(String(cls||''));
+  return /\b(pre[\s\-]?nursery|prenursery|creche|cr\u00e8che|play\s?group|baby|pre[\s\-]?school|preschool)/i.test(String(cls||''));
 }
 function _slug(t){ return (t||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 function _lsset(k,d){ var id=_sid(); var json=JSON.stringify(d); localStorage.setItem('rsms_'+k,json); if(id) localStorage.setItem('rsms_'+id+'_'+k,json); }
@@ -393,7 +389,7 @@ function generateReports(){
 
   var students = cls ? DB.students.filter(function(s){return sameClass(s.class,cls);}) : DB.students;
   if(cls && !_isEarlyYears(cls)){
-    toast('Progress reports are only for KG, pre-nursery, creche and playgroup classes. '+cls+' uses the terminal report card on the Results page.','error');
+    toast('Progress reports are only for creche, Baby Class and pre-school classes. '+cls+' uses the terminal report card on the Results page.','error');
     document.getElementById('reports-output').innerHTML='';
     return;
   }
@@ -402,8 +398,8 @@ function generateReports(){
   // If no students, use demo
   if(!students.length){
     students = [
-      {id:'d1',surname:'Adeyemi',firstname:'Tunde',gender:'Male',class:cls||'Nursery 1',reg:'REG-001',dob:'2020-03-10'},
-      {id:'d2',surname:'Okafor',firstname:'Blessing',gender:'Female',class:cls||'Nursery 1',reg:'REG-002',dob:'2020-07-22'}
+      {id:'d1',surname:'Adeyemi',firstname:'Tunde',gender:'Male',class:cls||'Creche',reg:'REG-001',dob:'2020-03-10'},
+      {id:'d2',surname:'Okafor',firstname:'Blessing',gender:'Female',class:cls||'Creche',reg:'REG-002',dob:'2020-07-22'}
     ];
     toast('Demo students shown. Add real students via Admin portal.','info');
   }
@@ -665,7 +661,7 @@ window.addEventListener('load',function(){
 
   var totalECE = students.filter(function(s){
     var c=(s.class||'').toLowerCase();
-    return c.includes('nursery')||c.includes('kg')||c.includes('creche')||c.includes('pre-primary');
+    return c.includes('creche')||c.includes('baby')||c.includes('pre-nursery')||c.includes('pre-school')||c.includes('preschool')||c.includes('playgroup');
   }).length;
   if(totalECE>0)toast(totalECE+' early childhood students found in database','success');
 
