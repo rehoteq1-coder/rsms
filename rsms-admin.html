@@ -3709,15 +3709,25 @@ function saveSettings(){
   var summary=document.getElementById('cfg-assessment-summary');
   if(typeof RSMS_FB!=='undefined' && typeof RSMS_FB.saveAssessment==='function'){
     if(button)button.disabled=true;
-    if(summary)summary.textContent='Saving assessment scheme to the school…';
-    RSMS_FB.saveAssessment(nextAssessment).then(function(){
+    if(summary)summary.textContent='Saving school settings to the database…';
+    var jobs=[];
+    if(typeof RSMS_FB.saveSchoolProfile==='function'){
+      jobs.push(RSMS_FB.saveSchoolProfile(school).catch(function(e){
+        e._part='the school information'; throw e;
+      }));
+    }
+    jobs.push(RSMS_FB.saveAssessment(nextAssessment).catch(function(e){
+      e._part='the assessment scheme'; throw e;
+    }));
+    Promise.all(jobs).then(function(){
       if(button)button.disabled=false;
       updateAssessmentForm();
       toast('Settings and assessment scheme saved','success');
     },function(e){
       if(button)button.disabled=false;
-      if(summary)summary.textContent='School information saved on this device, but the assessment scheme was not saved: '+(e.message||'connection failed');
-      toast('Assessment scheme not saved. Reconnect and try again.','error');
+      var part=(e&&e._part)||'the settings';
+      if(summary)summary.textContent='Saved on this device, but '+part+' was not saved: '+((e&&e.message)||'connection failed');
+      toast('Not saved to the database: '+part+'. Reconnect and try again.','error');
     });
   }else{
     school.assessment=nextAssessment;
