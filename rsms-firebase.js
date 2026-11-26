@@ -658,6 +658,25 @@ var RSMS_FB = (function(){
     });
   }
 
+  // ── SCHOOL PROFILE ──────────────────────────────────────────
+  // Admin Save Settings pushes the editable profile (name, address,
+  // phone, email, principal, term, session, plan, regPrefix) into the
+  // info node every portal's warmCache reads back. A merge (update)
+  // keeps subtrees the form does not own -- assessment above all --
+  // exactly as the database already holds them.
+  function saveSchoolProfile(data){
+    var sid=(data&&data.schoolId)||_sid;
+    if(!sid) return Promise.reject(new Error('Open the admin portal for a school before saving its settings.'));
+    if(typeof window!=='undefined' && window.RSMS_LOCAL && window.RSMS_LOCAL.mode==='lan')
+      return Promise.reject(new Error('The offline appliance does not sync school settings yet. Save them from the cloud admin portal.'));
+    if(!_ready||!_db) return Promise.reject(new Error('School information needs a Firebase connection. It is saved on this device; reconnect and save again.'));
+    var payload=Object.assign({},data||{});
+    delete payload.assessment; // has its own save path; never clobber info/assessment
+    try{ payload.logoUrl=localStorage.getItem('rsms_school_logo')||payload.logoUrl||''; }catch(e){}
+    payload.lastModified=Date.now();
+    return _db.ref('schools/'+sid+'/info').update(payload);
+  }
+
   function saveScores(cls, term, sess, data){
 
     // RESULT SECURITY: no score edits once results for this class+term are published
@@ -977,6 +996,7 @@ var RSMS_FB = (function(){
     saveCollection:   saveCollection,
     saveScores:       saveScores,
     saveAssessment:   saveAssessment,
+    saveSchoolProfile: saveSchoolProfile,
     saveCTRemarks:    saveCTRemarks,
     saveFeeSchedule:  saveFeeSchedule,
     saveStreamConfig: saveStreamConfig,
