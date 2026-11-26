@@ -275,6 +275,15 @@ var RSMS_FB = (function(){
       realAuth:true,
       role:roles[0] || ''
     };
+    if(claims && claims.gateway){
+      // Gateway sign-in: the signed token carries the school and staff
+      // context the PIN flow used to hold only in the browser session.
+      if(claims.schoolId) session.schoolId = claims.schoolId;
+      if(claims.staffName) session.name = claims.staffName;
+      if(claims.myClass) session.myClass = claims.myClass;
+      if(claims.subjects) session.subjects = claims.subjects;
+      if(claims.staffKey) session.staffKey = claims.staffKey;
+    }
     _authClaims = claims || {};
     try{
       sessionStorage.setItem('rsms_user', JSON.stringify(session));

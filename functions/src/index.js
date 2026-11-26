@@ -989,6 +989,100 @@ function auditStaffLogin(schoolId, action, mode, detail){
   }catch(e){}
 }
 
+// ── GATEWAY PIN VERIFICATION ────────────────────────────────
+// The login gateway used to compare PINs inside the browser, which forced the
+// database to serve portal_pins to unauthenticated clients. This moves the
+// comparison behind a callable: the client sends school, role and PIN, the
+// server checks it and hands back a one-hour custom token carrying the school
+// and role claims the strict database rules expect.
+exports.verifyGatewayPin = https.onCall({maxInstances: 10}, function(request){
+  var data = callableData(request);
+  var schoolId = cleanText(data.schoolId, 160);
+  var role = cleanText(data.role, 40).toLowerCase();
+  var pin = typeof data.pin === 'string' ? data.pin : '';
+  var staffKey = cleanText(data.staffKey, 160);
+  if(!schoolId || !role || !pin){
+    throw new https.HttpsError('invalid-argument',
+      'schoolId, role and pin are required.');
+  }
+  if(pin.length > 64){
+    throw new https.HttpsError('invalid-argument', 'That PIN is too long.');
+  }
+  var attemptsRef = database().ref('schools/' + schoolId + '/gateway_attempts/' + role);
+  return attemptsRef.once('value').then(function(aSnap){
+    var att = aSnap.val() || {};
+    var now = Date.now();
+    var windowStart = Number(att.firstAt) || 0;
+    var count = Number(att.count) || 0;
+    if(windowStart && now - windowStart > 15 * 60 * 1000){ count = 0; windowStart = 0; }
+    if(count >= 10){
+      throw new https.HttpsError('resource-exhausted',
+        'Too many failed attempts. Wait a few minutes and try again.');
+    }
+    return database().ref('schools/' + schoolId + '/portal_pins').once('value').then(function(pSnap){
+      var pins = pSnap.val() || {};
+      var expected = cleanText(pins[role], 64);
+      // The HM is the head of the primary section; until a school sets a
+      // dedicated HM pin, the head (principal) pin unlocks the HM portal.
+      if(!expected && role === 'hm') expected = cleanText(pins.principal, 64);
+      var staffPin = '';
+      var staffRec = null;
+      var staffLoad = staffKey
+        ? database().ref('schools/' + schoolId + '/staff/' + staffKey).once('value').then(function(sSnap){
+            staffRec = sSnap.val() || null;
+            if(staffRec && typeof staffRec === 'object') staffPin = cleanText(staffRec.pin, 64);
+            return true;
+          }).catch(function(){ return true; })
+        : Promise.resolve(true);
+      return staffLoad.then(function(){
+        var ok = false;
+        try{
+          if(expected && timingSafeTextEqual(expected, pin)) ok = true;
+          else if(staffPin && timingSafeTextEqual(staffPin, pin)) ok = true;
+        }catch(e){ ok = false; }
+        if(!ok){
+          attemptsRef.set({ count: count + 1, firstAt: windowStart || now, lastAt: now }).catch(function(){});
+          try{
+            database().ref('schools/' + schoolId + '/audit_log').push({
+              action: 'gateway_login_failed', by: 'pin', at: new Date().toISOString(),
+              detail: role + (staffKey ? '/' + staffKey : '')
+            });
+          }catch(e2){}
+          throw new https.HttpsError('permission-denied', 'Incorrect PIN. Try again.');
+        }
+        attemptsRef.remove().catch(function(){});
+        var roleMap = {}; roleMap[role] = true;
+        var schoolMap = {}; schoolMap[schoolId] = true;
+        var claims = {
+          gateway: true, roles: [role], roleMap: roleMap, schoolIds: schoolMap,
+          schoolId: schoolId, role: role
+        };
+        if(staffKey) claims.staffKey = staffKey;
+        if(staffRec){
+          if(staffRec.name) claims.staffName = cleanText(staffRec.name, 160);
+          var mc = staffRec.myClass || staffRec.class;
+          if(mc) claims.myClass = cleanText(mc, 80);
+          var sj = staffRec.subjects || staffRec.subject;
+          if(sj) claims.subjects = cleanText(sj, 400);
+        }
+        try{
+          database().ref('schools/' + schoolId + '/audit_log').push({
+            action: 'gateway_login', by: 'pin', at: new Date().toISOString(),
+            detail: role + (staffKey ? '/' + staffKey : '')
+          });
+        }catch(e3){}
+        var uid = ('gw-' + schoolId + '-' + role + (staffKey ? '-' + staffKey : ''))
+          .toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 120);
+        return admin.auth().createCustomToken(uid, claims)
+          .then(function(token){ return { ok: true, token: token, role: role }; });
+      });
+    });
+  }).catch(function(error){
+    if(error instanceof https.HttpsError) throw error;
+    throw new https.HttpsError('internal', 'Sign-in could not be completed. Try again.');
+  });
+});
+
 exports.createStaffAccount = https.onCall({maxInstances: 10}, function(request){
   var data = callableData(request);
   var schoolId = cleanText(data.schoolId, 160);

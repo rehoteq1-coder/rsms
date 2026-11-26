@@ -599,7 +599,8 @@ body{background:var(--bg);min-height:100vh;font-family:var(--sans);}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script src="rsms-config.js"></script>
 <script src="rsms-firebase.js"></script>
 <script src="rsms-pwa.js"></script>
@@ -1893,18 +1894,66 @@ function enterPortal(){
   window.location.href=STATE._pendingPortal||(PORTAL_MAP[STATE.role]||'rsms-admin.html');
 }
 
-function checkPIN(){
-  var ent=(document.getElementById('pin-input')||{value:''}).value.trim();
-  if(!ent){toast('Enter your PIN','error');return;}
+function legacyWrongPIN(){
+  toast('Incorrect PIN. Try again.','error');
+  var inp=document.getElementById('pin-input');
+  if(inp){inp.value='';inp.style.borderColor='#ef4444';
+    setTimeout(function(){inp.style.borderColor='';},1500);}
+}
+function legacyCheckPIN(ent){
   if(ent===STATE._expectedPin){
     document.getElementById('pin-input').value='';
     enterPortal();
   } else {
-    toast('Incorrect PIN. Try again.','error');
-    var inp=document.getElementById('pin-input');
-    if(inp){inp.value='';inp.style.borderColor='#ef4444';
-      setTimeout(function(){inp.style.borderColor='';},1500);}
+    legacyWrongPIN();
   }
+}
+function checkPIN(){
+  var ent=(document.getElementById('pin-input')||{value:''}).value.trim();
+  if(!ent){toast('Enter your PIN','error');return;}
+  // The offline appliance verifies PINs locally; the cloud callable does not apply there.
+  if(window.RSMS_LOCAL && window.RSMS_LOCAL.mode==='lan'){ legacyCheckPIN(ent); return; }
+  // Server-side PIN check: the browser sends school, role and PIN, the cloud
+  // function compares them and returns a signed token for the portal session.
+  // Until that function is deployed, the legacy local check keeps working.
+  var hasFn=(typeof firebase!=='undefined'&&firebase.functions)?true:false;
+  if(!hasFn){ legacyCheckPIN(ent); return; }
+  try{
+    var call=firebase.functions().httpsCallable('verifyGatewayPin');
+    var person=STATE.person||{};
+    call({schoolId:STATE.school.schoolId||'', role:STATE.role, pin:ent, staffKey:person.id||''})
+      .then(function(res){
+        var tok=res&&res.data&&res.data.token;
+        if(!tok||!firebase.auth){ legacyCheckPIN(ent); return; }
+        firebase.auth().signInWithCustomToken(tok).then(function(){
+          // The signed token is a real sign-in: drop the pinAuth marker so the
+          // portal adopts the claims instead of treating them as a stale account.
+          try{
+            var s=JSON.parse(sessionStorage.getItem('rsms_user')||'{}');
+            if(s&&s.pinAuth){ delete s.pinAuth; s.gatewayAuth=true;
+              sessionStorage.setItem('rsms_user',JSON.stringify(s)); }
+          }catch(e){}
+          document.getElementById('pin-input').value='';
+          enterPortal();
+        }).catch(function(){ legacyCheckPIN(ent); });
+      })
+      .catch(function(err){
+        var code=(err&&err.code)||'';
+        var msg=(err&&err.message)||'';
+        // Callable missing or service trouble: fall back to the local check so
+        // no school is locked out before the function is deployed.
+        if(code.indexOf('functions/not-found')>-1||code.indexOf('functions/unavailable')>-1||
+           code.indexOf('functions/internal')>-1||code.indexOf('functions/deadline')>-1){
+          legacyCheckPIN(ent); return;
+        }
+        if(code.indexOf('resource-exhausted')>-1||msg.indexOf('Too many failed attempts')>-1){
+          toast('Too many failed attempts. Wait a few minutes and try again.','error');
+          var inp2=document.getElementById('pin-input'); if(inp2)inp2.value='';
+          return;
+        }
+        legacyWrongPIN();
+      });
+  }catch(e){ legacyCheckPIN(ent); }
 }
 function showLoadingState(){
   var el=document.getElementById('school-auto-msg');
