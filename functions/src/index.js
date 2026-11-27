@@ -1092,6 +1092,61 @@ exports.verifyGatewayPin = https.onCall({maxInstances: 10}, function(request){
   });
 });
 
+// ── SUPERADMIN PASSWORD VERIFICATION ────────────────────────
+// The superadmin panel and the Control Centre used to read
+// config/superadmin_hash straight from the database and compare it in the
+// browser. The strict database rules now keep config/* superadmin-only,
+// which is the right call for a hash that would otherwise be an offline
+// brute-force target, but it also locked both login screens out. This
+// callable does the compare server-side and only ever answers ok or not-ok,
+// so the hash never leaves the box.
+exports.verifySuperadminPassword = https.onCall({maxInstances: 10}, function(request){
+  var data = callableData(request);
+  var pw = typeof data.password === 'string' ? data.password : '';
+  if(!pw){
+    throw new https.HttpsError('invalid-argument', 'password is required.');
+  }
+  if(pw.length > 128){
+    throw new https.HttpsError('invalid-argument', 'That password is too long.');
+  }
+  var attemptsRef = database().ref('superadmin_attempts');
+  return attemptsRef.once('value').then(function(aSnap){
+    var att = aSnap.val() || {};
+    var now = Date.now();
+    var windowStart = Number(att.firstAt) || 0;
+    var count = Number(att.count) || 0;
+    if(windowStart && now - windowStart > 15 * 60 * 1000){ count = 0; windowStart = 0; }
+    if(count >= 10){
+      throw new https.HttpsError('resource-exhausted',
+        'Too many failed attempts. Wait a few minutes and try again.');
+    }
+    return database().ref('config/superadmin_hash').once('value').then(function(hSnap){
+      var stored = cleanText(hSnap.val(), 128);
+      var ok = false;
+      try{ if(stored && timingSafeTextEqual(stored, sha256(pw))) ok = true; }catch(e){ ok = false; }
+      if(!ok){
+        attemptsRef.set({ count: count + 1, firstAt: windowStart || now, lastAt: now }).catch(function(){});
+        try{
+          database().ref('audit_log').push({
+            action: 'superadmin_login_failed', by: 'callable', at: new Date().toISOString()
+          });
+        }catch(e2){}
+        throw new https.HttpsError('permission-denied', 'Incorrect password.');
+      }
+      attemptsRef.remove().catch(function(){});
+      try{
+        database().ref('audit_log').push({
+          action: 'superadmin_login', by: 'callable', at: new Date().toISOString()
+        });
+      }catch(e3){}
+      return { ok: true };
+    });
+  }).catch(function(error){
+    if(error instanceof https.HttpsError) throw error;
+    throw new https.HttpsError('internal', 'Sign-in could not be completed. Try again.');
+  });
+});
+
 exports.createStaffAccount = https.onCall({maxInstances: 10}, function(request){
   var data = callableData(request);
   var schoolId = cleanText(data.schoolId, 160);

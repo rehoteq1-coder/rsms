@@ -522,6 +522,7 @@ select.fi option{background:var(--card);color:var(--t1);}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script src="rsms-config.js"></script>
 <script src="rsms-firebase.js"></script>
 <script src="rsms-roster.js"></script>
@@ -1242,32 +1243,48 @@ async function saLogin(){
   var pw = getVal('sa-password');
   if(!pw){ toast('Enter password','error'); return; }
 
-  // Hash the entered password with SHA-256
-  var encoder = new TextEncoder();
-  var data = encoder.encode(pw);
-  var hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  var hash = Array.from(new Uint8Array(hashBuffer))
-    .map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-
-  // Verify against Firebase-stored hash
+  // The strict database rules gate config/* behind the superadmin role, so the
+  // stored hash can no longer be read from the browser (by design: a readable
+  // hash is an offline brute-force target). Compare on the server instead. The
+  // direct read below is only the fallback for deploys still on older rules.
   var db = _fbDB();
   if(!db){ toast('Firebase not available','error'); return; }
 
-  db.ref('config/superadmin_hash').once('value').then(function(snap){
-    var stored = snap.val();
-    if(!stored){
-      toast('Superadmin hash not configured in Firebase','error');
-      return;
+  var ok = false, failMsg = null;
+  if(typeof firebase === 'object' && typeof firebase.functions === 'function'){
+    try{
+      var res = await firebase.functions().httpsCallable('verifySuperadminPassword')({ password: pw });
+      if(res && res.data && res.data.ok) ok = true;
+    }catch(e){
+      if(e && e.code === 'functions/permission-denied'){
+        failMsg = 'Wrong password';
+      } else if(e && e.code === 'functions/resource-exhausted'){
+        failMsg = 'Too many failed attempts. Wait a few minutes and try again.';
+      } else if(e && e.code !== 'functions/not-found' && e.code !== 'functions/unavailable' && e.code !== 'functions/internal'){
+        failMsg = 'Auth check failed: ' + (e.message || 'try again');
+      }
     }
-    if(hash === stored){
-      sessionStorage.setItem(SA_KEY,'true');
-      showDashboard();
-    } else {
-      toast('Wrong password','error');
+  }
+  if(!ok && !failMsg){
+    try{
+      var snap = await db.ref('config/superadmin_hash').once('value');
+      var stored = snap.val() || '';
+      if(stored){
+        var hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+        var hash = Array.from(new Uint8Array(hashBuffer))
+          .map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+        if(hash === stored) ok = true;
+      }
+    }catch(e2){
+      failMsg = failMsg || ('Auth check failed: ' + e2.message);
     }
-  }).catch(function(e){
-    toast('Auth check failed: '+e.message,'error');
-  });
+  }
+  if(ok){
+    sessionStorage.setItem(SA_KEY,'true');
+    showDashboard();
+  } else {
+    toast(failMsg || 'Wrong password','error');
+  }
 }
 
 function showDashboard(){

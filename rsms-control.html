@@ -490,6 +490,7 @@ textarea.fi{height:auto;min-height:90px;padding:13px 15px;resize:vertical;}
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script src="rsms-roster.js"></script>
 <script>
 // Password is checked as a SHA-256 hash so the plaintext never ships in the
@@ -661,9 +662,33 @@ function getOnboardURL(){
 }
 
 // ── LOGIN ──
+// One sign-in for the whole Control Centre: the superadmin password opens
+// everything, the superadmin console included. The console iframe shares this
+// tab's sessionStorage, so marking rsms_superadmin_auth here signs the panel
+// in without a second password. The classic Control Centre password still
+// opens the dashboard; the console then asks for the superadmin password
+// itself, so the strongest panel is never gated on the older secret.
 async function doLogin(){
   var pw = document.getElementById('ctrl-pw').value;
+  if(!pw){ toast('⚠️ Enter password','error'); return; }
   var entered = await sha256hex(pw);
+  var saError = null;
+  try{
+    if(typeof firebase === 'object' && typeof firebase.functions === 'function'){
+      _ctrlFB();
+      var res = await firebase.functions().httpsCallable('verifySuperadminPassword')({ password: pw });
+      if(res && res.data && res.data.ok){
+        sessionStorage.setItem('rsms_ctrl_auth','true');
+        sessionStorage.setItem('rsms_superadmin_auth','true');
+        document.getElementById('login-screen').style.display='none';
+        document.getElementById('main-app').style.display='flex';
+        initApp();
+        return;
+      }
+    }
+  }catch(e){
+    saError = e;
+  }
   var expect  = await expectedCtrlHash();
   if(entered === expect){
     sessionStorage.setItem('rsms_ctrl_auth','true');
@@ -671,7 +696,9 @@ async function doLogin(){
     document.getElementById('main-app').style.display='flex';
     initApp();
   } else {
-    toast('⚠️ Incorrect password','error');
+    toast(saError && saError.code === 'functions/resource-exhausted'
+      ? '⚠️ Too many failed attempts. Wait a few minutes and try again.'
+      : '⚠️ Incorrect password','error');
     document.getElementById('ctrl-pw').value='';
   }
 }
