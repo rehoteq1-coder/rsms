@@ -1,5 +1,5 @@
 {
-  "version": "3.3.22",
-  "built": "2026-11-26T17:10:00+01:00",
-  "note": "Gateway auth: PIN checks moved behind the verifyGatewayPin callable which mints a signed school/role token; legacy local check kept as fallback until the function is deployed. Strict database rules deploy only AFTER this function ships."
+  "version": "3.3.23",
+  "built": "2026-11-27T10:05:00+01:00",
+  "note": "Strict rules live: gateway mirror of claims into users/$uid so RTDB rule checks pass; login page no longer depends on the unauthenticated portal_pins preload (denied by the strict rules) and always shows the PIN step in cloud mode."
 }

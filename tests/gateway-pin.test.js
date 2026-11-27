@@ -89,3 +89,23 @@ test('rsms-firebase.js: gateway claims seed the portal session', () => {
 test('rsms-firebase.js: pinAuth guard stays intact for the legacy path', () => {
   assert.ok(/previous && previous\.pinAuth === true/.test(fbSrc));
 });
+
+test('verifyGatewayPin: mirrors the token claims into users/$uid before minting', () => {
+  assert.ok(/ref\('users\/' \+ uid\)\.update/.test(fnSrc),
+    'the gateway must write the users/$uid record the strict rules check');
+  assert.ok(/roleMap: roleMap,/.test(fnSrc));
+  assert.ok(/schoolIds: schoolMap,/.test(fnSrc));
+});
+
+test('login page: a denied unauthenticated portal_pins preload must not break sign-in', () => {
+  assert.ok(/\/portal_pins'\)[\s\S]*?\.catch\(function\(\)\{[\s\S]*?strict rules deny/.test(loginSrc),
+    'the preload read must swallow the strict-rules denial');
+});
+
+test('login page: cloud mode still shows the PIN step without a cached PIN', () => {
+  assert.ok(/var offline=\(typeof window\.RSMS_LOCAL!=='undefined' && window\.RSMS_LOCAL && window\.RSMS_LOCAL\.mode==='lan'\);/.test(loginSrc));
+  // Cloud mode with no local PIN: the gateway verifies, so go to the PIN step.
+  assert.ok(/\} else \{\n    goToStep\(4\);\n  \}/.test(loginSrc));
+  // Offline appliance keeps the legacy no-PIN guard.
+  assert.ok(/No PIN set for this account\. Contact your school admin\./.test(loginSrc));
+});

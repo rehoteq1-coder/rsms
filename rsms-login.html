@@ -1628,6 +1628,10 @@ function applySchool(school){
                   rsmsCacheSetRaw('portal_pins',json);
                   localStorage.setItem('rsms_'+school.schoolId+'_portal_pins',json);
                 }
+              }).catch(function(){
+                // Strict rules deny unauthenticated portal_pins reads; the
+                // gateway callable verifies PINs server-side, so a denied
+                // preload must not break or block the sign-in flow.
               });
           }catch(e){}
         });
@@ -1877,16 +1881,25 @@ function doLogin(){
   if(!sPin && sRec && sRec.pin){ sPin=sRec.pin; }
   if(!sPin && pers.pin){ sPin=pers.pin; }
   STATE._expectedPin=sPin;
-  // ── Bug Fix: Block entry if no PIN set ──
+  // ── Route by mode ──
+  // Cloud: the gateway callable verifies the PIN server-side, so a missing
+  // local PIN (the strict rules deny the unauthenticated portal_pins read)
+  // must still lead to the PIN step instead of blocking or skipping it.
+  // Offline appliance: no callable exists, so the legacy rules apply.
+  var offline=(typeof window.RSMS_LOCAL!=='undefined' && window.RSMS_LOCAL && window.RSMS_LOCAL.mode==='lan');
   if(sPin){
     goToStep(4);
-  } else if(STATE.role==='admin'){
-    // Admin uses token link — no PIN needed
-    enterPortal();
+  } else if(offline){
+    if(STATE.role==='admin'){
+      // Admin uses token link — no PIN needed
+      enterPortal();
+    } else {
+      // No PIN set — block entry, show message
+      toast('No PIN set for this account. Contact your school admin.','error');
+      setTimeout(function(){ goToStep(1); },2500);
+    }
   } else {
-    // No PIN set — block entry, show message
-    toast('No PIN set for this account. Contact your school admin.','error');
-    setTimeout(function(){ goToStep(1); },2500);
+    goToStep(4);
   }
 }
 
