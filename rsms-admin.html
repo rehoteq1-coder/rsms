@@ -2962,8 +2962,7 @@ function printStaffLoginSlip(name,role,email,pw,sid){
     +'<h1>'+String(s.name||'School').replace(/</g,'&lt;')+'</h1><p>Staff portal login slip &middot; School ID: '+sid+'</p>'
     +'<div class="box"><p><span class="lbl">Name</span></p><p class="val">'+name+'</p><p><span class="lbl">Role</span></p><p class="val">'+role+'</p><p><span class="lbl">Login email</span></p><p class="val">'+email+'</p><p><span class="lbl">Password</span></p><p class="val">'+pw+'</p></div>'
     +'<p>Sign in at https://rsms.rehoteq.com, choose your school ('+sid+'), then Staff email login. Keep this slip safe; the password is not stored by the school.</p>'
-    +'<script>window.onload=function(){window.print();};</'+'script><script src="rsms-pw-toggle.js" defer></script>
-</body></html>';
+    +'<script>window.onload=function(){window.print();};</'+'script></body></html>';
   w.document.write(h);w.document.close();
 }
 function deactivateStaffLoginQuiet(stf){
@@ -5051,5 +5050,5 @@ function slResetPin(username){
 
 </script>
 <script src="rsms-notifications.js"></script>
-</body>
+<script src="rsms-pw-toggle.js" defer></script></body>
 </html>
