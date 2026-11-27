@@ -1,5 +1,5 @@
 {
-  "version": "3.3.23",
-  "built": "2026-11-27T10:05:00+01:00",
-  "note": "Strict rules live: gateway mirror of claims into users/$uid so RTDB rule checks pass; login page no longer depends on the unauthenticated portal_pins preload (denied by the strict rules) and always shows the PIN step in cloud mode."
+  "version": "3.3.24",
+  "built": "2026-11-27T14:30:00+01:00",
+  "note": "One sign-in for the Control Centre: the superadmin password unlocks the dashboard and the embedded superadmin console together (sessionStorage hand-off to the console iframe); the classic Control Centre password stays dashboard-only. Superadmin and Control Centre sign-ins now verify through the new verifySuperadminPassword callable, because the strict rules no longer serve config/superadmin_hash to browsers (a readable hash is an offline brute-force target)."
 }
