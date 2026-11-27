@@ -375,6 +375,7 @@ footer a{color:var(--gold);text-decoration:none;}
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
 <script src="rsms-config.js"></script>
 <script src="rsms-ai-units.js"></script>
 <script>
@@ -394,6 +395,16 @@ var outputText   = '';
 // public demo mode: 2 free units kept in this browser.
 if (window.RSMS_CONFIG && window.RSMS_CONFIG.firebase && typeof firebase !== 'undefined') {
   firebase.initializeApp(window.RSMS_CONFIG.firebase);
+  // App Check (Fraud Defense / reCAPTCHA Enterprise) - required before
+  // enforcement turns on; best-effort so the page never blocks.
+  try {
+    if (firebase.appCheck && window.RSMS_CONFIG.firebase.appCheckSiteKey) {
+      firebase.appCheck().activate(
+        new firebase.appCheck.ReCaptchaEnterpriseProvider(window.RSMS_CONFIG.firebase.appCheckSiteKey),
+        true
+      );
+    }
+  } catch (e) { console.warn('App Check activation failed', e && e.message); }
 }
 var AI_CTX = (function(){
   var p = new URLSearchParams(window.location.search);
