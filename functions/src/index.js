@@ -1073,8 +1073,17 @@ exports.verifyGatewayPin = https.onCall({maxInstances: 10}, function(request){
         }catch(e3){}
         var uid = ('gw-' + schoolId + '-' + role + (staffKey ? '-' + staffKey : ''))
           .toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 120);
-        return admin.auth().createCustomToken(uid, claims)
-          .then(function(token){ return { ok: true, token: token, role: role }; });
+        // The strict database rules double-check the token claims against the
+        // users/$uid record; mirror the claims there before minting so gateway
+        // sessions pass both halves of the check.
+        return database().ref('users/' + uid).update({
+          roleMap: roleMap,
+          schoolIds: schoolMap,
+          gateway: true,
+          updatedAt: new Date().toISOString()
+        }).then(function(){
+          return admin.auth().createCustomToken(uid, claims);
+        }).then(function(token){ return { ok: true, token: token, role: role }; });
       });
     });
   }).catch(function(error){
