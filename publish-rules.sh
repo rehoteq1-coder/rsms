@@ -21,7 +21,7 @@ C=$(python3 -c 'import json,sys;print(json.dumps(open(sys.argv[1]).read()))' "$R
 
 echo "== creating ruleset =="
 R=$(curl -s -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
-  -d "{\"source\":{\"files\":[{\"name\":\"\",\"content\":$C}]}}" "$API/rulesets")
+  -d "{\"source\":{\"files\":[{\"name\":\"database.rules.json\",\"content\":$C}]}}" "$API/rulesets")
 echo "$R" | head -c 300; echo
 N=$(echo "$R" | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d.get("name",""))')
 if [ -z "$N" ]; then echo "FAILED: could not create ruleset"; exit 1; fi
