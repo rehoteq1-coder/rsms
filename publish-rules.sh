@@ -21,7 +21,7 @@ C=$(python3 -c 'import json,sys;print(json.dumps(open(sys.argv[1]).read()))' "$R
 
 echo "== compiling (test) =="
 TEST=$(curl -s -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
-  -d "{\"source\":{\"files\":[{\"name\":\"database.rules.json\",\"content\":$C}]}}" "$API/rulesets:test")
+  -d "{\"source\":{\"files\":[{\"name\":\"database.rules.json\",\"content\":$C}]}}" "$API:test")
 echo "$TEST" | head -c 20000; echo
 N_ISSUES=$(echo "$TEST" | python3 -c 'import json,sys;d=json.load(sys.stdin);print(sum(1 for i in d.get("issues",[]) if i.get("severity")=="ERROR"))')
 if [ "$N_ISSUES" != "0" ]; then echo "FAILED: $N_ISSUES compile error(s), see above"; exit 1; fi
