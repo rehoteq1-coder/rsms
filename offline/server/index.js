@@ -346,7 +346,7 @@ function createApp(options){
       'catch(function(d){showErr((d&&(d.error))?d.error:"Could not create account.");});' +
       '};' +
       'document.getElementById("bp2").onkeydown=function(e){if(e.key==="Enter")document.getElementById("bsgo").onclick();};') +
-      '</script></body>';
+      '<script src="/rsms-pw-toggle.js" defer></scr'+'ipt></body>';
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
   });
