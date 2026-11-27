@@ -489,6 +489,7 @@ textarea.fi{height:auto;min-height:90px;padding:13px 15px;resize:vertical;}
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
 <script src="rsms-roster.js"></script>
 <script>
 // Password is checked as a SHA-256 hash so the plaintext never ships in the
@@ -527,6 +528,14 @@ function _ctrlFB(){
       databaseURL:'https://rsms-a84ff-default-rtdb.europe-west1.firebasedatabase.app',
       projectId:'rsms-a84ff'};
     if(!firebase.apps.length) firebase.initializeApp(cfg);
+    // App Check (Fraud Defense / reCAPTCHA Enterprise), best-effort.
+    try{
+      if(firebase.appCheck){
+        firebase.appCheck().activate(
+          new firebase.appCheck.ReCaptchaEnterpriseProvider('6LcfrjQuAAAAAKNq-Eovo6cz4NrUgdh9djY8U_tE'), true
+        );
+      }
+    }catch(e){ console.warn('App Check activation failed', e && e.message); }
     return firebase.database();
   }catch(e){ return null; }
 }

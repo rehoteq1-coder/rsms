@@ -13,7 +13,9 @@ window.RSMS_CONFIG = {
     projectId:         "rsms-a84ff",
     storageBucket:     "rsms-a84ff.firebasestorage.app",
     messagingSenderId: "1068176996970",
-    appId:             "1:1068176996970:web:a43f6c225090de05f86813"
+    appId:             "1:1068176996970:web:a43f6c225090de05f86813",
+    // App Check site key (Fraud Defense / reCAPTCHA Enterprise) - public by design.
+    appCheckSiteKey:   "6LcfrjQuAAAAAKNq-Eovo6cz4NrUgdh9djY8U_tE"
   },
   // Platform settings
   platform: {

@@ -515,11 +515,40 @@ var RSMS_FB = (function(){
     else setTimeout(runAuthGuard, 0);
   }
 
+
+  // ── App Check (Fraud Defense / reCAPTCHA Enterprise) ─────────────
+  // Activates once per page. Loads the app-check compat script on demand,
+  // then attaches to the default app. Best-effort: never blocks portal load.
+  var _appCheckActivated = false;
+  function _activateAppCheck(){
+    if(_appCheckActivated) return;
+    var siteKey = (window.RSMS_CONFIG && window.RSMS_CONFIG.firebase &&
+                   window.RSMS_CONFIG.firebase.appCheckSiteKey) || '';
+    if(!siteKey || typeof firebase==='undefined' || !firebase.apps.length) return;
+    if(typeof firebase.appCheck==='undefined'){
+      if(document.querySelector('script[data-rsms-appcheck]')) return;
+      var s=document.createElement('script');
+      s.src='https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js';
+      s.setAttribute('data-rsms-appcheck','1');
+      s.onload=function(){ _activateAppCheck(); };
+      s.onerror=function(){ console.warn('RSMS: App Check script failed to load'); };
+      document.head.appendChild(s);
+      return;
+    }
+    try{
+      firebase.appCheck().activate(
+        new firebase.appCheck.ReCaptchaEnterpriseProvider(siteKey), true
+      );
+      _appCheckActivated = true;
+    }catch(e){ console.warn('RSMS: App Check activation failed', e && e.message); }
+  }
+
   function init(){
     try{
       if(typeof firebase==='undefined') return;
       if(_ready){ _initAuth(); return; }
       if(!firebase.apps.length) firebase.initializeApp(CFG);
+      _activateAppCheck();
       _db    = firebase.database();
       _ready = true;
 
